@@ -1,0 +1,8 @@
+.git
+.superpowers
+.claude
+docs
+**/node_modules
+web/.next
+web/out
+**/*.tsbuildinfo

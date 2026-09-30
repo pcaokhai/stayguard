@@ -1,0 +1,10 @@
+# API service only; Postgres arrives in SG-003.
+name: stayguard
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:8080"
+    restart: "no"
