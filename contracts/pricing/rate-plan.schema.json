@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stayguard.example/contracts/pricing/rate-plan.schema.json",
+  "title": "RatePlan",
+  "description": "Versioned pricing configuration stored per unit type. A snapshot is copied onto every stay at check-in.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "currency", "graceMinutes", "hourly", "overnight", "daily"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1},
+    "currency": {"const": "VND"},
+    "graceMinutes": {"type": "integer", "minimum": 0, "maximum": 60},
+    "hourly": {
+      "type": "object", "additionalProperties": false, "required": ["firstHour", "extraHour"],
+      "properties": {"firstHour": {"$ref": "#/$defs/money"}, "extraHour": {"$ref": "#/$defs/money"}}
+    },
+    "overnight": {
+      "type": "object", "additionalProperties": false, "required": ["price", "windowStart", "windowEnd"],
+      "properties": {"price": {"$ref": "#/$defs/money"}, "windowStart": {"$ref": "#/$defs/clock"}, "windowEnd": {"$ref": "#/$defs/clock"}}
+    },
+    "daily": {
+      "type": "object", "additionalProperties": false, "required": ["price", "windowStart", "windowEnd"],
+      "properties": {"price": {"$ref": "#/$defs/money"}, "windowStart": {"$ref": "#/$defs/clock"}, "windowEnd": {"$ref": "#/$defs/clock"}}
+    }
+  },
+  "$defs": {
+    "money": {"type": "integer", "minimum": 0, "description": "Whole VND."},
+    "clock": {"type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"}
+  }
+}

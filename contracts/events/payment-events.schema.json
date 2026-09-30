@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stayguard.example/contracts/events/payment-events.schema.json",
+  "title": "PaymentEvent",
+  "description": "Payload of each Server-Sent Event on GET /v1/payments/{paymentId}/events. The SSE `event:` field carries `type`; `id:` carries `sequence`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "sequence", "paymentId", "status", "occurredAt"],
+  "properties": {
+    "type": {"enum": ["PAYMENT_PENDING", "PAYMENT_PAID", "PAYMENT_EXPIRED", "PAYMENT_MISMATCH"]},
+    "sequence": {"type": "integer", "minimum": 1, "description": "Monotonic per payment; clients ignore sequence <= the last seen."},
+    "paymentId": {"type": "string", "minLength": 1},
+    "status": {"enum": ["PENDING", "PAID", "EXPIRED", "MISMATCH"]},
+    "amount": {"type": "integer", "minimum": 0},
+    "receivedAmount": {"type": ["integer", "null"], "minimum": 0},
+    "occurredAt": {"type": "string", "format": "date-time"}
+  },
+  "examples": [
+    {"type": "PAYMENT_PAID", "sequence": 2, "paymentId": "pay_01J8Z3", "status": "PAID", "amount": 40000, "receivedAmount": 40000, "occurredAt": "2026-10-05T14:01:12+07:00"}
+  ]
+}

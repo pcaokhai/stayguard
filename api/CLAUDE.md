@@ -1,0 +1,51 @@
+# api — CLAUDE.md
+
+Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL access, and it serves the embedded web export. Lane: **API**. Owns `api/**`, the database schema `app` and migrations in `api/migrations/`. Read the root `CLAUDE.md` first.
+
+## Commands
+
+`make test-api` (unit), `make test-api-int` (Testcontainers), `make lint` (golangci-lint, gosec, govulncheck), `make fmt`, `make gen` (oapi-codegen and sqlc), `make migrate`, `make up`. While iterating, run one test by name and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-003.
+
+## Layout
+
+```
+api/
+  cmd/stayguard/        wiring only: config, dependency construction, server start
+  internal/
+    domain/             pure rules, no I/O: pricing, room, stay, payment, access, shift
+    app/                use cases and ports: sessions, trials, stays, payments, housekeeping, owner, shifts
+    adapter/
+      http/             generated strict handlers, problem+json mapper, SSE hub
+      postgres/         sqlc repositories, unit of work, RLS session setup, idempotency store
+      payments/         PaymentSource port: simulator now, provider later; QR payload builder
+      clock/ ids/ crypto/   time, id and encryption ports
+    platform/           config, logging, metrics, rate limiting, embedded web assets
+  migrations/           goose SQL, forward-only
+  gen/                  generated code (see SG-002 for whether it is committed); never hand-edit
+```
+
+## Rules for this service
+
+- An import-boundary test enforces `domain` → nothing, `app` → `domain`, `adapter` → `app` and `domain`. `cmd` is the only place that wires adapters.
+- The HTTP handlers only translate: parse the request, call one use case, map the result. No business rules in handlers.
+- Every use case takes the caller (tenant, user, role, building access) from the context set by the auth middleware; repositories require a tenant-scoped transaction.
+- Server-Sent Events: one hub per process, bounded buffers, drop slow clients, close on terminal state, heartbeat every 15 s; goroutines are owned by the hub and stop on shutdown.
+- Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` or database URL stops the process.
+- Demo-only routes (`/v1/demo/*`) are registered only when `DEMO_MODE` is on; an architecture test proves they are absent otherwise.
+
+## Domain rules
+
+- Money is `int64` whole VND wrapped in a `Vnd` type with checked arithmetic.
+- Pricing implements docs/02 §7.7 exactly and passes `contracts/pricing/golden-cases.json`; it receives instants and a rate plan, never the clock or the database.
+- Room row lock for check-in; invoice row lock for settlement; one transaction per command; no network calls inside a transaction.
+- Payment matching: bill code plus exact amount plus PENDING status; anything else is MISMATCH or UNMATCHED and raises an alert; duplicates are acknowledged and ignored.
+- Room status transitions live in one function; OVERDUE is derived, not stored.
+- Sensitive fields (ID number, bank account number) are encrypted through the crypto port and never logged.
+
+## Go rules
+
+Follow docs/10 §4.2. Notably: `ctx` first, wrap errors with `%w`, typed errors mapped in one place, no `panic` outside `main`, small consumer-side interfaces, table-driven tests, `goleak` on long-running components, no package named `util` or `common`.
+
+## Tests
+
+Names end with the story and criterion, for example `TestCheckIn_RoomNotVacant_SG203_AC2`. Fakes over mocks; injected clock and id generator. Integration tests create their own tenant in a Testcontainers PostgreSQL. Provider contract tests validate real responses against `contracts/openapi.yaml`. Pricing tests read the golden file; property tests print their seed on failure. Coverage gates: docs/08 §3.

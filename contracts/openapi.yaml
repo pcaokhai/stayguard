@@ -1,0 +1,1082 @@
+openapi: 3.1.0
+info:
+  title: StayGuard API
+  version: 1.0.0
+  summary: Anti-loss guesthouse management API (demo scope plus marked full-product endpoints).
+  description: |
+    Contract-first source of truth. Prose companion: docs/04-api-contract.md.
+    Money is a whole number of VND. Times are RFC 3339 with offset. The API returns codes and
+    structured values, never display text; the web app translates.
+    Extensions: `x-story` (owning story), `x-access` (minimum building access on the target
+    building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: /
+    description: Same origin (the Go binary serves both the API and the web app)
+security:
+  - bearerAuth: []
+tags:
+  - {name: Session}
+  - {name: Rooms}
+  - {name: Stays}
+  - {name: Payments}
+  - {name: Housekeeping}
+  - {name: Owner}
+  - {name: Shifts}
+  - {name: Ops}
+paths:
+  /v1/demo/sessions:
+    post:
+      tags: [Session]
+      operationId: createDemoSession
+      summary: Start a trial session for a role (demo mode only)
+      description: Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP.
+      security: []
+      x-story: SG-102
+      x-release: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateDemoSessionRequest'}
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Session'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+        '429': {$ref: '#/components/responses/TooManyRequests'}
+  /v1/me:
+    get:
+      tags: [Session]
+      operationId: getMe
+      summary: Current user, tenant and building access
+      x-story: SG-102
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/locale:
+    put:
+      tags: [Session]
+      operationId: setMyLocale
+      summary: Save the caller's preferred language
+      x-story: SG-102
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [locale]
+              properties:
+                locale: {$ref: '#/components/schemas/Locale'}
+      responses:
+        '204': {description: Saved}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/buildings:
+    get:
+      tags: [Rooms]
+      operationId: listBuildings
+      summary: Buildings the caller may see, with status counters
+      description: Buildings with access NONE are omitted.
+      x-story: SG-201
+      x-access: VIEW
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Building'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/buildings/{buildingId}/rooms:
+    get:
+      tags: [Rooms]
+      operationId: listRooms
+      summary: Rooms of a building with status and active stay summary
+      description: Bounded by domain size (at most 200 rooms per building), so not paginated.
+      x-story: SG-201
+      x-access: VIEW
+      parameters:
+        - {$ref: '#/components/parameters/BuildingId'}
+        - name: status
+          in: query
+          required: false
+          schema: {$ref: '#/components/schemas/RoomStatus'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Room'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/rooms/{roomId}:
+    get:
+      tags: [Rooms]
+      operationId: getRoom
+      summary: One room with its active stay summary
+      x-story: SG-201
+      x-access: VIEW
+      parameters:
+        - {$ref: '#/components/parameters/RoomId'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Room'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/services:
+    get:
+      tags: [Stays]
+      operationId: listServices
+      summary: Extras catalogue (drinks, food, towels) with stock
+      x-story: SG-205
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Service'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/rooms/{roomId}/stays:
+    post:
+      tags: [Stays]
+      operationId: createStay
+      summary: Check a guest into a vacant room
+      description: The server records check-in time; clients cannot supply it.
+      x-story: SG-203
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/RoomId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateStayRequest'}
+      responses:
+        '201':
+          description: Stay created; room is now OCCUPIED
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stay'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/stays/{stayId}:
+    get:
+      tags: [Stays]
+      operationId: getStay
+      summary: Stay with a live running total
+      x-story: SG-203
+      x-access: VIEW
+      parameters:
+        - {$ref: '#/components/parameters/StayId'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stay'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/stays/{stayId}/extras:
+    post:
+      tags: [Stays]
+      operationId: addStayExtras
+      summary: Add extras to an active stay
+      x-story: SG-205
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/StayId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AddExtrasRequest'}
+      responses:
+        '200':
+          description: Updated stay
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stay'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/stays/{stayId}/checkout:
+    post:
+      tags: [Stays]
+      operationId: checkoutStay
+      summary: End the stay and produce the final invoice
+      description: The server records check-out time. Repeating the request returns the same invoice.
+      x-story: SG-205
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/StayId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '201':
+          description: Invoice created; room is now TO_CLEAN once paid
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Invoice'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/invoices/{invoiceId}/payments:
+    post:
+      tags: [Payments]
+      operationId: createPayment
+      summary: Start a cash or bank-transfer payment for an invoice
+      description: |
+        TRANSFER returns a QR payload for the exact amount, always for the tenant's own account.
+        CASH is recorded on the caller's open shift.
+      x-story: SG-301
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/InvoiceId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreatePaymentRequest'}
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/payments/{paymentId}:
+    get:
+      tags: [Payments]
+      operationId: getPayment
+      summary: Payment status (polling fallback for the event stream)
+      x-story: SG-301
+      x-access: VIEW
+      parameters:
+        - {$ref: '#/components/parameters/PaymentId'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/payments/{paymentId}/events:
+    get:
+      tags: [Payments]
+      operationId: streamPaymentEvents
+      summary: Server-Sent Events for one payment
+      description: |
+        Event payload schema: contracts/events/payment-events.schema.json. The stream sends the
+        current state first, then changes, and closes after a terminal state. Supports Last-Event-ID.
+      x-story: SG-302
+      x-access: VIEW
+      parameters:
+        - {$ref: '#/components/parameters/PaymentId'}
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: {type: string}
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema: {type: string}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/demo/payments/{paymentId}/simulate:
+    post:
+      tags: [Payments]
+      operationId: simulatePaymentReceived
+      summary: Simulate the bank reporting the money as received (demo mode only)
+      description: |
+        Returns 404 unless DEMO_MODE is enabled. Creates a payment event exactly like the real
+        webhook and runs the same handler.
+      x-story: SG-302
+      x-access: EDIT
+      x-release: demo
+      parameters:
+        - {$ref: '#/components/parameters/PaymentId'}
+      responses:
+        '200':
+          description: Handler result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/webhooks/bank:
+    post:
+      tags: [Payments]
+      operationId: receiveBankWebhook
+      summary: Bank or reconciliation-provider webhook (full product)
+      description: |
+        Authenticated by an HMAC signature header, not a bearer token. The handler checks the
+        signature, deduplicates on externalId, matches referenceCode and amount, then settles.
+      security: [{webhookSignature: []}]
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BankWebhookPayload'}
+      responses:
+        '202': {description: Accepted (also returned for duplicates)}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/housekeeping/tasks:
+    get:
+      tags: [Housekeeping]
+      operationId: listHousekeepingTasks
+      summary: Rooms waiting to be cleaned in buildings the caller may edit or view
+      x-story: SG-401
+      x-access: VIEW
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/HousekeepingTask'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/housekeeping/tasks/{taskId}/complete:
+    post:
+      tags: [Housekeeping]
+      operationId: completeHousekeepingTask
+      summary: Mark a room clean; the room becomes VACANT
+      x-story: SG-401
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/TaskId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HousekeepingTask'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/rooms/{roomId}/usage-reports:
+    post:
+      tags: [Housekeeping]
+      operationId: reportRoomUsage
+      summary: Report a room that looks used but has no active stay
+      description: Creates an owner alert.
+      x-story: SG-401
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/RoomId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                note: {type: string, maxLength: 500}
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Alert'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/owner/overview:
+    get:
+      tags: [Owner]
+      operationId: getOwnerOverview
+      summary: Revenue, cash expected, occupancy, alerts and latest payments for a day
+      x-story: SG-403
+      x-access: OWNER
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Tenant-local date; defaults to today.
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerOverview'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/owner/staff-permissions:
+    get:
+      tags: [Owner]
+      operationId: listStaffPermissions
+      summary: Every staff member with their access level per building
+      x-story: SG-501
+      x-access: OWNER
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/StaffPermission'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/owner/staff/{userId}/building-permissions/{buildingId}:
+    put:
+      tags: [Owner]
+      operationId: setBuildingPermission
+      summary: Grant, change or revoke one staff member's access to one building
+      description: Takes effect immediately and is recorded in the audit log.
+      x-story: SG-501
+      x-access: OWNER
+      parameters:
+        - {$ref: '#/components/parameters/UserId'}
+        - {$ref: '#/components/parameters/BuildingId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [level]
+              properties:
+                level: {$ref: '#/components/schemas/PermissionLevel'}
+      responses:
+        '200':
+          description: Updated permission row
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BuildingAccess'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/shifts/current:
+    get:
+      tags: [Shifts]
+      operationId: getCurrentShift
+      summary: The caller's open shift with the cash the system expects
+      x-story: SG-503
+      x-access: EDIT
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Shift'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/shifts/current/close:
+    post:
+      tags: [Shifts]
+      operationId: closeShift
+      summary: Close the caller's shift with a counted cash total
+      description: A reason is required when counted cash differs from expected cash. Figures lock on close.
+      x-story: SG-503
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CloseShiftRequest'}
+      responses:
+        '200':
+          description: Closed shift
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ShiftReview'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/shifts/current/payouts:
+    post:
+      tags: [Shifts]
+      operationId: recordCashPayout
+      summary: Record cash paid out of the drawer during the shift (for example ice)
+      x-story: SG-503
+      x-access: EDIT
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CashPayoutRequest'}
+      responses:
+        '200':
+          description: Updated shift
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Shift'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /v1/owner/shifts/{shiftId}:
+    get:
+      tags: [Owner]
+      operationId: getShiftReview
+      summary: Reconciliation detail of a closed shift
+      x-story: SG-503
+      x-access: OWNER
+      parameters:
+        - {$ref: '#/components/parameters/ShiftId'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ShiftReview'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /healthz:
+    get:
+      tags: [Ops]
+      operationId: getHealth
+      summary: Liveness
+      security: []
+      x-story: SG-001
+      responses:
+        '200': {description: Process is up}
+  /readyz:
+    get:
+      tags: [Ops]
+      operationId: getReadiness
+      summary: Readiness (database reachable, migrations applied)
+      security: []
+      x-story: SG-003
+      responses:
+        '200': {description: Ready}
+        '503': {description: Not ready}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, description: Opaque session token}
+    webhookSignature: {type: apiKey, in: header, name: X-Signature, description: HMAC of the raw body}
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
+      schema: {type: string, format: uuid}
+    BuildingId: {name: buildingId, in: path, required: true, schema: {type: string, minLength: 1}}
+    RoomId: {name: roomId, in: path, required: true, schema: {type: string, minLength: 1}}
+    StayId: {name: stayId, in: path, required: true, schema: {type: string, minLength: 1}}
+    InvoiceId: {name: invoiceId, in: path, required: true, schema: {type: string, minLength: 1}}
+    PaymentId: {name: paymentId, in: path, required: true, schema: {type: string, minLength: 1}}
+    TaskId: {name: taskId, in: path, required: true, schema: {type: string, minLength: 1}}
+    UserId: {name: userId, in: path, required: true, schema: {type: string, minLength: 1}}
+    ShiftId: {name: shiftId, in: path, required: true, schema: {type: string, minLength: 1}}
+  responses:
+    Unauthorized:
+      description: Missing or expired credentials
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Forbidden:
+      description: Authenticated but not allowed (for example BUILDING_FORBIDDEN)
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    NotFound:
+      description: Not found, or not visible to this tenant
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Conflict:
+      description: State conflict or idempotency-key reuse
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Unprocessable:
+      description: Validation failed
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After: {schema: {type: integer}}
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: {type: string, description: URI reference identifying the problem type}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        instance: {type: string}
+        code: {type: string, description: 'Stable machine code, e.g. ROOM_NOT_VACANT, BUILDING_FORBIDDEN'}
+        traceId: {type: string}
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code]
+            properties:
+              field: {type: string}
+              code: {type: string}
+    Vnd: {type: integer, format: int64, description: Whole Vietnamese dong}
+    Locale: {type: string, enum: [vi, en]}
+    LocalizedText:
+      type: object
+      required: [vi, en]
+      properties:
+        vi: {type: string}
+        en: {type: string}
+    Role: {type: string, enum: [OWNER, RECEPTIONIST, HOUSEKEEPING]}
+    PermissionLevel: {type: string, enum: [NONE, VIEW, EDIT]}
+    RoomStatus: {type: string, enum: [VACANT, OCCUPIED, OVERDUE, TO_CLEAN, MAINTENANCE]}
+    RentalType: {type: string, enum: [HOURLY, OVERNIGHT, DAILY]}
+    StayStatus: {type: string, enum: [ACTIVE, CHECKED_OUT]}
+    PaymentMethod: {type: string, enum: [CASH, TRANSFER]}
+    PaymentStatus: {type: string, enum: [PENDING, PAID, EXPIRED, MISMATCH]}
+    AlertKind: {type: string, enum: [UNUSED_ROOM_REPORT, STAY_TIME_EDITED, CASH_SHORT, CASH_OVER]}
+    CreateDemoSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [role, locale]
+      properties:
+        role: {$ref: '#/components/schemas/Role'}
+        locale: {$ref: '#/components/schemas/Locale'}
+        tenantId: {type: string, description: Reuse an existing trial tenant so role switches share data}
+    User:
+      type: object
+      required: [id, name, role, locale]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        role: {$ref: '#/components/schemas/Role'}
+        locale: {$ref: '#/components/schemas/Locale'}
+    Session:
+      type: object
+      required: [accessToken, expiresAt, tenantId, user]
+      properties:
+        accessToken: {type: string}
+        expiresAt: {type: string, format: date-time}
+        tenantId: {type: string}
+        user: {$ref: '#/components/schemas/User'}
+    BuildingAccess:
+      type: object
+      required: [buildingId, level]
+      properties:
+        buildingId: {type: string}
+        level: {$ref: '#/components/schemas/PermissionLevel'}
+    Me:
+      type: object
+      required: [user, tenant, buildingAccess]
+      properties:
+        user: {$ref: '#/components/schemas/User'}
+        tenant:
+          type: object
+          required: [id, name, timezone, currency]
+          properties:
+            id: {type: string}
+            name: {type: string}
+            timezone: {type: string}
+            currency: {type: string, const: VND}
+        buildingAccess:
+          type: array
+          items: {$ref: '#/components/schemas/BuildingAccess'}
+    StatusCounts:
+      type: object
+      required: [vacant, occupied, overdue, toClean, maintenance]
+      properties:
+        vacant: {type: integer}
+        occupied: {type: integer}
+        overdue: {type: integer}
+        toClean: {type: integer}
+        maintenance: {type: integer}
+    Building:
+      type: object
+      required: [id, code, name, level, counts]
+      properties:
+        id: {type: string}
+        code: {type: string}
+        name: {type: string}
+        level: {$ref: '#/components/schemas/PermissionLevel'}
+        counts: {$ref: '#/components/schemas/StatusCounts'}
+    StaySummary:
+      type: object
+      required: [id, rentalType, checkInAt, guestName, elapsedMinutes, runningTotal]
+      properties:
+        id: {type: string}
+        rentalType: {$ref: '#/components/schemas/RentalType'}
+        checkInAt: {type: string, format: date-time}
+        guestName: {type: string}
+        elapsedMinutes: {type: integer}
+        runningTotal: {$ref: '#/components/schemas/Vnd'}
+    Room:
+      type: object
+      required: [id, code, buildingId, floor, unitType, status]
+      properties:
+        id: {type: string}
+        code: {type: string}
+        buildingId: {type: string}
+        floor: {type: integer}
+        unitType:
+          type: object
+          required: [code, name]
+          properties:
+            code: {type: string}
+            name: {$ref: '#/components/schemas/LocalizedText'}
+        status: {$ref: '#/components/schemas/RoomStatus'}
+        note: {type: [string, 'null'], description: Free text such as a maintenance reason}
+        activeStay:
+          oneOf:
+            - {$ref: '#/components/schemas/StaySummary'}
+            - {type: 'null'}
+    Service:
+      type: object
+      required: [code, name, price, stock]
+      properties:
+        code: {type: string}
+        name: {$ref: '#/components/schemas/LocalizedText'}
+        price: {$ref: '#/components/schemas/Vnd'}
+        stock: {type: integer, minimum: 0}
+    CreateStayRequest:
+      type: object
+      additionalProperties: false
+      required: [rentalType, guestName, guestPhone, deposit]
+      properties:
+        rentalType: {$ref: '#/components/schemas/RentalType'}
+        guestName: {type: string, minLength: 1, maxLength: 120}
+        guestPhone: {type: string, minLength: 6, maxLength: 20}
+        idNumber: {type: [string, 'null'], maxLength: 20, description: Optional national ID; encrypted at rest, never returned in full}
+        deposit: {$ref: '#/components/schemas/Vnd'}
+    BillLine:
+      type: object
+      required: [code, quantity, unitAmount, amount]
+      properties:
+        code: {type: string, description: 'Pricing line code, e.g. FIRST_HOUR, EXTRA_HOUR, OVERNIGHT, DAILY'}
+        quantity: {type: integer, minimum: 1}
+        unitAmount: {$ref: '#/components/schemas/Vnd'}
+        amount: {$ref: '#/components/schemas/Vnd'}
+    ExtraLine:
+      type: object
+      required: [serviceCode, name, quantity, unitAmount, amount]
+      properties:
+        serviceCode: {type: string}
+        name: {$ref: '#/components/schemas/LocalizedText'}
+        quantity: {type: integer, minimum: 1}
+        unitAmount: {$ref: '#/components/schemas/Vnd'}
+        amount: {$ref: '#/components/schemas/Vnd'}
+    Quote:
+      type: object
+      required: [asOf, stayAmount, extrasAmount, total, depositPaid, balanceDue, refundDue, capped, lines]
+      properties:
+        asOf: {type: string, format: date-time}
+        stayAmount: {$ref: '#/components/schemas/Vnd'}
+        extrasAmount: {$ref: '#/components/schemas/Vnd'}
+        total: {$ref: '#/components/schemas/Vnd'}
+        depositPaid: {$ref: '#/components/schemas/Vnd'}
+        balanceDue: {$ref: '#/components/schemas/Vnd'}
+        refundDue: {$ref: '#/components/schemas/Vnd'}
+        capped: {type: boolean}
+        lines:
+          type: array
+          items: {$ref: '#/components/schemas/BillLine'}
+    Stay:
+      type: object
+      required: [id, roomId, roomCode, rentalType, status, checkInAt, guestName, guestPhone, deposit, extras, quote, pricingVersion]
+      properties:
+        id: {type: string}
+        roomId: {type: string}
+        roomCode: {type: string}
+        rentalType: {$ref: '#/components/schemas/RentalType'}
+        status: {$ref: '#/components/schemas/StayStatus'}
+        checkInAt: {type: string, format: date-time}
+        checkOutAt: {type: [string, 'null'], format: date-time}
+        guestName: {type: string}
+        guestPhone: {type: string}
+        idNumberMasked: {type: [string, 'null']}
+        deposit: {$ref: '#/components/schemas/Vnd'}
+        extras:
+          type: array
+          items: {$ref: '#/components/schemas/ExtraLine'}
+        quote: {$ref: '#/components/schemas/Quote'}
+        pricingVersion: {type: integer, description: Rate plan version snapshotted at check-in}
+    AddExtrasRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [serviceCode, quantity]
+            properties:
+              serviceCode: {type: string}
+              quantity: {type: integer, minimum: 1, maximum: 99}
+    Invoice:
+      type: object
+      required: [id, stayId, roomCode, status, createdAt, quote]
+      properties:
+        id: {type: string}
+        stayId: {type: string}
+        roomCode: {type: string}
+        billCode: {type: string, description: 'Short reference such as PH0930A101, used as the transfer note'}
+        status: {type: string, enum: [OPEN, PAID]}
+        createdAt: {type: string, format: date-time}
+        quote: {$ref: '#/components/schemas/Quote'}
+    CreatePaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [method]
+      properties:
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+    PaymentQr:
+      type: object
+      required: [payload, accountNoMasked, accountName, transferNote, amount]
+      properties:
+        payload: {type: string, description: VietQR (EMVCo) string; the client renders it as a QR image}
+        accountNoMasked: {type: string}
+        accountName: {type: string}
+        transferNote: {type: string}
+        amount: {$ref: '#/components/schemas/Vnd'}
+    Payment:
+      type: object
+      required: [id, invoiceId, method, status, amount]
+      properties:
+        id: {type: string}
+        invoiceId: {type: string}
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        status: {$ref: '#/components/schemas/PaymentStatus'}
+        amount: {$ref: '#/components/schemas/Vnd'}
+        receivedAmount: {oneOf: [{$ref: '#/components/schemas/Vnd'}, {type: 'null'}]}
+        paidAt: {type: [string, 'null'], format: date-time}
+        transactionId: {type: [string, 'null']}
+        qr:
+          oneOf:
+            - {$ref: '#/components/schemas/PaymentQr'}
+            - {type: 'null'}
+    BankWebhookPayload:
+      type: object
+      additionalProperties: false
+      required: [externalId, amount, content, receivedAt]
+      properties:
+        externalId: {type: string, description: Provider transaction id; deduplication key}
+        amount: {$ref: '#/components/schemas/Vnd'}
+        content: {type: string, description: Transfer note as typed by the payer}
+        receivedAt: {type: string, format: date-time}
+    HousekeepingTask:
+      type: object
+      required: [id, roomId, roomCode, buildingId, status, createdAt]
+      properties:
+        id: {type: string}
+        roomId: {type: string}
+        roomCode: {type: string}
+        buildingId: {type: string}
+        status: {type: string, enum: [OPEN, DONE]}
+        createdAt: {type: string, format: date-time, description: Time the previous guest checked out}
+        completedAt: {type: [string, 'null'], format: date-time}
+    Alert:
+      type: object
+      required: [id, kind, createdAt]
+      properties:
+        id: {type: string}
+        kind: {$ref: '#/components/schemas/AlertKind'}
+        createdAt: {type: string, format: date-time}
+        roomCode: {type: [string, 'null']}
+        shiftId: {type: [string, 'null']}
+        stayId: {type: [string, 'null']}
+        actorName: {type: [string, 'null']}
+        amount: {oneOf: [{$ref: '#/components/schemas/Vnd'}, {type: 'null'}]}
+        details:
+          type: object
+          additionalProperties: {type: string}
+          description: Kind-specific values, for example oldTime and newTime
+    PaymentSummary:
+      type: object
+      required: [paymentId, roomCode, method, amount, at]
+      properties:
+        paymentId: {type: string}
+        roomCode: {type: string}
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        amount: {$ref: '#/components/schemas/Vnd'}
+        at: {type: string, format: date-time}
+    OwnerOverview:
+      type: object
+      required: [date, revenueTotal, transfersReceived, cashExpected, byBuilding, occupancy, alerts, latestPayments]
+      properties:
+        date: {type: string, format: date}
+        revenueTotal: {$ref: '#/components/schemas/Vnd'}
+        transfersReceived: {$ref: '#/components/schemas/Vnd'}
+        cashExpected: {$ref: '#/components/schemas/Vnd'}
+        byBuilding:
+          type: array
+          items:
+            type: object
+            required: [buildingId, name, revenue]
+            properties:
+              buildingId: {type: string}
+              name: {type: string}
+              revenue: {$ref: '#/components/schemas/Vnd'}
+        occupancy:
+          type: object
+          required: [occupiedRooms, totalRooms, overdueRooms]
+          properties:
+            occupiedRooms: {type: integer}
+            totalRooms: {type: integer}
+            overdueRooms: {type: integer}
+        alerts:
+          type: array
+          items: {$ref: '#/components/schemas/Alert'}
+        latestPayments:
+          type: array
+          items: {$ref: '#/components/schemas/PaymentSummary'}
+    StaffPermission:
+      type: object
+      required: [userId, name, role, access]
+      properties:
+        userId: {type: string}
+        name: {type: string}
+        role: {$ref: '#/components/schemas/Role'}
+        access:
+          type: array
+          items: {$ref: '#/components/schemas/BuildingAccess'}
+    Shift:
+      type: object
+      required: [id, userId, userName, status, openedAt, openingFloat, cashIn, cashOut, expectedCash, transfersReceived, buildingIds]
+      properties:
+        id: {type: string}
+        userId: {type: string}
+        userName: {type: string}
+        status: {type: string, enum: [OPEN, CLOSED]}
+        openedAt: {type: string, format: date-time}
+        closedAt: {type: [string, 'null'], format: date-time}
+        openingFloat: {$ref: '#/components/schemas/Vnd'}
+        cashIn: {$ref: '#/components/schemas/Vnd'}
+        cashOut: {$ref: '#/components/schemas/Vnd'}
+        expectedCash: {$ref: '#/components/schemas/Vnd'}
+        transfersReceived: {$ref: '#/components/schemas/Vnd'}
+        buildingIds:
+          type: array
+          items: {type: string}
+    CashCount:
+      type: object
+      additionalProperties: false
+      required: [denomination, quantity]
+      properties:
+        denomination: {type: integer, enum: [500000, 200000, 100000, 50000, 20000, 10000]}
+        quantity: {type: integer, minimum: 0}
+    CashPayoutRequest:
+      type: object
+      additionalProperties: false
+      required: [amount, description]
+      properties:
+        amount: {type: integer, minimum: 1}
+        description: {type: string, minLength: 1, maxLength: 200}
+    CloseShiftRequest:
+      type: object
+      additionalProperties: false
+      required: [counts, floatLeft]
+      properties:
+        counts:
+          type: array
+          items: {$ref: '#/components/schemas/CashCount'}
+        reason: {type: [string, 'null'], maxLength: 500, description: Required when counted cash differs from expected cash}
+        handoverToUserId: {type: [string, 'null']}
+        floatLeft: {$ref: '#/components/schemas/Vnd'}
+    ShiftReview:
+      type: object
+      required: [shift, countedCash, difference, cashPayments, staffHistory]
+      properties:
+        shift: {$ref: '#/components/schemas/Shift'}
+        countedCash: {$ref: '#/components/schemas/Vnd'}
+        difference: {$ref: '#/components/schemas/Vnd'}
+        reason: {type: [string, 'null']}
+        reasonRecordedAt: {type: [string, 'null'], format: date-time}
+        cashPayments:
+          type: array
+          items:
+            type: object
+            required: [roomCode, rentalType, at, amount]
+            properties:
+              roomCode: {type: string}
+              rentalType: {$ref: '#/components/schemas/RentalType'}
+              at: {type: string, format: date-time}
+              amount: {$ref: '#/components/schemas/Vnd'}
+        staffHistory:
+          type: object
+          required: [shiftsWithDifference, totalShort]
+          properties:
+            shiftsWithDifference: {type: integer, description: Shifts with a non-zero difference in the current month}
+            totalShort: {$ref: '#/components/schemas/Vnd'}

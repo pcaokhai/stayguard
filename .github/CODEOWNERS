@@ -1,0 +1,8 @@
+# Lane ownership (ADR-001). Every path needs the tech lead's review.
+/api/          @pcaokhai
+/web/          @pcaokhai
+/contracts/    @pcaokhai
+/deploy/       @pcaokhai
+/docs/         @pcaokhai
+/.github/      @pcaokhai
+/CLAUDE.md     @pcaokhai

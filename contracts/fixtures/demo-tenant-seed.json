@@ -1,0 +1,228 @@
+{
+  "$comment": "Test data only. Copied into a new trial tenant by story SG-601. No real people, accounts or ID numbers.",
+  "tenant": {
+    "name": "Riverside Guesthouse",
+    "defaultLocale": "vi",
+    "currency": "VND",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "bankAccount": {
+      "bankBin": "970000",
+      "accountNo": "0000000000",
+      "accountName": "RIVERSIDE GUESTHOUSE"
+    }
+  },
+  "buildings": [
+    {
+      "code": "A",
+      "name": "Building A",
+      "floors": 3,
+      "roomsPerFloor": 6
+    },
+    {
+      "code": "B",
+      "name": "Building B",
+      "floors": 3,
+      "roomsPerFloor": [
+        6,
+        6,
+        5
+      ]
+    }
+  ],
+  "unitTypes": [
+    {
+      "code": "STANDARD",
+      "name": {
+        "vi": "Phòng thường",
+        "en": "Standard"
+      },
+      "ratePlan": {
+        "version": 1,
+        "currency": "VND",
+        "graceMinutes": 15,
+        "hourly": {
+          "firstHour": 80000,
+          "extraHour": 20000
+        },
+        "overnight": {
+          "price": 200000,
+          "windowStart": "21:00",
+          "windowEnd": "12:00"
+        },
+        "daily": {
+          "price": 300000,
+          "windowStart": "14:00",
+          "windowEnd": "12:00"
+        }
+      }
+    },
+    {
+      "code": "VIP",
+      "name": {
+        "vi": "VIP",
+        "en": "VIP"
+      },
+      "ratePlan": {
+        "version": 1,
+        "currency": "VND",
+        "graceMinutes": 15,
+        "hourly": {
+          "firstHour": 120000,
+          "extraHour": 30000
+        },
+        "overnight": {
+          "price": 300000,
+          "windowStart": "21:00",
+          "windowEnd": "12:00"
+        },
+        "daily": {
+          "price": 450000,
+          "windowStart": "14:00",
+          "windowEnd": "12:00"
+        }
+      }
+    }
+  ],
+  "services": [
+    {
+      "code": "WATER",
+      "name": {
+        "vi": "Nước suối",
+        "en": "Still water"
+      },
+      "price": 10000,
+      "stock": 46
+    },
+    {
+      "code": "SODA",
+      "name": {
+        "vi": "Nước ngọt",
+        "en": "Soft drink"
+      },
+      "price": 15000,
+      "stock": 30
+    },
+    {
+      "code": "BEER",
+      "name": {
+        "vi": "Bia lon",
+        "en": "Canned beer"
+      },
+      "price": 20000,
+      "stock": 24
+    },
+    {
+      "code": "NOODLE",
+      "name": {
+        "vi": "Mì ly",
+        "en": "Cup noodles"
+      },
+      "price": 15000,
+      "stock": 18
+    },
+    {
+      "code": "TOWEL",
+      "name": {
+        "vi": "Khăn tắm thêm",
+        "en": "Extra bath towel"
+      },
+      "price": 10000,
+      "stock": 12
+    }
+  ],
+  "users": [
+    {
+      "key": "owner",
+      "name": "Demo Owner",
+      "role": "OWNER",
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "EDIT"
+      }
+    },
+    {
+      "key": "frontdesk",
+      "name": "Demo Receptionist",
+      "role": "RECEPTIONIST",
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "VIEW"
+      }
+    },
+    {
+      "key": "hoa",
+      "name": "Hoa",
+      "role": "RECEPTIONIST",
+      "buildingAccess": {
+        "A": "NONE",
+        "B": "EDIT"
+      }
+    },
+    {
+      "key": "minh",
+      "name": "Minh",
+      "role": "RECEPTIONIST",
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "EDIT"
+      }
+    },
+    {
+      "key": "lan",
+      "name": "Lan",
+      "role": "HOUSEKEEPING",
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "EDIT"
+      }
+    }
+  ],
+  "sampleOccupancy": {
+    "occupiedHourly": [
+      "A101",
+      "A202",
+      "A206",
+      "A303",
+      "B102",
+      "B203",
+      "B302"
+    ],
+    "occupiedDaily": [
+      "A104",
+      "A305",
+      "B106"
+    ],
+    "overdueDaily": [
+      "A201"
+    ],
+    "toClean": [
+      "A103",
+      "A302",
+      "B104",
+      "B206"
+    ],
+    "maintenance": [
+      "A205"
+    ]
+  },
+  "sampleAlerts": [
+    {
+      "kind": "STAY_TIME_EDITED",
+      "roomCode": "A202",
+      "actor": "frontdesk",
+      "details": {
+        "oldTime": "12:50",
+        "newTime": "13:10",
+        "reason": "typo"
+      }
+    },
+    {
+      "kind": "UNUSED_ROOM_REPORT",
+      "roomCode": "A205",
+      "actor": "lan",
+      "details": {
+        "note": "Room marked maintenance but looks used"
+      }
+    }
+  ]
+}
