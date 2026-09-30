@@ -8,9 +8,10 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(log *slog.Logger) http.Handler {
+func NewRouter(log *slog.Logger, staticDir string) http.Handler {
 	r := chi.NewRouter()
 	r.Use(requestLog(log))
 	r.Get("/healthz", healthz)
+	r.NotFound(staticHandler(staticDir).ServeHTTP)
 	return r
 }

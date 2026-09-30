@@ -10,7 +10,11 @@ import (
 )
 
 func newTestRouter(buf *bytes.Buffer) http.Handler {
-	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)))
+	return newTestRouterDir(buf, "")
+}
+
+func newTestRouterDir(buf *bytes.Buffer, dir string) http.Handler {
+	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)), dir)
 }
 
 func TestHealthz_SG001_AC2(t *testing.T) {
