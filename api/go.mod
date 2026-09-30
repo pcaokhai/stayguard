@@ -1,4 +1,4 @@
-module stayguard/api
+module github.com/pcaokhai/stayguard/api
 
 go 1.27.1
 

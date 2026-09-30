@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	httpadapter "stayguard/api/internal/adapter/http"
-	"stayguard/api/internal/platform/config"
+	httpadapter "github.com/pcaokhai/stayguard/api/internal/adapter/http"
+	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
 const (
