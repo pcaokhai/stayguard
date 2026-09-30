@@ -21,7 +21,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 
 | ID | Title | Lane | Pts | Sprint | Status | Branch or PR | Flag | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| SG-001 | Repository scaffold, tooling and CI | PLAT | 3 | 0 | Backlog | | | |
+| SG-001 | Repository scaffold, tooling and CI | PLAT | 3 | 0 | In review | feat/SG-001-scaffold | | CI proof pending push |
 | SG-002 | Contract pipeline | PLAT | 3 | 0 | Backlog | | | OpenAPI 3.1 generator spike (R-14) |
 | SG-003 | Database foundation | API | 3 | 0 | Backlog | | | |
 | SG-004 | Web foundation | WEB | 2 | 0 | Backlog | | | Static-export i18n spike (A-06) |
