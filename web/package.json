@@ -1,0 +1,27 @@
+{
+  "name": "stayguard-web",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "fmt": "prettier --write ."
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}
