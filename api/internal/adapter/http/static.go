@@ -11,8 +11,8 @@ import (
 const (
 	indexPage    = "index.html"
 	notFoundPage = "404.html"
-	// apiPrefix paths belong to the API; an unknown one must 404, never return web HTML.
-	apiPrefix = "/v1/"
+	// apiRoot and everything under it belong to the API; it must 404, never return web HTML.
+	apiRoot = "/v1"
 )
 
 // staticHandler serves the Next.js export. os.DirFS refuses ".." so requests cannot
@@ -22,7 +22,7 @@ const (
 func staticHandler(dir string) http.Handler {
 	fsys := os.DirFS(dir)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if (r.Method != http.MethodGet && r.Method != http.MethodHead) || strings.HasPrefix(r.URL.Path, apiPrefix) {
+		if (r.Method != http.MethodGet && r.Method != http.MethodHead) || isAPIPath(r.URL.Path) {
 			http.NotFound(w, r)
 			return
 		}
@@ -53,4 +53,8 @@ func candidates(name string) []string {
 func isFile(fsys fs.FS, name string) bool {
 	info, err := fs.Stat(fsys, name)
 	return err == nil && info.Mode().IsRegular()
+}
+
+func isAPIPath(p string) bool {
+	return p == apiRoot || strings.HasPrefix(p, apiRoot+"/")
 }

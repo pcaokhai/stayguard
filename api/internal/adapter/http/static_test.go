@@ -60,8 +60,10 @@ func TestStaticDoesNotShadowHealthzOrAPI_SG001_AC3(t *testing.T) {
 	if rec := get(h, "/healthz"); rec.Body.String() != `{"status":"ok"}` {
 		t.Errorf("healthz shadowed: %q", rec.Body.String())
 	}
-	if rec := get(h, "/v1/stays"); rec.Code != 404 || rec.Body.String() == "INDEX" {
-		t.Errorf("api path served web: code=%d body=%q", rec.Code, rec.Body.String())
+	for _, p := range []string{"/v1", "/v1/", "/v1/stays"} {
+		if rec := get(h, p); rec.Code != 404 || rec.Body.String() == "INDEX" {
+			t.Errorf("%s served web: code=%d body=%q", p, rec.Code, rec.Body.String())
+		}
 	}
 }
 
@@ -69,8 +71,9 @@ func TestStaticRejectsTraversal_SG001_AC3(t *testing.T) {
 	parent := webDir(t, map[string]string{"secret.txt": "SECRET", "web/index.html": "INDEX"})
 	h := newTestRouterDir(&bytes.Buffer{}, filepath.Join(parent, "web"))
 	for _, p := range []string{"/../secret.txt", "/%2e%2e/secret.txt"} {
-		if rec := get(h, p); rec.Body.String() == "SECRET" {
-			t.Errorf("%s escaped static dir", p)
+		rec := get(h, p)
+		if rec.Code != 400 && rec.Code != 404 && rec.Body.String() != "INDEX" {
+			t.Errorf("%s: want 400, 404 or index, got code=%d body=%q", p, rec.Code, rec.Body.String())
 		}
 	}
 }

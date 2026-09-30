@@ -23,7 +23,8 @@ const (
 	readTimeout       = 15 * time.Second
 	writeTimeout      = 30 * time.Second
 	idleTimeout       = 60 * time.Second
-	shutdownTimeout   = 10 * time.Second // Cloud Run gives 10 s after SIGTERM
+	// Cloud Run sends SIGKILL 10 s after SIGTERM; stop waiting at 8 s so we exit cleanly first.
+	shutdownTimeout = 8 * time.Second
 )
 
 func main() {
