@@ -1,7 +1,7 @@
 # StayGuard task runner. Targets not yet built print the story that adds them and fail.
 COMPOSE := docker compose -f deploy/compose.yaml
 
-.PHONY: up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web gen contracts migrate e2e
+.PHONY: up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
 
 up:
 	$(COMPOSE) up --build
@@ -40,6 +40,14 @@ fmt-api:
 fmt-web:
 	$(need_web)
 	cd web && npm run fmt
+
+# go-licenses v2.0.1 is run pinned via `go run`; the npm check is scripts/check-npm-licenses.js (no extra tool).
+ALLOWED_LICENSES := Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0
+
+licenses:
+	$(need_web)
+	cd api && go run github.com/google/go-licenses/v2@v2.0.1 check ./... --ignore github.com/pcaokhai/stayguard --allowed_licenses=$(ALLOWED_LICENSES)
+	cd web && node ../scripts/check-npm-licenses.js
 
 define not_yet
 	@echo "not yet: story $(1) adds '$@'" >&2; exit 1
