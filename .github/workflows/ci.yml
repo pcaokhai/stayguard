@@ -37,6 +37,23 @@ jobs:
         working-directory: web
       - run: npm run lint
         working-directory: web
+      - name: gofmt
+        run: test -z "$(gofmt -l api)"
+      - name: prettier
+        run: npx prettier --check .
+        working-directory: web
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install gitleaks (checksum-verified)
+        run: scripts/install-gitleaks.sh
+      - run: echo "$PWD" >> "$GITHUB_PATH"
+      - run: scripts/test-makefile.sh
+      - run: scripts/check-pinning.sh
+      - run: scripts/check-claude-deny.sh
+      - run: scripts/test-secret-scan.sh
 
   test-api:
     runs-on: ubuntu-latest
@@ -71,11 +88,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install gitleaks (checksum-verified)
-        run: |
-          f="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -fsSL -o "$f" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$f"
-          echo "${GITLEAKS_SHA256}  $f" | sha256sum -c -
-          tar -xzf "$f" gitleaks
+        run: scripts/install-gitleaks.sh
       - name: Scan full history
         run: ./gitleaks git --redact --verbose .
 

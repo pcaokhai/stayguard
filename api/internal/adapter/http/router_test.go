@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func newTestRouter(buf *bytes.Buffer) http.Handler {
@@ -61,5 +63,22 @@ func TestRequestLogInvalidTraceID_SG001_AC2(t *testing.T) {
 	_ = json.Unmarshal(buf.Bytes(), &line)
 	if id, _ := line["trace_id"].(string); id == "" || id == "bad id\"{" {
 		t.Errorf("trace_id not regenerated: %v", line["trace_id"])
+	}
+}
+
+func TestPanicRecovered_SG001_AC2(t *testing.T) {
+	var buf bytes.Buffer
+	r := chi.NewRouter()
+	useBaseMiddleware(r, slog.New(slog.NewJSONHandler(&buf, nil)))
+	r.Get("/boom", func(http.ResponseWriter, *http.Request) { panic("boom") })
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest("GET", "/boom", nil))
+
+	var line map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
+		t.Fatalf("no request log line after panic: %q", buf.String())
+	}
+	if rec.Code != 500 || line["status"] != float64(500) {
+		t.Errorf("code=%d logged status=%v", rec.Code, line["status"])
 	}
 }

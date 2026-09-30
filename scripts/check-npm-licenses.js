@@ -10,14 +10,15 @@ const dirs = new Set(execSync("npm ls --omit=dev --all --parseable", { maxBuffer
 
 // Reviewed exceptions (owner decision pending, see SG-001 task-C report): sharp is Next's optional image
 // optimiser (LGPL libvips binaries, unused by a static export); caniuse-lite is CC-BY-4.0 browser data.
-const EXCEPT = /^(sharp-.*|caniuse-lite)$/;
+// Matched against the full package name (scope included), not the folder basename.
+const EXCEPT = /^(@img\/sharp-(libvips-.+|wasm32)|caniuse-lite)$/;
 
 // An SPDX "OR" expression is fine when any alternative is allowed.
 const ok = (l) => l.replace(/[()]/g, "").split(/\s+OR\s+/).some((x) => ALLOWED.has(x.trim()));
 let bad = 0;
 for (const dir of dirs) {
-  const name = path.basename(dir);
   const pj = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+  const name = pj.name;
   const lic = typeof pj.license === "string" ? pj.license : (pj.license && pj.license.type) || "UNKNOWN";
   if (!ok(lic) && !EXCEPT.test(name)) { console.error(`${name}@${pj.version}: ${lic}`); bad = 1; }
 }

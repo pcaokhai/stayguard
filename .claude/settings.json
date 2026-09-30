@@ -12,6 +12,8 @@
       "Read(./api/internal/**/gen/**)",
       "Read(**/*.lock)",
       "Read(**/package-lock.json)",
+      "Read(**/go.sum)",
+      "Read(**/.env*)",
       "Read(./contracts/pricing/golden-cases.json)"
     ]
   }
