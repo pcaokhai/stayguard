@@ -25,7 +25,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | SG-002 | Contract pipeline | PLAT | 3 | 0 | Merged (flag off) | PR #7, 09be60f | | R-14: 3.1 kept, orval for mocks; AC4 CI proof: run 36813246897; PR size above 400 accepted by tech lead; follow-up contracts PR: x-story on POST /v1/webhooks/bank; MSW worker not yet checked in a real browser |
 | SG-003 | Database foundation | API | 3 | 0 | Merged (flag off) | PR #10, 1cf214b | none | CI green incl. -race; PR size above 400 accepted by tech lead; owned follow-ups in plan Ruling 11 |
 | SG-004 | Web foundation | WEB | 2 | 0 | Backlog | | | Static-export i18n spike (A-06) |
-| SG-101 | Pricing engine | API | 5 | 0 | In review | PR A (money + rate plan); PR B (engine) follows | | Needs A-01 answer if available |
+| SG-101 | Pricing engine | API | 5 | 0 | In review | PR #18 (3e3a60c) money + rate plan merged; PR B (engine) in review | | Needs A-01 answer if available |
 | SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Merged (flag off) | PR #12, 828feca | none | CI green; PR size above 400 (one PR chosen by tech lead); DEMO_MODE off in public deploys until SG-601; follow-ups in plan Rulings 7 and 8 |
 | SG-202 | Room map screen | WEB | 3 | 0 | Backlog | | FF_S1_ROOM_MAP | |
 | SG-201 | Rooms and buildings read API | API | 2 | 1 | Merged (flag off) | PR #15 (b4086ac), PR #16 (8143aff) | FF_S1_ROOM_MAP | Two PRs chosen by tech lead; both over 400 lines; keep flag off until SG-101 binds pricing (occupied rooms return 503 PRICING_UNAVAILABLE); AC5 p95 about 6.4 ms; follow-ups in plan Rulings 7 and 8 |
