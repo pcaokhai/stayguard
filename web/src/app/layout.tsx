@@ -10,6 +10,8 @@ const font = Be_Vietnam_Pro({
   weight: ["400", "600", "700"],
   variable: "--font-be-vietnam-pro",
   display: "swap",
+  // 2 subsets x 3 weights = 6 preloads the first paint does not all use; fetch on demand instead.
+  preload: false,
 });
 
 export const metadata = { title: t("app.title") };
