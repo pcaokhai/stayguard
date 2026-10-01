@@ -22,7 +22,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | ID | Title | Lane | Pts | Sprint | Status | Branch or PR | Flag | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | SG-001 | Repository scaffold, tooling and CI | PLAT | 3 | 0 | Merged (flag off) | PR #1, 69cf067 | | AC4 CI proof: run 36802418823 |
-| SG-002 | Contract pipeline | PLAT | 3 | 0 | In progress | PR #7 (draft), feat/SG-002-contract-pipeline | | R-14: 3.1 kept, orval for mocks; AC4 proof (throwaway PR) pending; PR above 400-line limit, waiver needed |
+| SG-002 | Contract pipeline | PLAT | 3 | 0 | In review | PR #7 (draft), feat/SG-002-contract-pipeline | | R-14: 3.1 kept, orval for mocks; AC4 CI proof: run 36813246897; PR size above 400 accepted by tech lead |
 | SG-003 | Database foundation | API | 3 | 0 | Backlog | | | |
 | SG-004 | Web foundation | WEB | 2 | 0 | Backlog | | | Static-export i18n spike (A-06) |
 | SG-101 | Pricing engine | API | 5 | 0 | Backlog | | | Needs A-01 answer if available |
