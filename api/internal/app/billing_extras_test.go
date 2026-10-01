@@ -144,8 +144,28 @@ func TestExtrasStayNotActive_SG205_AC4(t *testing.T) {
 	out := e.clock.now
 	e.seedBillStay(t, StayRecord{Status: "CHECKED_OUT", CheckOutAt: &out})
 	_, _, err := e.addExtras(callID(1), stay.ExtraInput{ServiceCode: "WATER", Quantity: 1})
-	if !errors.Is(err, stay.ErrNotActive) || e.svc.stock(tenantA, svcWater) != 5 || len(e.idem.m) != 0 {
+	if !errors.Is(err, stay.ErrNotActive) {
 		t.Fatalf("err=%v", err)
+	}
+	if e.svc.stock(tenantA, svcWater) != 5 || len(e.svc.decOrder) != 0 || len(e.repo.extraRows) != 0 ||
+		len(e.repo.records[tenantA]["st1"].Extras) != 0 || len(e.idem.m) != 0 {
+		t.Fatal("a refused call must not take stock or insert a row")
+	}
+}
+
+func TestAddExtrasUsesDecrementPrice_SG205_AC2(t *testing.T) {
+	e := newBillEnv(t)
+	e.seedBillStay(t, StayRecord{})
+	e.svc.livePrice = map[string]int64{svcWater: 20_000} // changed after ByCodes read 15 000
+	v, _, err := e.addExtras(callID(1), stay.ExtraInput{ServiceCode: "WATER", Quantity: 3})
+	if err != nil || len(e.repo.extraRows) != 1 {
+		t.Fatalf("err=%v rows=%d", err, len(e.repo.extraRows))
+	}
+	if x := e.repo.extraRows[0]; x.UnitAmount != 20_000 || x.Amount != 60_000 || x.Quantity != 3 {
+		t.Fatalf("row: %+v", x)
+	}
+	if v.Extras[0].UnitAmount != 20_000 || v.Quote.ExtrasAmount != 60_000 {
+		t.Fatalf("view: %+v", v.Extras)
 	}
 }
 

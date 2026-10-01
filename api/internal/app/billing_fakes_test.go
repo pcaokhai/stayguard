@@ -23,6 +23,8 @@ type fakeServiceRepo struct {
 	rows     map[string]map[string]ServiceRow
 	calls    int
 	decOrder []string
+	// livePrice replaces the price at decrement time, after ByCodes has read the old one.
+	livePrice map[string]int64
 }
 
 func (r *fakeServiceRepo) List(_ context.Context, tx Tx) ([]Service, error) {
@@ -48,16 +50,20 @@ func (r *fakeServiceRepo) ByCodes(_ context.Context, tx Tx, codes []string) ([]S
 	return out, nil
 }
 
-func (r *fakeServiceRepo) DecrementStock(_ context.Context, tx Tx, id string, qty int64) error {
+// DecrementStock returns the price the row has now; livePrice simulates a price change after ByCodes read it.
+func (r *fakeServiceRepo) DecrementStock(_ context.Context, tx Tx, id string, qty int64) (int64, error) {
 	r.calls++
 	row, ok := r.rows[tx.TenantID()][id]
 	if !ok || row.Stock < qty {
-		return stay.ErrInsufficientStock
+		return 0, stay.ErrInsufficientStock
 	}
 	row.Stock -= qty
+	if p, ok := r.livePrice[id]; ok {
+		row.Price = p
+	}
 	r.rows[tx.TenantID()][id] = row
 	r.decOrder = append(r.decOrder, row.Code)
-	return nil
+	return row.Price, nil
 }
 
 func (r *fakeServiceRepo) stock(tenant, id string) int64 { return r.rows[tenant][id].Stock }
@@ -71,6 +77,9 @@ type fakeBillingRepo struct {
 	markCount    int
 	insertedInvs int
 	probes       int
+	extraRows    []NewExtra
+	insertTries  int
+	conflicts    int // the next InsertInvoice calls fail with ErrBillCodeConflict
 }
 
 func (r *fakeBillingRepo) LockStay(ctx context.Context, tx Tx, id string) (StayRecord, bool, error) {
@@ -80,10 +89,8 @@ func (r *fakeBillingRepo) LockStay(ctx context.Context, tx Tx, id string) (StayR
 
 func (r *fakeBillingRepo) InsertExtra(_ context.Context, tx Tx, e NewExtra) error {
 	r.calls++
+	r.extraRows = append(r.extraRows, e)
 	rec := r.records[tx.TenantID()][e.StayID]
-	if rec.Status != string(stay.StatusActive) {
-		return stay.ErrNotActive
-	}
 	svc := r.svc.rows[tx.TenantID()][e.ServiceID]
 	rec.Extras = append(append([]ExtraRecord(nil), rec.Extras...), ExtraRecord{ServiceCode: svc.Code, Name: svc.Name, Quantity: e.Quantity, UnitAmount: e.UnitAmount})
 	r.records[tx.TenantID()][e.StayID] = rec
@@ -110,6 +117,11 @@ func (r *fakeBillingRepo) InvoiceByStay(_ context.Context, tx Tx, id string) (In
 
 func (r *fakeBillingRepo) InsertInvoice(_ context.Context, tx Tx, n NewInvoice) error {
 	r.calls++
+	r.insertTries++
+	if r.conflicts > 0 {
+		r.conflicts--
+		return ErrBillCodeConflict
+	}
 	mine := r.invoices[tx.TenantID()]
 	for _, inv := range mine {
 		if inv.StayID == n.StayID || inv.BillCode == n.BillCode {

@@ -84,6 +84,27 @@ func TestCheckoutRepeat_SG205_AC3(t *testing.T) {
 	}
 }
 
+func TestCheckoutBillCodeConflictRetry_SG205_AC3(t *testing.T) {
+	e := newBillEnv(t)
+	e.seedBillStay(t, StayRecord{})
+	e.clock.now = e.repo.records[tenantA]["st1"].CheckInAt.Add(time.Hour)
+	e.repo.conflicts = 2
+	v, replayed, err := e.checkout("st1", callID(1))
+	if err != nil || replayed || v.BillCode != "PH0930A101" || e.repo.insertTries != 3 || len(e.repo.invoices[tenantA]) != 1 {
+		t.Fatalf("err=%v tries=%d %+v", err, e.repo.insertTries, v)
+	}
+	f := newBillEnv(t)
+	f.seedBillStay(t, StayRecord{})
+	f.clock.now = f.repo.records[tenantA]["st1"].CheckInAt.Add(time.Hour)
+	f.repo.conflicts = 99
+	if _, _, err := f.checkout("st1", callID(1)); !errors.Is(err, ErrBillCodeConflict) || f.repo.insertTries != 3 {
+		t.Fatalf("err=%v tries=%d", err, f.repo.insertTries)
+	}
+	if f.repo.records[tenantA]["st1"].Status != "ACTIVE" || len(f.idem.m) != 0 || len(f.audit.entries) != 0 {
+		t.Fatal("gave up: nothing may be kept")
+	}
+}
+
 func TestCheckoutMissingInvoice_SG205_AC3(t *testing.T) {
 	e := newBillEnv(t)
 	out := e.clock.now

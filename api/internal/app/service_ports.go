@@ -23,5 +23,7 @@ type ServiceRepo interface {
 	ByCodes(ctx context.Context, tx Tx, codes []string) ([]ServiceRow, error)
 	// DecrementStock returns stay.ErrInsufficientStock when no row had enough stock: the atomic guard
 	// is the adapter's UPDATE ... WHERE stock >= qty, never a read followed by a write.
-	DecrementStock(ctx context.Context, tx Tx, serviceID string, qty int64) error
+	// It returns the price of the row it decremented (UPDATE ... RETURNING price): that is the unit amount,
+	// because the price ByCodes read may be stale.
+	DecrementStock(ctx context.Context, tx Tx, serviceID string, qty int64) (unitPrice int64, err error)
 }

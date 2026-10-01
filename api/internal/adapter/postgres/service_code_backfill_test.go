@@ -5,12 +5,20 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pressly/goose/v3"
 
 	"github.com/pcaokhai/stayguard/api/migrations"
+)
+
+// Two ids that share their first 64 characters: the fallback code is capped, so they would collide.
+var (
+	longID1 = strings.Repeat("x", 70) + "1"
+	longID2 = strings.Repeat("x", 70) + "2"
 )
 
 const preServiceCodeVersion, serviceCodeVersion = 6, 7
@@ -40,6 +48,11 @@ func TestServiceCodeBackfill_SG205_AC1(t *testing.T) {
 		{"s3", "tn_a", `{}`},
 		{"s4", "tn_a", `{"en":"!!!"}`},
 		{"s5", "tn_b", `{"en":"Bottled Water"}`},
+		{"s8", "tn_a", `{"en":"Water"}`},
+		{"s9", "tn_a", `{"en":"water!"}`},
+		{"sa", "tn_a", `{"en":"Water"}`},
+		{longID1, "tn_a", `{}`},
+		{longID2, "tn_a", `{}`},
 	}
 	for _, r := range rows {
 		mustExec(t, owner, `INSERT INTO app.services (id, tenant_id, name, price) VALUES ($1, $2, $3::jsonb, 1)`, r.id, r.tenant, r.name)
@@ -48,7 +61,13 @@ func TestServiceCodeBackfill_SG205_AC1(t *testing.T) {
 		t.Fatalf("up to 7: %v", err)
 	}
 	got := queryStrings(t, db, `SELECT id || '=' || code FROM app.services ORDER BY id`)
-	want := []string{"s1=BOTTLED_WATER", "s2=TOWEL", "s3=s3", "s4=s4", "s5=BOTTLED_WATER"}
+	want := []string{
+		"s1=BOTTLED_WATER", "s2=TOWEL", "s3=s3", "s4=s4", "s5=BOTTLED_WATER",
+		"s8=WATER", "s9=WATER_2", "sa=WATER_3",
+		longID1 + "=" + strings.Repeat("x", 64), longID2 + "=" + strings.Repeat("x", 62) + "_2",
+	}
+	sort.Strings(want)
+	sort.Strings(got)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("backfilled codes (-want +got):\n%s", diff)
 	}

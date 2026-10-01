@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -58,6 +59,7 @@ type StayRepo interface {
 type NewExtra struct {
 	ID, StayID, ServiceID string
 	Quantity, UnitAmount  int64
+	Amount                int64 // Quantity times UnitAmount; the table CHECK still guards it
 	CreatedAt             time.Time
 }
 
@@ -75,6 +77,10 @@ type InvoiceRecord struct {
 	Total                        int64
 	CreatedAt                    time.Time
 }
+
+// ErrBillCodeConflict: InsertInvoice hit the unique bill code of the tenant (a concurrent check-out took
+// the probed code). The adapter maps the unique violation to it; Checkout retries the whole unit of work.
+var ErrBillCodeConflict = errors.New("bill code already taken")
 
 // BillingStayRepo is what the billing use cases need from the stay store. It is separate from
 // StayRepo so the check-in use cases and their adapter wiring stay as they are. Filters by the tenant of the Tx.

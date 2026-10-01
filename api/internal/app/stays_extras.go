@@ -142,25 +142,27 @@ type addedItem struct {
 	Amount    int64  `json:"amount"`
 }
 
-// take decrements stock then inserts the extras row, line by line in code order; the unit amount is the
-// service price now. Any error rolls the whole unit of work back, so partial stock is never kept.
+// take decrements stock then inserts the extras row, line by line in code order. The unit amount is the
+// price the guarded decrement returned. Any error rolls the whole unit of work back, so partial stock is never kept.
 func (b *Billing) take(ctx context.Context, tx Tx, stayID string, lines []stay.ExtraLine, rows map[string]ServiceRow) ([]addedItem, error) {
 	now := b.clock.Now()
 	added := make([]addedItem, 0, len(lines))
 	for _, l := range lines {
 		svc, qty := rows[l.ServiceCode], int64(l.Quantity)
-		if err := b.services.DecrementStock(ctx, tx, svc.ID, qty); err != nil {
+		unit, err := b.services.DecrementStock(ctx, tx, svc.ID, qty)
+		if err != nil {
 			return nil, fmt.Errorf("take stock: %w", err) // keeps stay.ErrInsufficientStock visible to errors.Is
 		}
-		x := NewExtra{ID: b.ids.New(extraIDPrefix), StayID: stayID, ServiceID: svc.ID, Quantity: qty, UnitAmount: svc.Price, CreatedAt: now}
-		if err := b.stays.InsertExtra(ctx, tx, x); err != nil {
-			return nil, fmt.Errorf("insert extra: %w", err)
-		}
-		amount, err := money.Mul(money.Vnd(svc.Price), qty)
+		amount, err := money.Mul(money.Vnd(unit), qty)
 		if err != nil {
 			return nil, fmt.Errorf("extra amount: %w", err)
 		}
-		added = append(added, addedItem{svc.ID, qty, svc.Price, amount.Int64()})
+		x := NewExtra{ID: b.ids.New(extraIDPrefix), StayID: stayID, ServiceID: svc.ID, Quantity: qty, UnitAmount: unit,
+			Amount: amount.Int64(), CreatedAt: now}
+		if err := b.stays.InsertExtra(ctx, tx, x); err != nil {
+			return nil, fmt.Errorf("insert extra: %w", err)
+		}
+		added = append(added, addedItem{svc.ID, qty, unit, amount.Int64()})
 	}
 	return added, nil
 }

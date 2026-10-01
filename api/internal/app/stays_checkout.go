@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,8 +16,11 @@ import (
 const (
 	auditCheckOut    = "stay.checked_out"
 	routeCheckoutFmt = "POST /v1/stays/%s/checkout"
-	// maxBillCodeAttempts bounds the probe loop: more same-day check-outs of one room is a fault.
-	maxBillCodeAttempts = 50
+	// maxBillCodeAttempts bounds the probe loop. The code has no year (contract example), so a busy room
+	// accumulates suffixes over the years; more than this is a fault.
+	maxBillCodeAttempts = 200
+	// maxCheckoutTries re-runs the whole unit of work when a racing check-out took the probed bill code.
+	maxCheckoutTries = 3
 )
 
 // emptyBodyHash is the request hash of a check-out: it has no body.
@@ -35,6 +39,20 @@ func (b *Billing) Checkout(ctx context.Context, c Caller, stayID, retryID string
 	if err := checkKey(retryID); err != nil {
 		return InvoiceView{}, false, err
 	}
+	for try := 1; ; try++ {
+		out, replayed, err := b.checkoutOnce(ctx, c, stayID, retryID)
+		if errors.Is(err, ErrBillCodeConflict) && try < maxCheckoutTries {
+			continue // rolled back: the key is gone and the probe runs again
+		}
+		if errors.Is(err, ErrBillCodeConflict) {
+			return InvoiceView{}, false, fmt.Errorf("check-out: no bill code after %d tries: %w", try, err)
+		}
+		return out, replayed, err
+	}
+}
+
+func (b *Billing) checkoutOnce(ctx context.Context, c Caller, stayID, retryID string) (InvoiceView, bool, error) {
+	const op = "checkoutStay"
 	var out InvoiceView
 	var replayed bool
 	err := b.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
