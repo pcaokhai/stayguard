@@ -67,6 +67,7 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 		Addr: net.JoinHostPort("", strconv.Itoa(cfg.Port)),
 		Handler: httpadapter.NewRouter(log, httpadapter.Options{
 			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
+			Rooms: d.rooms, RoomMapEnabled: cfg.RoomMapEnabled,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,

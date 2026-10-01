@@ -61,6 +61,7 @@ func newEnv(t *testing.T) *env {
 	sessions := newSessions(cfg, pool, postgres.NewUnitOfWork(pool), clk)
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(io.Discard, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
+		Rooms: newRooms(postgres.NewUnitOfWork(pool), clk), RoomMapEnabled: true,
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

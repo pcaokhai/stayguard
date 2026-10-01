@@ -32,13 +32,16 @@ type Options struct {
 	Probe       app.ReadinessProbe
 	Sessions    SessionService
 	DemoEnabled bool
+	// Rooms and RoomMapEnabled (FF_S1_ROOM_MAP) serve the room map read operations.
+	Rooms          RoomService
+	RoomMapEnabled bool
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})
