@@ -22,7 +22,7 @@ type deps struct {
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
-	pool, err := postgres.NewPool(ctx, postgres.PoolConfig{URL: cfg.DatabaseURL})
+	pool, err := postgres.NewPool(ctx, postgres.PoolConfig{URL: cfg.DatabaseURL, AllowPrivileged: cfg.AllowPrivilegedDB})
 	if err != nil {
 		return deps{}, fmt.Errorf("database: %w", err)
 	}

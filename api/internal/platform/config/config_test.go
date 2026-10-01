@@ -66,3 +66,17 @@ func TestLoadDatabaseInvalid_SG003_AC6(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadAllowPrivilegedDB_SG003_AC3(t *testing.T) {
+	c, err := Load(env(map[string]string{"DATABASE_URL": testDBURL}))
+	if err != nil || c.AllowPrivilegedDB {
+		t.Fatalf("default must be false: %+v err=%v", c, err)
+	}
+	c, err = Load(env(map[string]string{"DATABASE_URL": testDBURL, "ALLOW_PRIVILEGED_DB": "1"}))
+	if err != nil || !c.AllowPrivilegedDB {
+		t.Fatalf("1 must enable: %+v err=%v", c, err)
+	}
+	if _, err := Load(env(map[string]string{"DATABASE_URL": testDBURL, "ALLOW_PRIVILEGED_DB": "maybe"})); err == nil {
+		t.Fatal("invalid value must be an error")
+	}
+}

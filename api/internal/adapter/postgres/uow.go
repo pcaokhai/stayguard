@@ -15,7 +15,8 @@ import (
 // PanicError is returned when fn panics: the transaction is rolled back and the panic becomes an error.
 type PanicError struct{ Value any }
 
-func (e *PanicError) Error() string { return fmt.Sprintf("panic in unit of work: %v", e.Value) }
+// Error names the type only: the value can carry guest data and must not reach logs.
+func (e *PanicError) Error() string { return fmt.Sprintf("panic in unit of work (%T)", e.Value) }
 
 // Tx is the tenant-scoped handle. Repositories take it instead of the pool, so they cannot run
 // outside a transaction that has the tenant set. It matches the sqlc DBTX shape.

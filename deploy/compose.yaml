@@ -22,6 +22,8 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       DATABASE_URL: postgres://stayguard@db:5432/stayguard?sslmode=disable
+      # Local dev only: the API connects as the superuser owner, which the startup check refuses otherwise.
+      ALLOW_PRIVILEGED_DB: "1"
     depends_on:
       db:
         condition: service_healthy

@@ -15,7 +15,7 @@ func probeFor(t testing.TB, db string) *ReadinessProbe {
 
 func probeAs(t testing.TB, db, role string) *ReadinessProbe {
 	t.Helper()
-	pool, err := NewPool(context.Background(), PoolConfig{URL: urlFor(db, role, testSecret), MaxConns: 2})
+	pool, err := NewPool(context.Background(), PoolConfig{URL: urlFor(db, role, testSecret), MaxConns: 2, AllowPrivileged: role == "owner"})
 	if err != nil {
 		t.Fatalf("pool: %v", err)
 	}

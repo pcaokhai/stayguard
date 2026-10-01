@@ -19,9 +19,22 @@ BEGIN
                AND (rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb)) THEN
         RAISE EXCEPTION 'role stayguard_app has a privileged attribute (superuser, bypassrls, createrole or createdb)';
     END IF;
+    -- stayguard_maint is the only BYPASSRLS role: it must not also create roles, databases or be a superuser.
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'stayguard_maint'
+               AND (rolsuper OR rolcreaterole OR rolcreatedb)) THEN
+        RAISE EXCEPTION 'role stayguard_maint has a privileged attribute (superuser, createrole or createdb)';
+    END IF;
+    -- Membership would hand the app role the power of a superuser or BYPASSRLS role.
+    IF EXISTS (SELECT 1 FROM pg_roles r WHERE (r.rolsuper OR r.rolbypassrls) AND r.rolname <> 'stayguard_app'
+               AND pg_has_role('stayguard_app', r.oid, 'MEMBER')) THEN
+        RAISE EXCEPTION 'role stayguard_app is a member of a superuser or BYPASSRLS role';
+    END IF;
 END
 $$;
 -- +goose StatementEnd
+
+-- No one gets CREATE in public by default (PostgreSQL 15 default made explicit): the app role owns and creates nothing.
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
 -- The tenant of the current transaction. Unset or empty gives NULL, which equals nothing, so every
 -- policy built on it returns zero rows (fail closed, ADR-005).

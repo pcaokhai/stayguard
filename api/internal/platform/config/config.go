@@ -27,6 +27,9 @@ type Config struct {
 	// defaults to DatabaseURL. Only the migrate subcommand uses it.
 	MigrateDatabaseURL string
 	IdempotencyTTL     time.Duration // IDEMPOTENCY_TTL (Go duration), default 24h
+	// AllowPrivilegedDB (ALLOW_PRIVILEGED_DB, default false) lets the server run as a superuser, BYPASSRLS
+	// or owner role. LOCAL DEV ONLY: it switches off the second guard (RLS).
+	AllowPrivilegedDB bool
 }
 
 // Load takes the env lookup as a parameter so tests need no process environment.
@@ -63,6 +66,13 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("IDEMPOTENCY_TTL must be a positive duration such as 24h, got %q", v)
 		}
 		c.IdempotencyTTL = d
+	}
+	if v := getenv("ALLOW_PRIVILEGED_DB"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("ALLOW_PRIVILEGED_DB must be a boolean, got %q", v)
+		}
+		c.AllowPrivilegedDB = b
 	}
 	return c, nil
 }

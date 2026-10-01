@@ -29,6 +29,8 @@ var ErrInvalidDatabaseURL = errors.New("invalid database URL")
 type PoolConfig struct {
 	URL      string
 	MaxConns int32 // 0 means defaultMaxConns
+	// AllowPrivileged skips the least-privilege check. Local dev only (RLS is bypassed for such roles).
+	AllowPrivileged bool
 }
 
 // NewPool opens a pgx pool with timeouts set on the dial and on every session.
@@ -50,6 +52,12 @@ func NewPool(ctx context.Context, cfg PoolConfig) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.NewWithConfig(ctx, pc)
 	if err != nil {
 		return nil, fmt.Errorf("open pool: %w", err)
+	}
+	if !cfg.AllowPrivileged {
+		if err := checkUnprivileged(ctx, pool); err != nil {
+			pool.Close()
+			return nil, err
+		}
 	}
 	return pool, nil
 }

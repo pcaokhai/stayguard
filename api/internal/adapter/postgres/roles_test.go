@@ -131,3 +131,34 @@ func TestRolesPrivilegedAppRole_SG003_AC3(t *testing.T) {
 		t.Fatalf("migration must fail on a BYPASSRLS app role, got %v", err)
 	}
 }
+
+// The maintenance role is the only BYPASSRLS role: a pre-created one with more power must stop the migration.
+func TestRolesPrivilegedMaintRole_SG003_AC3(t *testing.T) {
+	url := freshCluster(t)
+	ctx := context.Background()
+	if _, err := connAtURL(t, url).Exec(ctx, "CREATE ROLE stayguard_maint NOLOGIN BYPASSRLS CREATEROLE"); err != nil {
+		t.Fatalf("pre-create role: %v", err)
+	}
+	if _, err := migrateURL(ctx, url); err == nil || !strings.Contains(err.Error(), "stayguard_maint") {
+		t.Fatalf("migration must fail on a CREATEROLE maint role, got %v", err)
+	}
+}
+
+// An app role that is a member of a BYPASSRLS or superuser role inherits its power: refuse it at migration.
+func TestRolesAppMemberOfPrivileged_SG003_AC3(t *testing.T) {
+	url := freshCluster(t)
+	ctx := context.Background()
+	admin := connAtURL(t, url)
+	for _, q := range []string{
+		"CREATE ROLE stayguard_maint NOLOGIN BYPASSRLS",
+		"CREATE ROLE stayguard_app NOLOGIN",
+		"GRANT stayguard_maint TO stayguard_app",
+	} {
+		if _, err := admin.Exec(ctx, q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if _, err := migrateURL(ctx, url); err == nil || !strings.Contains(err.Error(), "member") {
+		t.Fatalf("migration must fail when the app role is a member of a privileged role, got %v", err)
+	}
+}

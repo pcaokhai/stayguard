@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -146,6 +147,8 @@ func TestUnitOfWork_SG003_AC4(t *testing.T) {
 		var pe *PanicError
 		if !errors.As(err, &pe) {
 			t.Errorf("want PanicError, got %v", err)
+		} else if strings.Contains(err.Error(), "kaboom") {
+			t.Errorf("error text must not carry the panic value: %v", err)
 		}
 		assertOnlySeededUser(ctx, t, uow)
 	})
