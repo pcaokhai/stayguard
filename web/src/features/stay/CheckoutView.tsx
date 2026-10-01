@@ -20,7 +20,8 @@ export function CheckoutView() {
   const stay = useStay(stayId);
   const checkout = useCheckout(stayId);
   const [checkoutKey] = useState(newIdempotencyKey);
-  const [payKey] = useState(newIdempotencyKey);
+  // Idempotency-Key must be a UUID, and the same key with another body is a 409: one key per method.
+  const payKeys = useRef<Partial<Record<"CASH" | "TRANSFER", string>>>({});
   const started = useRef(false);
   const invoice = checkout.data;
   const pay = useCreatePayment(invoice?.id ?? "");
@@ -44,7 +45,7 @@ export function CheckoutView() {
 
   const choose = (method: "CASH" | "TRANSFER") =>
     pay.mutate(
-      { method, key: `${payKey}-${method}` },
+      { method, key: (payKeys.current[method] ??= newIdempotencyKey()) },
       {
         onSuccess: (p) =>
           router.push(`/vi/${method === "TRANSFER" ? "pay" : "paid"}?payment=${p.id}`),

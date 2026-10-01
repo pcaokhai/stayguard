@@ -58,7 +58,7 @@ export function PaidView() {
         {p.transactionId && (
           <div className={row}>
             <dt>{t("pay.txn")}</dt>
-            <dd className="text-ink">{p.transactionId}</dd>
+            <dd className="min-w-0 break-all text-right text-ink">{p.transactionId}</dd>
           </div>
         )}
         {me && (

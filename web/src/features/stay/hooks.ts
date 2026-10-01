@@ -76,6 +76,7 @@ export function useAddExtras(stayId: string) {
 }
 
 export function useCheckout(stayId: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (key: string) => {
       const { data, error } = await api.POST("/v1/stays/{stayId}/checkout", {
@@ -83,6 +84,7 @@ export function useCheckout(stayId: string) {
       });
       return must(data, error, "checkoutStay");
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["stay", stayId] }),
   });
 }
 
