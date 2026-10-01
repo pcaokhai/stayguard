@@ -1,0 +1,15 @@
+# build, generated and vendored output (keep in sync with .claude/settings.json read denies)
+node_modules/
+vendor/
+dist/
+coverage/
+web/out/
+web/.next/
+*.tsbuildinfo
+api/bin/
+*.test
+*.out
+.env
+.env.*
+!.env.example
+.DS_Store
