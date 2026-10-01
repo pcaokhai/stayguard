@@ -80,3 +80,28 @@ func TestLoadAllowPrivilegedDB_SG003_AC3(t *testing.T) {
 		t.Fatal("invalid value must be an error")
 	}
 }
+
+func TestLoadSessionDefaults_SG102_AC1(t *testing.T) {
+	c, err := Load(env(map[string]string{"DATABASE_URL": testDBURL}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.DemoMode || c.SessionTTL != 12*time.Hour || c.TrialTTL != 24*time.Hour {
+		t.Fatalf("unexpected defaults: %+v", c)
+	}
+	c, err = Load(env(map[string]string{"DATABASE_URL": testDBURL, "DEMO_MODE": "true", "SESSION_TTL_HOURS": "2", "TRIAL_TTL_HOURS": "48"}))
+	if err != nil || !c.DemoMode || c.SessionTTL != 2*time.Hour || c.TrialTTL != 48*time.Hour {
+		t.Fatalf("overrides not applied: %+v err=%v", c, err)
+	}
+}
+
+func TestLoadSessionInvalid_SG102_AC2(t *testing.T) {
+	for _, kv := range [][2]string{
+		{"DEMO_MODE", "maybe"}, {"SESSION_TTL_HOURS", "0"}, {"SESSION_TTL_HOURS", "-1"}, {"SESSION_TTL_HOURS", "x"},
+		{"TRIAL_TTL_HOURS", "0"}, {"TRIAL_TTL_HOURS", "1.5"},
+	} {
+		if _, err := Load(env(map[string]string{"DATABASE_URL": testDBURL, kv[0]: kv[1]})); err == nil {
+			t.Errorf("expected error for %v", kv)
+		}
+	}
+}
