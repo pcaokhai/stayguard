@@ -2,7 +2,7 @@
 package stay
 
 import (
-	"fmt"
+	"errors"
 	"sort"
 	"strings"
 	"unicode"
@@ -24,7 +24,7 @@ func ParseStatus(s string) (Status, error) {
 	case StatusActive, StatusCheckedOut:
 		return st, nil
 	}
-	return "", fmt.Errorf("stay: unknown status %q", s)
+	return "", errors.New("stay: unknown status")
 }
 
 const (
@@ -55,6 +55,8 @@ const (
 	// maskedPrefix has a fixed length so the id number length is not revealed.
 	maskedPrefix = "*****"
 	maskedTail   = 3
+	// minMaskTailLen: below this, revealing 3 characters would show too much of the id.
+	minMaskTailLen = 8
 )
 
 // FieldError never carries the offending value: it can quote client data.
@@ -121,10 +123,16 @@ func checkName(s string) []FieldError {
 	case n > maxNameRunes:
 		return []FieldError{{pathName, CodeTooLong}}
 	}
-	if strings.IndexFunc(s, unicode.IsControl) >= 0 {
+	if strings.IndexFunc(s, isHiddenRune) >= 0 {
 		return []FieldError{{pathName, CodePattern}}
 	}
 	return nil
+}
+
+// isHiddenRune: control, format (bidi override, zero width) and line or paragraph separators
+// can spoof or hide text on a screen or in a log.
+func isHiddenRune(r rune) bool {
+	return unicode.IsControl(r) || unicode.In(r, unicode.Cf, unicode.Zl, unicode.Zp)
 }
 
 func checkPhone(s string) []FieldError {
@@ -183,7 +191,7 @@ func MaskIDNumber(s string) string {
 		return ""
 	}
 	r := []rune(s)
-	if len(r) <= maskedTail+1 {
+	if len(r) < minMaskTailLen {
 		return maskedPrefix
 	}
 	return maskedPrefix + string(r[len(r)-maskedTail:])

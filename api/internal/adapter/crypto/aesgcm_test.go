@@ -79,6 +79,39 @@ func TestEncryptorAdapter_SG203_AC4(t *testing.T) {
 	}
 }
 
+func TestEncryptorAADBinding_SG203_AC4(t *testing.T) {
+	e := newEnc(t, newKey(t))
+	plain := []byte("x")
+	pairs := [][2][2]string{
+		{{"a", "bc"}, {"ab", "c"}},
+		{{"a\x00b", "c"}, {"a", "b\x00c"}},
+		{{"", "a"}, {"a", ""}},
+	}
+	for _, p := range pairs {
+		ct, err := e.Encrypt(p[0][0], p[0][1], plain)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, err := e.Decrypt(p[1][0], p[1][1], ct); err == nil || got != nil {
+			t.Errorf("%q and %q must not collide", p[0], p[1])
+		}
+	}
+}
+
+func TestEncryptorVersionAuthenticated_SG203_AC4(t *testing.T) {
+	e := newEnc(t, newKey(t))
+	ct, _ := e.Encrypt("t", "f", []byte("x"))
+	// The version byte is also additional data, so a relabelled ciphertext fails the tag even if a
+	// future reader accepted that version.
+	e2 := *e
+	if _, err := e2.open("t", "f", 2, ct); err == nil {
+		t.Fatal("ciphertext relabelled with another version must not open")
+	}
+	if _, err := e2.open("t", "f", keyVersion, ct); err != nil {
+		t.Fatalf("control: %v", err)
+	}
+}
+
 func TestEncryptorKeyLength_SG203_AC4(t *testing.T) {
 	for _, n := range []int{0, 16, 31, 33} {
 		if _, err := NewAESGCM(make([]byte, n)); err == nil {

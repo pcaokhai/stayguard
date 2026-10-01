@@ -36,6 +36,14 @@ func TestStayValidation_SG203_AC1(t *testing.T) {
 		{"name spaces only", "   ", "123456", "", []FieldError{{"guestName", "REQUIRED"}}, Guest{}},
 		{"name control", "a\x07b", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
 		{"name newline inside", "a\nb", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name bidi override", "a\u202eb", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name zero width", "a\u200bb", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name only zero width", "\u200b\u200b", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name line separator inside", "a\u2028b", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name paragraph separator inside", "a\u2029b", "123456", "", []FieldError{{"guestName", "PATTERN"}}, Guest{}},
+		{"name only line separator", "\u2028", "123456", "", []FieldError{{"guestName", "REQUIRED"}}, Guest{}},
+		{"vietnamese precomposed", "Nguy\u1ec5n V\u0103n \u00c1nh", "123456", "", nil, Guest{"Nguy\u1ec5n V\u0103n \u00c1nh", "123456", ""}},
+		{"vietnamese decomposed", "Nguye\u0303n Va\u0306n A\u0301nh", "123456", "", nil, Guest{"Nguye\u0303n Va\u0306n A\u0301nh", "123456", ""}},
 		{"phone 5 digits", "A", "12345", "", []FieldError{{"guestPhone", "TOO_SHORT"}}, Guest{}},
 		{"phone 6", "A", "123456", "", nil, Guest{"A", "123456", ""}},
 		{"phone 20", "A", strings.Repeat("1", 20), "", nil, Guest{"A", strings.Repeat("1", 20), ""}},
@@ -99,7 +107,7 @@ func TestDepositBounds_SG203_AC5(t *testing.T) {
 
 func TestMaskIDNumber_SG203_AC4(t *testing.T) {
 	cases := map[string]string{
-		"": "", "A": "*****", "ABCD": "*****", "ABCDE": "*****CDE", "079123456789": "*****789",
+		"": "", "A": "*****", "ABCD": "*****", "ABCDE": "*****", "ABCDEFG": "*****", "ABCDEFGH": "*****FGH", "079123456789": "*****789",
 	}
 	for in, want := range cases {
 		if got := MaskIDNumber(in); got != want {
@@ -114,9 +122,10 @@ func TestParseStatus_SG203_AC1(t *testing.T) {
 			t.Errorf("%s: %v %v", s, got, err)
 		}
 	}
-	for _, s := range []string{"", "active", "OVERDUE"} {
-		if _, err := ParseStatus(s); err == nil {
-			t.Errorf("%q must fail closed", s)
+	for _, s := range []string{"", "active", marker} {
+		_, err := ParseStatus(s)
+		if err == nil || strings.Contains(err.Error(), marker) {
+			t.Errorf("%q must fail closed without echoing input: %v", s, err)
 		}
 	}
 }

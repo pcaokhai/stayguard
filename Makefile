@@ -5,7 +5,8 @@ COMPOSE := docker compose -f deploy/compose.yaml
 
 # Local data encryption key, created once and never committed (deploy/.env.local is git-ignored).
 deploy/.env.local:
-	@umask 077 && printf 'DATA_ENCRYPTION_KEY=%s\n' "$$(openssl rand -base64 32)" > $@
+	@key=$$(openssl rand -base64 32) && test -n "$$key" || { echo "could not generate DATA_ENCRYPTION_KEY (is openssl installed?)" >&2; exit 1; }; \
+	umask 077 && printf 'DATA_ENCRYPTION_KEY=%s\n' "$$key" > $@.tmp && mv $@.tmp $@ || { rm -f $@.tmp; exit 1; }
 
 up: deploy/.env.local
 	$(COMPOSE) up --build
