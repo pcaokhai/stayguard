@@ -43,6 +43,11 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusConflict, "Conflict", "IDEMPOTENCY_KEY_REUSED")
 			return
 		}
+		if errors.Is(err, app.ErrIdempotencyIncomplete) {
+			log.ErrorContext(r.Context(), "idempotency key committed without a stored response: a use case skipped Complete")
+			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
+			return
+		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
 		writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 	}

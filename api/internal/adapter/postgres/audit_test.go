@@ -59,11 +59,8 @@ func TestAuditAppendOnly_SG003_AC6(t *testing.T) {
 	}
 	appConn := connAs(t, db, appRole)
 	for _, s := range stmts {
-		if _, err := appConn.Exec(ctx, s); err == nil {
-			t.Errorf("app role %q must be rejected", s)
+		if _, err := appConn.Exec(ctx, s); pgCode(err) != pgInsufficientPrivilege {
+			t.Errorf("app role %q: want privilege error %s, got %v", s, pgInsufficientPrivilege, err)
 		}
-	}
-	if _, err := appConn.Exec(ctx, `UPDATE app.audit_logs SET action = 'x'`); pgCode(err) != pgInsufficientPrivilege {
-		t.Errorf("app role UPDATE: want privilege error, got %v", err)
 	}
 }

@@ -13,6 +13,8 @@ import (
 var ErrIdempotencyKeyReused = errors.New("idempotency key reused with a different request")
 
 // ErrIdempotencyIncomplete: the key exists but no response was stored, so it can be neither replayed nor re-run.
+// It is a programming error: a use case returned nil under a key without calling Complete, and the effect
+// may have committed. Begin fails closed (never Proceed) until the key expires.
 var ErrIdempotencyIncomplete = errors.New("idempotency key has no stored response")
 
 // IdempotencyOutcome is what Begin decides: run the effect (Replay false) or answer with the stored response.
@@ -24,6 +26,8 @@ type IdempotencyOutcome struct {
 
 // IdempotencyStore keys are scoped by (tenant, route, key); the tenant comes from tx. Begin and Complete
 // run in the same transaction as the effect, so a rolled-back effect leaves no key behind.
+// Contract: every use case that returns nil under a key must call Complete first.
+// Bounds on key and route length and on body size are a duty of the middleware that wires the store.
 type IdempotencyStore interface {
 	Begin(ctx context.Context, tx Tx, route, key, requestHash string) (IdempotencyOutcome, error)
 	Complete(ctx context.Context, tx Tx, route, key string, status int, body []byte) error
