@@ -13,15 +13,17 @@ done
 if grep -nE '^\s*go\s+[0-9]+\.[0-9]+\s*$|latest' api/go.mod; then bad "api/go.mod has a floating go version or 'latest'"; fi
 
 # package.json: every dependency value must be an exact version (digits and dots, optional prerelease).
-if ! node -e '
-const p = require("./web/package.json");
+for pkg in web scripts; do
+if ! PKG="$pkg" node -e '
+const p = require("./" + process.env.PKG + "/package.json");
 const exact = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 let bad = 0;
 for (const k of ["dependencies","devDependencies","optionalDependencies","peerDependencies"])
   for (const [n, v] of Object.entries(p[k] || {}))
-    if (!exact.test(v)) { console.error(`web/package.json ${k}.${n} = ${v}`); bad = 1; }
+    if (!exact.test(v)) { console.error(`${process.env.PKG}/package.json ${k}.${n} = ${v}`); bad = 1; }
 process.exit(bad);
-'; then bad "web/package.json has non-exact versions (^, ~, *, tags, ranges)"; fi
+'; then bad "$pkg/package.json has non-exact versions (^, ~, *, tags, ranges)"; fi
+done
 
 # Workflow actions: pinned by 40-hex SHA. Local (./) actions are exempt.
 if [ -d .github/workflows ]; then

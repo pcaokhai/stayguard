@@ -56,7 +56,7 @@ endef
 gen:
 	$(call not_yet,SG-002)
 contracts:
-	$(call not_yet,SG-002)
+	@bash scripts/contracts.sh
 migrate:
 	$(call not_yet,SG-003)
 test-api-int:
