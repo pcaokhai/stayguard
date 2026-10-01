@@ -13,6 +13,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
+    "paths": { "mock-layer": ["./src/mocks/setup/mock-off.tsx"] },
     "plugins": [
       {
         "name": "next"

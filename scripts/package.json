@@ -1,0 +1,11 @@
+{
+  "name": "stayguard-plat-tools",
+  "private": true,
+  "description": "Pinned tooling for the PLAT scripts (contract lint, schema compile). No runtime code.",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@stoplight/spectral-cli": "6.16.3",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

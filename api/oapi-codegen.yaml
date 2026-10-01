@@ -1,0 +1,7 @@
+# Go server stubs from contracts/openapi.yaml. Run through `make gen` (version pinned in the Makefile).
+package: gen
+output: internal/adapter/http/gen/server.gen.go
+generate:
+  chi-server: true
+  strict-server: true
+  models: true

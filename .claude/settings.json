@@ -9,6 +9,8 @@
       "Read(./web/out/**)",
       "Read(./web/.next/**)",
       "Read(./web/src/api/generated/**)",
+      "Read(./web/src/mocks/generated/**)",
+      "Read(./web/public/mockServiceWorker.js)",
       "Read(./api/internal/**/gen/**)",
       "Read(**/*.lock)",
       "Read(**/package-lock.json)",
