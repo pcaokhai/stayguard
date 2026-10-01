@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
+	"github.com/pcaokhai/stayguard/api/internal/app"
 )
 
 const problemContentType = "application/problem+json"
@@ -35,6 +37,10 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		if errors.Is(err, errNotImplemented) {
 			writeProblem(w, http.StatusNotImplemented, "Not Implemented", "NOT_IMPLEMENTED")
+			return
+		}
+		if errors.Is(err, app.ErrIdempotencyKeyReused) {
+			writeProblem(w, http.StatusConflict, "Conflict", "IDEMPOTENCY_KEY_REUSED")
 			return
 		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
