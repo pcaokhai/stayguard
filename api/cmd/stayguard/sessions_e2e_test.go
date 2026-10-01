@@ -49,6 +49,12 @@ type env struct {
 // newEnv wires the real router to a migrated database; the server runs as the application role.
 func newEnv(t *testing.T) *env {
 	t.Helper()
+	return newEnvRooms(t, newRooms)
+}
+
+// newEnvRooms is newEnv with the room use cases built by mk, so a test can swap one port.
+func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *env {
+	t.Helper()
 	db := newMigratedDB(t)
 	pool, err := postgres.NewPool(context.Background(), postgres.PoolConfig{URL: urlFor(db, appRole), MaxConns: 4})
 	if err != nil {
@@ -61,7 +67,7 @@ func newEnv(t *testing.T) *env {
 	sessions := newSessions(cfg, pool, postgres.NewUnitOfWork(pool), clk)
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(io.Discard, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
-		Rooms: newRooms(postgres.NewUnitOfWork(pool), clk), RoomMapEnabled: true,
+		Rooms: mk(postgres.NewUnitOfWork(pool), clk), RoomMapEnabled: true,
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
