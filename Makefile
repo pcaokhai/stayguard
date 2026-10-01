@@ -54,6 +54,8 @@ define not_yet
 endef
 
 OAPI_CODEGEN_VERSION := v2.8.0
+GOOSE_VERSION := v3.28.0
+SQLC_VERSION := v1.31.1
 
 gen: gen-api gen-web
 
@@ -65,9 +67,13 @@ gen-api:
 	cd api && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION) -config oapi-codegen.yaml ../contracts/openapi.yaml
 contracts:
 	@bash scripts/contracts.sh
+# Migrates the database named by DATABASE_URL with the pinned goose CLI (forward-only, embedded files are the same SQL).
 migrate:
-	$(call not_yet,SG-003)
+	@test -n "$$DATABASE_URL" || { echo "DATABASE_URL is required" >&2; exit 1; }
+	cd api && go run github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION) -dir migrations postgres "$$DATABASE_URL" up
+
+# Testcontainers needs a running Docker daemon.
 test-api-int:
-	$(call not_yet,SG-003)
+	cd api && go test -tags integration -count=1 ./...
 e2e:
 	$(call not_yet,SG-603)
