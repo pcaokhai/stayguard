@@ -3,15 +3,14 @@
 package main
 
 import (
-	"context"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/permissions"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/pricing"
 	"github.com/pcaokhai/stayguard/api/internal/app"
-	"github.com/pcaokhai/stayguard/api/internal/domain/room"
 )
 
 const (
@@ -22,13 +21,6 @@ const (
 	benchRuns      = 300
 	benchP95Budget = 150 * time.Millisecond
 )
-
-// cheapQuoter stands in for the pricing engine (pricing.Unavailable until SG-101): O(1), no I/O.
-type cheapQuoter struct{}
-
-func (cheapQuoter) RunningTotal(context.Context, []byte, room.RentalType, time.Time, time.Time, *time.Location) (int64, error) {
-	return 350_000, nil
-}
 
 // seedBenchBuilding adds 200 units on 4 floors; the first 80 get an ACTIVE overnight stay, half of
 // them checked in two days ago (past the window end, so OVERDUE) and half one hour ago.
@@ -46,8 +38,8 @@ func (e *env) seedBenchBuilding(tenant, bld string) {
 	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, check_in_at, rate_plan_snapshot)
 		SELECT $2 || '_s' || n, $1, $2 || '_u' || n, 'OVERNIGHT', 'ACTIVE', 'Guest',
 			CASE WHEN n % 2 = 0 THEN $3::timestamptz - interval '48 hours' ELSE $3::timestamptz - interval '1 hour' END,
-			'{"graceMinutes":15,"overnight":{"windowEnd":"12:00"}}'
-		FROM generate_series(1, $4::int) n`, tenant, bld, e.start, benchOccupied)
+			$5
+		FROM generate_series(1, $4::int) n`, tenant, bld, e.start, benchOccupied, seedPlanSnapshot())
 }
 
 // measure runs warmup then runs sequential GETs and returns p50 and p95 of the server time.
@@ -71,7 +63,7 @@ func (e *env) measure(path, token string) (p50, p95 time.Duration, last reply) {
 
 func TestListRoomsBenchmark_SG201_AC5(t *testing.T) {
 	e := newEnvRooms(t, func(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
-		return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, cheapQuoter{}, clk)
+		return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Quoter{}, clk)
 	})
 	owner := e.demo("OWNER", "vi", "")
 	e.seedBenchBuilding(owner.str("tenantId"), "bld_bench")

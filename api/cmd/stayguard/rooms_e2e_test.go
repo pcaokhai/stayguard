@@ -6,7 +6,24 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/pcaokhai/stayguard/api/internal/domain/money"
+	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
 )
+
+// seededDailyPrice caps any overnight stay, so a stay open for two days totals exactly this
+// whatever the wall-clock time of the run: late checkout alone (>= 24 hourly blocks of 100,000) exceeds it.
+const seededDailyPrice = money.Vnd(500_000)
+
+// seedPlanSnapshot is a valid rate plan snapshot (grace 15, overnight window ends 12:00) as a check-in stores it.
+func seedPlanSnapshot() string {
+	return string(pricing.RatePlan{
+		Version: 1, Currency: pricing.CurrencyVND, GraceMinutes: 15,
+		Hourly:    pricing.Hourly{FirstHour: 80_000, ExtraHour: 100_000},
+		Overnight: pricing.Window{Price: 350_000, Start: pricing.Clock{Hour: 21}, End: pricing.Clock{Hour: 12}},
+		Daily:     pricing.Window{Price: seededDailyPrice, Start: pricing.Clock{Hour: 14}, End: pricing.Clock{Hour: 12}},
+	}.Snapshot())
+}
 
 // seedRoomMap gives a tenant two buildings: bld has a vacant room and an overnight stay that ended
 // long before the injected clock (so it is OVERDUE); bld_empty has one vacant room, no stays.
@@ -23,8 +40,8 @@ func (e *env) seedRoomMap(tenant, bld, bldEmpty string) {
 		($7, $2, $8, $9, $5, '201', 'VACANT', '{}')`,
 		bld+"_u1", tenant, bld, bld+"_f", bld+"_ut", bld+"_u2", bldEmpty+"_u1", bldEmpty, bldEmpty+"_f")
 	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, check_in_at, rate_plan_snapshot)
-		VALUES ($1, $2, $3, 'OVERNIGHT', 'ACTIVE', 'Guest', $4, '{"graceMinutes":15,"overnight":{"windowEnd":"12:00"}}')`,
-		bld+"_s1", tenant, bld+"_u1", e.start.Add(-48*time.Hour))
+		VALUES ($1, $2, $3, 'OVERNIGHT', 'ACTIVE', 'Guest', $4, $5)`,
+		bld+"_s1", tenant, bld+"_u1", e.start.Add(-48*time.Hour), seedPlanSnapshot())
 }
 
 func TestRoomMapE2E_SG201_AC4(t *testing.T) {
@@ -52,7 +69,7 @@ func TestRoomMapE2E_SG201_AC4(t *testing.T) {
 			}
 		}
 	}
-	// A room list without stays works; with an active stay the placeholder quoter answers 503.
+	// A room list without stays works; with an active stay the engine prices it.
 	rs := e.call("GET", "/v1/buildings/bld_a2/rooms", owner, nil)
 	if rooms, _ := rs.body["items"].([]any); rs.status != 200 || len(rooms) != 1 {
 		t.Fatalf("listRooms bld_a2 status=%d body=%v", rs.status, rs.body)
@@ -63,10 +80,15 @@ func TestRoomMapE2E_SG201_AC4(t *testing.T) {
 	if r := e.call("GET", "/v1/buildings/bld_a2/rooms?status=NOPE", owner, nil); r.status != 400 {
 		t.Errorf("bad status: %d", r.status)
 	}
-	for _, path := range []string{"/v1/buildings/bld_a/rooms", "/v1/rooms/bld_a_u1"} {
-		if r := e.call("GET", path, owner, nil); r.status != 503 || r.str("code") != "PRICING_UNAVAILABLE" {
-			t.Errorf("%s: status=%d body=%v (documented limit until SG-101)", path, r.status, r.body)
-		}
+	// 48 hours into an overnight stay the late-checkout hours hit the daily cap: the exact total is known.
+	want := float64(seededDailyPrice)
+	list := e.call("GET", "/v1/buildings/bld_a/rooms", owner, nil)
+	if got := occupiedTotal(t, list); list.status != 200 || got != want {
+		t.Errorf("listRooms bld_a: status=%d runningTotal=%v, want %v", list.status, got, want)
+	}
+	one := e.call("GET", "/v1/rooms/bld_a_u1", owner, nil)
+	if got := occupiedTotal(t, one); one.status != 200 || got != want || one.str("status") != "OVERDUE" {
+		t.Errorf("getRoom bld_a_u1: status=%d runningTotal=%v room=%q, want %v OVERDUE", one.status, got, one.str("status"), want)
 	}
 	if r := e.call("GET", "/v1/rooms/bld_a_u2", owner, nil); r.status != 200 || r.str("note") != "sea view" || r.str("status") != "VACANT" {
 		t.Errorf("vacant room: %d %v", r.status, r.body)
@@ -90,4 +112,16 @@ func TestRoomMapE2E_SG201_AC4(t *testing.T) {
 			t.Errorf("%s: foreign=%d %v random=%d %v", pair[0], foreign.status, foreign.body, random.status, random.body)
 		}
 	}
+}
+
+// occupiedTotal digs activeStay.runningTotal out of a getRoom body or the first listRooms item.
+func occupiedTotal(t *testing.T, r reply) float64 {
+	t.Helper()
+	room := r.body
+	if items, ok := r.body["items"].([]any); ok && len(items) > 0 {
+		room, _ = items[0].(map[string]any)
+	}
+	stay, _ := room["activeStay"].(map[string]any)
+	total, _ := stay["runningTotal"].(float64)
+	return total
 }

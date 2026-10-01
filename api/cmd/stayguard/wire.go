@@ -54,8 +54,8 @@ func newSessions(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, clk 
 	)
 }
 
-// newRooms builds the room map read use cases. Derived permissions (SG-102 rule) and the Unavailable
-// quoter are temporary: SG-501 stores levels and SG-101 binds the pricing engine.
+// newRooms builds the room map read use cases. Derived permissions (SG-102 rule) are temporary until
+// SG-501 stores levels; the quoter prices from each stay's own rate plan snapshot.
 func newRooms(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
-	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Unavailable{}, clk)
+	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Quoter{}, clk)
 }
