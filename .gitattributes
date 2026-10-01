@@ -1,5 +1,6 @@
 # Generated output: collapsed in GitHub diffs and excluded from the PR size limit (scripts/pr-size.sh).
 api/internal/adapter/http/gen/** linguist-generated=true
+api/internal/adapter/postgres/sqlcgen/** linguist-generated=true
 web/src/api/generated/** linguist-generated=true
 web/src/mocks/generated/** linguist-generated=true
 web/public/mockServiceWorker.js linguist-generated=true

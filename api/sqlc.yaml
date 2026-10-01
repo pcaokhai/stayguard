@@ -1,0 +1,11 @@
+# sqlc input: goose migrations are the schema. Run through `make gen` (version pinned in the Makefile).
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/adapter/postgres/queries
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/adapter/postgres/sqlcgen
+        sql_package: pgx/v5

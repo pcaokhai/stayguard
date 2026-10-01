@@ -4,7 +4,7 @@ Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL a
 
 ## Commands
 
-`make test-api` (unit), `make test-api-int` (Testcontainers), `make lint` (golangci-lint, gosec, govulncheck), `make fmt`, `make gen` (oapi-codegen and sqlc), `make migrate`, `make up`. While iterating, run one test by name and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-003.
+`make test-api` (unit), `make test-api-int` (Testcontainers), `make lint` (golangci-lint, gosec, govulncheck), `make fmt`, `make gen` (oapi-codegen and sqlc), `make migrate` (runs `stayguard migrate`; needs `DATABASE_URL`), `make up` (API plus PostgreSQL; local dev connects as the owner superuser with trust auth, so RLS is bypassed). While iterating, run one test by name and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-003.
 
 ## Layout
 
@@ -16,7 +16,7 @@ api/
     app/                use cases and ports: sessions, trials, stays, payments, housekeeping, owner, shifts
     adapter/
       http/             generated strict handlers, problem+json mapper, SSE hub
-      postgres/         sqlc repositories, unit of work, RLS session setup, idempotency store
+      postgres/         pool, unit of work (tenant per transaction), idempotency store, audit writer, readiness probe, goose `Migrate`; sqlc queries in `queries/`, output in `sqlcgen/`
       payments/         PaymentSource port: simulator now, provider later; QR payload builder
       clock/ ids/ crypto/   time, id and encryption ports
     platform/           config, logging, metrics, rate limiting, embedded web assets
@@ -30,7 +30,8 @@ api/
 - The HTTP handlers only translate: parse the request, call one use case, map the result. No business rules in handlers.
 - Every use case takes the caller (tenant, user, role, building access) from the context set by the auth middleware; repositories require a tenant-scoped transaction.
 - Server-Sent Events: one hub per process, bounded buffers, drop slow clients, close on terminal state, heartbeat every 15 s; goroutines are owned by the hub and stop on shutdown.
-- Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` or database URL stops the process.
+- Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` or `DATABASE_URL` stops the process. Other database settings: `MIGRATE_DATABASE_URL` (owner role for `migrate`, defaults to `DATABASE_URL`) and `IDEMPOTENCY_TTL` (default 24h). The server refuses to start as a superuser, BYPASSRLS, table-owner or member-of-such role; `ALLOW_PRIVILEGED_DB=1` lifts that for local dev only.
+- The server connects as the application role (no BYPASSRLS, no DDL); only `stayguard migrate` uses the owner role and migrations never run at request time. `/readyz` is 503 until every embedded migration is applied.
 - Demo-only routes (`/v1/demo/*`) are registered only when `DEMO_MODE` is on; an architecture test proves they are absent otherwise.
 
 ## Domain rules
@@ -45,6 +46,12 @@ api/
 ## Go rules
 
 Follow docs/10 §4.2. Notably: `ctx` first, wrap errors with `%w`, typed errors mapped in one place, no `panic` outside `main`, small consumer-side interfaces, table-driven tests, `goleak` on long-running components, no package named `util` or `common`.
+
+## Database
+
+- Every new table lives in schema `app`, enables and forces RLS with a `tenant_id` policy through `app.current_tenant()`, and gets its own grants in the migration that creates it. The RLS coverage test fails otherwise.
+- A new table also needs a fixture in the isolation catalog (`isolation_fixtures_test.go`) so TS-08 covers it; add the queries to `queries/` and run `make gen`.
+- Migrations are forward-only goose files numbered in order; never edit an applied one.
 
 ## Tests
 

@@ -12,6 +12,7 @@
       "Read(./web/src/mocks/generated/**)",
       "Read(./web/public/mockServiceWorker.js)",
       "Read(./api/internal/**/gen/**)",
+      "Read(./api/internal/**/sqlcgen/**)",
       "Read(**/*.lock)",
       "Read(**/package-lock.json)",
       "Read(**/go.sum)",

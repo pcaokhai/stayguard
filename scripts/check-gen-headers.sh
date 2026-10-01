@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 fail=0
 bad() { echo "FAIL: $*" >&2; fail=1; }
 
-gen_dirs="api/internal/adapter/http/gen web/src/api/generated web/src/mocks/generated"
+gen_dirs="api/internal/adapter/http/gen api/internal/adapter/postgres/sqlcgen web/src/api/generated web/src/mocks/generated"
 for d in $gen_dirs; do
   [ -d "$d" ] || { bad "missing generated directory $d (run make gen)"; continue; }
   while IFS= read -r f; do
