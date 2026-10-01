@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -47,6 +48,19 @@ type DemoSession struct {
 	User      User
 }
 
+const redacted = "[redacted]"
+
+// String, GoString and LogValue keep the raw token out of %v, %+v, %#v and slog output.
+func (d DemoSession) String() string {
+	return fmt.Sprintf("DemoSession{Token:%s TenantID:%s UserID:%s}", redacted, d.TenantID, d.User.ID)
+}
+
+func (d DemoSession) GoString() string { return d.String() }
+
+func (d DemoSession) LogValue() slog.Value {
+	return slog.GroupValue(slog.String("token", redacted), slog.String("tenant_id", d.TenantID), slog.String("user_id", d.User.ID))
+}
+
 // CreateDemo opens a session for role in tenantID (an existing trial) or in a new empty trial tenant.
 // Every created id is generated here; the request never supplies one.
 func (s *Sessions) CreateDemo(ctx context.Context, role access.Role, locale, tenantID string) (DemoSession, error) {
@@ -60,6 +74,9 @@ func (s *Sessions) CreateDemo(ctx context.Context, role access.Role, locale, ten
 		return DemoSession{}, &ValidationError{"locale", "must be vi or en"}
 	}
 	create := false
+	if tenantID != "" && !validTenantID(tenantID) {
+		return DemoSession{}, ErrTrialNotFound
+	}
 	if tenantID == "" {
 		tenantID, create = s.ids.New(tenantPrefix), true
 	}
@@ -73,10 +90,33 @@ func (s *Sessions) CreateDemo(ctx context.Context, role access.Role, locale, ten
 		if err != nil {
 			return err
 		}
+		if u.Locale != locale {
+			if err = s.repo.SetLocale(ctx, tx, u.ID, locale); err != nil {
+				return err
+			}
+			u.Locale = locale
+		}
 		out, err = s.openSession(ctx, tx, tenantID, u, now)
 		return err
 	})
 	return out, err
+}
+
+// maxTenantIDLen bounds client input before it reaches the database.
+const maxTenantIDLen = 64
+
+// validTenantID is checked before any query; a bad shape answers like an unknown trial.
+func validTenantID(id string) bool {
+	if len(id) > maxTenantIDLen {
+		return false
+	}
+	for i := 0; i < len(id); i++ {
+		c := id[i]
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Sessions) prepareTenant(ctx context.Context, tx Tx, id string, create bool, now time.Time) error {

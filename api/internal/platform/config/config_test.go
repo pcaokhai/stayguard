@@ -99,9 +99,17 @@ func TestLoadSessionInvalid_SG102_AC2(t *testing.T) {
 	for _, kv := range [][2]string{
 		{"DEMO_MODE", "maybe"}, {"SESSION_TTL_HOURS", "0"}, {"SESSION_TTL_HOURS", "-1"}, {"SESSION_TTL_HOURS", "x"},
 		{"TRIAL_TTL_HOURS", "0"}, {"TRIAL_TTL_HOURS", "1.5"},
+		{"SESSION_TTL_HOURS", "9999999999999"}, {"SESSION_TTL_HOURS", "8761"}, {"TRIAL_TTL_HOURS", "8761"},
 	} {
 		if _, err := Load(env(map[string]string{"DATABASE_URL": testDBURL, kv[0]: kv[1]})); err == nil {
 			t.Errorf("expected error for %v", kv)
 		}
+	}
+}
+
+func TestLoadSessionCap_SG102_AC2(t *testing.T) {
+	c, err := Load(env(map[string]string{"DATABASE_URL": testDBURL, "SESSION_TTL_HOURS": "8760"}))
+	if err != nil || c.SessionTTL != 8760*time.Hour {
+		t.Fatalf("cap itself must be accepted: %+v err=%v", c, err)
 	}
 }

@@ -57,24 +57,29 @@ type fakeRepo struct {
 	usersByID     map[string]User
 	createdUsers  []User
 	conflictOnce  bool
+	hideWinner    bool
 	sessions      []sessionRow
 	info          TenantInfo
 	buildings     []string
 	locale        string
+	trialNow      time.Time
+	tenantExpires time.Time
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{trials: map[string]bool{}, users: map[access.Role]User{}, usersByID: map[string]User{}}
 }
 
-func (r *fakeRepo) CreateTrialTenant(_ context.Context, _ Tx, id, _ string, _ time.Time) error {
+func (r *fakeRepo) CreateTrialTenant(_ context.Context, _ Tx, id, _ string, exp time.Time) error {
 	r.calls++
+	r.tenantExpires = exp
 	r.createdTenant = append(r.createdTenant, id)
 	return nil
 }
 
-func (r *fakeRepo) TrialTenant(_ context.Context, _ Tx, id string, _ time.Time) (bool, error) {
+func (r *fakeRepo) TrialTenant(_ context.Context, _ Tx, id string, now time.Time) (bool, error) {
 	r.calls++
+	r.trialNow = now
 	return r.trials[id], nil
 }
 
@@ -88,7 +93,9 @@ func (r *fakeRepo) CreateUser(_ context.Context, _ Tx, id, name string, role acc
 	r.calls++
 	if r.conflictOnce {
 		r.conflictOnce = false
-		r.users[role] = User{ID: "us_winner", Name: name, Role: role, Locale: locale}
+		if !r.hideWinner {
+			r.users[role] = User{ID: "us_winner", Name: name, Role: role, Locale: locale}
+		}
 		return User{}, ErrConflict
 	}
 	u := User{ID: id, Name: name, Role: role, Locale: locale}

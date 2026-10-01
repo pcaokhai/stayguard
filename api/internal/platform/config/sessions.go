@@ -9,6 +9,8 @@ import (
 const (
 	defaultSessionTTLHours = 12
 	defaultTrialTTLHours   = 24
+	// maxTTLHours (one year) keeps hours*time.Hour far from Duration overflow.
+	maxTTLHours = 24 * 365
 )
 
 // loadSessions reads the demo-session settings (SG-102): DEMO_MODE, SESSION_TTL_HOURS, TRIAL_TTL_HOURS.
@@ -36,8 +38,8 @@ func hoursEnv(getenv func(string) string, key string, def int) (time.Duration, e
 		return time.Duration(def) * time.Hour, nil
 	}
 	h, err := strconv.Atoi(v)
-	if err != nil || h < 1 {
-		return 0, fmt.Errorf("%s must be a positive whole number of hours, got %q", key, v)
+	if err != nil || h < 1 || h > maxTTLHours {
+		return 0, fmt.Errorf("%s must be a whole number of hours in 1..%d, got %q", key, maxTTLHours, v)
 	}
 	return time.Duration(h) * time.Hour, nil
 }

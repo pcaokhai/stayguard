@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -221,5 +222,62 @@ func TestCallerContext_SG102_AC4(t *testing.T) {
 	want := Caller{TenantID: "tn1", UserID: "us1", Role: access.RoleOwner, Locale: "vi"}
 	if got, ok := CallerFrom(WithCaller(context.Background(), want)); !ok || got != want {
 		t.Fatalf("got %+v %v", got, ok)
+	}
+}
+
+func TestCreateDemoClockAndExpiry_SG102_AC1(t *testing.T) {
+	r := newRig(true)
+	if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", ""); err != nil || !r.rep.tenantExpires.Equal(t0.Add(trialTTL)) {
+		t.Fatalf("trial expiry = %v err=%v", r.rep.tenantExpires, err)
+	}
+	r.rep.trials["tn_ok"] = true
+	if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", "tn_ok"); err != nil || !r.rep.trialNow.Equal(t0) {
+		t.Fatalf("TrialTenant now = %v err=%v", r.rep.trialNow, err)
+	}
+}
+
+func TestCreateDemoExistingUserLocale_SG102_AC1(t *testing.T) {
+	r := newRig(true)
+	r.rep.trials["tn_ok"] = true
+	r.rep.users[access.RoleOwner] = User{ID: "us_existing", Role: access.RoleOwner, Locale: "vi"}
+	ds, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "en", "tn_ok")
+	if err != nil || ds.User.Locale != "en" || r.rep.locale != "en" {
+		t.Fatalf("locale must follow the request: %+v stored=%q %v", ds.User, r.rep.locale, err)
+	}
+}
+
+func TestCreateDemoTenantIDShape_SG102_AC1(t *testing.T) {
+	r := newRig(true)
+	for _, id := range []string{"tn-1", "tn 1", "tn'1", "t\u00e9", strings.Repeat("a", 65)} {
+		if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", id); !errors.Is(err, ErrTrialNotFound) {
+			t.Errorf("%q: err = %v", id, err)
+		}
+	}
+	if len(r.uow.tenants) != 0 || r.rep.calls != 0 {
+		t.Fatal("malformed ids must not reach the unit of work")
+	}
+	r.rep.trials[strings.Repeat("a", 64)] = true
+	if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", strings.Repeat("a", 64)); err != nil {
+		t.Fatalf("64-byte id is valid: %v", err)
+	}
+}
+
+func TestDemoSessionRedacted_SG102_AC2(t *testing.T) {
+	ds := DemoSession{Token: rawToken, TenantID: "tn1"}
+	for _, out := range []string{fmt.Sprintf("%+v", ds), fmt.Sprintf("%v", ds), fmt.Sprintf("%#v", ds), fmt.Sprintf("%s", ds), fmt.Sprintf("%+v", &ds)} {
+		if strings.Contains(out, rawToken) {
+			t.Fatalf("token leaked: %s", out)
+		}
+	}
+	if v := ds.LogValue().String(); strings.Contains(v, rawToken) {
+		t.Fatalf("token leaked to slog: %s", v)
+	}
+}
+
+func TestCreateDemoConflictTwice_SG102_AC1(t *testing.T) {
+	r := newRig(true)
+	r.rep.conflictOnce, r.rep.hideWinner = true, true
+	if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", ""); !errors.Is(err, ErrConflict) {
+		t.Fatalf("err = %v", err)
 	}
 }
