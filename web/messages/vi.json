@@ -2,5 +2,17 @@
   "app": {
     "title": "StayGuard",
     "tagline": "Quản lý nhà nghỉ, chống thất thoát."
+  },
+  "login": {
+    "title": "Quản lý nhà nghỉ, không còn thất thoát tiền",
+    "lead": "Tiền chuyển khoản luôn vào tài khoản chủ, giờ thuê do hệ thống ghi, mọi chỉnh sửa đều có dấu vết.",
+    "tryAs": "Dùng thử với vai trò",
+    "desk": "Lễ tân",
+    "deskSub": "Nhận phòng, trả phòng, thu tiền bằng QR",
+    "owner": "Chủ nhà nghỉ",
+    "ownerSub": "Doanh thu, tiền về, cảnh báo bất thường",
+    "housekeeping": "Buồng phòng",
+    "housekeepingSub": "Xem phòng cần dọn, báo dọn xong",
+    "failed": "Không bắt đầu được phiên dùng thử. Vui lòng thử lại."
   }
 }

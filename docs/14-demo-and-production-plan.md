@@ -62,7 +62,7 @@ Tests: one use-case test for complete (role check, idempotent).
 What: `getOwnerOverview` for the tenant-local day: paid revenue, transfers received, cash received, revenue per building, occupancy, latest 10 payments; alerts empty. OWNER only. No new flag.
 Tests: one integration test with seeded payments checks each total.
 
-### [ ] W1 Web foundation (WEB)
+### [x] W1 Web foundation (WEB)
 What: add Tailwind v4, TanStack Query, `qrcode`; theme tokens from the design source; `t()` helper with `messages/vi.json`; API client wrapper with token and Idempotency-Key helpers; `/vi` layout; mock mode still works. Role picker at `/vi` (three roles, creates a demo session, routes to rooms, owner or housekeeping).
 Verify: `npm run build`, `npm run lint`; role picker matches `ChonVaiTro.png`.
 

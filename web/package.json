@@ -13,14 +13,20 @@
     "gen": "npm run gen:api && npm run gen:mocks"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-query": "^5.104.0",
     "next": "16.3.8",
     "openapi-fetch": "0.17.0",
+    "postcss": "^8.5.28",
+    "qrcode": "^1.5.4",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@faker-js/faker": "10.6.0",
     "@types/node": "26.6.3",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",

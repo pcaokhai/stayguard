@@ -1,16 +1,22 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import en from "../../messages/en.json";
-import vi from "../../messages/vi.json";
-import Page from "./page";
+import viMsg from "../../messages/vi.json";
+import { RolePicker } from "../features/session/RolePicker";
 
-test("placeholder_renders_english_message_SG001_AC3", () => {
-  const html = renderToStaticMarkup(<Page />);
-  expect(html).toContain(en.app.title);
-  expect(html).toContain(en.app.tagline);
+// The router needs the app context; stub it for the static render.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
+vi.mock("../features/session/useCreateDemoSession", () => ({
+  useCreateDemoSession: () => ({ isPending: false, isError: false, mutate: () => {} }),
+}));
+
+test("role_picker_shows_three_roles_W1", () => {
+  const html = renderToStaticMarkup(<RolePicker />);
+  for (const k of ["desk", "owner", "housekeeping"] as const) expect(html).toContain(viMsg.login[k]);
 });
 
 // CLAUDE.md §6 rule 12: both languages carry the same keys.
 test("messages_en_vi_same_keys_SG001_AC3", () => {
-  expect(Object.keys(vi.app).sort()).toEqual(Object.keys(en.app).sort());
+  expect(Object.keys(viMsg.app).sort()).toEqual(Object.keys(en.app).sort());
+  expect(Object.keys(viMsg.login).sort()).toEqual(Object.keys(en.login).sort());
 });

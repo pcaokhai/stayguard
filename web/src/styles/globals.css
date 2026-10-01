@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* Tokens from docs/assets/design/source (one place, reused everywhere). */
+@theme {
+  --font-sans: var(--font-be-vietnam-pro), system-ui, sans-serif;
+  --color-bg: #f6f4ef;
+  --color-surface: #ffffff;
+  --color-ink: #1c1b19;
+  --color-ink-2: #45433f;
+  --color-muted: #5c5a55;
+  --color-line: #cfcbc3;
+  --color-line-soft: #e2ded6;
+  --color-sunken: #ece9e2;
+  --color-brand: #1f4e5f;
+  --color-brand-dark: #163a47;
+  --color-ok: #1f5a30;
+  --color-ok-bg: #e4f1e7;
+  --color-warn: #7a3e12;
+  --color-warn-bg: #fbe1cc;
+  --color-warn-line: #f0b78c;
+  --color-info: #1c4a82;
+  --color-info-bg: #dde8f6;
+  --color-info-line: #afc6e6;
+  --radius-card: 14px;
+  --radius-ctl: 9px;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
