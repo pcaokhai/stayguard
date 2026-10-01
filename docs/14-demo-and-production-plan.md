@@ -82,7 +82,7 @@ Verify: matches `ThanhToanQR.png`, `DaThanhToan.png`; transfer flow ends on Paid
 What: `/vi/housekeeping` list with one Mark clean button per room; `/vi/owner` cards and latest payments (alerts section hidden when empty; Staff permissions button hidden).
 Verify: matches `BuongPhong.png`, `TongQuanChu.png` minus hidden parts.
 
-### [ ] I1 Integrate and publish the demo (you)
+### [x] I1 Integrate and publish the demo (you)
 1. `docker compose -f deploy/compose.yaml -f deploy/compose.demo.override.yaml up --build`, then `make migrate`.
 2. Walk the script below on a real phone and on a laptop. Fix only what breaks the script.
 3. Deploy the same image with the same environment to the demo host (VPS with Caddy, or Cloud Run with a managed PostgreSQL). Do not put real data in it.
