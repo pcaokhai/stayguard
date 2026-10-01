@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -55,21 +56,26 @@ func (a actor) count(ctx context.Context, sql string, args ...any) (n int64, err
 	return n, err
 }
 
-func sqlState(err error) string {
+// wantRLSViolation requires a row-level security rejection, not a missing privilege.
+func wantRLSViolation(t testing.TB, what string, err error) {
+	t.Helper()
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code
+	if !errors.As(err, &pgErr) || pgErr.Code != insufficientPrivilege || !strings.Contains(pgErr.Message, "row-level security") {
+		t.Errorf("%s: want row-level security violation, got %v", what, err)
 	}
-	return ""
 }
 
-// wantUntouched accepts zero rows, or a privilege denial (the app role has no UPDATE or DELETE on audit_logs).
-func wantUntouched(t testing.TB, what string, n int64, err error) {
+// wantUntouched requires zero rows touched and no error. audit_logs is the one table where the app
+// role holds no UPDATE or DELETE grant, so there the statement must fail with a privilege error
+// (proves the grant is absent) instead.
+func wantUntouched(t testing.TB, what, table string, n int64, err error) {
 	t.Helper()
-	if err != nil && sqlState(err) != insufficientPrivilege {
-		t.Errorf("%s: unexpected error %v", what, err)
-	} else if err == nil && n != 0 {
-		t.Errorf("%s: touched %d rows of another tenant", what, n)
+	if table == "audit_logs" {
+		wantSQLState(t, what+" on audit_logs", err, insufficientPrivilege)
+		return
+	}
+	if err != nil || n != 0 {
+		t.Errorf("%s on %s: want no error and 0 rows, got n=%d err=%v", what, table, n, err)
 	}
 }
 
@@ -85,15 +91,14 @@ func TestTenantIsolation_SG003_TS08(t *testing.T) {
 	tables := catalogTables(t, db)
 	assertFixturesCoverCatalog(ctx, t, db, tables)
 	for table, col := range tables {
-		q := pgx.Identifier{"app", table}.Sanitize()
-		t.Run("A vs B "+table, func(t *testing.T) { checkOtherTenant(ctx, t, a, q, col, tenantB) })
-		t.Run("B vs A "+table, func(t *testing.T) { checkOtherTenant(ctx, t, b, q, col, tenantA) })
-		t.Run("no tenant "+table, func(t *testing.T) { checkOtherTenant(ctx, t, none, q, col, tenantA) })
+		t.Run("A vs B "+table, func(t *testing.T) { checkOtherTenant(ctx, t, a, table, col, tenantB) })
+		t.Run("B vs A "+table, func(t *testing.T) { checkOtherTenant(ctx, t, b, table, col, tenantA) })
+		t.Run("no tenant "+table, func(t *testing.T) { checkOtherTenant(ctx, t, none, table, col, tenantA) })
 	}
 	t.Run("insert naming another tenant", func(t *testing.T) {
 		for _, f := range isolationFixtures {
 			_, err := a.exec(ctx, f.sql, tenantB, "bad")
-			wantSQLState(t, "A inserts into "+f.table+" for B", err, insufficientPrivilege)
+			wantRLSViolation(t, "A inserts into "+f.table+" for B", err)
 		}
 	})
 	t.Run("composite foreign key", func(t *testing.T) { checkCompositeFK(ctx, t, a) })
@@ -129,8 +134,9 @@ func assertFixturesCoverCatalog(ctx context.Context, t *testing.T, db string, ta
 
 // checkOtherTenant proves the actor cannot list, fetch, update or delete the victim's rows, and that
 // a query with no tenant filter at all (RLS as the second guard) returns at most the actor's own rows.
-func checkOtherTenant(ctx context.Context, t *testing.T, who actor, table, col, victim string) {
+func checkOtherTenant(ctx context.Context, t *testing.T, who actor, name, col, victim string) {
 	t.Helper()
+	table := pgx.Identifier{"app", name}.Sanitize()
 	n, err := who.count(ctx, fmt.Sprintf("SELECT count(*) FROM %s WHERE %s = $1", table, col), victim)
 	if err != nil || n != 0 {
 		t.Errorf("fetch by victim's tenant: n=%d err=%v", n, err)
@@ -144,9 +150,9 @@ func checkOtherTenant(ctx context.Context, t *testing.T, who actor, table, col, 
 		t.Errorf("naive select: want %d rows, got n=%d err=%v", wantAll, n, err)
 	}
 	n, err = who.exec(ctx, fmt.Sprintf("UPDATE %s SET %s = %s WHERE %s = $1", table, col, col, col), victim)
-	wantUntouched(t, "update", n, err)
+	wantUntouched(t, "update", name, n, err)
 	n, err = who.exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE %s = $1", table, col), victim)
-	wantUntouched(t, "delete", n, err)
+	wantUntouched(t, "delete", name, n, err)
 }
 
 // checkCompositeFK: a unit of A pointing at B's building is refused by the (tenant_id, id) foreign key.
@@ -154,46 +160,62 @@ func checkCompositeFK(ctx context.Context, t *testing.T, a actor) {
 	t.Helper()
 	_, err := a.exec(ctx, `INSERT INTO app.units (id, tenant_id, building_id, floor_id, unit_type_id, code)
 		VALUES ('un_ts08_x', $1, $2, $3, $4, 'X1')`, tenantA, tenantB+"_b", tenantA+"_f", tenantA+"_ut")
-	wantSQLState(t, "unit of A in B's building", err, foreignKeyCode)
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != foreignKeyCode || pgErr.ConstraintName != "units_tenant_id_building_id_fkey" {
+		t.Errorf("unit of A in B's building: want composite FK violation, got %v", err)
+	}
 }
 
 // checkNullTenantEvents covers Ruling 7: an unmatched event (NULL tenant) exists but is invisible and
 // untouchable to the app role, which can neither name another tenant nor move a row there.
 func checkNullTenantEvents(ctx context.Context, t *testing.T, db string, a, b, none actor) {
 	t.Helper()
+	maint := connAs(t, db, maintRole)
+	t.Cleanup(func() {
+		if _, err := maint.Exec(context.Background(), `DELETE FROM app.payment_events WHERE id = $1`, unmatchedEvents); err != nil {
+			t.Errorf("cleanup unmatched event: %v", err)
+		}
+	})
 	// No RETURNING: the select policy hides the row from its own inserter.
 	if _, err := none.exec(ctx, `INSERT INTO app.payment_events (id, provider, external_id, amount, result)
 		VALUES ($1, 'sim', 'x_ts08_null', 1, 'UNMATCHED')`, unmatchedEvents); err != nil {
 		t.Fatalf("app role inserts unmatched event: %v", err)
 	}
 	for _, who := range []actor{a, b, none} {
-		n, err := who.count(ctx, `SELECT count(*) FROM app.payment_events WHERE id = $1`, unmatchedEvents)
-		if err != nil || n != 0 {
-			t.Errorf("%q sees unmatched event: n=%d err=%v", who.tenant, n, err)
-		}
-		n, err = who.exec(ctx, `UPDATE app.payment_events SET amount = 2 WHERE id = $1`, unmatchedEvents)
-		if err != nil || n != 0 {
-			t.Errorf("%q updated unmatched event: n=%d err=%v", who.tenant, n, err)
-		}
-		n, err = who.exec(ctx, `DELETE FROM app.payment_events WHERE id = $1`, unmatchedEvents)
-		if err != nil || n != 0 {
-			t.Errorf("%q deleted unmatched event: n=%d err=%v", who.tenant, n, err)
-		}
+		assertEventUntouchable(ctx, t, who)
 	}
-	maint := connAs(t, db, maintRole)
 	var n int
 	if err := maint.QueryRow(ctx, `SELECT count(*) FROM app.payment_events WHERE id = $1`, unmatchedEvents).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("maintenance role must see the unmatched event: n=%d err=%v", n, err)
 	}
-	_, err := a.exec(ctx, `UPDATE app.payment_events SET tenant_id = $1 WHERE id = $2`, tenantB, tenantA+"_pe")
-	wantSQLState(t, "A moves its event to B", err, insufficientPrivilege)
-	_, err = a.exec(ctx, `UPDATE app.payment_events SET tenant_id = NULL WHERE id = $1`, tenantA+"_pe")
-	wantSQLState(t, "A unmatches its own event", err, insufficientPrivilege)
-	n2, err := b.count(ctx, `SELECT count(*) FROM app.payment_events WHERE id = $1`, tenantA+"_pe")
-	if err != nil || n2 != 0 {
-		t.Errorf("B sees A's matched event: n=%d err=%v", n2, err)
+	assertEventCannotMove(ctx, t, a, b)
+}
+
+func assertEventUntouchable(ctx context.Context, t *testing.T, who actor) {
+	t.Helper()
+	n, err := who.count(ctx, `SELECT count(*) FROM app.payment_events WHERE id = $1`, unmatchedEvents)
+	if err != nil || n != 0 {
+		t.Errorf("%q sees unmatched event: n=%d err=%v", who.tenant, n, err)
 	}
-	if _, err := maint.Exec(ctx, `DELETE FROM app.payment_events WHERE id = $1`, unmatchedEvents); err != nil {
-		t.Errorf("cleanup unmatched event: %v", err)
+	n, err = who.exec(ctx, `UPDATE app.payment_events SET amount = 2 WHERE id = $1`, unmatchedEvents)
+	if err != nil || n != 0 {
+		t.Errorf("%q updated unmatched event: n=%d err=%v", who.tenant, n, err)
+	}
+	n, err = who.exec(ctx, `DELETE FROM app.payment_events WHERE id = $1`, unmatchedEvents)
+	if err != nil || n != 0 {
+		t.Errorf("%q deleted unmatched event: n=%d err=%v", who.tenant, n, err)
+	}
+}
+
+// assertEventCannotMove: A cannot move its matched event to B or to NULL, and B cannot see it.
+func assertEventCannotMove(ctx context.Context, t *testing.T, a, b actor) {
+	t.Helper()
+	_, err := a.exec(ctx, `UPDATE app.payment_events SET tenant_id = $1 WHERE id = $2`, tenantB, tenantA+"_pe")
+	wantRLSViolation(t, "A moves its event to B", err)
+	_, err = a.exec(ctx, `UPDATE app.payment_events SET tenant_id = NULL WHERE id = $1`, tenantA+"_pe")
+	wantRLSViolation(t, "A unmatches its own event", err)
+	n, err := b.count(ctx, `SELECT count(*) FROM app.payment_events WHERE id = $1`, tenantA+"_pe")
+	if err != nil || n != 0 {
+		t.Errorf("B sees A's matched event: n=%d err=%v", n, err)
 	}
 }

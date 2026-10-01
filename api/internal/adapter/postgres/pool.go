@@ -14,6 +14,7 @@ const (
 	statementTimeout     = 10 * time.Second
 	idleInTxTimeout      = 15 * time.Second
 	unitOfWorkTimeout    = 30 * time.Second
+	rollbackTimeout      = 5 * time.Second
 	maxConnLifetime      = 30 * time.Minute
 	defaultMaxConns      = 10
 	statementTimeoutName = "statement_timeout"

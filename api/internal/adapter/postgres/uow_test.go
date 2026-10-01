@@ -5,6 +5,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -12,8 +13,6 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
 )
-
-const rlsViolation = "42501"
 
 // newAppPool opens a pool as the application role against db.
 func newAppPool(t testing.TB, db string, maxConns int32) *pgxpool.Pool {
@@ -46,8 +45,24 @@ func userIDs(ctx context.Context, q interface {
 	if err != nil {
 		return nil, err
 	}
-	ids, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	return ids, err
+	return pgx.CollectRows(rows, pgx.RowTo[string])
+}
+
+// assertOnlySeededUser checks, in a fresh unit of work, that earlier rolled-back inserts left nothing.
+func assertOnlySeededUser(ctx context.Context, t *testing.T, uow *UnitOfWork) {
+	t.Helper()
+	ran := false
+	err := uow.Do(ctx, "tnt_ac4_a", func(ctx context.Context, tx app.Tx) error {
+		ran = true
+		ids, err := userIDs(ctx, tx.(Tx))
+		if err != nil || len(ids) != 1 {
+			t.Errorf("rolled-back insert must not persist, got %v err=%v", ids, err)
+		}
+		return nil
+	})
+	if err != nil || !ran {
+		t.Fatalf("verification unit of work: ran=%v err=%v", ran, err)
+	}
 }
 
 func TestUnitOfWork_SG003_AC4(t *testing.T) {
@@ -96,7 +111,7 @@ func TestUnitOfWork_SG003_AC4(t *testing.T) {
 			_, err := tx.(Tx).Exec(ctx, `INSERT INTO app.users (id, tenant_id, name, role) VALUES ('usr_x', 'tnt_ac4_b', 'x', 'OWNER')`)
 			return err
 		})
-		wantSQLState(t, "cross-tenant insert", err, rlsViolation)
+		wantRLSViolation(t, "cross-tenant insert", err)
 	})
 
 	t.Run("empty tenant fails before any query", func(t *testing.T) {
@@ -132,12 +147,22 @@ func TestUnitOfWork_SG003_AC4(t *testing.T) {
 		if !errors.As(err, &pe) {
 			t.Errorf("want PanicError, got %v", err)
 		}
-		_ = uow.Do(ctx, "tnt_ac4_a", func(ctx context.Context, tx app.Tx) error {
-			ids, err := userIDs(ctx, tx.(Tx))
-			if err != nil || len(ids) != 1 {
-				t.Errorf("rolled-back insert must not persist, got %v err=%v", ids, err)
-			}
-			return nil
-		})
+		assertOnlySeededUser(ctx, t, uow)
+	})
+
+	t.Run("rolls back on runtime.Goexit and frees the connection", func(t *testing.T) {
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			_ = uow.Do(ctx, "tnt_ac4_a", func(ctx context.Context, tx app.Tx) error {
+				if _, err := tx.(Tx).Exec(ctx, `INSERT INTO app.users (id, tenant_id, name, role) VALUES ('usr_rb', 'tnt_ac4_a', 'rb', 'OWNER')`); err != nil {
+					t.Errorf("insert: %v", err)
+				}
+				runtime.Goexit()
+				return nil
+			})
+		}()
+		<-done
+		assertOnlySeededUser(ctx, t, uow) // would block forever on MaxConns=1 if the tx stayed open
 	})
 }

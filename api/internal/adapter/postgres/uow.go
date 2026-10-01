@@ -59,15 +59,13 @@ func (u *UnitOfWork) Do(ctx context.Context, tenantID string, fn func(ctx contex
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
+	committed := false
 	defer func() {
 		if r := recover(); r != nil {
 			err = &PanicError{Value: r}
 		}
-		if err != nil {
-			// A fresh context so a cancelled ctx still rolls back.
-			if rbErr := pgTx.Rollback(context.WithoutCancel(ctx)); rbErr != nil && !errors.Is(rbErr, pgx.ErrTxClosed) {
-				err = errors.Join(err, fmt.Errorf("rollback: %w", rbErr))
-			}
+		if !committed { // error, panic or runtime.Goexit: never leave the transaction open
+			err = errors.Join(err, rollback(ctx, pgTx))
 		}
 	}()
 	if _, err = pgTx.Exec(ctx, `SELECT set_config('app.tenant_id', $1, true)`, tenantID); err != nil {
@@ -78,6 +76,17 @@ func (u *UnitOfWork) Do(ctx context.Context, tenantID string, fn func(ctx contex
 	}
 	if err = pgTx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit: %w", err)
+	}
+	committed = true
+	return nil
+}
+
+// rollback uses a context detached from cancellation, so a cancelled ctx still rolls back, but bounded.
+func rollback(ctx context.Context, tx pgx.Tx) error {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rollbackTimeout)
+	defer cancel()
+	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+		return fmt.Errorf("rollback: %w", err)
 	}
 	return nil
 }
