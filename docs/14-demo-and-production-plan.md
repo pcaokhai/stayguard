@@ -70,7 +70,7 @@ Verify: `npm run build`, `npm run lint`; role picker matches `ChonVaiTro.png`.
 What: `/vi/rooms` with building tabs, status counters, room tiles (vertical layout as in the design), End shift button hidden for now; vacant room → check-in, occupied → stay. Desktop width uses the grid of `SoDoMayTinh.png` without the side panel.
 Verify: matches `Main.png` at 390 px; works on mocks and on `make up` after A1.
 
-### [ ] W3 Check-in, stay details with extras sheet, check-out (WEB)
+### [x] W3 Check-in, stay details with extras sheet, check-out (WEB)
 What: `/vi/checkin`, `/vi/stay` (running total from the API, refetch every 60 s; extras bottom sheet), `/vi/checkout` (bill lines, cash or transfer). Idempotency-Key per action.
 Verify: matches `NhanPhong.png`, `ChiTiet.png`, `ThemDichVu.png`, `TraPhong.png`; flow works against `make up`.
 

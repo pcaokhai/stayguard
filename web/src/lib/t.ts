@@ -10,3 +10,7 @@ export function t(key: MessageKey): string {
   const hit = key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], vi);
   return typeof hit === "string" ? hit : key;
 }
+
+// Fills {name} placeholders: tf("stay.hoursMinutes", { h: 2, m: 35 }).
+export const tf = (key: MessageKey, vars: Record<string, string | number>) =>
+  Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), t(key));
