@@ -147,7 +147,7 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 		if err != nil {
 			return DemoData{}, fmt.Errorf("demo seed unit type %s: %w", u.Code, err)
 		}
-		ut := DemoUnitType{ID: d.ids.New("ut"), Code: u.Code, Name: u.Name, RatePlan: plan.Snapshot(), Version: int32(plan.Version)}
+		ut := DemoUnitType{ID: d.ids.New("ut"), Code: u.Code, Name: u.Name, RatePlan: plan.Snapshot(), Version: int32(plan.Version)} //nolint:gosec // embedded fixture, version 1
 		plans[u.Code] = ut
 		out.UnitTypes = append(out.UnitTypes, ut)
 	}
