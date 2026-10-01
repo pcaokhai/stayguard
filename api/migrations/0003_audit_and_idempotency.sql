@@ -61,5 +61,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
     app.tenants, app.users, app.sessions, app.properties, app.buildings, app.floors, app.unit_types,
     app.units, app.stays, app.services, app.stay_extras, app.invoices, app.payments,
     app.payment_events, app.idempotency_keys
-    TO stayguard_app, stayguard_maint;
-GRANT SELECT, INSERT ON app.audit_logs TO stayguard_app, stayguard_maint;
+    TO stayguard_app;
+GRANT SELECT, INSERT ON app.audit_logs TO stayguard_app;
+-- Maintenance reads and deletes only (trial cleanup); audit_logs is never deleted.
+GRANT SELECT, DELETE ON
+    app.tenants, app.users, app.sessions, app.properties, app.buildings, app.floors, app.unit_types,
+    app.units, app.stays, app.services, app.stay_extras, app.invoices, app.payments,
+    app.payment_events, app.idempotency_keys
+    TO stayguard_maint;
+GRANT SELECT ON app.audit_logs TO stayguard_maint;

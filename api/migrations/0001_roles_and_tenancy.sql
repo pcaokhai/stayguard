@@ -10,8 +10,14 @@ BEGIN
         CREATE ROLE stayguard_app NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'stayguard_maint') THEN
-        -- Trial cleanup only (SG-102 or later): reads and deletes across tenants.
+        -- Trial cleanup only (SG-102 or later): SELECT and DELETE across tenants, never INSERT or UPDATE
+        -- (a BYPASSRLS writer could mark a transfer PAID outside the payment-event handler).
         CREATE ROLE stayguard_maint NOLOGIN NOSUPERUSER BYPASSRLS NOCREATEDB NOCREATEROLE;
+    END IF;
+    -- A pre-existing app role is not trusted: it must hold no privileged attribute.
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'stayguard_app'
+               AND (rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb)) THEN
+        RAISE EXCEPTION 'role stayguard_app has a privileged attribute (superuser, bypassrls, createrole or createdb)';
     END IF;
 END
 $$;
