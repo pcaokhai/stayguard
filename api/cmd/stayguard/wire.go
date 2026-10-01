@@ -12,7 +12,7 @@ import (
 )
 
 // deps are the constructed adapters. The unit of work, idempotency store and audit writer have no
-// consumer until the first use case lands; they are built here so the wiring has one home.
+// consumer until SG-102+; they are built here so the wiring has one home.
 type deps struct {
 	pool  *pgxpool.Pool
 	uow   app.UnitOfWork

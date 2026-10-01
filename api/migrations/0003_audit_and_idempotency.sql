@@ -70,3 +70,7 @@ GRANT SELECT, DELETE ON
     app.payment_events, app.idempotency_keys
     TO stayguard_maint;
 GRANT SELECT ON app.audit_logs TO stayguard_maint;
+
+-- /readyz runs as the application role and must read which migrations are applied. goose creates this
+-- table before the first migration runs; the grant is read-only, so the role still cannot alter history.
+GRANT SELECT ON public.goose_db_version TO stayguard_app;

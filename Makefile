@@ -71,9 +71,9 @@ gen-sqlc:
 contracts:
 	@bash scripts/contracts.sh
 # Runs the binary's own migrate subcommand (embedded goose, forward-only) against MIGRATE_DATABASE_URL, else DATABASE_URL.
-# Locally with `make up`: DATABASE_URL=postgres://stayguard@localhost:5433/stayguard?sslmode=disable make migrate
+# Local dev only (owner superuser, trust auth, RLS bypassed): DATABASE_URL=postgres://stayguard@localhost:5432/stayguard?sslmode=disable make migrate
 migrate:
-	@test -n "$$DATABASE_URL" || { echo "DATABASE_URL is required" >&2; exit 1; }
+	@test -n "$$DATABASE_URL" || { echo "DATABASE_URL is required: the owner database URL, e.g. postgres://stayguard@localhost:5432/stayguard?sslmode=disable for make up" >&2; exit 1; }
 	cd api && go run ./cmd/stayguard migrate
 
 # Testcontainers needs a running Docker daemon. RACE=1 adds -race (needs cgo; CI sets it).

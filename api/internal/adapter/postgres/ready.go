@@ -17,7 +17,7 @@ const readyTimeout = 2 * time.Second
 var ErrMigrationsPending = errors.New("migrations pending")
 
 // ReadinessProbe implements app.ReadinessProbe over the application pool: the database answers and
-// no embedded migration is pending. It reads goose_db_version as the application role (migration 0004 grants that).
+// no embedded migration is pending. It reads goose_db_version as the application role (migration 0003 grants that).
 type ReadinessProbe struct{ pool *pgxpool.Pool }
 
 func NewReadinessProbe(pool *pgxpool.Pool) *ReadinessProbe { return &ReadinessProbe{pool: pool} }

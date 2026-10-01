@@ -4,7 +4,7 @@ Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL a
 
 ## Commands
 
-`make test-api` (unit), `make test-api-int` (Testcontainers), `make lint` (golangci-lint, gosec, govulncheck), `make fmt`, `make gen` (oapi-codegen and sqlc), `make migrate` (runs `stayguard migrate`; needs `DATABASE_URL`), `make up` (API plus PostgreSQL). While iterating, run one test by name and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-003.
+`make test-api` (unit), `make test-api-int` (Testcontainers), `make lint` (golangci-lint, gosec, govulncheck), `make fmt`, `make gen` (oapi-codegen and sqlc), `make migrate` (runs `stayguard migrate`; needs `DATABASE_URL`), `make up` (API plus PostgreSQL; local dev connects as the owner superuser with trust auth, so RLS is bypassed). While iterating, run one test by name and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-003.
 
 ## Layout
 
