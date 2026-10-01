@@ -24,6 +24,8 @@ type fakeRoomRepo struct {
 	rooms     map[string][]RoomRow
 	tz        string
 	calls     int
+	// ignoreFilter simulates a faulty adapter that returns every room of the tenant.
+	ignoreFilter bool
 }
 
 func (r *fakeRoomRepo) Buildings(_ context.Context, tx Tx) ([]BuildingRow, error) {
@@ -35,7 +37,7 @@ func (r *fakeRoomRepo) Rooms(_ context.Context, tx Tx, f RoomFilter) ([]RoomRow,
 	r.calls++
 	var out []RoomRow
 	for _, row := range r.rooms[tx.TenantID()] {
-		if (f.BuildingID == "" || row.BuildingID == f.BuildingID) && (f.RoomID == "" || row.ID == f.RoomID) {
+		if r.ignoreFilter || ((f.BuildingID == "" || row.BuildingID == f.BuildingID) && (f.RoomID == "" || row.ID == f.RoomID)) {
 			out = append(out, row)
 		}
 	}

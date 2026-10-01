@@ -104,7 +104,7 @@ func (s *Rooms) ListBuildings(ctx context.Context, c Caller) ([]BuildingView, er
 			return fmt.Errorf("building levels: %w", err)
 		}
 		for _, b := range buildings {
-			if lv[b.ID] == access.NONE {
+			if l := lv[b.ID]; l != access.VIEW && l != access.EDIT {
 				continue
 			}
 			out = append(out, BuildingView{b.ID, b.Code, b.Name, lv[b.ID], room.Count(byBuilding[b.ID])})
@@ -145,7 +145,7 @@ func (s *Rooms) ListRooms(ctx context.Context, c Caller, buildingID string, stat
 		if err != nil {
 			return err
 		}
-		out, err = s.views(ctx, rows, status, loc)
+		out, err = s.views(ctx, inBuilding(rows, buildingID), status, loc)
 		return err
 	})
 	return out, err
@@ -175,7 +175,7 @@ func (s *Rooms) GetRoom(ctx context.Context, c Caller, roomID string) (RoomView,
 		if err != nil {
 			return fmt.Errorf("rooms: %w", err)
 		}
-		if len(rows) == 0 {
+		if roomID == "" || len(rows) == 0 || rows[0].ID != roomID {
 			return ErrNotFound
 		}
 		if err := s.checkBuilding(ctx, op, c, rows[0].BuildingID); err != nil {
@@ -193,6 +193,17 @@ func (s *Rooms) GetRoom(ctx context.Context, c Caller, roomID string) (RoomView,
 		return nil
 	})
 	return out, err
+}
+
+// inBuilding drops rows of other buildings, so an adapter that ignores the filter cannot leak them.
+func inBuilding(rows []RoomRow, buildingID string) []RoomRow {
+	out := make([]RoomRow, 0, len(rows))
+	for _, r := range rows {
+		if r.BuildingID == buildingID {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // views derives every row, applies the optional status filter, then quotes only the rooms kept.
@@ -235,7 +246,7 @@ func deriveRoom(r RoomRow, now time.Time, loc *time.Location) (room.Status, *roo
 		return "", nil, err
 	}
 	var timing *room.StayTiming
-	if r.Stay != nil {
+	if r.Stay != nil && stored == room.StatusOccupied { // a stay on any other status is stale
 		rt, err := room.ParseRentalType(r.Stay.RentalType)
 		if err != nil {
 			return "", nil, err

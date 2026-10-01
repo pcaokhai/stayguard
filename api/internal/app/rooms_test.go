@@ -262,3 +262,80 @@ func TestRoomsFailClosed_SG201_AC3(t *testing.T) {
 		}
 	})
 }
+
+func TestRoomsHardening_SG201_AC4(t *testing.T) {
+	ctx := context.Background()
+	c := caller(access.RoleOwner)
+	rooms := []RoomRow{vacant("r1", "bl_1"), vacant("r2", "bl_2")}
+	t.Run("empty room id is not found", func(t *testing.T) {
+		env := newRoomsEnv(rooms, allLevels)
+		if _, err := env.svc.GetRoom(ctx, c, ""); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("err = %v", err)
+		}
+	})
+	t.Run("adapter returning a different room is not found", func(t *testing.T) {
+		env := newRoomsEnv(rooms, allLevels)
+		env.repo.ignoreFilter = true
+		if _, err := env.svc.GetRoom(ctx, c, "r2"); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("err = %v", err)
+		}
+	})
+	t.Run("adapter ignoring the building filter cannot leak rooms", func(t *testing.T) {
+		env := newRoomsEnv(rooms, allLevels)
+		env.repo.ignoreFilter = true
+		got, err := env.svc.ListRooms(ctx, c, "bl_1", nil)
+		if err != nil || len(got) != 1 || got[0].ID != "r1" {
+			t.Fatalf("got %+v err %v", got, err)
+		}
+	})
+	t.Run("building missing from levels fails closed", func(t *testing.T) {
+		env := newRoomsEnv(rooms, map[string]access.Level{})
+		rc := caller(access.RoleReceptionist)
+		if _, err := env.svc.ListRooms(ctx, rc, "bl_1", nil); !errors.Is(err, access.ErrBuildingForbidden) {
+			t.Fatalf("listRooms err = %v", err)
+		}
+		if _, err := env.svc.GetRoom(ctx, rc, "r1"); !errors.Is(err, access.ErrBuildingForbidden) {
+			t.Fatalf("getRoom err = %v", err)
+		}
+	})
+}
+
+func TestListBuildingsLevelRange_SG201_AC1(t *testing.T) {
+	env := newRoomsEnv([]RoomRow{vacant("r1", "bl_1")}, map[string]access.Level{"bl_1": access.Level(9), "bl_2": access.Level(-1), "bl_3": access.VIEW})
+	got, err := env.svc.ListBuildings(context.Background(), caller(access.RoleOwner))
+	if err != nil || len(got) != 1 || got[0].ID != "bl_3" {
+		t.Fatalf("got %+v err %v", got, err)
+	}
+}
+
+func TestRoomsStayOnlyWhenOccupied_SG201_AC2(t *testing.T) {
+	for _, stored := range []string{"VACANT", "TO_CLEAN", "MAINTENANCE"} {
+		t.Run(stored, func(t *testing.T) {
+			row := stayed("r1", "bl_1", "HOURLY", roomsNow.Add(-time.Hour))
+			row.StoredStatus = stored
+			env := newRoomsEnv([]RoomRow{row}, allLevels)
+			got, err := env.svc.GetRoom(context.Background(), caller(access.RoleOwner), "r1")
+			if err != nil || got.ActiveStay != nil || len(env.quoter.calls) != 0 {
+				t.Fatalf("stay %+v quotes %d err %v", got.ActiveStay, len(env.quoter.calls), err)
+			}
+		})
+	}
+}
+
+func TestRoomsLevelsCallCount_SG201_AC5(t *testing.T) {
+	counts := map[int]int{}
+	for _, n := range []int{1, 50} {
+		var rows []RoomRow
+		for i := range n {
+			rows = append(rows, vacant(fmt.Sprintf("r%d", i), "bl_1"))
+		}
+		env := newRoomsEnv(rows, allLevels)
+		if _, err := env.svc.ListRooms(context.Background(), caller(access.RoleOwner), "bl_1", nil); err != nil {
+			t.Fatal(err)
+		}
+		counts[n] = env.levels.calls
+	}
+	if counts[1] != counts[50] {
+		t.Fatalf("levels calls vary with rooms: %v", counts)
+	}
+}
