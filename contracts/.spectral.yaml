@@ -1,0 +1,17 @@
+# Project Spectral ruleset (lane PLAT). Tooling config, not a contract change.
+extends: ["spectral:oas"]
+rules:
+  # Strict where the project depends on it: codegen and authorization need these.
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-tag-defined: error
+  # The spec documents with summary and a prose companion (docs/04); descriptions are optional.
+  operation-description: off
+  info-contact: off
+  # Project extension (docs/04): every operation names its owning story.
+  stayguard-operation-story:
+    description: Each operation carries x-story.
+    # warn: POST /v1/webhooks/bank lacks x-story today; raise to error after a contracts PR adds it.
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then: { field: x-story, function: truthy }
