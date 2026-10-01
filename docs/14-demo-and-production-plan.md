@@ -58,7 +58,7 @@ Verify: tests by name; curl through check-in → check-out → create transfer �
 What: `listHousekeepingTasks` returns rooms in TO_CLEAN (task id = room id); `completeHousekeepingTask` sets VACANT, idempotent; roles OWNER or HOUSEKEEPING. `reportRoomUsage` stays 501. No new flag.
 Tests: one use-case test for complete (role check, idempotent).
 
-### [ ] A4 Owner overview (API)
+### [x] A4 Owner overview (API)
 What: `getOwnerOverview` for the tenant-local day: paid revenue, transfers received, cash received, revenue per building, occupancy, latest 10 payments; alerts empty. OWNER only. No new flag.
 Tests: one integration test with seeded payments checks each total.
 

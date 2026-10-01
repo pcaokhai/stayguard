@@ -25,14 +25,15 @@ type Server struct {
 	checkout     bool
 	payments     PaymentService
 	housekeeping HousekeepingService
+	owner        OwnerService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
 // checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
 func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
-	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService) Server {
+	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService, owner OwnerService) Server {
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
-		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping}
+		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -40,10 +41,6 @@ func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHea
 }
 
 func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.GetReadinessResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetOwnerOverview(context.Context, gen.GetOwnerOverviewRequestObject) (gen.GetOwnerOverviewResponseObject, error) {
 	return nil, errNotImplemented
 }
 

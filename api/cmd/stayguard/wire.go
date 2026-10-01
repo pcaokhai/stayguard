@@ -29,6 +29,7 @@ type deps struct {
 	billing      *app.Billing
 	payments     *app.Payments
 	housekeeping *app.Housekeeping
+	owner        *app.Owner
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -53,6 +54,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	rooms := newRooms(uow, clock.System{})
 	sessions, err := newSessions(cfg, pool, uow, clock.System{})
 	if err != nil {
 		pool.Close()
@@ -65,6 +67,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		stays:        stays,
 		billing:      billing,
 		payments:     payments,
+		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
 		idem:         idem,

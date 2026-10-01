@@ -34,6 +34,7 @@ func newPayRig(t *testing.T, roomCode string) payRig {
 
 func (r payRig) checkedOut() payRig {
 	e := r.e
+	e.clock.set(e.start)
 	var roomID string
 	if err := e.owner.QueryRow(context.Background(), `SELECT id FROM app.units WHERE tenant_id = $1 AND code = $2`, r.tenant, r.room).Scan(&roomID); err != nil {
 		e.t.Fatal(err)
@@ -231,5 +232,60 @@ func TestHousekeepingAfterPayment_A3(t *testing.T) {
 	rec := r.e.demo("RECEPTIONIST", "vi", r.tenant).str("accessToken")
 	if st, _ := r.e.send("POST", "/v1/housekeeping/tasks/"+id+"/complete", rec, newKey(), nil); st != 403 {
 		t.Errorf("receptionist complete = %d, want 403", st)
+	}
+}
+
+func TestOwnerOverview_A4(t *testing.T) {
+	cash := newPayRig(t, "A102")
+	cash.pay("CASH")
+	xfer := cash
+	xfer.room = "A105"
+	xfer = xfer.checkedOut()
+	_, p := xfer.pay("TRANSFER")
+	xfer.e.clock.set(xfer.e.start.Add(3 * time.Hour)) // the transfer is paid an hour after the cash
+	if sim := xfer.e.call("POST", "/v1/demo/payments/"+p["id"].(string)+"/simulate", xfer.token, nil); sim.str("status") != "PAID" {
+		t.Fatalf("simulate: %v", sim.body)
+	}
+	e := cash.e
+	num := func(r reply, path ...string) int64 {
+		var cur any = r.body
+		for _, k := range path {
+			cur = cur.(map[string]any)[k]
+		}
+		return int64(cur.(float64))
+	}
+	ov := e.call("GET", "/v1/owner/overview", cash.token, nil)
+	if ov.status != 200 {
+		t.Fatalf("overview: %d %v", ov.status, ov.body)
+	}
+	if got := num(ov, "revenueTotal"); got != cash.balance+xfer.balance {
+		t.Errorf("revenueTotal = %d, want %d", got, cash.balance+xfer.balance)
+	}
+	if got := num(ov, "transfersReceived"); got != xfer.balance {
+		t.Errorf("transfersReceived = %d, want %d", got, xfer.balance)
+	}
+	if got := num(ov, "cashExpected"); got != cash.balance {
+		t.Errorf("cashExpected = %d, want %d", got, cash.balance)
+	}
+	byB, _ := ov.body["byBuilding"].([]any)
+	if len(byB) != 2 || byB[0].(map[string]any)["revenue"].(float64) != float64(cash.balance+xfer.balance) || byB[1].(map[string]any)["revenue"].(float64) != 0 {
+		t.Errorf("byBuilding = %v", byB)
+	}
+	if num(ov, "occupancy", "totalRooms") != 35 || num(ov, "occupancy", "occupiedRooms") != 11 || num(ov, "occupancy", "overdueRooms") < 1 {
+		t.Errorf("occupancy = %v", ov.body["occupancy"])
+	}
+	latest, _ := ov.body["latestPayments"].([]any)
+	if len(latest) != 2 || latest[0].(map[string]any)["roomCode"] != "A105" || latest[1].(map[string]any)["method"] != "CASH" {
+		t.Errorf("latestPayments = %v", latest)
+	}
+	if alerts, ok := ov.body["alerts"].([]any); !ok || len(alerts) != 0 {
+		t.Errorf("alerts = %v", ov.body["alerts"])
+	}
+	if past := e.call("GET", "/v1/owner/overview?date=2000-01-01", cash.token, nil); num(past, "revenueTotal") != 0 || past.str("date") != "2000-01-01" {
+		t.Errorf("past day = %v", past.body)
+	}
+	rec := e.demo("RECEPTIONIST", "vi", cash.tenant).str("accessToken")
+	if r := e.call("GET", "/v1/owner/overview", rec, nil); r.status != 403 {
+		t.Errorf("receptionist = %d, want 403", r.status)
 	}
 }
