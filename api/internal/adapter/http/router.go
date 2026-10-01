@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/pcaokhai/stayguard/api/internal/adapter/http/gen"
 )
 
 // useBaseMiddleware wires requestLog outside Recoverer so a panicking handler is
@@ -19,7 +21,11 @@ func useBaseMiddleware(r chi.Router, log *slog.Logger) {
 func NewRouter(log *slog.Logger, staticDir string) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
-	r.Get("/healthz", healthz)
+	gen.HandlerFromMux(gen.NewStrictHandlerWithOptions(Server{}, nil, gen.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  problemResponse,
+		ResponseErrorHandlerFunc: problemResponse,
+	}), r)
+	r.Get("/healthz", healthz) // keeps the SG-001 body; replaced by Server.GetHealth when ops are implemented
 	r.NotFound(staticHandler(staticDir).ServeHTTP)
 	return r
 }
