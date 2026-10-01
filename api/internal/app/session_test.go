@@ -264,7 +264,7 @@ func TestCreateDemoTenantIDShape_SG102_AC1(t *testing.T) {
 
 func TestDemoSessionRedacted_SG102_AC2(t *testing.T) {
 	ds := DemoSession{Token: rawToken, TenantID: "tn1"}
-	for _, out := range []string{fmt.Sprintf("%+v", ds), fmt.Sprintf("%v", ds), fmt.Sprintf("%#v", ds), fmt.Sprintf("%s", ds), fmt.Sprintf("%+v", &ds)} {
+	for _, out := range []string{fmt.Sprintf("%+v", ds), fmt.Sprintf("%v", ds), fmt.Sprintf("%#v", ds), fmt.Sprintf("%+v", &ds), ds.String()} {
 		if strings.Contains(out, rawToken) {
 			t.Fatalf("token leaked: %s", out)
 		}
