@@ -30,11 +30,18 @@ const (
 
 // fakeClock is the server clock the tests move; the real router and adapters read it.
 type fakeClock struct {
-	mu sync.Mutex
-	t  time.Time
+	mu   sync.Mutex
+	t    time.Time
+	step time.Duration // when set, every Now() call moves the clock forward by it
 }
 
-func (c *fakeClock) Now() time.Time  { c.mu.Lock(); defer c.mu.Unlock(); return c.t }
+func (c *fakeClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := c.t
+	c.t = c.t.Add(c.step)
+	return now
+}
 func (c *fakeClock) set(t time.Time) { c.mu.Lock(); c.t = t; c.mu.Unlock() }
 
 type env struct {
@@ -64,17 +71,21 @@ func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *e
 	t.Cleanup(pool.Close)
 	start := time.Now().UTC().Truncate(time.Second) // whole seconds: timestamptz keeps microseconds
 	clk := &fakeClock{t: start}
-	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true}
+	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true, CheckoutEnabled: true}
 	uow := postgres.NewUnitOfWork(pool)
 	sessions := newSessions(cfg, pool, uow, clk)
 	stays, err := newStays(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
 	if err != nil {
 		t.Fatalf("stays: %v", err)
 	}
+	billing, err := newBilling(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
+	if err != nil {
+		t.Fatalf("billing: %v", err)
+	}
 	logs := &syncBuffer{}
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
-		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true,
+		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true,
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

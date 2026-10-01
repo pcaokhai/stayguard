@@ -9,13 +9,13 @@ import (
 // InvoiceView is the check-out answer. It is also the stored idempotency response body, so it must
 // round-trip through JSON. It holds no guest data. Quote is the frozen quote: never recomputed.
 type InvoiceView struct {
-	ID        string
-	StayID    string
-	RoomCode  string
-	BillCode  string
-	Status    string
-	CreatedAt time.Time
-	Quote     QuoteView
+	ID        string    `json:"id"`
+	StayID    string    `json:"stayId"`
+	RoomCode  string    `json:"roomCode"`
+	BillCode  string    `json:"billCode"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	Quote     QuoteView `json:"quote"`
 }
 
 // invoiceViewOf rebuilds the view from the stored row; the quote comes from the frozen JSON.

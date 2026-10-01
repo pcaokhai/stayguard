@@ -17,47 +17,47 @@ var errCorruptStoredRentalType = errors.New("stay has an unknown stored rental t
 // so it must round-trip through JSON and never holds the plain ID number. (StayView is the room
 // map's compact active stay.)
 type StayDetail struct {
-	ID             string
-	RoomID         string
-	RoomCode       string
-	RentalType     string
-	Status         string
-	CheckInAt      time.Time
-	CheckOutAt     *time.Time
-	GuestName      string
-	GuestPhone     string
-	IDNumberMasked *string
-	Deposit        int64
-	Extras         []ExtraView
-	Quote          QuoteView
-	PricingVersion int
+	ID             string      `json:"id"`
+	RoomID         string      `json:"roomId"`
+	RoomCode       string      `json:"roomCode"`
+	RentalType     string      `json:"rentalType"`
+	Status         string      `json:"status"`
+	CheckInAt      time.Time   `json:"checkInAt"`
+	CheckOutAt     *time.Time  `json:"checkOutAt,omitempty"`
+	GuestName      string      `json:"guestName"`
+	GuestPhone     string      `json:"guestPhone"`
+	IDNumberMasked *string     `json:"idNumberMasked,omitempty"`
+	Deposit        int64       `json:"deposit"`
+	Extras         []ExtraView `json:"extras"`
+	Quote          QuoteView   `json:"quote"`
+	PricingVersion int         `json:"pricingVersion"`
 }
 
 type ExtraView struct {
-	ServiceCode string
-	Name        LocalizedName
-	Quantity    int64
-	UnitAmount  int64
-	Amount      int64
+	ServiceCode string        `json:"serviceCode"`
+	Name        LocalizedName `json:"name"`
+	Quantity    int64         `json:"quantity"`
+	UnitAmount  int64         `json:"unitAmount"`
+	Amount      int64         `json:"amount"`
 }
 
 type QuoteView struct {
-	AsOf         time.Time
-	StayAmount   int64
-	ExtrasAmount int64
-	Total        int64
-	DepositPaid  int64
-	BalanceDue   int64
-	RefundDue    int64
-	Capped       bool
-	Lines        []LineView
+	AsOf         time.Time  `json:"asOf"`
+	StayAmount   int64      `json:"stayAmount"`
+	ExtrasAmount int64      `json:"extrasAmount"`
+	Total        int64      `json:"total"`
+	DepositPaid  int64      `json:"depositPaid"`
+	BalanceDue   int64      `json:"balanceDue"`
+	RefundDue    int64      `json:"refundDue"`
+	Capped       bool       `json:"capped"`
+	Lines        []LineView `json:"lines"`
 }
 
 type LineView struct {
-	Code       string
-	Quantity   int64
-	UnitAmount int64
-	Amount     int64
+	Code       string `json:"code"`
+	Quantity   int64  `json:"quantity"`
+	UnitAmount int64  `json:"unitAmount"`
+	Amount     int64  `json:"amount"`
 }
 
 // detailFor prices rec as of asOf from its own snapshot and assembles the view. masked is the

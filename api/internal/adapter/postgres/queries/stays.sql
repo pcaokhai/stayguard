@@ -33,7 +33,7 @@ JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
 WHERE s.tenant_id = @tenant_id AND s.id = @stay_id;
 
 -- name: ListStayExtras :many
-SELECT sv.id AS service_id, sv.name AS service_name, e.quantity, e.unit_amount
+SELECT sv.code AS service_code, sv.name AS service_name, e.quantity, e.unit_amount
 FROM app.stay_extras e
 JOIN app.services sv ON sv.tenant_id = e.tenant_id AND sv.id = e.service_id
 WHERE e.tenant_id = @tenant_id AND e.stay_id = @stay_id

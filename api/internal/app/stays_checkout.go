@@ -104,7 +104,7 @@ func (b *Billing) existingInvoice(ctx context.Context, tx Tx, rec StayRecord) (I
 
 // freeze prices the stay at the server clock, stores the invoice and marks the stay CHECKED_OUT.
 func (b *Billing) freeze(ctx context.Context, tx Tx, c Caller, rec StayRecord) (InvoiceView, error) {
-	at := b.clock.Now()
+	at := storedTime(b.clock.Now())
 	loc, err := loadZone(ctx, tx, b.stays)
 	if err != nil {
 		return InvoiceView{}, err

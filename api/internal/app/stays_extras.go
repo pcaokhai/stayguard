@@ -145,7 +145,7 @@ type addedItem struct {
 // take decrements stock then inserts the extras row, line by line in code order. The unit amount is the
 // price the guarded decrement returned. Any error rolls the whole unit of work back, so partial stock is never kept.
 func (b *Billing) take(ctx context.Context, tx Tx, stayID string, lines []stay.ExtraLine, rows map[string]ServiceRow) ([]addedItem, error) {
-	now := b.clock.Now()
+	now := storedTime(b.clock.Now())
 	added := make([]addedItem, 0, len(lines))
 	for _, l := range lines {
 		svc, qty := rows[l.ServiceCode], int64(l.Quantity)
