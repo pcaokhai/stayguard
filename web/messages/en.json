@@ -92,5 +92,33 @@
     "EXTRA_HOUR": "Next hours",
     "OVERNIGHT": "Overnight",
     "DAILY": "Daily"
+  },
+  "pay": {
+    "title": "Payment",
+    "slip": "Slip",
+    "bank": "Bank",
+    "account": "Account number",
+    "holder": "Account holder",
+    "note": "Transfer note",
+    "waiting": "Waiting for the money to reach the owner's account",
+    "autoSwitch": "The slip switches to paid when the money arrives.",
+    "simulate": "Simulate money received",
+    "change": "Change payment method",
+    "failed": "Could not load the payment.",
+    "expired": "The QR code has expired.",
+    "mismatch": "The amount received does not match; please contact the owner.",
+    "qrAlt": "Transfer QR code",
+    "paid": "Paid",
+    "receivedAt": "Money reached the owner's account at",
+    "cashAt": "Cash collected at",
+    "method": "Payment method",
+    "methodTRANSFER": "QR transfer",
+    "methodCASH": "Cash",
+    "txn": "Transaction id",
+    "staff": "Staff",
+    "roomToClean": "The room is now",
+    "toClean": "To clean",
+    "toRooms": "Back to room map",
+    "print": "Print slip"
   }
 }

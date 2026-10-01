@@ -74,7 +74,7 @@ Verify: matches `Main.png` at 390 px; works on mocks and on `make up` after A1.
 What: `/vi/checkin`, `/vi/stay` (running total from the API, refetch every 60 s; extras bottom sheet), `/vi/checkout` (bill lines, cash or transfer). Idempotency-Key per action.
 Verify: matches `NhanPhong.png`, `ChiTiet.png`, `ThemDichVu.png`, `TraPhong.png`; flow works against `make up`.
 
-### [ ] W4 QR and paid (WEB)
+### [x] W4 QR and paid (WEB)
 What: `/vi/pay` renders the QR from the payload, polls `getPayment` every 3 s, shows "Giả lập tiền về" only in demo mode; `/vi/paid` shows amount, time, transaction id, room now to clean; print uses the browser dialog.
 Verify: matches `ThanhToanQR.png`, `DaThanhToan.png`; transfer flow ends on Paid without a manual refresh.
 

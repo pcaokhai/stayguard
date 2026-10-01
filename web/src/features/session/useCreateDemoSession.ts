@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import { saveSession } from "../../lib/session";
+import { markDemo, saveSession } from "../../lib/session";
 import type { components } from "../../api/generated/schema";
 
 type Role = components["schemas"]["Role"];
@@ -13,6 +13,7 @@ export function useCreateDemoSession() {
       });
       if (error || !data) throw new Error("createDemoSession failed");
       saveSession(data);
+      markDemo();
       return data;
     },
   });

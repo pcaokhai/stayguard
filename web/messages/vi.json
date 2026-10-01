@@ -92,5 +92,33 @@
     "EXTRA_HOUR": "Giờ tiếp theo",
     "OVERNIGHT": "Qua đêm",
     "DAILY": "Theo ngày"
+  },
+  "pay": {
+    "title": "Thanh toán",
+    "slip": "Phiếu",
+    "bank": "Ngân hàng",
+    "account": "Số tài khoản",
+    "holder": "Chủ tài khoản",
+    "note": "Nội dung",
+    "waiting": "Đang chờ tiền về tài khoản chủ",
+    "autoSwitch": "Phiếu tự chuyển sang đã thanh toán khi tiền về.",
+    "simulate": "Giả lập tiền về",
+    "change": "Đổi cách thanh toán",
+    "failed": "Không tải được thanh toán.",
+    "expired": "Mã QR đã hết hạn.",
+    "mismatch": "Số tiền nhận không khớp, vui lòng liên hệ chủ nhà.",
+    "qrAlt": "Mã QR chuyển khoản",
+    "paid": "Đã thanh toán",
+    "receivedAt": "Tiền đã về tài khoản chủ lúc",
+    "cashAt": "Đã thu tiền mặt lúc",
+    "method": "Cách thanh toán",
+    "methodTRANSFER": "Chuyển khoản QR",
+    "methodCASH": "Tiền mặt",
+    "txn": "Mã giao dịch",
+    "staff": "Nhân viên",
+    "roomToClean": "Phòng đã chuyển sang",
+    "toClean": "Cần dọn",
+    "toRooms": "Về sơ đồ phòng",
+    "print": "In phiếu"
   }
 }
