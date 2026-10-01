@@ -63,7 +63,7 @@ func (e *env) measure(path, token string) (p50, p95 time.Duration, last reply) {
 
 func TestListRoomsBenchmark_SG201_AC5(t *testing.T) {
 	e := newEnvRooms(t, func(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
-		return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Quoter{}, clk)
+		return app.NewRooms(uow, postgres.RoomRepo{}, permissions.RoleBased{}, pricing.Quoter{}, clk)
 	})
 	owner := e.demo("OWNER", "vi", "")
 	e.seedBenchBuilding(owner.str("tenantId"), "bld_bench")

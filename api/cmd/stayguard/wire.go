@@ -97,7 +97,7 @@ func newSessionsWith(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, 
 // newRooms builds the room map read use cases. Derived permissions (SG-102 rule) are temporary until
 // SG-501 stores levels; the quoter prices from each stay's own rate plan snapshot.
 func newRooms(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
-	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Quoter{}, clk)
+	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.RoleBased{}, pricing.Quoter{}, clk)
 }
 
 // newStays builds the check-in use cases. The encryptor takes its key from the validated config;
@@ -107,7 +107,7 @@ func newStays(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, 
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewStays(uow, postgres.StayRepo{}, permissions.Derived{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+	return app.NewStays(uow, postgres.StayRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk), nil
 }
 
 // newBilling builds the extras and check-out use cases. It takes the same encryptor as check-in because
@@ -117,7 +117,7 @@ func newBilling(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.Derived{}, enc, idem, audit,
+	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.RoleBased{}, enc, idem, audit,
 		ids.New(clk.Now), clk), nil
 }
 
@@ -127,5 +127,5 @@ func newPayments(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStor
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewPayments(uow, postgres.PaymentRepo{}, permissions.Derived{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+	return app.NewPayments(uow, postgres.PaymentRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk), nil
 }

@@ -97,11 +97,11 @@ func TestRoomMapE2E_SG201_AC4(t *testing.T) {
 		t.Errorf("vacant room: %d %v", r.status, r.body)
 	}
 
-	// Receptionist A: derived NONE everywhere, so no buildings and 403 on an existing one.
-	if r := e.call("GET", "/v1/buildings", rec, nil); r.status != 200 || len(r.body["items"].([]any)) != 0 {
+	// Receptionist A (FAST MODE, docs/14 P5): sees and works in every building of the own tenant.
+	if r := e.call("GET", "/v1/buildings", rec, nil); r.status != 200 || len(r.body["items"].([]any)) != 2 {
 		t.Errorf("receptionist buildings: %d %v", r.status, r.body)
 	}
-	if r := e.call("GET", "/v1/buildings/bld_a/rooms", rec, nil); r.status != 403 || r.str("code") != "BUILDING_FORBIDDEN" {
+	if r := e.call("GET", "/v1/buildings/bld_a/rooms", rec, nil); r.status != 200 {
 		t.Errorf("receptionist rooms: %d %v", r.status, r.body)
 	}
 

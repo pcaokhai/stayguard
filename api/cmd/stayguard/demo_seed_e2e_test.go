@@ -70,6 +70,10 @@ func TestDemoSeed_A1(t *testing.T) {
 			t.Errorf("building %s visible to both tenants", id)
 		}
 	}
+	rec := e.demo("RECEPTIONIST", "vi", ta).str("accessToken")
+	if rb := e.call("GET", "/v1/buildings", rec, nil); len(ids(rb)) != 2 {
+		t.Errorf("receptionist sees %v, want both buildings", rb.body)
+	}
 	svc := e.call("GET", "/v1/services", a.str("accessToken"), nil)
 	if items, _ := svc.body["items"].([]any); len(items) != 5 {
 		t.Errorf("services: %d, want 5 (status %d)", len(items), svc.status)

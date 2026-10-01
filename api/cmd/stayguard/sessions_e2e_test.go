@@ -272,7 +272,7 @@ func TestGetMeAndLocale_SG102_AC3(t *testing.T) {
 	e.seedBuildings(tenant, "bld_1", "bld_2")
 	staff := e.demo("RECEPTIONIST", "vi", tenant)
 
-	for token, want := range map[string]string{owner.str("accessToken"): "EDIT", staff.str("accessToken"): "NONE"} {
+	for token, want := range map[string]string{owner.str("accessToken"): "EDIT", staff.str("accessToken"): "EDIT"} {
 		me := e.call("GET", "/v1/me", token, nil)
 		levels, _ := me.body["buildingAccess"].([]any)
 		if len(levels) != 2 {

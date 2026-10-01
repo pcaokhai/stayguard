@@ -197,8 +197,8 @@ func TestMe_SG102_AC3(t *testing.T) {
 	if err != nil || me.User.ID != "us1" || me.Tenant.Currency != "VND" {
 		t.Fatalf("me = %+v %v", me, err)
 	}
-	if me.BuildingAccess["b1"] != access.NONE || me.BuildingAccess["b2"] != access.NONE {
-		t.Fatalf("non-owner derives NONE: %+v", me.BuildingAccess)
+	if me.BuildingAccess["b1"] != access.EDIT || me.BuildingAccess["b2"] != access.EDIT {
+		t.Fatalf("FAST MODE: staff act in every building: %+v", me.BuildingAccess)
 	}
 	c.Role = access.RoleOwner
 	r.rep.usersByID["us1"] = User{ID: "us1", Role: access.RoleOwner}

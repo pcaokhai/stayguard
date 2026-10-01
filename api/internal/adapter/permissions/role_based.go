@@ -8,8 +8,8 @@ import (
 )
 
 // RoleBased gives EDIT on every building and leaves the decision to the role rules in access.Authorizer.
-// It exists because Derived gives non-owners NONE, which would lock housekeeping out of the demo; per-building
-// levels come with SG-501. Tenant scope is unaffected.
+// It is the FAST MODE rule (docs/14 P5: staff act in every building) and is wired everywhere; Derived stays for
+// SG-501, which brings per-building levels. Tenant scope is unaffected.
 type RoleBased struct{}
 
 var _ app.BuildingLevels = RoleBased{}

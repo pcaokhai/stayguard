@@ -228,8 +228,8 @@ func (s *Sessions) Me(ctx context.Context, c Caller) (MeView, error) {
 		}
 		v.User, v.BuildingAccess = u, map[string]access.Level{}
 		for _, id := range ids {
-			// SG-501 replaces access.NONE with the stored building permission.
-			v.BuildingAccess[id] = access.EffectiveLevel(u.Role, access.NONE)
+			// FAST MODE (P5): staff act in every building; SG-501 replaces EDIT with the stored building permission.
+			v.BuildingAccess[id] = access.EffectiveLevel(u.Role, access.EDIT)
 		}
 		return nil
 	})
