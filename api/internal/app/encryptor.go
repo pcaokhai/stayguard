@@ -6,4 +6,7 @@ package app
 type Encryptor interface {
 	Encrypt(tenantID, field string, plaintext []byte) ([]byte, error)
 	Decrypt(tenantID, field string, ciphertext []byte) ([]byte, error)
+	// Fingerprint is a deterministic keyed digest, for request hashes that must not hold a
+	// brute-forceable hash of a low-entropy secret.
+	Fingerprint(tenantID, field string, value []byte) []byte
 }
