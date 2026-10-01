@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,6 +22,9 @@ const (
 	idleInTxTimeoutName  = "idle_in_transaction_session_timeout"
 )
 
+// ErrInvalidDatabaseURL replaces any URL parse error: those can echo the connection string.
+var ErrInvalidDatabaseURL = errors.New("invalid database URL")
+
 // PoolConfig is the pool input. URL must connect as the application role (NOBYPASSRLS, no DDL).
 type PoolConfig struct {
 	URL      string
@@ -31,7 +35,7 @@ type PoolConfig struct {
 func NewPool(ctx context.Context, cfg PoolConfig) (*pgxpool.Pool, error) {
 	pc, err := pgxpool.ParseConfig(cfg.URL)
 	if err != nil {
-		return nil, fmt.Errorf("parse database url: %w", err)
+		return nil, ErrInvalidDatabaseURL // the parse error can quote the URL, password included
 	}
 	pc.ConnConfig.ConnectTimeout = connectTimeout
 	pc.ConnConfig.RuntimeParams[statementTimeoutName] = fmt.Sprint(statementTimeout.Milliseconds())

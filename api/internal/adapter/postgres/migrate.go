@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver for goose
 	"github.com/pressly/goose/v3"
 
@@ -29,6 +30,9 @@ func newProvider(db *sql.DB) (*goose.Provider, error) {
 func Migrate(ctx context.Context, url string) error {
 	ctx, cancel := context.WithTimeout(ctx, migrateTimeout)
 	defer cancel()
+	if _, err := pgx.ParseConfig(url); err != nil {
+		return ErrInvalidDatabaseURL
+	}
 	db, err := sql.Open("pgx", url)
 	if err != nil {
 		return fmt.Errorf("open migration database: %w", err)

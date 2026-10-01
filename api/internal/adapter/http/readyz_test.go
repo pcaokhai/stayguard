@@ -44,6 +44,9 @@ func TestReadyz_SG003_AC6(t *testing.T) {
 				t.Fatalf("body leaks the cause: %q", rec.Body.String())
 			}
 			if tc.err == nil {
+				if rec.Body.String() != `{"status":"ready"}` {
+					t.Fatalf("body=%q", rec.Body.String())
+				}
 				return
 			}
 			var p problemBody
