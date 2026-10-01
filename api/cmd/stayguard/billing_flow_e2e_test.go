@@ -63,14 +63,14 @@ func TestBillingFlowE2E_SG205_AC5(t *testing.T) {
 		t.Fatalf("get stay: %s", describe(gst, graw))
 	}
 
-	out := fixedCheckIn.Add(billDay)
+	// A nanosecond component: the stored instants must come back identical on a repeat (database keeps microseconds).
+	out := fixedCheckIn.Add(billDay + 123456789*time.Nanosecond)
 	e.clock.set(out)
-	key := newKey()
-	st, raw = e.checkout(token, id, key)
+	st, raw = e.checkout(token, id, newKey())
 	inv := parse(raw)
 	extras := []pricing.Extra{{ServiceCode: "WATER", Quantity: 2, UnitAmount: waterPrice}, {ServiceCode: "BEER", Quantity: 1, UnitAmount: beerPrice}}
 	q, bill := wantInvoiceQuote(t, out, flowDeposit, extras)
-	if st != 201 || inv["billCode"] != "PH1001R1" || inv["status"] != "OPEN" || inv["roomCode"] != "R1" || inv["stayId"] != id || inv["createdAt"] != out.Format(time.RFC3339) {
+	if st != 201 || inv["billCode"] != "PH1001R1" || inv["status"] != "OPEN" || inv["roomCode"] != "R1" || inv["stayId"] != id || inv["createdAt"] != out.Truncate(time.Microsecond).Format(time.RFC3339Nano) {
 		t.Fatalf("checkout: %s", describe(st, raw))
 	}
 	if bill.Total.Int64() != flowStayTotal+flowExtras || bill.BalanceDue.Int64() != flowStayTotal+flowExtras-flowDeposit {

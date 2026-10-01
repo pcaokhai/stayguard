@@ -30,11 +30,18 @@ const (
 
 // fakeClock is the server clock the tests move; the real router and adapters read it.
 type fakeClock struct {
-	mu sync.Mutex
-	t  time.Time
+	mu   sync.Mutex
+	t    time.Time
+	step time.Duration // when set, every Now() call moves the clock forward by it
 }
 
-func (c *fakeClock) Now() time.Time  { c.mu.Lock(); defer c.mu.Unlock(); return c.t }
+func (c *fakeClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := c.t
+	c.t = c.t.Add(c.step)
+	return now
+}
 func (c *fakeClock) set(t time.Time) { c.mu.Lock(); c.t = t; c.mu.Unlock() }
 
 type env struct {

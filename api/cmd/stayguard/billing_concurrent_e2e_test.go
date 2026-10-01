@@ -5,6 +5,7 @@ package main
 import (
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 const (
@@ -127,6 +128,7 @@ func TestExtrasVsCheckoutRace_SG205_AC4(t *testing.T) {
 	for round := 1; round <= billRounds; round++ {
 		id := e.openStay(token, round, nil)
 		e.clock.set(fixedCheckIn.Add(billDay))
+		e.clock.step = time.Millisecond // every request reads a later instant, so created_at orders the rows
 		var added atomic.Int64
 		race(9, func(i int) {
 			if i%3 == 0 {
@@ -143,6 +145,7 @@ func TestExtrasVsCheckoutRace_SG205_AC4(t *testing.T) {
 				t.Errorf("round %d extras: %s", round, describe(st, raw))
 			}
 		})
+		e.clock.step = 0
 		rows := e.count(`SELECT count(*) FROM app.stay_extras WHERE stay_id = $1`, id)
 		sum := e.count(`SELECT coalesce(sum(amount), 0) FROM app.stay_extras WHERE stay_id = $1`, id)
 		frozen := e.count(`SELECT (quote->>'extrasAmount')::int FROM app.invoices WHERE stay_id = $1`, id)

@@ -190,7 +190,7 @@ func (s *Stays) newStay(c Caller, r CheckInRoom, plan pricing.RatePlan, in Creat
 		}
 	}
 	return NewStay{ID: id, RoomID: r.ID, RentalType: string(req.rental), GuestName: req.guest.Name,
-		GuestPhone: req.guest.Phone, IDNumberEnc: enc, Deposit: req.deposit, CheckInAt: s.clock.Now(),
+		GuestPhone: req.guest.Phone, IDNumberEnc: enc, Deposit: req.deposit, CheckInAt: storedTime(s.clock.Now()),
 		RatePlanSnapshot: plan.Snapshot(), RatePlanSchema: rateSnapshotSchema}, nil
 }
 
