@@ -54,7 +54,6 @@ define not_yet
 endef
 
 OAPI_CODEGEN_VERSION := v2.8.0
-GOOSE_VERSION := v3.28.0
 SQLC_VERSION := v1.31.1
 
 gen: gen-api gen-sqlc gen-web
@@ -71,10 +70,11 @@ gen-sqlc:
 	cd api && go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION) generate
 contracts:
 	@bash scripts/contracts.sh
-# Migrates the database named by DATABASE_URL with the pinned goose CLI (forward-only, embedded files are the same SQL).
+# Runs the binary's own migrate subcommand (embedded goose, forward-only) against MIGRATE_DATABASE_URL, else DATABASE_URL.
+# Locally with `make up`: DATABASE_URL=postgres://stayguard@localhost:5433/stayguard?sslmode=disable make migrate
 migrate:
 	@test -n "$$DATABASE_URL" || { echo "DATABASE_URL is required" >&2; exit 1; }
-	cd api && go run github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION) -dir migrations postgres "$$DATABASE_URL" up
+	cd api && go run ./cmd/stayguard migrate
 
 # Testcontainers needs a running Docker daemon. RACE=1 adds -race (needs cgo; CI sets it).
 test-api-int:

@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -11,12 +12,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// readyProbe is always ready; readiness behaviour is covered in readyz_test.go.
+type readyProbe struct{}
+
+func (readyProbe) Check(context.Context) error { return nil }
+
 func newTestRouter(buf *bytes.Buffer) http.Handler {
 	return newTestRouterDir(buf, "")
 }
 
 func newTestRouterDir(buf *bytes.Buffer, dir string) http.Handler {
-	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)), dir)
+	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)), dir, readyProbe{})
 }
 
 func TestHealthz_SG001_AC2(t *testing.T) {

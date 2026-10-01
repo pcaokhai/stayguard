@@ -15,10 +15,12 @@ import (
 	"time"
 
 	httpadapter "github.com/pcaokhai/stayguard/api/internal/adapter/http"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
 const (
+	migrateCommand    = "migrate"
 	readHeaderTimeout = 5 * time.Second
 	readTimeout       = 15 * time.Second
 	writeTimeout      = 30 * time.Second
@@ -40,19 +42,35 @@ func run() error {
 		return err
 	}
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Schema changes run only in this subcommand, as the owner role, never at request time.
+	if len(os.Args) > 1 && os.Args[1] == migrateCommand {
+		if err := postgres.Migrate(ctx, cfg.MigrateDatabaseURL); err != nil {
+			return err
+		}
+		log.Info("migrations applied")
+		return nil
+	}
+	return serve(ctx, cfg, log)
+}
+
+func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
+	d, err := newDeps(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer d.pool.Close()
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
-		Handler:           httpadapter.NewRouter(log, cfg.StaticDir),
+		Handler:           httpadapter.NewRouter(log, cfg.StaticDir, d.probe),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
 	serveErr := make(chan error, 1) // buffered: the goroutine exits even if nobody reads
 	go func() { serveErr <- srv.ListenAndServe() }()
 	log.Info("server started", "port", cfg.Port)
