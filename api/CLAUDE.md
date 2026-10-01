@@ -12,7 +12,7 @@ Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL a
 api/
   cmd/stayguard/        wiring only: config, dependency construction, server start
   internal/
-    domain/             pure rules, no I/O: pricing, room, stay, payment, access, shift
+    domain/             pure rules, no I/O: pricing, room, stay (`domain/stay`: input validation, id masking), payment, access, shift
     app/                use cases and ports: sessions, trials, stays, payments, housekeeping, owner, shifts
     adapter/
       http/             generated strict handlers, problem+json mapper, SSE hub
@@ -30,9 +30,11 @@ api/
 - The HTTP handlers only translate: parse the request, call one use case, map the result. No business rules in handlers.
 - Every use case takes the caller (tenant, user, role, building access) from the context set by the auth middleware; repositories require a tenant-scoped transaction.
 - Server-Sent Events: one hub per process, bounded buffers, drop slow clients, close on terminal state, heartbeat every 15 s; goroutines are owned by the hub and stop on shutdown.
-- Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` or `DATABASE_URL` stops the process. Other database settings: `MIGRATE_DATABASE_URL` (owner role for `migrate`, defaults to `DATABASE_URL`) and `IDEMPOTENCY_TTL` (default 24h). The server refuses to start as a superuser, BYPASSRLS, table-owner or member-of-such role; `ALLOW_PRIVILEGED_DB=1` lifts that for local dev only.
+- Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` (standard base64 of exactly 32 bytes; `make up` creates a local one in `deploy/.env.local`) or `DATABASE_URL` stops the server; `stayguard migrate` does not need the key. Other database settings: `MIGRATE_DATABASE_URL` (owner role for `migrate`, defaults to `DATABASE_URL`) and `IDEMPOTENCY_TTL` (default 24h). The server refuses to start as a superuser, BYPASSRLS, table-owner or member-of-such role; `ALLOW_PRIVILEGED_DB=1` lifts that for local dev only.
 - The server connects as the application role (no BYPASSRLS, no DDL); only `stayguard migrate` uses the owner role and migrations never run at request time. `/readyz` is 503 until every embedded migration is applied.
 - Room map (SG-201): `FF_S1_ROOM_MAP` (bool, default false, invalid value stops startup) gates `listBuildings`, `listRooms` and `getRoom`; off returns 404 `FEATURE_DISABLED` before any use case or room I/O. Temporary adapter: `permissions.Derived` (owner EDIT on every building, others NONE) until SG-501. The running total comes from `pricing.Quoter`, which prices each stay's own rate plan snapshot with `domain/pricing`.
+- Deleting `deploy/.env.local` orphans locally encrypted data: the old key is gone and those values cannot be decrypted.
+- Check-in (SG-203): `FF_S2_CHECKIN` (bool, default false, invalid value stops startup) gates `createStay` and `getStay`. Sensitive fields go through `app.Encryptor` (AES-256-GCM in `adapter/crypto`, additional data binds tenant and field).
 - Demo routes (`/v1/demo/*`): the generated route always exists but returns 404 `DEMO_DISABLED` before any I/O when `DEMO_MODE` is off (default). Session settings: `DEMO_MODE`, `SESSION_TTL_HOURS` (default 12), `TRIAL_TTL_HOURS` (default 24). The auth middleware protects every `/v1` path except `POST /v1/demo/sessions` and `POST /v1/webhooks/bank`. **Deploy gate: keep `DEMO_MODE` off in any public deploy until SG-601 (rate limit and trial cleanup) is merged.**
 
 ## Domain rules

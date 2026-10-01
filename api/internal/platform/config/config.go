@@ -36,10 +36,24 @@ type Config struct {
 	TrialTTL   time.Duration // TRIAL_TTL_HOURS, default 24
 	// RoomMapEnabled (FF_S1_ROOM_MAP, default false) turns on the room map operations (slice S1).
 	RoomMapEnabled bool
+	// DataEncryptionKey (DATA_ENCRYPTION_KEY, standard base64 of 32 bytes) encrypts sensitive fields.
+	// Required wherever the server starts; `stayguard migrate` does not need it.
+	DataEncryptionKey []byte
+	// CheckInEnabled (FF_S2_CHECKIN, default false) turns on createStay and getStay (slice S2).
+	CheckInEnabled bool
 }
 
 // Load takes the env lookup as a parameter so tests need no process environment.
 func Load(getenv func(string) string) (Config, error) {
+	return load(getenv, true)
+}
+
+// LoadMigrate is Load for the migrate subcommand, which only needs the database URLs.
+func LoadMigrate(getenv func(string) string) (Config, error) {
+	return load(getenv, false)
+}
+
+func load(getenv func(string) string, needKey bool) (Config, error) {
 	c := Config{Port: defaultPort, StaticDir: defaultStaticDir, LogLevel: slog.LevelInfo, IdempotencyTTL: defaultIdempotencyTTL}
 	if v := getenv("PORT"); v != "" {
 		p, err := strconv.Atoi(v)
@@ -63,7 +77,16 @@ func Load(getenv func(string) string) (Config, error) {
 	if c, err = loadSessions(c, getenv); err != nil {
 		return Config{}, err
 	}
-	return loadRoomMap(c, getenv)
+	if c, err = loadRoomMap(c, getenv); err != nil {
+		return Config{}, err
+	}
+	if c, err = loadCheckIn(c, getenv); err != nil {
+		return Config{}, err
+	}
+	if !needKey {
+		return c, nil
+	}
+	return loadEncryption(c, getenv)
 }
 
 func loadDatabase(c Config, getenv func(string) string) (Config, error) {

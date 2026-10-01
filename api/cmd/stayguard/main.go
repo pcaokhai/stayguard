@@ -37,7 +37,12 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load(os.Getenv)
+	load := config.Load
+	isMigrate := len(os.Args) > 1 && os.Args[1] == migrateCommand
+	if isMigrate {
+		load = config.LoadMigrate
+	}
+	cfg, err := load(os.Getenv)
 	if err != nil {
 		return err
 	}
@@ -46,7 +51,7 @@ func run() error {
 	defer stop()
 
 	// Schema changes run only in this subcommand, as the owner role, never at request time.
-	if len(os.Args) > 1 && os.Args[1] == migrateCommand {
+	if isMigrate {
 		if err := postgres.Migrate(ctx, cfg.MigrateDatabaseURL); err != nil {
 			return err
 		}

@@ -6,7 +6,17 @@ import (
 	"time"
 )
 
-func env(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+// testKey is a throwaway all-zero key (base64 of 32 bytes); env adds it unless the case sets the variable itself.
+const testKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+func env(m map[string]string) func(string) string {
+	return func(k string) string {
+		if v, ok := m[k]; ok || k != "DATA_ENCRYPTION_KEY" {
+			return v
+		}
+		return testKey
+	}
+}
 
 func TestLoadDefaults_SG001_AC2(t *testing.T) {
 	c, err := Load(env(map[string]string{"DATABASE_URL": testDBURL}))

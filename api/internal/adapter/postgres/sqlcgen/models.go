@@ -119,6 +119,8 @@ type AppStay struct {
 	IDNumberEnc      []byte
 	BillingMode      string
 	GuestName        string
+	GuestPhone       string
+	RatePlanSchema   int16
 }
 
 type AppStayExtra struct {

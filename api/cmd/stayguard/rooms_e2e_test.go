@@ -39,8 +39,8 @@ func (e *env) seedRoomMap(tenant, bld, bldEmpty string) {
 		($6, $2, $3, $4, $5, '102', 'VACANT', '{"note":"sea view"}'),
 		($7, $2, $8, $9, $5, '201', 'VACANT', '{}')`,
 		bld+"_u1", tenant, bld, bld+"_f", bld+"_ut", bld+"_u2", bldEmpty+"_u1", bldEmpty, bldEmpty+"_f")
-	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, check_in_at, rate_plan_snapshot)
-		VALUES ($1, $2, $3, 'OVERNIGHT', 'ACTIVE', 'Guest', $4, $5)`,
+	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, guest_phone, check_in_at, rate_plan_snapshot, rate_plan_schema)
+		VALUES ($1, $2, $3, 'OVERNIGHT', 'ACTIVE', 'Guest', '0900000000', $4, $5, 1)`,
 		bld+"_s1", tenant, bld+"_u1", e.start.Add(-48*time.Hour), seedPlanSnapshot())
 }
 

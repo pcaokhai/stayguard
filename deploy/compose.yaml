@@ -20,6 +20,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+    # DATA_ENCRYPTION_KEY: created by `make up` in the git-ignored .env.local.
+    env_file: .env.local
     environment:
       DATABASE_URL: postgres://stayguard@db:5432/stayguard?sslmode=disable
       # Local dev only: the API connects as the superuser owner, which the startup check refuses otherwise.
