@@ -28,7 +28,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | SG-101 | Pricing engine | API | 5 | 0 | Backlog | | | Needs A-01 answer if available |
 | SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Merged (flag off) | PR #12, 828feca | none | CI green; PR size above 400 (one PR chosen by tech lead); DEMO_MODE off in public deploys until SG-601; follow-ups in plan Rulings 7 and 8 |
 | SG-202 | Room map screen | WEB | 3 | 0 | Backlog | | FF_S1_ROOM_MAP | |
-| SG-201 | Rooms and buildings read API | API | 2 | 1 | Backlog | | FF_S1_ROOM_MAP | |
+| SG-201 | Rooms and buildings read API | API | 2 | 1 | In review | PR A (domain + use cases), PR B (adapters, handlers) follows | FF_S1_ROOM_MAP | Two PRs chosen by tech lead; running total waits on SG-101 behind a port |
 | SG-203 | Check-in API | API | 3 | 1 | Backlog | | FF_S2_CHECKIN | |
 | SG-204 | Check-in screen | WEB | 2 | 1 | Backlog | | FF_S2_CHECKIN | |
 | SG-205 | Extras and check-out API | API | 3 | 1 | Backlog | | FF_S3_CHECKOUT | |
