@@ -19,7 +19,7 @@ fi
 (cd "$tmp" && make deploy/.env.local >/dev/null 2>&1)
 key=$(sed -n 's/^DATA_ENCRYPTION_KEY=//p' "$tmp/deploy/.env.local")
 [ -n "$key" ] || { echo "FAIL key file empty"; fail=1; }
-[ "$(stat -f %Lp "$tmp/deploy/.env.local" 2>/dev/null || stat -c %a "$tmp/deploy/.env.local")" = 600 ] || { echo "FAIL key file mode"; fail=1; }
+[ -n "$(find "$tmp/deploy/.env.local" -perm 600)" ] || { echo "FAIL key file mode"; fail=1; }
 (cd "$tmp" && make deploy/.env.local >/dev/null 2>&1)
 [ "$key" = "$(sed -n 's/^DATA_ENCRYPTION_KEY=//p' "$tmp/deploy/.env.local")" ] || { echo "FAIL key not idempotent"; fail=1; }
 rm -rf "$tmp"
