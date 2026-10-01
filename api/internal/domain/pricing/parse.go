@@ -11,7 +11,8 @@ import (
 )
 
 // ParseRatePlan validates raw JSON against the rate plan contract and reports every
-// problem at once. The returned error is a *ValidationError.
+// problem at once. The returned error is a *ValidationError. Callers must bound the body
+// size (http.MaxBytesReader) because the domain does not.
 func ParseRatePlan(raw []byte) (RatePlan, error) {
 	doc, err := decode(raw)
 	if err != nil {

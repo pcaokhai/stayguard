@@ -1,6 +1,7 @@
 package pricing
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -76,6 +77,33 @@ func TestRatePlanErrorsHideInput_SG101_AC2(t *testing.T) {
 		var ve *ValidationError
 		if errors.As(err, &ve) && strings.Contains(strings.Join(codesAndPaths(ve.Errors), " "), marker) {
 			t.Errorf("field errors leak input: %v", ve.Errors)
+		}
+	}
+}
+
+func TestRatePlanUnknownKeysNotEchoed_SG101_AC2(t *testing.T) {
+	const marker = "SECRET-MARKER"
+	keys := []string{marker, strings.Repeat("k", 64*1024), "a\x1b[31m\x00b\n", "hourly.firstHour"}
+	for _, key := range keys {
+		m := validMap()
+		m[key] = 1
+		m["hourly"].(map[string]any)[key+"2"] = 1
+		m[key+"3"] = 1
+		doc, err := json.Marshal(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = ParseRatePlan(doc)
+		var ve *ValidationError
+		if !errors.As(err, &ve) {
+			t.Fatalf("want *ValidationError, got %v", err)
+		}
+		want := []FieldError{fe("", "UNKNOWN_PROPERTY"), fe("hourly", "UNKNOWN_PROPERTY")}
+		if !reflect.DeepEqual(ve.Errors, want) {
+			t.Errorf("key %.12q: got %v want %v", key, ve.Errors, want)
+		}
+		if len(err.Error()) > 200 || strings.Contains(err.Error(), marker) || strings.Contains(err.Error(), "\x1b") {
+			t.Errorf("error text unbounded or echoes key: %.200q", err.Error())
 		}
 	}
 }

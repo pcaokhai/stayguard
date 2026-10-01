@@ -12,7 +12,8 @@ const (
 	MaxGraceMinutes = 60
 )
 
-// RatePlan mirrors contracts/pricing/rate-plan.schema.json; field order here is the snapshot order.
+// RatePlan values come from ParseRatePlan, the only supported decode path.
+// It mirrors contracts/pricing/rate-plan.schema.json; field order here is the snapshot order.
 type RatePlan struct {
 	Version      int64  `json:"version"`
 	Currency     string `json:"currency"`

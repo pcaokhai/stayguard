@@ -2,6 +2,7 @@ package pricing
 
 import (
 	"encoding/json"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
@@ -74,9 +75,11 @@ func (c *collector) object(path string, v any, keys ...string) map[string]any {
 			c.add(join(path, k), CodeRequired)
 		}
 	}
+	// One error per object, at the parent path: key names are client data and are never echoed.
 	for k := range m {
 		if !allowed[k] {
-			c.add(join(path, k), CodeUnknownProperty)
+			c.add(path, CodeUnknownProperty)
+			break
 		}
 	}
 	return m
@@ -97,6 +100,9 @@ func (c *collector) integer(path string, m map[string]any, key string, lo, hi in
 	}
 	v, err := strconv.ParseInt(n.String(), 10, 64)
 	switch {
+	case errors.Is(err, strconv.ErrRange):
+		// Beyond int64 is a bound violation, not a type error; the schema would accept it.
+		c.add(p, rangeCode(n))
 	case err != nil:
 		c.add(p, CodeType)
 	case v < lo:
@@ -107,6 +113,13 @@ func (c *collector) integer(path string, m map[string]any, key string, lo, hi in
 		return v
 	}
 	return 0
+}
+
+func rangeCode(n json.Number) string {
+	if strings.HasPrefix(n.String(), "-") {
+		return CodeMin
+	}
+	return CodeMax
 }
 
 func (c *collector) clock(path string, m map[string]any, key string) Clock {

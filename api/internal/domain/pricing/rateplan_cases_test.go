@@ -93,16 +93,19 @@ func planCases(t *testing.T) []planCase {
 		{"clock empty", edit(t, map[string]any{"daily.windowEnd": ""}), []FieldError{fe("daily.windowEnd", "PATTERN")}},
 		{"clock trailing newline", edit(t, map[string]any{"daily.windowEnd": "12:00\n"}), []FieldError{fe("daily.windowEnd", "PATTERN")}},
 
-		{"extra top level", edit(t, map[string]any{"extra": 1}), []FieldError{fe("extra", "UNKNOWN_PROPERTY")}},
-		{"extra nested", edit(t, map[string]any{"hourly.extra": 1}), []FieldError{fe("hourly.extra", "UNKNOWN_PROPERTY")}},
+		{"extra top level", edit(t, map[string]any{"extra": 1}), []FieldError{fe("", "UNKNOWN_PROPERTY")}},
+		{"extra nested", edit(t, map[string]any{"hourly.extra": 1}), []FieldError{fe("hourly", "UNKNOWN_PROPERTY")}},
 
 		{"several errors together", edit(t, map[string]any{
 			"version": 0, "graceMinutes": 61, "currency": "USD", "hourly.firstHour": -5, "extra": 1, "daily.windowEnd": "24:00", "overnight.price": nil,
 		}), []FieldError{
-			fe("currency", "CONST"), fe("daily.windowEnd", "PATTERN"), fe("extra", "UNKNOWN_PROPERTY"),
+			fe("", "UNKNOWN_PROPERTY"), fe("currency", "CONST"), fe("daily.windowEnd", "PATTERN"),
 			fe("graceMinutes", "MAX"), fe("hourly.firstHour", "MIN"), fe("overnight.price", "REQUIRED"), fe("version", "MIN"),
 		}},
 
+		{"huge negative version", `{"version":-99999999999999999999,"currency":"VND","graceMinutes":0,"hourly":{"firstHour":1,"extraHour":1},"overnight":{"price":1,"windowStart":"21:00","windowEnd":"12:00"},"daily":{"price":1,"windowStart":"14:00","windowEnd":"12:00"}}`, []FieldError{fe("version", "MIN")}},
+		{"huge grace", edit(t, map[string]any{"graceMinutes": raw("99999999999999999999")}), []FieldError{fe("graceMinutes", "MAX")}},
+		{"huge negative money", edit(t, map[string]any{"daily.price": raw("-99999999999999999999")}), []FieldError{fe("daily.price", "MIN")}},
 		{"empty object", `{}`, []FieldError{
 			fe("currency", "REQUIRED"), fe("daily", "REQUIRED"), fe("graceMinutes", "REQUIRED"),
 			fe("hourly", "REQUIRED"), fe("overnight", "REQUIRED"), fe("version", "REQUIRED"),
@@ -127,7 +130,7 @@ func planCases(t *testing.T) []planCase {
 var malformedCases = []string{``, `{`, `{"version":1,}`, `not json`, `{} {}`, `{"version":1} x`}
 
 // strictIntegerCases are mathematically integers (the schema accepts them) but written
-// as fractions or exponents; the Go validator rejects the literal form for money.
+// as fractions or exponents, or beyond int64; the Go validator rejects them.
 func strictIntegerCases(t *testing.T) []planCase {
 	t.Helper()
 	raw := func(s string) json.RawMessage { return json.RawMessage(s) }
@@ -135,6 +138,8 @@ func strictIntegerCases(t *testing.T) []planCase {
 		{"money 80000.0", edit(t, map[string]any{"hourly.firstHour": raw("80000.0")}), []FieldError{fe("hourly.firstHour", "TYPE")}},
 		{"money 8e4", edit(t, map[string]any{"hourly.firstHour": raw("8e4")}), []FieldError{fe("hourly.firstHour", "TYPE")}},
 		{"grace 1e1", edit(t, map[string]any{"graceMinutes": raw("1e1")}), []FieldError{fe("graceMinutes", "TYPE")}},
+		{"money beyond int64", edit(t, map[string]any{"hourly.firstHour": raw("99999999999999999999")}), []FieldError{fe("hourly.firstHour", "MAX")}},
+		{"version beyond int64", edit(t, map[string]any{"version": raw("99999999999999999999")}), []FieldError{fe("version", "MAX")}},
 		{"version 2.0", edit(t, map[string]any{"version": raw("2.0")}), []FieldError{fe("version", "TYPE")}},
 	}
 }
