@@ -724,11 +724,10 @@ components:
         locale: {$ref: '#/components/schemas/Locale'}
     Session:
       type: object
-      required: [accessToken, expiresAt, tenantId, user]
+      required: [accessToken, expiresAt, user]
       properties:
         accessToken: {type: string}
         expiresAt: {type: string, format: date-time}
-        tenantId: {type: string}
         user: {$ref: '#/components/schemas/User'}
     BuildingAccess:
       type: object
