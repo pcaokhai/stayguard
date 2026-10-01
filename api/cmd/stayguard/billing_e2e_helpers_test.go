@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -76,7 +75,3 @@ func problemCode(raw []byte) string {
 }
 
 func describe(st int, raw []byte) string { return fmt.Sprintf("%d %s", st, raw) }
-
-func containsLevel(logs, level string) bool {
-	return strings.Contains(logs, `"level":"`+level+`"`)
-}

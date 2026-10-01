@@ -21,7 +21,10 @@ type BuildingLevels interface {
 	Levels(ctx context.Context, c Caller, buildingIDs []string) (map[string]access.Level, error)
 }
 
-type LocalizedName struct{ VI, EN string }
+type LocalizedName struct {
+	VI string `json:"vi"`
+	EN string `json:"en"`
+}
 
 type BuildingRow struct{ ID, Code, Name string }
 
