@@ -18,3 +18,4 @@ Copy `ADR-000-template.md`, take the next number, keep it under about 30 lines. 
 | [ADR-012](ADR-012-realtime-sse.md) | Real-time updates with Server-Sent Events and polling fallback | Accepted |
 | [ADR-013](ADR-013-deployment-targets.md) | Deployment targets: one container, Cloud Run with Neon for self-test, a small VPS for prospects | Accepted |
 | [ADR-014](ADR-014-documentation-and-tracking.md) | Documentation and tracking system | Accepted |
+| [ADR-015](ADR-015-session-lookup-before-tenant.md) | Session lookup by token hash before the tenant is known | Proposed |
