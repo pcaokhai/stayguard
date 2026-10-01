@@ -17,6 +17,24 @@ import (
 func useBaseMiddleware(r chi.Router, log *slog.Logger) {
 	r.Use(requestLog(log))
 	r.Use(middleware.Recoverer)
+	r.Use(limitBody)
+}
+
+// maxRequestBodyBytes caps every request body: the largest legitimate body (check-in) is well under
+// 1 KiB, and without a cap an unauthenticated client could make the strict decoder buffer unbounded input.
+const maxRequestBodyBytes = 64 << 10
+
+// limitBody answers 413 at once when the declared length is over the cap and bounds the reader
+// otherwise (chunked bodies), so oversize input never reaches a use case.
+func limitBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength > maxRequestBodyBytes {
+			writeProblem(w, http.StatusRequestEntityTooLarge, "Payload Too Large", "PAYLOAD_TOO_LARGE")
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+		next.ServeHTTP(w, r)
+	})
 }
 
 // SessionService is the application surface the router needs: authentication for the middleware
@@ -35,13 +53,16 @@ type Options struct {
 	// Rooms and RoomMapEnabled (FF_S1_ROOM_MAP) serve the room map read operations.
 	Rooms          RoomService
 	RoomMapEnabled bool
+	// Stays and CheckInEnabled (FF_S2_CHECKIN) serve createStay and getStay.
+	Stays          StayService
+	CheckInEnabled bool
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

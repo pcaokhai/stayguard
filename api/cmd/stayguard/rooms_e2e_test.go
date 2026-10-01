@@ -15,15 +15,18 @@ import (
 // whatever the wall-clock time of the run: late checkout alone (>= 24 hourly blocks of 100,000) exceeds it.
 const seededDailyPrice = money.Vnd(500_000)
 
-// seedPlanSnapshot is a valid rate plan snapshot (grace 15, overnight window ends 12:00) as a check-in stores it.
-func seedPlanSnapshot() string {
-	return string(pricing.RatePlan{
+// seedPlan is a valid rate plan (grace 15, overnight window ends 12:00).
+func seedPlan() pricing.RatePlan {
+	return pricing.RatePlan{
 		Version: 1, Currency: pricing.CurrencyVND, GraceMinutes: 15,
 		Hourly:    pricing.Hourly{FirstHour: 80_000, ExtraHour: 100_000},
 		Overnight: pricing.Window{Price: 350_000, Start: pricing.Clock{Hour: 21}, End: pricing.Clock{Hour: 12}},
 		Daily:     pricing.Window{Price: seededDailyPrice, Start: pricing.Clock{Hour: 14}, End: pricing.Clock{Hour: 12}},
-	}.Snapshot())
+	}
 }
+
+// seedPlanSnapshot is seedPlan as a check-in stores it.
+func seedPlanSnapshot() string { return string(seedPlan().Snapshot()) }
 
 // seedRoomMap gives a tenant two buildings: bld has a vacant room and an overnight stay that ended
 // long before the injected clock (so it is OVERDUE); bld_empty has one vacant room, no stays.

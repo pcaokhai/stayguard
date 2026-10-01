@@ -67,12 +67,12 @@ func validateCreate(in CreateStayInput) (checkInRequest, error) {
 
 // CreateStay checks a guest in. The order is fixed: role, input, room and level, idempotency key,
 // then the locked write. replayed is true when the stored response of an earlier identical call is returned.
-func (s *Stays) CreateStay(ctx context.Context, c Caller, roomID, idemKey string, in CreateStayInput) (StayDetail, bool, error) {
+func (s *Stays) CreateStay(ctx context.Context, c Caller, roomID, retryID string, in CreateStayInput) (StayDetail, bool, error) {
 	const op = "createStay"
 	if err := s.checkRole(op, c); err != nil {
 		return StayDetail{}, false, err
 	}
-	if idemKey == "" || len(idemKey) > maxIdempotencyKeyBytes {
+	if retryID == "" || len(retryID) > maxIdempotencyKeyBytes {
 		return StayDetail{}, false, ErrInvalidIdempotencyKey
 	}
 	req, err := validateCreate(in)
@@ -83,7 +83,7 @@ func (s *Stays) CreateStay(ctx context.Context, c Caller, roomID, idemKey string
 	var replayed bool
 	err = s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
 		var err error
-		out, replayed, err = s.checkIn(ctx, tx, c, roomID, idemKey, in, req)
+		out, replayed, err = s.checkIn(ctx, tx, c, roomID, retryID, in, req)
 		return err
 	})
 	return out, replayed, err

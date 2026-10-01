@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,6 +9,9 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
 	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
+
+// errCorruptStoredRentalType carries no value: the stored string could be tenant data.
+var errCorruptStoredRentalType = errors.New("stay has an unknown stored rental type")
 
 // StayDetail is the check-in and get-stay answer. It is also the stored idempotency response body,
 // so it must round-trip through JSON and never holds the plain ID number. (StayView is the room
@@ -64,8 +68,8 @@ func detailFor(rec StayRecord, asOf time.Time, masked *string, loc *time.Locatio
 		return StayDetail{}, fmt.Errorf("stay rate plan snapshot: %w", err)
 	}
 	rental, err := pricing.ParseRentalType(rec.RentalType)
-	if err != nil {
-		return StayDetail{}, fmt.Errorf("stay rental type: %w", pricing.ErrUnknownRentalType)
+	if err != nil { // stored data, not client input: a distinct error so it ends as a logged 500, never a 422
+		return StayDetail{}, errCorruptStoredRentalType
 	}
 	q, err := pricing.QuoteRunning(plan, rental, rec.CheckInAt, asOf, loc)
 	if err != nil {
