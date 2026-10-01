@@ -96,6 +96,7 @@ type AppService struct {
 	Name     []byte
 	Price    int64
 	Stock    int64
+	Code     string
 }
 
 type AppSession struct {

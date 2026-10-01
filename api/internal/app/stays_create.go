@@ -224,7 +224,16 @@ func recordOf(ns NewStay, r CheckInRoom) StayRecord {
 }
 
 func (s *Stays) zone(ctx context.Context, tx Tx) (*time.Location, error) {
-	name, err := s.repo.Timezone(ctx, tx)
+	return loadZone(ctx, tx, s.repo)
+}
+
+// zoneSource is the slice of a stay repo that knows the tenant zone.
+type zoneSource interface {
+	Timezone(ctx context.Context, tx Tx) (string, error)
+}
+
+func loadZone(ctx context.Context, tx Tx, src zoneSource) (*time.Location, error) {
+	name, err := src.Timezone(ctx, tx)
 	if err != nil {
 		return nil, fmt.Errorf("tenant timezone: %w", err)
 	}

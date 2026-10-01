@@ -40,7 +40,7 @@ All tables carry `tenant_id` (except `tenants`, `payment_events` before matching
 | Table | Purpose | Key constraints |
 | --- | --- | --- |
 | `stays` | One guest stay | `rental_type` in (HOURLY, OVERNIGHT, DAILY); `guest_name` text, required; `guest_phone` text, required; `rate_plan_schema` smallint, the stored snapshot's schema version; `status` in (ACTIVE, CHECKED_OUT); `deposit` ≥ 0; `check_in_at` set by the server; `rate_plan_snapshot` JSONB; `id_number_enc` optional; `billing_mode` default SESSION; unique (unit_id) where status = ACTIVE |
-| `services` | Extras catalogue | `price` ≥ 0; `stock` ≥ 0; `name` JSONB |
+| `services` | Extras catalogue | `code` required, unique per tenant (extras are addressed by it); `price` ≥ 0; `stock` ≥ 0; `name` JSONB |
 | `stay_extras` | Extras on a stay | `quantity` > 0; `amount` = quantity × unit_amount (CHECK) |
 | `invoices` | Frozen bill | one per stay; `bill_code` unique per tenant; `quote` JSONB is the frozen quote; `status` in (OPEN, PAID) |
 | `payments` | Payment attempts | `method` in (CASH, TRANSFER); `status` in (PENDING, PAID, EXPIRED, MISMATCH); unique (invoice_id) where status = PENDING |
@@ -90,6 +90,7 @@ Expected cash = opening float + DEPOSIT_IN + PAYMENT_IN − REFUND_OUT − PAYOU
 | (none) | `users.locale` (vi or en, default vi) | Per-user UI language; the tenant default_locale seeds it | SG-102 |
 | (none) | `unit_types.code`, `stays.guest_name` | Fields the room map contract exposes (`unitType.code`, `guestName`) | SG-201 |
 | (none) | `stays.guest_phone`, `stays.rate_plan_schema` | Check-in contract requires the phone; the snapshot schema version resolves SG-101 Ruling 7 | SG-203 |
+| (none) | `services.code` | The contract addresses extras by `serviceCode`; backfilled from the English name like `unit_types.code` | SG-205 |
 | (none) | `building_permissions` | Building-level access | SG-501 |
 | (none) | `shifts`, `cash_entries` | Cash reconciliation | SG-503 |
 | `audit_logs` optional | Written from the first sensitive command | Owner trust story | SG-003 |

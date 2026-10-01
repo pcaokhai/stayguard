@@ -41,6 +41,8 @@ type Config struct {
 	DataEncryptionKey []byte
 	// CheckInEnabled (FF_S2_CHECKIN, default false) turns on createStay and getStay (slice S2).
 	CheckInEnabled bool
+	// CheckoutEnabled (FF_S3_CHECKOUT, default false) turns on listServices, addStayExtras and checkoutStay (slice S3).
+	CheckoutEnabled bool
 }
 
 // Load takes the env lookup as a parameter so tests need no process environment.
@@ -81,6 +83,9 @@ func load(getenv func(string) string, needKey bool) (Config, error) {
 		return Config{}, err
 	}
 	if c, err = loadCheckIn(c, getenv); err != nil {
+		return Config{}, err
+	}
+	if c, err = loadCheckout(c, getenv); err != nil {
 		return Config{}, err
 	}
 	if !needKey {

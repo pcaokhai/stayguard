@@ -37,3 +37,15 @@ func loadCheckIn(c Config, getenv func(string) string) (Config, error) {
 	}
 	return c, nil
 }
+
+// loadCheckout reads the check-out slice flag (SG-205): FF_S3_CHECKOUT, default off.
+func loadCheckout(c Config, getenv func(string) string) (Config, error) {
+	if v := getenv("FF_S3_CHECKOUT"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("FF_S3_CHECKOUT must be a boolean, got %q", v)
+		}
+		c.CheckoutEnabled = b
+	}
+	return c, nil
+}

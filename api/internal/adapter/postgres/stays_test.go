@@ -42,7 +42,7 @@ func TestStaysRepo_SG203_AC1(t *testing.T) {
 	seedRoomTenant(t, db, stayTenantA)
 	seedRoomTenant(t, db, stayTenantB)
 	owner := connAs(t, db, "owner")
-	mustExec(t, owner, `INSERT INTO app.services (id, tenant_id, name, price) VALUES ($1, $2, '{"vi":"Nuoc","en":"Water"}', 10000)`, stayTenantA+"_sv", stayTenantA)
+	mustExec(t, owner, `INSERT INTO app.services (id, tenant_id, code, name, price) VALUES ($1, $2, 'WATER', '{"vi":"Nuoc","en":"Water"}', 10000)`, stayTenantA+"_sv", stayTenantA)
 	uow := NewUnitOfWork(newAppPool(t, db, 4))
 	repo := StayRepo{}
 	ua := stayTenantA + "_u2"
