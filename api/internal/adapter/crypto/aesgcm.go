@@ -3,7 +3,9 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -15,12 +17,16 @@ const keyVersion byte = 1
 
 const keyBytes = 32 // AES-256
 
+// fingerprintLabel separates the fingerprint key from the encryption key (domain separation).
+const fingerprintLabel = "stayguard/fingerprint/v1"
+
 // errDecrypt is deliberately generic: it must never reveal which check failed or any bytes.
 var errDecrypt = errors.New("crypto: cannot decrypt")
 
 // AESGCM encrypts with AES-256-GCM. Layout: version byte, nonce, sealed bytes.
 type AESGCM struct {
-	aead cipher.AEAD
+	aead  cipher.AEAD
+	fpKey []byte // derived, so the encryption key itself never keys a digest
 }
 
 func NewAESGCM(key []byte) (*AESGCM, error) {
@@ -35,7 +41,9 @@ func NewAESGCM(key []byte) (*AESGCM, error) {
 	if err != nil {
 		return nil, fmt.Errorf("crypto: gcm: %w", err)
 	}
-	return &AESGCM{aead: aead}, nil
+	kdf := hmac.New(sha256.New, key)
+	kdf.Write([]byte(fingerprintLabel))
+	return &AESGCM{aead: aead, fpKey: kdf.Sum(nil)}, nil
 }
 
 // aad is version, then each part behind a 4-byte big-endian length, so no two (tenant, field)
@@ -76,4 +84,14 @@ func (a *AESGCM) open(tenantID, field string, version byte, ciphertext []byte) (
 		return nil, errDecrypt
 	}
 	return plain, nil
+}
+
+// Fingerprint is a keyed, deterministic digest (HMAC-SHA256) of a sensitive value, for comparing
+// requests without storing anything an attacker could brute-force offline (a plain hash of a
+// short ID number could be). The tenant and field are length-prefixed like the encryption AAD.
+func (a *AESGCM) Fingerprint(tenantID, field string, value []byte) []byte {
+	mac := hmac.New(sha256.New, a.fpKey)
+	mac.Write(aad(keyVersion, tenantID, field))
+	mac.Write(value)
+	return mac.Sum(nil)
 }

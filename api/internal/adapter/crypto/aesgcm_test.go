@@ -2,7 +2,9 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"testing"
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
@@ -117,5 +119,47 @@ func TestEncryptorKeyLength_SG203_AC4(t *testing.T) {
 		if _, err := NewAESGCM(make([]byte, n)); err == nil {
 			t.Errorf("%d byte key must be rejected", n)
 		}
+	}
+}
+
+func TestFingerprint_SG203_AC4(t *testing.T) {
+	key := newKey(t)
+	e := newEnc(t, key)
+	v := []byte("ID-MARKER-12345")
+	base := e.Fingerprint("t1", "stays.id_number", v)
+	if len(base) != 32 || !bytes.Equal(base, e.Fingerprint("t1", "stays.id_number", v)) {
+		t.Fatal("fingerprint must be a deterministic 32-byte digest")
+	}
+	for name, other := range map[string][]byte{
+		"tenant": e.Fingerprint("t2", "stays.id_number", v),
+		"field":  e.Fingerprint("t1", "stays.other", v),
+		"value":  e.Fingerprint("t1", "stays.id_number", []byte("ID-MARKER-12346")),
+		"key":    newEnc(t, newKey(t)).Fingerprint("t1", "stays.id_number", v),
+	} {
+		if bytes.Equal(base, other) {
+			t.Fatalf("different %s gave the same fingerprint", name)
+		}
+	}
+	if plain := sha256.Sum256(v); bytes.Equal(base, plain[:]) {
+		t.Fatal("fingerprint must be keyed, not a plain hash")
+	}
+	if bytes.Equal(e.Fingerprint("ab", "c", v), e.Fingerprint("a", "bc", v)) {
+		t.Fatal("tenant/field boundary must be unambiguous")
+	}
+}
+
+func TestFingerprintKeyDerivation_SG203_AC4(t *testing.T) {
+	key := newKey(t)
+	e := newEnc(t, key)
+	v := []byte("ID-MARKER-12345")
+	got := e.Fingerprint("t1", "f", v)
+	mac := hmac.New(sha256.New, key) // keyed with the raw encryption key: must not match
+	mac.Write(aad(keyVersion, "t1", "f"))
+	mac.Write(v)
+	if bytes.Equal(got, mac.Sum(nil)) {
+		t.Fatal("fingerprint must not use the encryption key directly")
+	}
+	if bytes.Equal(got, e.fpKey) || bytes.Equal(e.fpKey, key) {
+		t.Fatal("derived key must differ from the encryption key and the digest")
 	}
 }

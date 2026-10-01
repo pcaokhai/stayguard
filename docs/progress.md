@@ -29,7 +29,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Merged (flag off) | PR #12, 828feca | none | CI green; PR size above 400 (one PR chosen by tech lead); DEMO_MODE off in public deploys until SG-601; follow-ups in plan Rulings 7 and 8 |
 | SG-202 | Room map screen | WEB | 3 | 0 | Backlog | | FF_S1_ROOM_MAP | |
 | SG-201 | Rooms and buildings read API | API | 2 | 1 | Merged (flag off) | PR #15 (b4086ac), PR #16 (8143aff), PR #21 (pricing bound) | FF_S1_ROOM_MAP | Two PRs chosen by tech lead; both over 400 lines; pricing engine (SG-101) bound to the quoter in PR #21 (a stay open beyond 366 days fails its building's room list until check-out); flag can be turned on after the S1 integration checkpoint (docs/07); AC5 p95 about 7.5 ms with the real quoter; follow-ups in plan Rulings 7 and 8 |
-| SG-203 | Check-in API | API | 3 | 1 | In review | PR 1 of 3 (foundations: encryptor, config, migration 0006, domain) | FF_S2_CHECKIN | Three PRs planned; builds the missing Encryptor seam and first idempotency wiring |
+| SG-203 | Check-in API | API | 3 | 1 | In review | PR 2 of 3 (use cases: CreateStay, GetStay, fingerprint, QuoteRunning) | FF_S2_CHECKIN | Three PRs planned; builds the missing Encryptor seam and first idempotency wiring |
 | SG-204 | Check-in screen | WEB | 2 | 1 | Backlog | | FF_S2_CHECKIN | |
 | SG-205 | Extras and check-out API | API | 3 | 1 | Backlog | | FF_S3_CHECKOUT | |
 | SG-206 | Stay details, extras sheet and check-out screens | WEB | 3 | 1 | Backlog | | FF_S3_CHECKOUT | |

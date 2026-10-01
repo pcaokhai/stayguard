@@ -11,10 +11,6 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/domain/room"
 )
 
-// minBillableInterval is what a stay owes the moment it starts: the engine rejects an empty
-// interval, but a guest who just checked in already owes the first billable amount.
-const minBillableInterval = time.Minute
-
 // Quoter prices a running stay from the rate plan snapshot copied onto it at check-in, so a later
 // tenant plan change never moves an open stay's total.
 //
@@ -35,10 +31,7 @@ func (Quoter) RunningTotal(_ context.Context, snapshot []byte, rt room.RentalTyp
 	if err != nil {
 		return 0, fmt.Errorf("running total: %w", err)
 	}
-	if !now.After(checkIn) {
-		now = checkIn.Add(minBillableInterval)
-	}
-	q, err := pricing.Price(plan, rental, checkIn, now, loc)
+	q, err := pricing.QuoteRunning(plan, rental, checkIn, now, loc)
 	if err != nil {
 		return 0, fmt.Errorf("running total: %w", err)
 	}
