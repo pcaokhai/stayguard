@@ -78,7 +78,7 @@ Verify: matches `NhanPhong.png`, `ChiTiet.png`, `ThemDichVu.png`, `TraPhong.png`
 What: `/vi/pay` renders the QR from the payload, polls `getPayment` every 3 s, shows "Giả lập tiền về" only in demo mode; `/vi/paid` shows amount, time, transaction id, room now to clean; print uses the browser dialog.
 Verify: matches `ThanhToanQR.png`, `DaThanhToan.png`; transfer flow ends on Paid without a manual refresh.
 
-### [ ] W5 Housekeeping and owner (WEB)
+### [x] W5 Housekeeping and owner (WEB)
 What: `/vi/housekeeping` list with one Mark clean button per room; `/vi/owner` cards and latest payments (alerts section hidden when empty; Staff permissions button hidden).
 Verify: matches `BuongPhong.png`, `TongQuanChu.png` minus hidden parts.
 

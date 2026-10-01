@@ -120,5 +120,29 @@
     "toClean": "Cần dọn",
     "toRooms": "Về sơ đồ phòng",
     "print": "In phiếu"
+  },
+  "hk": {
+    "title": "Buồng phòng",
+    "toClean": "Cần dọn · {n} phòng",
+    "left": "Khách trả lúc",
+    "done": "Dọn xong",
+    "empty": "Không có phòng nào cần dọn.",
+    "failed": "Không tải được danh sách phòng.",
+    "doneFailed": "Không cập nhật được. Vui lòng thử lại."
+  },
+  "owner": {
+    "today": "Hôm nay",
+    "updated": "Chủ nhà nghỉ",
+    "revenue": "Doanh thu hôm nay",
+    "transfers": "Chuyển khoản đã về",
+    "cash": "Tiền mặt phải có",
+    "occupancy": "Đang có khách",
+    "occupancyValue": "{o}/{t} phòng · {x} quá giờ",
+    "alerts": "Cần xem · {n} cảnh báo",
+    "latest": "Tiền về gần nhất",
+    "qr": "QR",
+    "cashShort": "Tiền mặt",
+    "toRooms": "Xem sơ đồ phòng",
+    "failed": "Không tải được tổng quan."
   }
 }

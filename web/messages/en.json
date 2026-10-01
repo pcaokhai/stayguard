@@ -120,5 +120,29 @@
     "toClean": "To clean",
     "toRooms": "Back to room map",
     "print": "Print slip"
+  },
+  "hk": {
+    "title": "Housekeeping",
+    "toClean": "To clean · {n} rooms",
+    "left": "Guest left at",
+    "done": "Mark clean",
+    "empty": "No rooms need cleaning.",
+    "failed": "Could not load the room list.",
+    "doneFailed": "Could not update. Please try again."
+  },
+  "owner": {
+    "today": "Today",
+    "updated": "Owner",
+    "revenue": "Revenue today",
+    "transfers": "Transfers received",
+    "cash": "Cash expected",
+    "occupancy": "Occupied",
+    "occupancyValue": "{o}/{t} rooms · {x} overdue",
+    "alerts": "To review · {n} alerts",
+    "latest": "Latest payments",
+    "qr": "QR",
+    "cashShort": "Cash",
+    "toRooms": "View room map",
+    "failed": "Could not load the overview."
   }
 }
