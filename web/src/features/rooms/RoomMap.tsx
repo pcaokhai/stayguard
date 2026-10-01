@@ -8,13 +8,11 @@ import { useBuildings, useRooms } from "./hooks";
 import { RoomTile } from "./RoomTile";
 import { COUNTER_ORDER, STATUS } from "./status";
 
-const clock = () =>
-  new Date().toLocaleString("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-  });
+const clock = () => {
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  return `${p2(d.getHours())}:${p2(d.getMinutes())}, ${p2(d.getDate())}/${p2(d.getMonth() + 1)}`;
+};
 
 export function RoomMap() {
   const b = useSearchParams().get("b");

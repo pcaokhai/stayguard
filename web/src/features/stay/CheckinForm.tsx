@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { newIdempotencyKey } from "../../lib/api";
-import { parseVnd } from "../../lib/money";
+import { parseVnd, vndNumber } from "../../lib/money";
 import { t } from "../../lib/t";
 import { useBuildings } from "../rooms/hooks";
 import { useCreateStay, useRoom } from "./hooks";
