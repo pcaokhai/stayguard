@@ -21,10 +21,11 @@ func useBaseMiddleware(r chi.Router, log *slog.Logger) {
 func NewRouter(log *slog.Logger, staticDir string) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
-	gen.HandlerFromMux(gen.NewStrictHandlerWithOptions(Server{}, nil, gen.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc:  problemResponse,
-		ResponseErrorHandlerFunc: problemResponse,
-	}), r)
+	strict := gen.NewStrictHandlerWithOptions(Server{}, nil, gen.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  badRequestResponse,
+		ResponseErrorHandlerFunc: problemResponder(log),
+	})
+	gen.HandlerWithOptions(strict, gen.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: badRequestResponse})
 	r.Get("/healthz", healthz) // keeps the SG-001 body; replaced by Server.GetHealth when ops are implemented
 	r.NotFound(staticHandler(staticDir).ServeHTTP)
 	return r

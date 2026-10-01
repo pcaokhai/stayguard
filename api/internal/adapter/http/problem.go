@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,14 +17,27 @@ type problemBody struct {
 	Code   string `json:"code"`
 }
 
-// problemResponse is the single place where handler errors become HTTP problem responses
-// (CLAUDE.md §6 rule 10). Unknown errors are not echoed to the client.
-func problemResponse(w http.ResponseWriter, _ *http.Request, err error) {
-	p := problemBody{Type: "about:blank", Title: "Internal Server Error", Status: http.StatusInternalServerError, Code: "INTERNAL"}
-	if errors.Is(err, errNotImplemented) {
-		p = problemBody{Type: "about:blank", Title: "Not Implemented", Status: http.StatusNotImplemented, Code: "NOT_IMPLEMENTED"}
-	}
+func writeProblem(w http.ResponseWriter, status int, title, code string) {
 	w.Header().Set("Content-Type", problemContentType)
-	w.WriteHeader(p.Status)
-	_ = json.NewEncoder(w).Encode(p)
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(problemBody{Type: "about:blank", Title: title, Status: status, Code: code})
+}
+
+// badRequestResponse maps request decoding and parameter binding errors to 400. The error text
+// is not echoed: it can quote client input.
+func badRequestResponse(w http.ResponseWriter, _ *http.Request, _ error) {
+	writeProblem(w, http.StatusBadRequest, "Bad Request", "BAD_REQUEST")
+}
+
+// problemResponder is the single place where handler errors become HTTP problem responses
+// (CLAUDE.md §6 rule 10). Unknown errors are logged, never echoed to the client.
+func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		if errors.Is(err, errNotImplemented) {
+			writeProblem(w, http.StatusNotImplemented, "Not Implemented", "NOT_IMPLEMENTED")
+			return
+		}
+		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
+		writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
+	}
 }

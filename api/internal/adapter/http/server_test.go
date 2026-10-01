@@ -3,7 +3,10 @@ package httpadapter
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/http/gen"
@@ -26,5 +29,32 @@ func TestUnimplementedOperation_Returns501Problem_SG002_AC2(t *testing.T) {
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &p); err != nil || p.Status != 501 || p.Code != "NOT_IMPLEMENTED" {
 		t.Fatalf("body=%q err=%v", rec.Body.String(), err)
+	}
+}
+
+func TestMalformedBody_Returns400Problem_SG002_AC2(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/v1/rooms/r1/stays", strings.NewReader("{not json"))
+	req.Header.Set("Content-Type", "application/json")
+	newTestRouter(&bytes.Buffer{}).ServeHTTP(rec, req)
+
+	if rec.Code != 400 || rec.Header().Get("Content-Type") != "application/problem+json" {
+		t.Fatalf("code=%d ct=%q", rec.Code, rec.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(rec.Body.String(), `"code":"BAD_REQUEST"`) {
+		t.Fatalf("body=%q", rec.Body.String())
+	}
+}
+
+func TestUnknownError_LoggedNotLeaked_SG002_AC2(t *testing.T) {
+	var logs bytes.Buffer
+	rec := httptest.NewRecorder()
+	problemResponder(slog.New(slog.NewJSONHandler(&logs, nil)))(rec, httptest.NewRequest("GET", "/", nil), errors.New("secret-detail"))
+
+	if rec.Code != 500 || strings.Contains(rec.Body.String(), "secret-detail") {
+		t.Fatalf("code=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(logs.String(), "secret-detail") {
+		t.Fatalf("error not logged: %q", logs.String())
 	}
 }

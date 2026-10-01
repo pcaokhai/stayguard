@@ -16,10 +16,11 @@ step() { # step <name> <command...>
 }
 
 ensure_tools() {
-  [ -x scripts/node_modules/.bin/spectral ] || npm ci --silent --no-audit --no-fund --prefix scripts
+  [ -x scripts/node_modules/.bin/spectral ] || npm ci --silent --no-audit --no-fund --prefix scripts || {
+    echo "FAIL step: tools (npm ci in scripts/)" >&2; exit 1; }
 }
 
-lint() { scripts/node_modules/.bin/spectral lint "$dir/openapi.yaml" --ruleset "$dir/.spectral.yaml" --fail-severity=error; }
+lint() { scripts/node_modules/.bin/spectral lint "$dir/openapi.yaml" --ruleset scripts/spectral.yaml --fail-severity=error; }
 
 # The base is the published contract on main. No base yet (first commit of the file) is a notice, not a failure.
 base_file() {

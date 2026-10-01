@@ -101,7 +101,15 @@ jobs:
       - run: npm ci
         working-directory: web
       - name: Contract checks (Spectral, oasdiff, schemas, vectors)
-        run: make contracts
+        run: |
+          # On a PR the base is origin/main. On a push to main, main would diff against itself,
+          # so compare with the commit before the push (all zeros means a new branch: skip).
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            git show "${{ github.event.before }}:contracts/openapi.yaml" > "$RUNNER_TEMP/base.yaml"
+            BASE_FILE="$RUNNER_TEMP/base.yaml" make contracts
+          else
+            make contracts
+          fi
       - name: Generated code is current
         run: |
           make gen
@@ -110,6 +118,11 @@ jobs:
       - run: scripts/check-spike.sh
       - run: scripts/check-gen-headers.sh
       - run: scripts/check-mock-switch.sh
+      # Reported, not blocking: docs/10 §143 limit (400 lines excluding generated files) needs a tech-lead waiver here.
+      - name: PR size
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: scripts/pr-size.sh origin/${{ github.base_ref }}
 
   # Runs the pinned gitleaks binary directly, not gitleaks-action (plan Ruling 3: no licence key).
   secrets:

@@ -1,4 +1,6 @@
-# Project Spectral ruleset (lane PLAT). Tooling config, not a contract change.
+# Project Spectral ruleset (lane PLAT), kept outside contracts/ so contract PRs stay pure (CLAUDE.md §9).
+# Not enforced on purpose: x-access, x-release and security rules, because the contract does not apply
+# them to every operation today; add them after a contracts PR makes them uniform.
 extends: ["spectral:oas"]
 rules:
   # Strict where the project depends on it: codegen and authorization need these.
