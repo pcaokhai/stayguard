@@ -35,13 +35,16 @@ type Options struct {
 	// Rooms and RoomMapEnabled (FF_S1_ROOM_MAP) serve the room map read operations.
 	Rooms          RoomService
 	RoomMapEnabled bool
+	// Stays and CheckInEnabled (FF_S2_CHECKIN) serve createStay and getStay.
+	Stays          StayService
+	CheckInEnabled bool
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

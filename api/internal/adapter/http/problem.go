@@ -8,9 +8,15 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
+	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
+	"github.com/pcaokhai/stayguard/api/internal/domain/room"
+	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
-const problemContentType = "application/problem+json"
+const (
+	problemContentType = "application/problem+json"
+	codeInvalid        = "INVALID"
+)
 
 // problemBody mirrors the Problem schema of the contract (required fields only).
 type problemBody struct {
@@ -18,15 +24,27 @@ type problemBody struct {
 	Title  string `json:"title"`
 	Status int    `json:"status"`
 	Code   string `json:"code"`
+	// Errors lists field failures of a 422; omitted for every other problem.
+	Errors []fieldProblem `json:"errors,omitempty"`
+}
+
+// fieldProblem is one entry of the contract's errors[]: a field path and a code, never the value.
+type fieldProblem struct {
+	Code  string `json:"code"`
+	Field string `json:"field"`
 }
 
 func writeProblem(w http.ResponseWriter, status int, title, code string) {
+	writeProblemWith(w, status, title, code, nil)
+}
+
+func writeProblemWith(w http.ResponseWriter, status int, title, code string, errs []fieldProblem) {
 	if status == http.StatusUnauthorized {
 		w.Header().Set("WWW-Authenticate", "Bearer")
 	}
 	w.Header().Set("Content-Type", problemContentType)
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(problemBody{Type: "about:blank", Title: title, Status: status, Code: code})
+	_ = json.NewEncoder(w).Encode(problemBody{Type: "about:blank", Title: title, Status: status, Code: code, Errors: errs})
 }
 
 // badRequestResponse maps request decoding and parameter binding errors to 400. The error text
@@ -54,7 +72,7 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 			return
 		}
-		if mapSessionError(w, err) || mapRoomError(w, err) {
+		if mapSessionError(w, err) || mapRoomError(w, err) || mapStayError(w, err) {
 			return
 		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
@@ -105,4 +123,31 @@ func mapRoomError(w http.ResponseWriter, err error) bool {
 		return false
 	}
 	return true
+}
+
+// mapStayError writes the problem for check-in errors and reports whether it matched. Field errors
+// come from the domain as paths and codes only: no input value or error text reaches the client.
+func mapStayError(w http.ResponseWriter, err error) bool {
+	var ve *stay.ValidationError
+	switch {
+	case errors.Is(err, room.ErrNotVacant):
+		writeProblem(w, http.StatusConflict, "Conflict", "ROOM_NOT_VACANT")
+	case errors.As(err, &ve):
+		errs := make([]fieldProblem, len(ve.Errors))
+		for i, fe := range ve.Errors {
+			errs[i] = fieldProblem{Code: fe.Code, Field: fe.Path}
+		}
+		writeValidation(w, errs)
+	case errors.Is(err, pricing.ErrUnknownRentalType):
+		writeValidation(w, []fieldProblem{{Code: codeInvalid, Field: "rentalType"}})
+	case errors.Is(err, app.ErrInvalidIdempotencyKey):
+		writeValidation(w, []fieldProblem{{Code: codeInvalid, Field: "Idempotency-Key"}})
+	default:
+		return false
+	}
+	return true
+}
+
+func writeValidation(w http.ResponseWriter, errs []fieldProblem) {
+	writeProblemWith(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "VALIDATION_FAILED", errs)
 }

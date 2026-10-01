@@ -21,7 +21,12 @@ var errInvalidParam = errors.New("invalid query parameter")
 
 // roomCaller returns the caller, or the flag/auth error that must end the request before any use case.
 func (s Server) roomCaller(ctx context.Context) (app.Caller, error) {
-	if !s.roomMap {
+	return s.featureCaller(ctx, s.roomMap)
+}
+
+// featureCaller is the shared gate: the flag is checked first, then the authenticated caller.
+func (Server) featureCaller(ctx context.Context, enabled bool) (app.Caller, error) {
+	if !enabled {
 		return app.Caller{}, app.ErrFeatureDisabled
 	}
 	c, ok := app.CallerFrom(ctx)
