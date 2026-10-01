@@ -71,7 +71,7 @@ func TestStaysRepo_SG203_AC1(t *testing.T) {
 			rec.Deposit != 100_000 || !rec.CheckInAt.Equal(stayCheckIn) || rec.CheckOutAt != nil || !bytes.Equal(rec.IDNumberEnc, []byte{1, 0xde, 0xad, 0xbe, 0xef}) {
 			t.Errorf("record = %+v", rec)
 		}
-		if len(rec.Extras) != 1 || rec.Extras[0].Name != (app.LocalizedName{VI: "Nuoc", EN: "Water"}) || rec.Extras[0].Quantity != 2 || rec.Extras[0].UnitAmount != 10000 {
+		if len(rec.Extras) != 1 || rec.Extras[0].ServiceCode != "WATER" || rec.Extras[0].Name != (app.LocalizedName{VI: "Nuoc", EN: "Water"}) || rec.Extras[0].Quantity != 2 || rec.Extras[0].UnitAmount != 10000 {
 			t.Errorf("extras = %+v", rec.Extras)
 		}
 		if tz, err := repo.Timezone(ctx, tx); err != nil || tz != "Asia/Ho_Chi_Minh" {

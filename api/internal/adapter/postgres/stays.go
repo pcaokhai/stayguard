@@ -137,11 +137,10 @@ func toStayRecord(r sqlcgen.GetStayByIDRow, extras []sqlcgen.ListStayExtrasRow) 
 	for _, e := range extras {
 		var name struct{ VI, EN string }
 		if err := json.Unmarshal(e.ServiceName, &name); err != nil {
-			// The raw value could hold tenant data; report the service id only.
-			return app.StayRecord{}, fmt.Errorf("decode name of service %s: %w", e.ServiceID, err)
+			// The raw value could hold tenant data; report the service code only.
+			return app.StayRecord{}, fmt.Errorf("decode name of service %s: %w", e.ServiceCode, err)
 		}
-		// ponytail: services has no code column yet, so the service id is the code until SG-205.
-		rec.Extras = append(rec.Extras, app.ExtraRecord{ServiceCode: e.ServiceID, Name: app.LocalizedName(name),
+		rec.Extras = append(rec.Extras, app.ExtraRecord{ServiceCode: e.ServiceCode, Name: app.LocalizedName(name),
 			Quantity: int64(e.Quantity), UnitAmount: e.UnitAmount})
 	}
 	return rec, nil

@@ -138,7 +138,7 @@ func (q *Queries) InsertStay(ctx context.Context, arg InsertStayParams) error {
 }
 
 const listStayExtras = `-- name: ListStayExtras :many
-SELECT sv.id AS service_id, sv.name AS service_name, e.quantity, e.unit_amount
+SELECT sv.code AS service_code, sv.name AS service_name, e.quantity, e.unit_amount
 FROM app.stay_extras e
 JOIN app.services sv ON sv.tenant_id = e.tenant_id AND sv.id = e.service_id
 WHERE e.tenant_id = $1 AND e.stay_id = $2
@@ -151,7 +151,7 @@ type ListStayExtrasParams struct {
 }
 
 type ListStayExtrasRow struct {
-	ServiceID   string
+	ServiceCode string
 	ServiceName []byte
 	Quantity    int32
 	UnitAmount  int64
@@ -167,7 +167,7 @@ func (q *Queries) ListStayExtras(ctx context.Context, arg ListStayExtrasParams) 
 	for rows.Next() {
 		var i ListStayExtrasRow
 		if err := rows.Scan(
-			&i.ServiceID,
+			&i.ServiceCode,
 			&i.ServiceName,
 			&i.Quantity,
 			&i.UnitAmount,
