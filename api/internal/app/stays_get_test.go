@@ -114,7 +114,11 @@ func TestGetStayFailsClosed_SG203_AC6(t *testing.T) {
 		if err == nil || strings.Contains(err.Error(), "WEEKLY") {
 			t.Fatalf("%s: expected an error without the stored value: %v", name, err)
 		}
-		if name == "unknown rental" && !errors.Is(err, pricing.ErrUnknownRentalType) {
+		// A corrupt stored value is a server fault: it must not look like the client's 422.
+		if errors.Is(err, pricing.ErrUnknownRentalType) {
+			t.Fatalf("%s: stored value mapped to the client-facing error: %v", name, err)
+		}
+		if name == "unknown rental" && !errors.Is(err, errCorruptStoredRentalType) {
 			t.Fatalf("%s: %v", name, err)
 		}
 	}

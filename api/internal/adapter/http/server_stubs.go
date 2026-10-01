@@ -19,11 +19,14 @@ type Server struct {
 	demoEnabled bool
 	rooms       RoomService
 	roomMap     bool
+	stays       StayService
+	checkIn     bool
 }
 
-// NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP.
-func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool) Server {
-	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap}
+// NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
+// checkIn FF_S2_CHECKIN.
+func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool) Server {
+	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -74,10 +77,6 @@ func (Server) StreamPaymentEvents(context.Context, gen.StreamPaymentEventsReques
 	return nil, errNotImplemented
 }
 
-func (Server) CreateStay(context.Context, gen.CreateStayRequestObject) (gen.CreateStayResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ReportRoomUsage(context.Context, gen.ReportRoomUsageRequestObject) (gen.ReportRoomUsageResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -95,10 +94,6 @@ func (Server) CloseShift(context.Context, gen.CloseShiftRequestObject) (gen.Clos
 }
 
 func (Server) RecordCashPayout(context.Context, gen.RecordCashPayoutRequestObject) (gen.RecordCashPayoutResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetStay(context.Context, gen.GetStayRequestObject) (gen.GetStayResponseObject, error) {
 	return nil, errNotImplemented
 }
 

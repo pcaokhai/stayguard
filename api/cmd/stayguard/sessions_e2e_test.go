@@ -44,6 +44,7 @@ type env struct {
 	pool  *pgxpool.Pool
 	owner *pgx.Conn // table owner: seeds and inspects rows the app role cannot see
 	start time.Time
+	logs  *syncBuffer // everything the server logged, for the personal-data checks
 }
 
 // newEnv wires the real router to a migrated database; the server runs as the application role.
@@ -63,15 +64,21 @@ func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *e
 	t.Cleanup(pool.Close)
 	start := time.Now().UTC().Truncate(time.Second) // whole seconds: timestamptz keeps microseconds
 	clk := &fakeClock{t: start}
-	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL}
-	sessions := newSessions(cfg, pool, postgres.NewUnitOfWork(pool), clk)
-	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(io.Discard, nil)), httpadapter.Options{
+	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true}
+	uow := postgres.NewUnitOfWork(pool)
+	sessions := newSessions(cfg, pool, uow, clk)
+	stays, err := newStays(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
+	if err != nil {
+		t.Fatalf("stays: %v", err)
+	}
+	logs := &syncBuffer{}
+	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
-		Rooms: mk(postgres.NewUnitOfWork(pool), clk), RoomMapEnabled: true,
+		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true,
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	return &env{t: t, pool: pool, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start}
+	return &env{t: t, pool: pool, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start, logs: logs}
 }
 
 type reply struct {

@@ -16,8 +16,7 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
-// deps are the constructed adapters. The idempotency store and audit writer have no consumer yet;
-// they are built here so the wiring has one home.
+// deps are the constructed adapters; the wiring has one home here.
 type deps struct {
 	pool     *pgxpool.Pool
 	uow      app.UnitOfWork
@@ -26,6 +25,7 @@ type deps struct {
 	probe    app.ReadinessProbe
 	sessions *app.Sessions
 	rooms    *app.Rooms
+	stays    *app.Stays
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -34,13 +34,20 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		return deps{}, fmt.Errorf("database: %w", err)
 	}
 	uow := postgres.NewUnitOfWork(pool)
+	idem, audit := postgres.NewIdempotencyStore(cfg.IdempotencyTTL), postgres.NewAuditWriter()
+	stays, err := newStays(cfg, uow, idem, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	return deps{
 		pool:     pool,
 		sessions: newSessions(cfg, pool, uow, clock.System{}),
 		rooms:    newRooms(uow, clock.System{}),
+		stays:    stays,
 		uow:      uow,
-		idem:     postgres.NewIdempotencyStore(cfg.IdempotencyTTL),
-		audit:    postgres.NewAuditWriter(),
+		idem:     idem,
+		audit:    audit,
 		probe:    postgres.NewReadinessProbe(pool),
 	}, nil
 }
@@ -58,4 +65,14 @@ func newSessions(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, clk 
 // SG-501 stores levels; the quoter prices from each stay's own rate plan snapshot.
 func newRooms(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
 	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Derived{}, pricing.Quoter{}, clk)
+}
+
+// newStays builds the check-in use cases. The encryptor takes its key from the validated config;
+// permissions are derived until SG-501, like the room map.
+func newStays(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) (*app.Stays, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewStays(uow, postgres.StayRepo{}, permissions.Derived{}, enc, idem, audit, ids.New(clk.Now), clk), nil
 }
