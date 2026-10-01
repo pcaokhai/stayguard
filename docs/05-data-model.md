@@ -30,7 +30,7 @@ All tables carry `tenant_id` (except `tenants`, `payment_events` before matching
 | `properties` | A site owned by the tenant | `vertical` in (GUESTHOUSE) today; BOARDING_HOUSE added by the boarding-house pack |
 | `buildings` | Buildings of a property | unique (tenant_id, code) |
 | `floors` | Floors of a building | unique (building_id, level) |
-| `unit_types` | Standard, VIP | `name` JSONB `{vi, en}`; `rate_plan` JSONB validated against `contracts/pricing/rate-plan.schema.json`; `rate_plan_version` |
+| `unit_types` | Standard, VIP | `code` (unique per tenant, backfilled from the English name); `name` JSONB `{vi, en}`; `rate_plan` JSONB validated against `contracts/pricing/rate-plan.schema.json`; `rate_plan_version` |
 | `units` | Rooms | `status` in (VACANT, OCCUPIED, TO_CLEAN, MAINTENANCE); unique (tenant_id, code); `attributes` JSONB for custom fields |
 
 `OVERDUE` is not stored. It is derived when an overnight or daily stay is past its expected end.
@@ -39,7 +39,7 @@ All tables carry `tenant_id` (except `tenants`, `payment_events` before matching
 
 | Table | Purpose | Key constraints |
 | --- | --- | --- |
-| `stays` | One guest stay | `rental_type` in (HOURLY, OVERNIGHT, DAILY); `status` in (ACTIVE, CHECKED_OUT); `deposit` ≥ 0; `check_in_at` set by the server; `rate_plan_snapshot` JSONB; `id_number_enc` optional; `billing_mode` default SESSION; unique (unit_id) where status = ACTIVE |
+| `stays` | One guest stay | `rental_type` in (HOURLY, OVERNIGHT, DAILY); `guest_name` text, required; `status` in (ACTIVE, CHECKED_OUT); `deposit` ≥ 0; `check_in_at` set by the server; `rate_plan_snapshot` JSONB; `id_number_enc` optional; `billing_mode` default SESSION; unique (unit_id) where status = ACTIVE |
 | `services` | Extras catalogue | `price` ≥ 0; `stock` ≥ 0; `name` JSONB |
 | `stay_extras` | Extras on a stay | `quantity` > 0; `amount` = quantity × unit_amount (CHECK) |
 | `invoices` | Frozen bill | one per stay; `bill_code` unique per tenant; `quote` JSONB is the frozen quote; `status` in (OPEN, PAID) |
@@ -88,6 +88,7 @@ Expected cash = opening float + DEPOSIT_IN + PAYMENT_IN − REFUND_OUT − PAYOU
 | `charges` | `stay_extras` for extras; stay charges live in the quote | Extras need stock and quantity rules | SG-205 |
 | (none) | `sessions`, `idempotency_keys` | Auth and retries | SG-102, SG-003 |
 | (none) | `users.locale` (vi or en, default vi) | Per-user UI language; the tenant default_locale seeds it | SG-102 |
+| (none) | `unit_types.code`, `stays.guest_name` | Fields the room map contract exposes (`unitType.code`, `guestName`) | SG-201 |
 | (none) | `building_permissions` | Building-level access | SG-501 |
 | (none) | `shifts`, `cash_entries` | Cash reconciliation | SG-503 |
 | `audit_logs` optional | Written from the first sensitive command | Owner trust story | SG-003 |
