@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +70,7 @@ type fakeBillingRepo struct {
 	invoices     map[string]map[string]InvoiceRecord // tenant, then stay id
 	markCount    int
 	insertedInvs int
+	probes       int
 }
 
 func (r *fakeBillingRepo) LockStay(ctx context.Context, tx Tx, id string) (StayRecord, bool, error) {
@@ -121,15 +121,15 @@ func (r *fakeBillingRepo) InsertInvoice(_ context.Context, tx Tx, n NewInvoice) 
 	return nil
 }
 
-func (r *fakeBillingRepo) CountBillCodes(_ context.Context, tx Tx, prefix string) (int, error) {
+func (r *fakeBillingRepo) BillCodeTaken(_ context.Context, tx Tx, code string) (bool, error) {
 	r.calls++
-	n := 0
+	r.probes++
 	for _, inv := range r.invoices[tx.TenantID()] {
-		if strings.HasPrefix(inv.BillCode, prefix) {
-			n++
+		if inv.BillCode == code {
+			return true, nil
 		}
 	}
-	return n, nil
+	return false, nil
 }
 
 // billingUoW discards every fake write of a failed unit of work, like a rolled back transaction.

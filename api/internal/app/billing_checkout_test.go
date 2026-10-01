@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/pcaokhai/stayguard/api/internal/domain/invoice"
 	"github.com/pcaokhai/stayguard/api/internal/domain/room"
 )
 
@@ -103,6 +105,50 @@ func TestCheckoutBillCodeCollision_SG205_AC3(t *testing.T) {
 	b, _, err := e.checkout("st2", callID(2))
 	if err != nil || a.BillCode != "PH0930A101" || b.BillCode != "PH0930A1012" {
 		t.Fatalf("codes %q %q %v", a.BillCode, b.BillCode, err)
+	}
+}
+
+// Room codes whose bill codes overlap as prefixes and as concatenations must never collide.
+func TestCheckoutBillCodeOverlap_SG205_AC3(t *testing.T) {
+	e := newBillEnv(t)
+	seen := map[string]bool{}
+	for i, room := range []string{"A101", "A1011", "A1012", "A101", "A101"} {
+		id := fmt.Sprintf("st%d", i+1)
+		rec := e.seedBillStay(t, StayRecord{ID: id})
+		rec.RoomCode = room
+		e.repo.records[tenantA][id] = rec
+		e.clock.now = rec.CheckInAt.Add(time.Hour)
+		v, _, err := e.checkout(id, callID(i+1))
+		if err != nil || seen[v.BillCode] {
+			t.Fatalf("%s: code %q seen=%v err=%v", room, v.BillCode, seen[v.BillCode], err)
+		}
+		seen[v.BillCode] = true
+	}
+	if len(seen) != 5 {
+		t.Fatalf("codes: %v", seen)
+	}
+}
+
+func TestCheckoutBillCodeExhausted_SG205_AC3(t *testing.T) {
+	e := newBillEnv(t)
+	rec := e.seedBillStay(t, StayRecord{ID: "st1"})
+	rec.GuestName = "NAMEMARKERZ"
+	e.repo.records[tenantA]["st1"] = rec
+	e.clock.now = rec.CheckInAt.Add(time.Hour)
+	day := e.clock.now.In(mustLoc(t))
+	for a := 1; a <= maxBillCodeAttempts; a++ {
+		code, _ := invoice.BillCode(day, "A101", a)
+		e.repo.invoices[tenantA]["x"+code] = InvoiceRecord{StayID: "x" + code, BillCode: code}
+	}
+	_, _, err := e.checkout("st1", callID(1))
+	if err == nil || errors.Is(err, ErrNotFound) || strings.Contains(err.Error(), "NAMEMARKERZ") || strings.Contains(err.Error(), "A101") {
+		t.Fatalf("err = %v", err)
+	}
+	if e.repo.records[tenantA]["st1"].Status != "ACTIVE" || len(e.audit.entries) != 0 {
+		t.Fatal("a failed check-out must change nothing")
+	}
+	if e.repo.probes != maxBillCodeAttempts {
+		t.Fatalf("probes = %d", e.repo.probes)
 	}
 }
 

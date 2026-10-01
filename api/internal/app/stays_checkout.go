@@ -15,6 +15,8 @@ import (
 const (
 	auditCheckOut    = "stay.checked_out"
 	routeCheckoutFmt = "POST /v1/stays/%s/checkout"
+	// maxBillCodeAttempts bounds the probe loop: more same-day check-outs of one room is a fault.
+	maxBillCodeAttempts = 50
 )
 
 // emptyBodyHash is the request hash of a check-out: it has no body.
@@ -117,22 +119,23 @@ func (b *Billing) freeze(ctx context.Context, tx Tx, c Caller, rec StayRecord) (
 		CreatedAt: at.UTC(), Quote: quote}, nil
 }
 
-// nextBillCode picks the first attempt number not yet used on this room and day; it runs under the stay
-// lock and the table's unique constraint is the backstop for two stays racing on one room.
+// nextBillCode probes exact candidates (attempt 1, 2, ...) until one is free. It runs under the stay lock
+// and the table's unique constraint is the backstop for two stays racing on one room.
 func (b *Billing) nextBillCode(ctx context.Context, tx Tx, day time.Time, roomCode string) (string, error) {
-	base, err := invoice.BillCode(day, roomCode, 1)
-	if err != nil {
-		return "", fmt.Errorf("bill code: %w", err)
+	for attempt := 1; attempt <= maxBillCodeAttempts; attempt++ {
+		code, err := invoice.BillCode(day, roomCode, attempt)
+		if err != nil {
+			return "", fmt.Errorf("bill code: %w", err)
+		}
+		taken, err := b.stays.BillCodeTaken(ctx, tx, code)
+		if err != nil {
+			return "", fmt.Errorf("probe bill code: %w", err)
+		}
+		if !taken {
+			return code, nil
+		}
 	}
-	used, err := b.stays.CountBillCodes(ctx, tx, base)
-	if err != nil {
-		return "", fmt.Errorf("count bill codes: %w", err)
-	}
-	code, err := invoice.BillCode(day, roomCode, used+1)
-	if err != nil {
-		return "", fmt.Errorf("bill code: %w", err)
-	}
-	return code, nil
+	return "", fmt.Errorf("bill code: no free code in %d attempts", maxBillCodeAttempts)
 }
 
 // billFor prices check-in to at from the stay's own snapshot (never the current rate plan) and

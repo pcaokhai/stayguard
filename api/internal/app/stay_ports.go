@@ -88,6 +88,6 @@ type BillingStayRepo interface {
 	MarkCheckedOut(ctx context.Context, tx Tx, stayID string, at time.Time) error
 	InvoiceByStay(ctx context.Context, tx Tx, stayID string) (InvoiceRecord, bool, error)
 	InsertInvoice(ctx context.Context, tx Tx, n NewInvoice) error
-	// CountBillCodes counts the tenant's bill codes that start with prefix (picks the attempt number).
-	CountBillCodes(ctx context.Context, tx Tx, prefix string) (int, error)
+	// BillCodeTaken is an exact match on the tenant's bill codes; the unique constraint is the backstop.
+	BillCodeTaken(ctx context.Context, tx Tx, code string) (bool, error)
 }
