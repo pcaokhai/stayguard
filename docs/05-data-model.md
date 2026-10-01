@@ -87,6 +87,7 @@ Expected cash = opening float + DEPOSIT_IN + PAYMENT_IN − REFUND_OUT − PAYOU
 | `invoices` plus lines | `invoices.quote` JSONB frozen at check-out | Immutable snapshot; only aggregates are queried | SG-205 |
 | `charges` | `stay_extras` for extras; stay charges live in the quote | Extras need stock and quantity rules | SG-205 |
 | (none) | `sessions`, `idempotency_keys` | Auth and retries | SG-102, SG-003 |
+| (none) | `users.locale` (vi or en, default vi) | Per-user UI language; the tenant default_locale seeds it | SG-102 |
 | (none) | `building_permissions` | Building-level access | SG-501 |
 | (none) | `shifts`, `cash_entries` | Cash reconciliation | SG-503 |
 | `audit_logs` optional | Written from the first sensitive command | Owner trust story | SG-003 |
