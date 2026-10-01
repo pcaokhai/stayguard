@@ -1,0 +1,337 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/pcaokhai/stayguard/api/internal/domain/invoice"
+	"github.com/pcaokhai/stayguard/api/internal/domain/payment"
+)
+
+const (
+	paymentIDPrefix = "pm"
+	eventIDPrefix   = "pe"
+	simProvider     = "simulator"
+	entityPayment   = "payment"
+	auditPayCreated = "payment.created"
+	auditPaySettled = "payment.settled"
+	routePayFmt     = "POST /v1/invoices/%s/payments"
+	maskKeep        = 4
+)
+
+// PaymentQR is what the client renders as a QR image; the account is always the tenant's own.
+type PaymentQR struct {
+	Payload         string `json:"payload"`
+	AccountNoMasked string `json:"accountNoMasked"`
+	AccountName     string `json:"accountName"`
+	TransferNote    string `json:"transferNote"`
+	Amount          int64  `json:"amount"`
+}
+
+// PaymentView is the answer of createPayment, getPayment and simulatePaymentReceived; it is also the stored
+// idempotency response body.
+type PaymentView struct {
+	ID             string     `json:"id"`
+	InvoiceID      string     `json:"invoiceId"`
+	Method         string     `json:"method"`
+	Status         string     `json:"status"`
+	Amount         int64      `json:"amount"`
+	ReceivedAmount *int64     `json:"receivedAmount"`
+	PaidAt         *time.Time `json:"paidAt"`
+	TransactionID  *string    `json:"transactionId"`
+	QR             *PaymentQR `json:"qr"`
+}
+
+// SettleResult is the outcome of one payment event.
+type SettleResult struct{ Result, PaymentID string }
+
+// Payments holds the payment use cases and the one settlement handler (SG-301, SG-302).
+type Payments struct {
+	uow   UnitOfWork
+	repo  PaymentRepo
+	enc   Encryptor
+	idem  IdempotencyStore
+	audit AuditWriter
+	ids   IDGenerator
+	clock Clock
+	guard
+}
+
+func NewPayments(uow UnitOfWork, repo PaymentRepo, levels BuildingLevels, enc Encryptor, idem IdempotencyStore,
+	audit AuditWriter, ids IDGenerator, clock Clock) *Payments {
+	return &Payments{uow: uow, repo: repo, enc: enc, idem: idem, audit: audit, ids: ids, clock: clock, guard: guard{levels: levels}}
+}
+
+// CreatePayment starts a payment for an open invoice. CASH settles at once; TRANSFER stays PENDING until a
+// payment event settles it. Both are for the invoice's frozen balance, never for a caller-supplied amount.
+func (p *Payments) CreatePayment(ctx context.Context, c Caller, invoiceID, retryID, method string) (PaymentView, bool, error) {
+	const op = "createPayment"
+	if err := p.checkRole(op, c); err != nil {
+		return PaymentView{}, false, err
+	}
+	if err := checkKey(retryID); err != nil {
+		return PaymentView{}, false, err
+	}
+	m, err := payment.ParseMethod(method)
+	if err != nil {
+		return PaymentView{}, false, &ValidationError{"method", "must be CASH or TRANSFER"}
+	}
+	var out PaymentView
+	var replayed bool
+	err = p.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		inv, ok, err := p.repo.LockInvoice(ctx, tx, invoiceID)
+		if err != nil {
+			return fmt.Errorf("lock invoice: %w", err)
+		}
+		if !ok {
+			return ErrNotFound
+		}
+		if err := p.checkBuilding(ctx, op, c, inv.BuildingID); err != nil {
+			return err
+		}
+		route := fmt.Sprintf(routePayFmt, invoiceID)
+		oc, err := p.idem.Begin(ctx, tx, route, retryID, RequestHash([]byte(`{"method":"`+m+`"}`)))
+		if err != nil {
+			return err
+		}
+		if oc.Replay {
+			replayed = true
+			return json.Unmarshal(oc.Body, &out)
+		}
+		if out, err = p.create(ctx, tx, c, inv, m); err != nil {
+			return err
+		}
+		body, err := json.Marshal(out)
+		if err != nil {
+			return fmt.Errorf("encode response: %w", err)
+		}
+		return p.idem.Complete(ctx, tx, route, retryID, statusCreated, body)
+	})
+	return out, replayed, err
+}
+
+func (p *Payments) create(ctx context.Context, tx Tx, c Caller, inv PayInvoice, method string) (PaymentView, error) {
+	if inv.Status != string(invoice.StatusOpen) {
+		return PaymentView{}, ErrInvoiceNotOpen
+	}
+	var q QuoteView
+	if err := json.Unmarshal(inv.Quote, &q); err != nil {
+		return PaymentView{}, fmt.Errorf("stored invoice quote: %w", err)
+	}
+	now := storedTime(p.clock.Now())
+	if method == payment.MethodTransfer {
+		return p.createTransfer(ctx, tx, c, inv, q.BalanceDue, now)
+	}
+	if err := p.repo.ExpirePending(ctx, tx, inv.ID); err != nil { // a late transfer must not settle a closed invoice
+		return PaymentView{}, fmt.Errorf("expire pending: %w", err)
+	}
+	n := NewPayment{ID: p.ids.New(paymentIDPrefix), InvoiceID: inv.ID, BillCode: inv.BillCode, Amount: q.BalanceDue, At: now}
+	if err := p.repo.InsertCashPayment(ctx, tx, n); err != nil {
+		return PaymentView{}, fmt.Errorf("insert cash payment: %w", err)
+	}
+	if err := p.repo.CloseInvoice(ctx, tx, inv.ID, inv.StayID, now); err != nil {
+		return PaymentView{}, err
+	}
+	if err := p.auditPayment(ctx, tx, c.UserID, auditPaySettled, n.ID, payment.MethodCash, inv.ID, q.BalanceDue); err != nil {
+		return PaymentView{}, err
+	}
+	paid := now
+	recv := q.BalanceDue
+	return PaymentView{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodCash, Status: payment.StatusPaid,
+		Amount: q.BalanceDue, ReceivedAmount: &recv, PaidAt: &paid}, nil
+}
+
+func (p *Payments) createTransfer(ctx context.Context, tx Tx, c Caller, inv PayInvoice, amount int64, now time.Time) (PaymentView, error) {
+	if amount <= 0 {
+		return PaymentView{}, &ValidationError{"method", "nothing to pay by transfer"}
+	}
+	if pend, ok, err := p.repo.PendingForInvoice(ctx, tx, inv.ID); err != nil {
+		return PaymentView{}, fmt.Errorf("pending payment: %w", err)
+	} else if ok { // one pending transfer per invoice: show the same QR again
+		return p.view(ctx, tx, pend)
+	}
+	n := NewPayment{ID: p.ids.New(paymentIDPrefix), InvoiceID: inv.ID, BillCode: inv.BillCode, Amount: amount, At: now}
+	if err := p.repo.InsertPendingTransfer(ctx, tx, n); err != nil {
+		return PaymentView{}, fmt.Errorf("insert transfer: %w", err)
+	}
+	if err := p.auditPayment(ctx, tx, c.UserID, auditPayCreated, n.ID, payment.MethodTransfer, inv.ID, amount); err != nil {
+		return PaymentView{}, err
+	}
+	return p.view(ctx, tx, PaymentRecord{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodTransfer,
+		Status: payment.StatusPending, Amount: amount, BillCode: inv.BillCode})
+}
+
+// GetPayment is the polling read the web app calls every 3 seconds.
+func (p *Payments) GetPayment(ctx context.Context, c Caller, id string) (PaymentView, error) {
+	const op = "getPayment"
+	if err := p.checkRole(op, c); err != nil {
+		return PaymentView{}, err
+	}
+	var out PaymentView
+	err := p.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		rec, err := p.load(ctx, tx, op, c, id)
+		if err != nil {
+			return err
+		}
+		out, err = p.view(ctx, tx, rec)
+		return err
+	})
+	return out, err
+}
+
+// Simulate is the demo bank: it reports the exact amount and bill code of a pending transfer as received and
+// runs the same handler a provider webhook will. The route is gated by DEMO_MODE in the HTTP layer.
+func (p *Payments) Simulate(ctx context.Context, c Caller, id string) (PaymentView, error) {
+	const op = "simulatePaymentReceived"
+	if err := p.checkRole(op, c); err != nil {
+		return PaymentView{}, err
+	}
+	var out PaymentView
+	err := p.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		rec, err := p.load(ctx, tx, op, c, id)
+		if err != nil {
+			return err
+		}
+		if rec.Method == payment.MethodTransfer && rec.Status == payment.StatusPending {
+			ev := PaymentEvent{TenantID: c.TenantID, Provider: simProvider, ExternalID: p.ids.New("sim"),
+				Content: rec.BillCode, Amount: rec.Amount, ReceivedAt: storedTime(p.clock.Now())}
+			if _, err := p.settle(ctx, tx, ev); err != nil {
+				return err
+			}
+			if rec, err = p.load(ctx, tx, op, c, id); err != nil {
+				return err
+			}
+		}
+		out, err = p.view(ctx, tx, rec)
+		return err
+	})
+	return out, err
+}
+
+// Settle is the one settlement handler. Every transfer becomes PAID here and nowhere else.
+func (p *Payments) Settle(ctx context.Context, ev PaymentEvent) (SettleResult, error) {
+	var out SettleResult
+	err := p.uow.Do(ctx, ev.TenantID, func(ctx context.Context, tx Tx) error {
+		var err error
+		out, err = p.settle(ctx, tx, ev)
+		return err
+	})
+	return out, err
+}
+
+func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleResult, error) {
+	fresh, err := p.repo.InsertEvent(ctx, tx, p.ids.New(eventIDPrefix), ev)
+	if err != nil {
+		return SettleResult{}, fmt.Errorf("insert payment event: %w", err)
+	}
+	if !fresh {
+		return SettleResult{Result: payment.ResultDuplicate}, nil
+	}
+	pend, err := p.repo.PendingTransfers(ctx, tx)
+	if err != nil {
+		return SettleResult{}, fmt.Errorf("pending transfers: %w", err)
+	}
+	codes := make([]string, len(pend))
+	for i, t := range pend {
+		codes[i] = t.BillCode
+	}
+	ix, found := payment.FindBillCode(ev.Content, codes)
+	if !found {
+		return SettleResult{Result: payment.ResultUnmatched}, nil // the event row already says UNMATCHED
+	}
+	t := pend[ix]
+	if ev.Amount != t.Amount {
+		if err := p.repo.MarkMismatch(ctx, tx, t.PaymentID, ev.Amount, ev.ExternalID); err != nil {
+			return SettleResult{}, err
+		}
+		return p.finish(ctx, tx, ev, payment.ResultMismatch, t.PaymentID)
+	}
+	now := storedTime(p.clock.Now()) // payment time is the server's, not the provider's
+	if err := p.repo.SettleTransfer(ctx, tx, t.PaymentID, now, ev.Amount, ev.ExternalID); err != nil {
+		return SettleResult{}, err
+	}
+	if err := p.repo.CloseInvoice(ctx, tx, t.InvoiceID, t.StayID, now); err != nil {
+		return SettleResult{}, err
+	}
+	if err := p.auditPayment(ctx, tx, "", auditPaySettled, t.PaymentID, payment.MethodTransfer, t.InvoiceID, ev.Amount); err != nil {
+		return SettleResult{}, err
+	}
+	return p.finish(ctx, tx, ev, payment.ResultSettled, t.PaymentID)
+}
+
+func (p *Payments) finish(ctx context.Context, tx Tx, ev PaymentEvent, result, paymentID string) (SettleResult, error) {
+	if err := p.repo.SetEventResult(ctx, tx, ev, result); err != nil {
+		return SettleResult{}, fmt.Errorf("set event result: %w", err)
+	}
+	return SettleResult{Result: result, PaymentID: paymentID}, nil
+}
+
+// load finds a payment (a foreign or unknown id is a 404 before it can be a 403) and checks the building.
+func (p *Payments) load(ctx context.Context, tx Tx, op string, c Caller, id string) (PaymentRecord, error) {
+	rec, ok, err := p.repo.PaymentByID(ctx, tx, id)
+	if err != nil {
+		return PaymentRecord{}, fmt.Errorf("payment: %w", err)
+	}
+	if !ok {
+		return PaymentRecord{}, ErrNotFound
+	}
+	return rec, p.checkBuilding(ctx, op, c, rec.BuildingID)
+}
+
+// view adds the QR to a pending transfer; the account is read from the tenant, never from the request.
+func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentView, error) {
+	v := PaymentView{ID: r.ID, InvoiceID: r.InvoiceID, Method: r.Method, Status: r.Status, Amount: r.Amount,
+		ReceivedAmount: r.ReceivedAmount, PaidAt: r.PaidAt, TransactionID: r.TransactionID}
+	if r.Method != payment.MethodTransfer || r.Status != payment.StatusPending {
+		return v, nil
+	}
+	qr, err := p.qr(ctx, tx, r)
+	v.QR = qr
+	return v, err
+}
+
+func (p *Payments) qr(ctx context.Context, tx Tx, r PaymentRecord) (*PaymentQR, error) {
+	raw, err := p.repo.BankAccount(ctx, tx)
+	if err != nil {
+		return nil, fmt.Errorf("bank account: %w", err)
+	}
+	if len(raw) == 0 {
+		return nil, ErrNoBankAccount
+	}
+	plain, err := p.enc.Decrypt(tx.TenantID(), bankAccountField, raw)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt bank account: %w", err)
+	}
+	var acc struct{ BankBin, AccountNo, AccountName string }
+	if err := json.Unmarshal(plain, &acc); err != nil {
+		return nil, fmt.Errorf("bank account: %w", err)
+	}
+	payload, err := payment.QRPayload(acc.BankBin, acc.AccountNo, r.Amount, r.BillCode)
+	if err != nil {
+		return nil, fmt.Errorf("qr: %w", err)
+	}
+	return &PaymentQR{Payload: payload, AccountNoMasked: maskAccount(acc.AccountNo), AccountName: acc.AccountName,
+		TransferNote: r.BillCode, Amount: r.Amount}, nil
+}
+
+func maskAccount(no string) string {
+	if len(no) <= maskKeep {
+		return no
+	}
+	return strings.Repeat("*", len(no)-maskKeep) + no[len(no)-maskKeep:]
+}
+
+func (p *Payments) auditPayment(ctx context.Context, tx Tx, actor, action, paymentID, method, invoiceID string, amount int64) error {
+	raw, err := json.Marshal(map[string]any{"invoiceId": invoiceID, "method": method, "amount": amount})
+	if err != nil {
+		return fmt.Errorf("encode audit: %w", err)
+	}
+	e := AuditEntry{ID: p.ids.New(auditIDPrefix), ActorID: actor, Action: action, EntityType: entityPayment, EntityID: paymentID, After: raw}
+	if err := p.audit.Append(ctx, tx, e); err != nil {
+		return fmt.Errorf("audit: %w", err)
+	}
+	return nil
+}

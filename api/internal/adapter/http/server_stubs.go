@@ -23,14 +23,15 @@ type Server struct {
 	checkIn     bool
 	billing     BillingService
 	checkout    bool
+	payments    PaymentService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
 // checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
 func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
-	billing BillingService, checkout bool) Server {
+	billing BillingService, checkout bool, payments PaymentService) Server {
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
-		billing: billing, checkout: checkout}
+		billing: billing, checkout: checkout, payments: payments}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -41,19 +42,11 @@ func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.
 	return nil, errNotImplemented
 }
 
-func (Server) SimulatePaymentReceived(context.Context, gen.SimulatePaymentReceivedRequestObject) (gen.SimulatePaymentReceivedResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListHousekeepingTasks(context.Context, gen.ListHousekeepingTasksRequestObject) (gen.ListHousekeepingTasksResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) CompleteHousekeepingTask(context.Context, gen.CompleteHousekeepingTaskRequestObject) (gen.CompleteHousekeepingTaskResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreatePayment(context.Context, gen.CreatePaymentRequestObject) (gen.CreatePaymentResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -70,10 +63,6 @@ func (Server) ListStaffPermissions(context.Context, gen.ListStaffPermissionsRequ
 }
 
 func (Server) SetBuildingPermission(context.Context, gen.SetBuildingPermissionRequestObject) (gen.SetBuildingPermissionResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetPayment(context.Context, gen.GetPaymentRequestObject) (gen.GetPaymentResponseObject, error) {
 	return nil, errNotImplemented
 }
 

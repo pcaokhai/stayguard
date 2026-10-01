@@ -60,15 +60,17 @@ type AppInvoice struct {
 }
 
 type AppPayment struct {
-	ID            string
-	TenantID      string
-	InvoiceID     string
-	Method        string
-	Status        string
-	Amount        int64
-	ReferenceCode pgtype.Text
-	CreatedAt     pgtype.Timestamptz
-	PaidAt        pgtype.Timestamptz
+	ID             string
+	TenantID       string
+	InvoiceID      string
+	Method         string
+	Status         string
+	Amount         int64
+	ReferenceCode  pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+	PaidAt         pgtype.Timestamptz
+	ReceivedAmount pgtype.Int8
+	TransactionID  pgtype.Text
 }
 
 type AppPaymentEvent struct {

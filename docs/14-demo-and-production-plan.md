@@ -49,7 +49,7 @@ What: when `createDemoSession` creates a trial tenant, in the same transaction i
 Tests: one integration test: a new demo session sees 35 rooms in 2 buildings, the expected status counts, 5 services; two sessions do not see each other's rooms.
 Verify: `make test-api` and the integration test by name; `make up` with the demo override, create a session with curl, list rooms.
 
-### [ ] A2 Payments: create, read, simulate, settle (API) — SG-301 and SG-302 without SSE
+### [x] A2 Payments: create, read, simulate, settle (API) — SG-301 and SG-302 without SSE
 What: `createPayment` (CASH settles immediately; TRANSFER returns PENDING with bill code and VietQR payload for the exact balance, tenant account only), `getPayment`, `simulatePaymentReceived` (DEMO_MODE only) feeding one settlement handler that stores the payment event, deduplicates on (provider, external id), matches bill code and amount, then in one transaction sets payment PAID, invoice PAID, room TO_CLEAN. Wrong amount: MISMATCH, invoice stays OPEN. Shape the handler so P3 only adds an adapter: input is a normalised event (provider, external id, amount, transfer content, received at, tenant), and the bill code is found inside the transfer content case-insensitively with spaces and dashes removed (banks often alter the note). No new flag; the simulator route exists only with DEMO_MODE.
 Tests: settle happy path; duplicate event changes nothing; wrong amount gives MISMATCH; no other code path sets a transfer to PAID; QR payload CRC check against a known sample.
 Verify: tests by name; curl through check-in → check-out → create transfer → simulate → get payment shows PAID.

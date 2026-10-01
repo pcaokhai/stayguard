@@ -1,0 +1,205 @@
+//go:build integration
+
+package main
+
+import (
+	"context"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
+	"github.com/pcaokhai/stayguard/api/internal/app"
+	"github.com/pcaokhai/stayguard/api/internal/platform/config"
+)
+
+// payRig is a seeded tenant with one checked-out stay and an open invoice.
+type payRig struct {
+	e       *env
+	token   string
+	tenant  string
+	room    string
+	invoice string
+	code    string
+	balance int64
+}
+
+func newPayRig(t *testing.T, roomCode string) payRig {
+	t.Helper()
+	e := newSeededEnv(t)
+	s := e.demo("OWNER", "vi", "")
+	r := payRig{e: e, token: s.str("accessToken"), tenant: s.str("tenantId"), room: roomCode}
+	return r.checkedOut()
+}
+
+func (r payRig) checkedOut() payRig {
+	e := r.e
+	var roomID string
+	if err := e.owner.QueryRow(context.Background(), `SELECT id FROM app.units WHERE tenant_id = $1 AND code = $2`, r.tenant, r.room).Scan(&roomID); err != nil {
+		e.t.Fatal(err)
+	}
+	st, raw := e.send("POST", "/v1/rooms/"+roomID+"/stays", r.token, newKey(), stayBody(nil))
+	stay, _ := parse(raw)["id"].(string)
+	if st != 201 || stay == "" {
+		e.t.Fatalf("check-in: %d %s", st, raw)
+	}
+	e.clock.set(e.start.Add(2 * time.Hour))
+	st, raw = e.checkout(r.token, stay, newKey())
+	inv := parse(raw)
+	if st != 201 {
+		e.t.Fatalf("checkout: %d %s", st, raw)
+	}
+	r.invoice, _ = inv["id"].(string)
+	r.code, _ = inv["billCode"].(string)
+	q, _ := inv["quote"].(map[string]any)
+	bal, _ := q["balanceDue"].(float64)
+	r.balance = int64(bal)
+	if r.balance <= 0 {
+		e.t.Fatalf("balance %d, want > 0", r.balance)
+	}
+	return r
+}
+
+func (r payRig) pay(method string) (int, map[string]any) {
+	st, raw := r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.token, newKey(), map[string]any{"method": method})
+	return st, parse(raw)
+}
+
+func (r payRig) status(table, id string) string {
+	var s string
+	if err := r.e.owner.QueryRow(context.Background(), `SELECT status FROM app.`+table+` WHERE id = $1`, id).Scan(&s); err != nil {
+		r.e.t.Fatal(err)
+	}
+	return s
+}
+
+func (r payRig) roomStatus() string {
+	var s string
+	if err := r.e.owner.QueryRow(context.Background(), `SELECT status FROM app.units WHERE tenant_id = $1 AND code = $2`, r.tenant, r.room).Scan(&s); err != nil {
+		r.e.t.Fatal(err)
+	}
+	return s
+}
+
+func (r payRig) handler() *app.Payments {
+	cfg := config.Config{DataEncryptionKey: testDataKey}
+	p, err := newPayments(cfg, postgres.NewUnitOfWork(r.e.pool), postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), r.e.clock)
+	if err != nil {
+		r.e.t.Fatal(err)
+	}
+	return p
+}
+
+func (r payRig) event(id string, amount int64, content string) app.PaymentEvent {
+	return app.PaymentEvent{TenantID: r.tenant, Provider: "test", ExternalID: id, Amount: amount, Content: content, ReceivedAt: r.e.clock.Now()}
+}
+
+func TestPaymentTransferSimulate_A2(t *testing.T) {
+	r := newPayRig(t, "A102")
+	st, p := r.pay("TRANSFER")
+	qr, _ := p["qr"].(map[string]any)
+	if st != 201 || p["status"] != "PENDING" || qr == nil || qr["transferNote"] != r.code || int64(qr["amount"].(float64)) != r.balance {
+		t.Fatalf("create: %d %v (code %s balance %d)", st, p, r.code, r.balance)
+	}
+	if payload, _ := qr["payload"].(string); !strings.Contains(payload, "0010A000000727") || !strings.Contains(payload, "0000000000") {
+		t.Fatalf("QR is not for the tenant account: %v", qr)
+	}
+	id := p["id"].(string)
+	if r.roomStatus() != "OCCUPIED" {
+		t.Fatal("room must stay OCCUPIED until paid")
+	}
+	if got := r.e.call("GET", "/v1/payments/"+id, r.token, nil); got.str("status") != "PENDING" {
+		t.Fatalf("get pending: %v", got.body)
+	}
+	sim := r.e.call("POST", "/v1/demo/payments/"+id+"/simulate", r.token, nil)
+	if sim.status != 200 || sim.str("status") != "PAID" || sim.str("paidAt") == "" {
+		t.Fatalf("simulate: %d %v", sim.status, sim.body)
+	}
+	if got := r.e.call("GET", "/v1/payments/"+id, r.token, nil); got.str("status") != "PAID" {
+		t.Fatalf("get paid: %v", got.body)
+	}
+	if r.status("invoices", r.invoice) != "PAID" || r.roomStatus() != "TO_CLEAN" {
+		t.Fatalf("invoice %s room %s", r.status("invoices", r.invoice), r.roomStatus())
+	}
+	if again := r.e.call("POST", "/v1/demo/payments/"+id+"/simulate", r.token, nil); again.str("status") != "PAID" {
+		t.Fatalf("second simulate: %v", again.body)
+	}
+	if n := r.e.count(`SELECT count(*) FROM app.payment_events WHERE tenant_id = $1 AND result = 'SETTLED'`, r.tenant); n != 1 {
+		t.Errorf("settled events = %d, want 1", n)
+	}
+}
+
+func TestPaymentDuplicateEvent_A2(t *testing.T) {
+	r := newPayRig(t, "A102")
+	_, p := r.pay("TRANSFER")
+	h := r.handler()
+	ev := r.event("bank-1", r.balance, "CK "+strings.ToLower(r.code[:4])+"-"+r.code[4:])
+	first, err := h.Settle(context.Background(), ev)
+	if err != nil || first.Result != "SETTLED" {
+		t.Fatalf("first: %+v %v", first, err)
+	}
+	second, err := h.Settle(context.Background(), ev)
+	if err != nil || second.Result != "DUPLICATE_IGNORED" {
+		t.Fatalf("second: %+v %v", second, err)
+	}
+	if r.status("payments", p["id"].(string)) != "PAID" || r.e.count(`SELECT count(*) FROM app.payment_events WHERE tenant_id = $1`, r.tenant) != 1 {
+		t.Fatal("duplicate changed state")
+	}
+}
+
+func TestPaymentWrongAmountAndUnmatched_A2(t *testing.T) {
+	r := newPayRig(t, "A102")
+	_, p := r.pay("TRANSFER")
+	id := p["id"].(string)
+	h := r.handler()
+	res, err := h.Settle(context.Background(), r.event("bank-2", r.balance+1000, r.code))
+	if err != nil || res.Result != "MISMATCH" {
+		t.Fatalf("wrong amount: %+v %v", res, err)
+	}
+	if r.status("payments", id) != "MISMATCH" || r.status("invoices", r.invoice) != "OPEN" || r.roomStatus() != "OCCUPIED" {
+		t.Fatal("mismatch must leave invoice OPEN and room OCCUPIED")
+	}
+	if res, err = h.Settle(context.Background(), r.event("bank-3", r.balance, "no code here")); err != nil || res.Result != "UNMATCHED" {
+		t.Fatalf("unmatched: %+v %v", res, err)
+	}
+	if st, again := r.pay("TRANSFER"); st != 201 || again["status"] != "PENDING" || again["id"] == id {
+		t.Fatalf("retry after mismatch: %d %v", st, again)
+	}
+}
+
+func TestPaymentCashAndRules_A2(t *testing.T) {
+	r := newPayRig(t, "A102")
+	st, p := r.pay("CASH")
+	if st != 201 || p["status"] != "PAID" || p["qr"] != nil {
+		t.Fatalf("cash: %d %v", st, p)
+	}
+	if r.status("invoices", r.invoice) != "PAID" || r.roomStatus() != "TO_CLEAN" {
+		t.Fatal("cash must close the invoice and release the room")
+	}
+	if st, _ := r.pay("TRANSFER"); st != 409 {
+		t.Errorf("paying a paid invoice = %d, want 409", st)
+	}
+	if st, _ := r.pay("BITCOIN"); st != 422 {
+		t.Errorf("unknown method = %d, want 422", st)
+	}
+	hk := r.e.demo("HOUSEKEEPING", "vi", r.tenant).str("accessToken")
+	if got := r.e.call("GET", "/v1/payments/"+p["id"].(string), hk, nil); got.status != 403 {
+		t.Errorf("housekeeping read = %d, want 403", got.status)
+	}
+}
+
+func TestPaymentIdempotency_A2(t *testing.T) {
+	r := newPayRig(t, "A102")
+	key := newKey()
+	var ids []string
+	for range 2 {
+		st, raw := r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.token, key, map[string]any{"method": "TRANSFER"})
+		if st != 201 {
+			t.Fatalf("status %d %s", st, raw)
+		}
+		ids = append(ids, parse(raw)["id"].(string))
+	}
+	if ids[0] != ids[1] || r.e.count(`SELECT count(*) FROM app.payments WHERE tenant_id = $1`, r.tenant) != 1 {
+		t.Fatalf("replay created a second payment: %v", ids)
+	}
+}

@@ -77,7 +77,7 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 			return
 		}
-		if mapSessionError(w, err) || mapRoomError(w, err) || mapStayError(w, err) {
+		if mapSessionError(w, err) || mapRoomError(w, err) || mapStayError(w, err) || mapPaymentError(w, err) {
 			return
 		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
@@ -159,4 +159,17 @@ func mapStayError(w http.ResponseWriter, err error) bool {
 
 func writeValidation(w http.ResponseWriter, errs []fieldProblem) {
 	writeProblemWith(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "VALIDATION_FAILED", errs)
+}
+
+// mapPaymentError writes the problem for payment errors and reports whether it matched.
+func mapPaymentError(w http.ResponseWriter, err error) bool {
+	switch {
+	case errors.Is(err, app.ErrInvoiceNotOpen):
+		writeProblem(w, http.StatusConflict, "Conflict", "INVOICE_NOT_OPEN")
+	case errors.Is(err, app.ErrNoBankAccount):
+		writeProblem(w, http.StatusConflict, "Conflict", "BANK_ACCOUNT_MISSING")
+	default:
+		return false
+	}
+	return true
 }

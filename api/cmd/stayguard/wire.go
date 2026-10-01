@@ -27,6 +27,7 @@ type deps struct {
 	rooms    *app.Rooms
 	stays    *app.Stays
 	billing  *app.Billing
+	payments *app.Payments
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -46,6 +47,11 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	payments, err := newPayments(cfg, uow, idem, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	sessions, err := newSessions(cfg, pool, uow, clock.System{})
 	if err != nil {
 		pool.Close()
@@ -57,6 +63,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		rooms:    newRooms(uow, clock.System{}),
 		stays:    stays,
 		billing:  billing,
+		payments: payments,
 		uow:      uow,
 		idem:     idem,
 		audit:    audit,
@@ -107,4 +114,13 @@ func newBilling(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 	}
 	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.Derived{}, enc, idem, audit,
 		ids.New(clk.Now), clk), nil
+}
+
+// newPayments builds the payment use cases and the settlement handler. The encryptor opens the tenant's bank account.
+func newPayments(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) (*app.Payments, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewPayments(uow, postgres.PaymentRepo{}, permissions.Derived{}, enc, idem, audit, ids.New(clk.Now), clk), nil
 }
