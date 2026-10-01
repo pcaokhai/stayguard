@@ -60,9 +60,13 @@ func TestStaticDoesNotShadowHealthzOrAPI_SG001_AC3(t *testing.T) {
 	if rec := get(h, "/healthz"); rec.Body.String() != `{"status":"ok"}` {
 		t.Errorf("healthz shadowed: %q", rec.Body.String())
 	}
+	// Every /v1 path, bare or not, is the API's: the auth middleware answers before the static handler.
 	for _, p := range []string{"/v1", "/v1/", "/v1/stays"} {
-		if rec := get(h, p); (rec.Code != 404 && rec.Code != 401) || rec.Body.String() == "INDEX" {
-			t.Errorf("%s served web (404, or 401 behind the auth middleware): code=%d body=%q", p, rec.Code, rec.Body.String())
+		rec := get(h, p)
+		status, code := problemOf(t, rec)
+		if rec.Code != 401 || status != 401 || code != "UNAUTHENTICATED" || rec.Header().Get("WWW-Authenticate") != "Bearer" ||
+			rec.Body.String() == "INDEX" {
+			t.Errorf("%s: code=%d problem=%d/%s body=%q", p, rec.Code, status, code, rec.Body.String())
 		}
 	}
 }

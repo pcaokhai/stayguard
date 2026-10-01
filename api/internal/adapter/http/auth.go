@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	v1Prefix     = "/v1/"
 	bearerScheme = "bearer"
 )
 
@@ -32,11 +31,16 @@ func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Han
 	respond := problemResponder(log)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasPrefix(r.URL.Path, v1Prefix) || publicRoutes[r.Method+" "+r.URL.Path] {
+			if !isAPIPath(r.URL.Path) || publicRoutes[r.Method+" "+r.URL.Path] {
 				next.ServeHTTP(w, r)
 				return
 			}
-			token, ok := bearerToken(r.Header.Get("Authorization"))
+			// More than one Authorization value is ambiguous: fail closed rather than pick one.
+			values := r.Header.Values("Authorization")
+			token, ok := "", len(values) == 1
+			if ok {
+				token, ok = bearerToken(values[0])
+			}
 			if !ok {
 				respond(w, r, app.ErrUnauthenticated)
 				return

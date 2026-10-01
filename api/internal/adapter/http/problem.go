@@ -36,6 +36,8 @@ func badRequestResponse(w http.ResponseWriter, _ *http.Request, _ error) {
 
 // problemResponder is the single place where handler errors become HTTP problem responses
 // (CLAUDE.md §6 rule 10). Unknown errors are logged, never echoed to the client.
+// Errors from the authenticator reach this function too: they must never wrap or quote the bearer
+// token (the middleware logs unknown errors).
 func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		if errors.Is(err, errNotImplemented) {

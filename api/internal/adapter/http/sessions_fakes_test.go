@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"context"
 	"errors"
+	"testing"
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
@@ -15,17 +16,17 @@ const (
 	fakeUserName = "receptionist-jane"
 )
 
-// fakeSessions answers Authenticate by token and records every call. With failAll set, any use is a
-// test failure signal (calls > 0) so a handler that should not reach the use case is caught.
+// fakeSessions answers Authenticate by token and records every call. When forbid is set, any call
+// fails that test immediately, so a path that must not reach the use case is caught.
 type fakeSessions struct {
 	calls   int
-	failAll bool
+	forbid  *testing.T
 	demoErr error
 	locale  string
 }
 
 func (f *fakeSessions) Authenticate(_ context.Context, token string) (app.Caller, error) {
-	f.calls++
+	f.touch()
 	switch token {
 	case goodToken:
 		return app.Caller{TenantID: "tn_a", UserID: "us_1", Role: access.RoleReceptionist, Locale: "vi"}, nil
@@ -36,7 +37,7 @@ func (f *fakeSessions) Authenticate(_ context.Context, token string) (app.Caller
 }
 
 func (f *fakeSessions) CreateDemo(_ context.Context, role access.Role, locale, _ string) (app.DemoSession, error) {
-	f.calls++
+	f.touch()
 	if f.demoErr != nil {
 		return app.DemoSession{}, f.demoErr
 	}
@@ -45,7 +46,7 @@ func (f *fakeSessions) CreateDemo(_ context.Context, role access.Role, locale, _
 }
 
 func (f *fakeSessions) Me(_ context.Context, c app.Caller) (app.MeView, error) {
-	f.calls++
+	f.touch()
 	return app.MeView{
 		User:           app.User{ID: c.UserID, Name: fakeUserName, Role: c.Role, Locale: c.Locale},
 		Tenant:         app.TenantInfo{ID: c.TenantID, Name: "T", Timezone: "Asia/Ho_Chi_Minh", Currency: "VND"},
@@ -54,9 +55,16 @@ func (f *fakeSessions) Me(_ context.Context, c app.Caller) (app.MeView, error) {
 }
 
 func (f *fakeSessions) SetLocale(_ context.Context, _ app.Caller, locale string) error {
-	f.calls++
+	f.touch()
 	f.locale = locale
 	return nil
 }
 
 var errBoom = errors.New("boom")
+
+func (f *fakeSessions) touch() {
+	f.calls++
+	if f.forbid != nil {
+		f.forbid.Errorf("session use case called although the request must be rejected earlier")
+	}
+}

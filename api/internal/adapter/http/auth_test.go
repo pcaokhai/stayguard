@@ -42,8 +42,12 @@ func TestAuthMiddleware_SG102_AC4(t *testing.T) {
 	cases := []struct{ name, auth, code string }{
 		{"missing", "", "UNAUTHENTICATED"},
 		{"wrong scheme", "Basic abc", "UNAUTHENTICATED"},
-		{"bearer without token", "Bearer ", "UNAUTHENTICATED"},
+
 		{"token with space", "Bearer a b", "UNAUTHENTICATED"},
+		{"two spaces", "Bearer  " + goodToken, "UNAUTHENTICATED"},
+		{"scheme alone", "Bearer", "UNAUTHENTICATED"},
+		{"empty token", "Bearer ", "UNAUTHENTICATED"},
+		{"basic", "Basic " + goodToken, "UNAUTHENTICATED"},
 		{"unknown token", "Bearer nope", "UNAUTHENTICATED"},
 		{"expired token", "Bearer " + expiredToken, "SESSION_EXPIRED"},
 	}
@@ -70,12 +74,12 @@ func TestAuthMiddlewarePublicAndOutsideV1_SG102_AC4(t *testing.T) {
 	if rec := do(h, "POST", "/v1/webhooks/bank", ""); rec.Code == 401 {
 		t.Errorf("bank webhook must be public, got 401")
 	}
-	// Same path, other method, is not public.
-	if rec := do(h, "GET", "/v1/demo/sessions", ""); rec.Code != 401 && rec.Code != 405 {
-		t.Errorf("GET demo sessions: code=%d", rec.Code)
-	}
-	if rec := do(h, "GET", "/v1/demo/sessions/", ""); rec.Code != 401 {
-		t.Errorf("trailing slash must not be public, got %d", rec.Code)
+	// Only the exact method and path are public: everything else about the same route is 401.
+	for _, c := range [][2]string{{"GET", "/v1/demo/sessions"}, {"PUT", "/v1/demo/sessions"}, {"POST", "/v1/demo/sessions/"},
+		{"GET", "/v1/webhooks/bank"}, {"POST", "/v1/webhooks/bank/"}} {
+		if rec := do(h, c[0], c[1], ""); rec.Code != 401 {
+			t.Errorf("%s %s: code=%d, want 401", c[0], c[1], rec.Code)
+		}
 	}
 	for _, p := range []string{"/healthz", "/readyz", "/index.html"} {
 		if rec := do(h, "GET", p, ""); rec.Code == 401 {
@@ -119,5 +123,50 @@ func TestNoSecretsInLogs_SG102_AC2(t *testing.T) {
 	}
 	if logs.Len() == 0 {
 		t.Fatal("expected request log lines")
+	}
+}
+
+func TestAuthMiddlewareMethodsAndBarePrefix_SG102_AC4(t *testing.T) {
+	h := newTestRouter(&bytes.Buffer{})
+	for _, c := range [][2]string{{"HEAD", "/v1/me"}, {"OPTIONS", "/v1/me"}, {"GET", "/v1"}, {"DELETE", "/v1"}} {
+		if rec := do(h, c[0], c[1], ""); rec.Code != 401 {
+			t.Errorf("%s %s: code=%d, want 401", c[0], c[1], rec.Code)
+		}
+	}
+}
+
+// Paths that merely look like /v1 never reach an API handler: they are not under the API prefix
+// (static 404) or, once decoded, are the protected path itself (401).
+func TestAuthMiddlewareLookalikePaths_SG102_AC4(t *testing.T) {
+	f := &fakeSessions{forbid: t}
+	h := newRouterWith(&bytes.Buffer{}, f, true)
+	for _, p := range []string{"//v1/me", "/V1/me", "/v1x/me", "/v1%2Fme", "/v1/../v1/me", "/./v1/me"} {
+		rec := do(h, "GET", p, "")
+		if rec.Code/100 == 2 || rec.Code == 501 {
+			t.Errorf("%s reached a handler: code=%d", p, rec.Code)
+		}
+	}
+}
+
+func TestAuthMiddlewareDuplicateHeader_SG102_AC4(t *testing.T) {
+	f := &fakeSessions{forbid: t}
+	h := newRouterWith(&bytes.Buffer{}, f, true)
+	req := httptest.NewRequest("GET", "/v1/me", nil)
+	req.Header.Add("Authorization", "Bearer "+goodToken)
+	req.Header.Add("Authorization", "Bearer "+goodToken)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if _, code := problemOf(t, rec); rec.Code != 401 || code != "UNAUTHENTICATED" {
+		t.Fatalf("code=%d problem=%s", rec.Code, code)
+	}
+}
+
+// The scheme is matched case-insensitively (RFC 9110 section 11.1); this is deliberate.
+func TestAuthMiddlewareSchemeCase_SG102_AC4(t *testing.T) {
+	h := newTestRouter(&bytes.Buffer{})
+	for _, scheme := range []string{"Bearer", "bearer", "BEARER"} {
+		if rec := do(h, "GET", "/v1/services", scheme+" "+goodToken); rec.Code != 501 {
+			t.Errorf("%s: code=%d, want 501 (authenticated, stub reached)", scheme, rec.Code)
+		}
 	}
 }

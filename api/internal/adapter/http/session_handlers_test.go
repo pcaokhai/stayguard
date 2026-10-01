@@ -21,7 +21,7 @@ func post(h *fakeSessions, demo bool, body string) *httptest.ResponseRecorder {
 }
 
 func TestDemoDisabled_SG102_AC1(t *testing.T) {
-	f := &fakeSessions{failAll: true}
+	f := &fakeSessions{forbid: t}
 	rec := post(f, false, `{"role":"OWNER","locale":"vi"}`)
 	status, code := problemOf(t, rec)
 	if rec.Code != 404 || status != 404 || code != "DEMO_DISABLED" {
@@ -101,6 +101,30 @@ func TestProblemMapping_SG102_AC1(t *testing.T) {
 		}
 		if (tc.status == 401) != (rec.Header().Get("WWW-Authenticate") == "Bearer") {
 			t.Errorf("%v: WWW-Authenticate=%q", tc.err, rec.Header().Get("WWW-Authenticate"))
+		}
+	}
+}
+
+func TestCreateDemoValidation_SG102_AC1(t *testing.T) {
+	// The fake accepts anything; the real use case rejects. Use the real error mapping through the router.
+	for name, tc := range map[string]struct {
+		body   string
+		err    error
+		status int
+		code   string
+	}{
+		"bad role":      {`{"role":"ADMIN-secret","locale":"vi"}`, &app.ValidationError{Field: "role", Reason: "unknown role"}, 422, "VALIDATION_FAILED"},
+		"bad locale":    {`{"role":"OWNER","locale":"fr-secret"}`, &app.ValidationError{Field: "locale", Reason: "must be vi or en"}, 422, "VALIDATION_FAILED"},
+		"malformed":     {`{not json`, nil, 400, "BAD_REQUEST"},
+		"unknown trial": {`{"role":"OWNER","locale":"vi","tenantId":"tn_x"}`, app.ErrTrialNotFound, 404, "TRIAL_NOT_FOUND"},
+	} {
+		rec := post(&fakeSessions{demoErr: tc.err}, true, tc.body)
+		status, code := problemOf(t, rec)
+		if rec.Code != tc.status || status != tc.status || code != tc.code {
+			t.Errorf("%s: code=%d problem=%d/%s", name, rec.Code, status, code)
+		}
+		if strings.Contains(rec.Body.String(), "secret") {
+			t.Errorf("%s: client input echoed: %s", name, rec.Body.String())
 		}
 	}
 }

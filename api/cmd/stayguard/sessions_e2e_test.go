@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	httpadapter "github.com/pcaokhai/stayguard/api/internal/adapter/http"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
@@ -40,6 +41,7 @@ type env struct {
 	t     *testing.T
 	srv   *httptest.Server
 	clock *fakeClock
+	pool  *pgxpool.Pool
 	owner *pgx.Conn // table owner: seeds and inspects rows the app role cannot see
 	start time.Time
 }
@@ -62,7 +64,7 @@ func newEnv(t *testing.T) *env {
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	return &env{t: t, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start}
+	return &env{t: t, pool: pool, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start}
 }
 
 type reply struct {
@@ -275,5 +277,21 @@ func TestSessionExpiry_SG102_AC2(t *testing.T) {
 	}
 	if n := e.count(`SELECT count(*) FROM app.sessions WHERE token_hash = $1`, app.HashToken(token)); n != 1 {
 		t.Errorf("hashed token rows = %d, want 1", n)
+	}
+}
+
+// The server under test must run as the least-privileged application role, or RLS would be bypassed
+// and these tests would prove nothing about tenant isolation.
+func TestServerRunsAsAppRole_SG102_AC4(t *testing.T) {
+	e := newEnv(t)
+	var user string
+	var bypass, super bool
+	err := e.pool.QueryRow(context.Background(),
+		`SELECT current_user, rolbypassrls, rolsuper FROM pg_roles WHERE rolname = current_user`).Scan(&user, &bypass, &super)
+	if err != nil {
+		t.Fatalf("query role: %v", err)
+	}
+	if user != appRole || bypass || super {
+		t.Fatalf("server role = %s bypassrls=%v superuser=%v, want %s without privileges", user, bypass, super, appRole)
 	}
 }
