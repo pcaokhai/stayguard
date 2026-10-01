@@ -29,7 +29,12 @@ func (r *SessionResolver) Resolve(ctx context.Context, tokenHash string) (ref ap
 	if err != nil {
 		return ref, fmt.Errorf("begin session lookup: %w", err)
 	}
-	defer func() { err = errors.Join(err, rollback(ctx, tx)) }()
+	defer func() {
+		// Read-only, so rollback is the only exit. Callers must use errors.Is: errors may be joined.
+		if rerr := rollback(ctx, tx); rerr != nil {
+			err = errors.Join(err, rerr)
+		}
+	}()
 	if _, err = tx.Exec(ctx, `SELECT set_config('app.session_hash', $1, true)`, tokenHash); err != nil {
 		return ref, fmt.Errorf("set session hash: %w", err)
 	}

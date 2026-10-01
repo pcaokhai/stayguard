@@ -80,6 +80,7 @@ func TestSessionLookupIsolation_SG102_TS08(t *testing.T) {
 		})
 	})
 
+	// Only meaningful next to the positive control above: the hash is valid and sessions does return a row.
 	t.Run("no other table is visible", func(t *testing.T) {
 		withSettings(ctx, t, appConn, map[string]string{"app.session_hash": hashA}, func(tx pgx.Tx) {
 			for table := range catalogTables(t, db) {
@@ -106,7 +107,7 @@ func TestSessionLookupIsolation_SG102_TS08(t *testing.T) {
 		})
 		withSettings(ctx, t, appConn, map[string]string{"app.session_hash": hashA}, func(tx pgx.Tx) {
 			_, err := tx.Exec(ctx, `INSERT INTO app.sessions (token_hash, tenant_id, user_id, expires_at)
-				VALUES ('x', $1, $2, now() + interval '1 hour')`, lookupTenantA, lookupTenantA+"_u")
+				VALUES ($1, $2, $3, now() + interval '1 hour')`, hashA, lookupTenantA, lookupTenantA+"_u") // token_hash equals the set hash and the pair is valid: only RLS can reject
 			wantRLSViolation(t, "insert with hash only", err)
 		})
 	})
