@@ -22,6 +22,9 @@ type Bill struct {
 // Assemble adds extras to the stay and settles against the deposit; at most one of
 // BalanceDue and RefundDue is positive.
 func Assemble(stay Quote, extras []Extra, deposit money.Vnd) (Bill, error) {
+	if deposit < 0 {
+		return Bill{}, fmt.Errorf("deposit: %w", money.ErrNegative)
+	}
 	amounts := make([]money.Vnd, len(extras))
 	for i, e := range extras {
 		if e.Quantity < 1 {
@@ -43,9 +46,12 @@ func Assemble(stay Quote, extras []Extra, deposit money.Vnd) (Bill, error) {
 	}
 	b := Bill{StayTotal: stay.Total, ExtrasTotal: extrasTotal, Total: total}
 	if total > deposit {
-		b.BalanceDue = total - deposit
+		b.BalanceDue, err = money.Sub(total, deposit)
 	} else {
-		b.RefundDue = deposit - total
+		b.RefundDue, err = money.Sub(deposit, total)
+	}
+	if err != nil {
+		return Bill{}, fmt.Errorf("settlement: %w", err)
 	}
 	return b, nil
 }

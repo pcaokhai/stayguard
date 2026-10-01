@@ -65,3 +65,11 @@ func TestBillArithmetic_SG101_AC5(t *testing.T) {
 		}
 	})
 }
+
+func TestBillRejectsNegativeDeposit_SG101_AC5(t *testing.T) {
+	for _, dep := range []money.Vnd{-1, math.MinInt64} {
+		if _, err := Assemble(Quote{Total: 100}, nil, dep); !errors.Is(err, money.ErrNegative) {
+			t.Fatalf("deposit %d: err = %v", dep, err)
+		}
+	}
+}

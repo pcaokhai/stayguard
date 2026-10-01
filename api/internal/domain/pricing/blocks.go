@@ -29,8 +29,4 @@ func wallAt(loc *time.Location, day time.Time, dayOffset int, c Clock) time.Time
 	return time.Date(y, m, d+dayOffset, c.Hour, c.Minute, 0, 0, loc)
 }
 
-func minuteOfDay(t time.Time) int {
-	return t.Hour()*minutesPerHour + t.Minute()
-}
-
 func (c Clock) minuteOfDay() int { return c.Hour*minutesPerHour + c.Minute }

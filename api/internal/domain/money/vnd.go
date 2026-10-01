@@ -57,3 +57,11 @@ func Sum(vs ...Vnd) (Vnd, error) {
 	}
 	return total, nil
 }
+
+// Sub fails rather than going below zero, so settlement never produces a negative amount.
+func Sub(a, b Vnd) (Vnd, error) {
+	if a < 0 || b < 0 || b > a {
+		return 0, ErrNegative
+	}
+	return a - b, nil
+}

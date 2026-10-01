@@ -19,6 +19,11 @@ const (
 
 var rentalTypes = []RentalType{RentalHourly, RentalOvernight, RentalDaily}
 
+// randomClock covers crossing and non-crossing windows alike, minutes included.
+func randomClock(r *rand.Rand) Clock {
+	return Clock{Hour: r.IntN(24), Minute: r.IntN(60)}
+}
+
 func randomPlan(r *rand.Rand) RatePlan {
 	price := func() money.Vnd { return money.Vnd(r.Int64N(maxPriceVnd + 1)) }
 	return RatePlan{
@@ -26,8 +31,8 @@ func randomPlan(r *rand.Rand) RatePlan {
 		Currency:     CurrencyVND,
 		GraceMinutes: r.IntN(MaxGraceMinutes + 1),
 		Hourly:       Hourly{FirstHour: price(), ExtraHour: price()},
-		Overnight:    Window{Price: price(), Start: Clock{Hour: overnightStartH}, End: Clock{Hour: overnightEndH}},
-		Daily:        Window{Price: price(), Start: Clock{Hour: dailyStartH}, End: Clock{Hour: dailyEndH}},
+		Overnight:    Window{Price: price(), Start: randomClock(r), End: randomClock(r)},
+		Daily:        Window{Price: price(), Start: randomClock(r), End: randomClock(r)},
 	}
 }
 

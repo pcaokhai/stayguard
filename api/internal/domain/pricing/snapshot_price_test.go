@@ -5,7 +5,10 @@ import (
 	"time"
 )
 
-func TestPriceUsesSnapshotNotTenantPlan_SG101_AC6(t *testing.T) {
+// Pricing the same stored bytes twice is only a determinism check; real snapshot stability is
+// covered by TestSnapshotStable_SG101_AC6 and, end to end, by the stay story. The v2 assertion
+// shows a new stay prices from its own plan.
+func TestPriceSameSnapshotSameQuote_SG101_AC6(t *testing.T) {
 	loc := time.FixedZone("ICT", 7*60*60)
 	in := time.Date(2026, 10, 5, 10, 0, 0, 0, loc)
 	out := in.Add(45 * time.Minute)

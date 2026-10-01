@@ -11,7 +11,12 @@ import (
 var (
 	ErrInvalidInterval   = errors.New("pricing: check-out must be after check-in")
 	ErrUnknownRentalType = errors.New("pricing: unknown rental type")
+	ErrInvalidZone       = errors.New("pricing: zone is required")
+	ErrStayTooLong       = errors.New("pricing: stay exceeds the maximum length")
 )
+
+// MaxStayDays bounds the billing-day loop and rejects garbage instants such as a zero time.
+const MaxStayDays = 366
 
 type RentalType string
 
@@ -75,12 +80,21 @@ func optionalLine(lines []Line, code string, qty int64, unit money.Vnd) ([]Line,
 }
 
 // Price is a pure function of its arguments (docs/02 §7.7). Instants are compared as instants;
-// loc decides which wall-clock day and window they fall in.
+// loc decides which wall-clock day and window they fall in. Tenant zones are assumed to have no
+// DST gaps or folds (Vietnam has none); a zone with DST may price an instant inside a gap or
+// overlap differently from the generator.
 func Price(plan RatePlan, rental RentalType, checkIn, checkOut time.Time, loc *time.Location) (Quote, error) {
+	if loc == nil {
+		return Quote{}, ErrInvalidZone
+	}
 	if !checkOut.After(checkIn) {
 		return Quote{}, ErrInvalidInterval
 	}
 	in, out := checkIn.In(loc), checkOut.In(loc)
+	// Compared as dates, not as a Duration, which saturates for a zero time.
+	if out.After(in.AddDate(0, 0, MaxStayDays)) {
+		return Quote{}, ErrStayTooLong
+	}
 	var lines []Line
 	var err error
 	switch rental {
@@ -129,17 +143,24 @@ func hourlyLines(plan RatePlan, in, out time.Time) ([]Line, error) {
 	return optionalLine(lines, CodeExtraHour, blocks(mins-minutesPerHour, plan.GraceMinutes), plan.Hourly.ExtraHour)
 }
 
-// overnightDay is the day the night starts on: a check-in before the window end belongs to the
-// previous night, so a 01:00 arrival is priced as the night that began yesterday.
-func overnightDay(plan RatePlan, in time.Time) int {
-	tod := minuteOfDay(in)
-	if tod >= plan.Overnight.Start.minuteOfDay() {
-		return 0
+// overnightWindow returns the window that applies to a check-in: the first one, among the
+// previous day's, today's and tomorrow's, that has not ended yet. A check-in before today's start
+// is early for today's window; one after a non-crossing window's end is early for tomorrow's.
+func overnightWindow(plan RatePlan, in time.Time, loc *time.Location) (start, end time.Time) {
+	w := plan.Overnight
+	for off := -1; off <= 1; off++ {
+		start = wallAt(loc, in, off, w.Start)
+		// The end is the first occurrence of End strictly after the start instant.
+		endOff := off
+		if w.End.minuteOfDay() <= w.Start.minuteOfDay() {
+			endOff++
+		}
+		end = wallAt(loc, in, endOff, w.End)
+		if in.Before(end) {
+			return start, end
+		}
 	}
-	if tod < plan.Overnight.End.minuteOfDay() {
-		return -1
-	}
-	return 0
+	return start, end
 }
 
 func overnightLines(plan RatePlan, in, out time.Time, loc *time.Location) ([]Line, error) {
@@ -147,9 +168,7 @@ func overnightLines(plan RatePlan, in, out time.Time, loc *time.Location) ([]Lin
 	if err != nil {
 		return nil, err
 	}
-	off := overnightDay(plan, in)
-	start := wallAt(loc, in, off, plan.Overnight.Start)
-	end := wallAt(loc, in, off+1, plan.Overnight.End)
+	start, end := overnightWindow(plan, in, loc)
 	early := blocks(minutesBetween(in, start), plan.GraceMinutes)
 	late := blocks(minutesBetween(end, out), plan.GraceMinutes)
 	lines, err := optionalLine([]Line{night}, CodeEarlyCheckinHr, early, plan.Hourly.ExtraHour)
