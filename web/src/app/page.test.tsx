@@ -12,7 +12,8 @@ vi.mock("../features/session/useCreateDemoSession", () => ({
 
 test("role_picker_shows_three_roles_W1", () => {
   const html = renderToStaticMarkup(<RolePicker />);
-  for (const k of ["desk", "owner", "housekeeping"] as const) expect(html).toContain(viMsg.login[k]);
+  for (const k of ["desk", "owner", "housekeeping"] as const)
+    expect(html).toContain(viMsg.login[k]);
 });
 
 // CLAUDE.md §6 rule 12: both languages carry the same keys.

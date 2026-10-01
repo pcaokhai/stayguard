@@ -21,6 +21,13 @@
   --color-info: #1c4a82;
   --color-info-bg: #dde8f6;
   --color-info-line: #afc6e6;
+  --color-ok-line: #b9dbc2;
+  --color-warn-ink: #8a3a0a;
+  --color-dirty: #5e4a00;
+  --color-dirty-bg: #f6edc2;
+  --color-dirty-line: #e3d27d;
+  --color-maint: #4a4843;
+  --color-maint-bg: #e7e5e0;
   --radius-card: 14px;
   --radius-ctl: 9px;
 }

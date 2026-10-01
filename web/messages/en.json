@@ -14,5 +14,24 @@
     "housekeeping": "Housekeeping",
     "housekeepingSub": "See rooms to clean, mark them done",
     "failed": "Could not start the trial session. Please try again."
+  },
+  "rooms": {
+    "vacant": "Vacant",
+    "occupied": "Occupied",
+    "overdue": "Overdue",
+    "toClean": "To clean",
+    "maintenance": "Maintenance",
+    "justLeft": "Guest just left",
+    "hourly": "Hourly",
+    "overnight": "Overnight",
+    "daily": "Daily",
+    "viewOnly": "View only",
+    "viewOnlyNote": "You can only view this building. Ask the owner for access.",
+    "hint": "Tap a vacant room to check in, tap an occupied room to see the running total.",
+    "loadFailed": "Could not load the room map.",
+    "roleOWNER": "Owner",
+    "roleRECEPTIONIST": "Front desk",
+    "roleHOUSEKEEPING": "Housekeeping",
+    "hourUnit": "h"
   }
 }

@@ -14,5 +14,24 @@
     "housekeeping": "Buồng phòng",
     "housekeepingSub": "Xem phòng cần dọn, báo dọn xong",
     "failed": "Không bắt đầu được phiên dùng thử. Vui lòng thử lại."
+  },
+  "rooms": {
+    "vacant": "Trống",
+    "occupied": "Có khách",
+    "overdue": "Quá giờ",
+    "toClean": "Cần dọn",
+    "maintenance": "Bảo trì",
+    "justLeft": "Khách vừa trả",
+    "hourly": "Giờ",
+    "overnight": "Đêm",
+    "daily": "Ngày",
+    "viewOnly": "Chỉ xem",
+    "viewOnlyNote": "Bạn chỉ có quyền xem tòa này. Cần thao tác thì nhờ chủ nhà cấp quyền.",
+    "hint": "Chạm phòng trống để nhận phòng, chạm phòng có khách để xem tiền tạm tính.",
+    "loadFailed": "Không tải được sơ đồ phòng.",
+    "roleOWNER": "Chủ nhà nghỉ",
+    "roleRECEPTIONIST": "Lễ tân",
+    "roleHOUSEKEEPING": "Buồng phòng",
+    "hourUnit": "g"
   }
 }

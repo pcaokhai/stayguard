@@ -66,7 +66,7 @@ Tests: one integration test with seeded payments checks each total.
 What: add Tailwind v4, TanStack Query, `qrcode`; theme tokens from the design source; `t()` helper with `messages/vi.json`; API client wrapper with token and Idempotency-Key helpers; `/vi` layout; mock mode still works. Role picker at `/vi` (three roles, creates a demo session, routes to rooms, owner or housekeeping).
 Verify: `npm run build`, `npm run lint`; role picker matches `ChonVaiTro.png`.
 
-### [ ] W2 Room map (WEB)
+### [x] W2 Room map (WEB)
 What: `/vi/rooms` with building tabs, status counters, room tiles (vertical layout as in the design), End shift button hidden for now; vacant room → check-in, occupied → stay. Desktop width uses the grid of `SoDoMayTinh.png` without the side panel.
 Verify: matches `Main.png` at 390 px; works on mocks and on `make up` after A1.
 
