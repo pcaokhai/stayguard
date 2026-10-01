@@ -45,12 +45,12 @@ export function OwnerOverview() {
         <section className="flex flex-col gap-3 rounded-card border border-line-soft bg-surface p-5">
           <p className="text-sm text-muted">{t("owner.revenue")}</p>
           <p className="text-[40px] font-bold leading-none">{formatVnd(o.revenueTotal)}</p>
-          <div className="grid grid-cols-2 gap-3">
-            <p className="rounded-card bg-ok-bg p-3 text-sm text-ok">
+          <div className="grid grid-cols-2 gap-2">
+            <p className="rounded-card bg-ok-bg p-2.5 text-[13px] text-ok">
               {t("owner.transfers")}
               <b className="block text-xl">{formatVnd(o.transfersReceived)}</b>
             </p>
-            <p className="rounded-card bg-sunken p-3 text-sm text-ink-2">
+            <p className="rounded-card bg-sunken p-2.5 text-[13px] text-ink-2">
               {t("owner.cash")}
               <b className="block text-xl text-ink">{formatVnd(o.cashExpected)}</b>
             </p>
