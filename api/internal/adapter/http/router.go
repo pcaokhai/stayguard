@@ -56,13 +56,16 @@ type Options struct {
 	// Stays and CheckInEnabled (FF_S2_CHECKIN) serve createStay and getStay.
 	Stays          StayService
 	CheckInEnabled bool
+	// Billing and CheckoutEnabled (FF_S3_CHECKOUT) serve listServices, addStayExtras and checkoutStay.
+	Billing         BillingService
+	CheckoutEnabled bool
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

@@ -64,17 +64,21 @@ func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *e
 	t.Cleanup(pool.Close)
 	start := time.Now().UTC().Truncate(time.Second) // whole seconds: timestamptz keeps microseconds
 	clk := &fakeClock{t: start}
-	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true}
+	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true, CheckoutEnabled: true}
 	uow := postgres.NewUnitOfWork(pool)
 	sessions := newSessions(cfg, pool, uow, clk)
 	stays, err := newStays(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
 	if err != nil {
 		t.Fatalf("stays: %v", err)
 	}
+	billing, err := newBilling(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
+	if err != nil {
+		t.Fatalf("billing: %v", err)
+	}
 	logs := &syncBuffer{}
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
-		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true,
+		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true,
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

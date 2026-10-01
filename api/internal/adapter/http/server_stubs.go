@@ -21,12 +21,16 @@ type Server struct {
 	roomMap     bool
 	stays       StayService
 	checkIn     bool
+	billing     BillingService
+	checkout    bool
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
-// checkIn FF_S2_CHECKIN.
-func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool) Server {
-	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn}
+// checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
+func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
+	billing BillingService, checkout bool) Server {
+	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
+		billing: billing, checkout: checkout}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -81,10 +85,6 @@ func (Server) ReportRoomUsage(context.Context, gen.ReportRoomUsageRequestObject)
 	return nil, errNotImplemented
 }
 
-func (Server) ListServices(context.Context, gen.ListServicesRequestObject) (gen.ListServicesResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetCurrentShift(context.Context, gen.GetCurrentShiftRequestObject) (gen.GetCurrentShiftResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -94,14 +94,6 @@ func (Server) CloseShift(context.Context, gen.CloseShiftRequestObject) (gen.Clos
 }
 
 func (Server) RecordCashPayout(context.Context, gen.RecordCashPayoutRequestObject) (gen.RecordCashPayoutResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CheckoutStay(context.Context, gen.CheckoutStayRequestObject) (gen.CheckoutStayResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) AddStayExtras(context.Context, gen.AddStayExtrasRequestObject) (gen.AddStayExtrasResponseObject, error) {
 	return nil, errNotImplemented
 }
 

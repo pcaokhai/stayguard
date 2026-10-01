@@ -26,6 +26,7 @@ type deps struct {
 	sessions *app.Sessions
 	rooms    *app.Rooms
 	stays    *app.Stays
+	billing  *app.Billing
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -40,11 +41,17 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	billing, err := newBilling(cfg, uow, idem, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	return deps{
 		pool:     pool,
 		sessions: newSessions(cfg, pool, uow, clock.System{}),
 		rooms:    newRooms(uow, clock.System{}),
 		stays:    stays,
+		billing:  billing,
 		uow:      uow,
 		idem:     idem,
 		audit:    audit,
@@ -75,4 +82,15 @@ func newStays(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, 
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
 	return app.NewStays(uow, postgres.StayRepo{}, permissions.Derived{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+}
+
+// newBilling builds the extras and check-out use cases. It takes the same encryptor as check-in because
+// the stay view it returns masks the ID number.
+func newBilling(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) (*app.Billing, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.Derived{}, enc, idem, audit,
+		ids.New(clk.Now), clk), nil
 }

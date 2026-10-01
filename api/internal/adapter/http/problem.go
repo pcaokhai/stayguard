@@ -130,13 +130,17 @@ func mapRoomError(w http.ResponseWriter, err error) bool {
 	return true
 }
 
-// mapStayError writes the problem for check-in errors and reports whether it matched. Field errors
+// mapStayError writes the problem for check-in, extras and check-out errors and reports whether it matched. Field errors
 // come from the domain as paths and codes only: no input value or error text reaches the client.
 func mapStayError(w http.ResponseWriter, err error) bool {
 	var ve *stay.ValidationError
 	switch {
 	case errors.Is(err, room.ErrNotVacant):
 		writeProblem(w, http.StatusConflict, "Conflict", "ROOM_NOT_VACANT")
+	case errors.Is(err, stay.ErrInsufficientStock):
+		writeProblem(w, http.StatusConflict, "Conflict", "INSUFFICIENT_STOCK")
+	case errors.Is(err, stay.ErrNotActive):
+		writeProblem(w, http.StatusConflict, "Conflict", "STAY_NOT_ACTIVE")
 	case errors.As(err, &ve):
 		errs := make([]fieldProblem, len(ve.Errors))
 		for i, fe := range ve.Errors {
