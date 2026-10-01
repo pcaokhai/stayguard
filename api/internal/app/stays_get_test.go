@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -109,8 +110,12 @@ func TestGetStayFailsClosed_SG203_AC6(t *testing.T) {
 			rec.RentalType = "HOURLY"
 		}
 		seedStay(e, rec)
-		if _, err := e.s.GetStay(context.Background(), e.caller, "st1"); err == nil {
-			t.Fatalf("%s: expected an error", name)
+		_, err := e.s.GetStay(context.Background(), e.caller, "st1")
+		if err == nil || strings.Contains(err.Error(), "WEEKLY") {
+			t.Fatalf("%s: expected an error without the stored value: %v", name, err)
+		}
+		if name == "unknown rental" && !errors.Is(err, pricing.ErrUnknownRentalType) {
+			t.Fatalf("%s: %v", name, err)
 		}
 	}
 }

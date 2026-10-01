@@ -195,3 +195,40 @@ func TestCreateStayAccess_SG203_AC1(t *testing.T) {
 		t.Fatalf("foreign=%v unknown=%v", foreign, unknown)
 	}
 }
+
+func TestCreateStayIdempotencyKey_SG203_AC3(t *testing.T) {
+	for name, key := range map[string]string{"empty": "", "too long": strings.Repeat("k", maxIdempotencyKeyBytes+1)} {
+		e := newStayEnv(t)
+		_, _, err := create(e, key, goodInput())
+		if !errors.Is(err, ErrInvalidIdempotencyKey) || e.repo.calls != 0 || len(e.idem.hashes) != 0 || len(e.uow.tenants) != 0 {
+			t.Fatalf("%s: err=%v", name, err)
+		}
+		if strings.Contains(err.Error(), key) && key != "" {
+			t.Fatal("error echoes the key")
+		}
+	}
+	e := newStayEnv(t)
+	if _, _, err := create(e, strings.Repeat("k", maxIdempotencyKeyBytes), goodInput()); err != nil {
+		t.Fatalf("a key at the limit is valid: %v", err)
+	}
+}
+
+func TestCreateStayHashEmptyId_SG203_AC3(t *testing.T) {
+	hashOf := func(id *string) string {
+		e := newStayEnv(t)
+		in := goodInput()
+		in.IDNumber = id
+		if _, _, err := create(e, "k1", in); err != nil {
+			t.Fatal(err)
+		}
+		return e.idem.hashes[0]
+	}
+	empty, blank, real := "", "   ", "REALID12345"
+	none := hashOf(nil)
+	if hashOf(&empty) != none || hashOf(&blank) != none {
+		t.Fatal("null, empty and whitespace-only id numbers must hash alike")
+	}
+	if hashOf(&real) == none {
+		t.Fatal("a real id number must change the hash")
+	}
+}

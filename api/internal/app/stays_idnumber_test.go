@@ -101,18 +101,29 @@ func TestNoPersonalDataInErrors_SG203_AC4(t *testing.T) {
 	add(create(e, "k3", ok)) // key reused
 	e.repo.markErr = errors.New("db down")
 	add(create(newStayEnvWith(t, e), "k4", ok))
-	e.enc.encryptErr = errors.New("kms down")
-	e.s.enc = e.enc
-	add(create(newStayEnv(t), "k5", ok)) // unaffected env, sanity
+	k := newStayEnv(t)
+	k.enc.encryptErr = errors.New("kms down")
+	k.s.enc = k.enc
+	ok.Deposit = 2
+	_, _, kmsErr := create(k, "k5", ok)
+	if kmsErr == nil || len(k.repo.inserted) != 0 {
+		t.Fatalf("encrypt failure must stop check-in: %v", kmsErr)
+	}
+	add(StayDetail{}, false, kmsErr)
+	failed := 0
 	for _, err := range errs {
-		if err == nil {
+		if err == nil { // k3 succeeds once: the room was freed again
 			continue
 		}
+		failed++
 		for _, m := range []string{name, phone, "MARKERPHONE", id, idOK, "WEEKLY-MARKER", "FAKECT"} {
 			if strings.Contains(err.Error(), m) {
 				t.Fatalf("error leaks %q: %v", m, err)
 			}
 		}
+	}
+	if failed != 5 {
+		t.Fatalf("expected 5 failing cases, got %d", failed)
 	}
 }
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
@@ -17,9 +19,14 @@ const (
 	statusCreated = 201
 	// rateSnapshotSchema is the version of the snapshot encoding stored with each stay (plan Ruling 3).
 	rateSnapshotSchema = 1
-	auditCheckIn       = "stay.check_in"
-	entityStay         = "stay"
+	// maxIdempotencyKeyBytes bounds the key before it reaches the store (a UUID is 36).
+	maxIdempotencyKeyBytes = 64
+	auditCheckIn           = "stay.check_in"
+	entityStay             = "stay"
 )
+
+// ErrInvalidIdempotencyKey: the key is empty or longer than maxIdempotencyKeyBytes (HTTP 422). It never carries the key.
+var ErrInvalidIdempotencyKey = errors.New("invalid idempotency key")
 
 // CreateStayInput is the raw request body; IDNumber is nil when the guest gave none.
 type CreateStayInput struct {
@@ -64,6 +71,9 @@ func (s *Stays) CreateStay(ctx context.Context, c Caller, roomID, idemKey string
 	const op = "createStay"
 	if err := s.checkRole(op, c); err != nil {
 		return StayDetail{}, false, err
+	}
+	if idemKey == "" || len(idemKey) > maxIdempotencyKeyBytes {
+		return StayDetail{}, false, ErrInvalidIdempotencyKey
 	}
 	req, err := validateCreate(in)
 	if err != nil {
@@ -120,8 +130,10 @@ func (s *Stays) checkIn(ctx context.Context, tx Tx, c Caller, roomID, key string
 // of the ID number so the idempotency table holds nothing that can be brute-forced (plan Ruling 9).
 func (s *Stays) requestHash(tenantID string, in CreateStayInput) string {
 	fp := ""
-	if in.IDNumber != nil {
-		fp = hex.EncodeToString(s.enc.Fingerprint(tenantID, idNumberField, []byte(*in.IDNumber)))
+	// Trimmed like the stored value: null, "" and "   " all mean no id number, so a retry that
+	// switches between them replays instead of conflicting. Other fields hash raw.
+	if in.IDNumber != nil && strings.TrimSpace(*in.IDNumber) != "" {
+		fp = hex.EncodeToString(s.enc.Fingerprint(tenantID, idNumberField, []byte(strings.TrimSpace(*in.IDNumber))))
 	}
 	body, _ := json.Marshal(struct {
 		RentalType    string `json:"rentalType"`
