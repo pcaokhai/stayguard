@@ -65,10 +65,14 @@ func quoteInstant(rec StayRecord, now time.Time) (time.Time, error) {
 
 // maskedStoredID decrypts only to mask; a failure is an error, never an empty or plain value.
 func (s *Stays) maskedStoredID(tenantID string, rec StayRecord) (*string, error) {
+	return maskedStored(s.enc, tenantID, rec)
+}
+
+func maskedStored(enc Encryptor, tenantID string, rec StayRecord) (*string, error) {
 	if len(rec.IDNumberEnc) == 0 {
 		return nil, nil
 	}
-	plain, err := s.enc.Decrypt(tenantID, idField(rec.ID), rec.IDNumberEnc)
+	plain, err := enc.Decrypt(tenantID, idField(rec.ID), rec.IDNumberEnc)
 	if err != nil {
 		return nil, fmt.Errorf("stay id number: %w", err)
 	}

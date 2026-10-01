@@ -23,6 +23,7 @@ type NewStay struct {
 	RatePlanSchema                                int
 }
 
+// ExtraRecord is one extras row; ServiceCode is the service code, not its id.
 type ExtraRecord struct {
 	ServiceCode string
 	Name        LocalizedName
@@ -51,4 +52,42 @@ type StayRepo interface {
 	MarkRoomOccupied(ctx context.Context, tx Tx, roomID string) error
 	StayByID(ctx context.Context, tx Tx, stayID string) (StayRecord, bool, error)
 	Timezone(ctx context.Context, tx Tx) (string, error)
+}
+
+// NewExtra is the row inserted when an extra is added; the amount (quantity times unit) is computed by the adapter.
+type NewExtra struct {
+	ID, StayID, ServiceID string
+	Quantity, UnitAmount  int64
+	CreatedAt             time.Time
+}
+
+// NewInvoice is the row inserted at check-out; Quote is the frozen quote JSON.
+type NewInvoice struct {
+	ID, StayID, BillCode string
+	Quote                []byte
+	Total                int64
+	CreatedAt            time.Time
+}
+
+type InvoiceRecord struct {
+	ID, StayID, BillCode, Status string
+	Quote                        []byte
+	Total                        int64
+	CreatedAt                    time.Time
+}
+
+// BillingStayRepo is what the billing use cases need from the stay store. It is separate from
+// StayRepo so the check-in use cases and their adapter wiring stay as they are. Filters by the tenant of the Tx.
+type BillingStayRepo interface {
+	StayByID(ctx context.Context, tx Tx, stayID string) (StayRecord, bool, error)
+	Timezone(ctx context.Context, tx Tx) (string, error)
+	// LockStay takes the row lock that serializes extras and check-out on one stay.
+	LockStay(ctx context.Context, tx Tx, stayID string) (StayRecord, bool, error)
+	InsertExtra(ctx context.Context, tx Tx, e NewExtra) error
+	// MarkCheckedOut returns stay.ErrNotActive when the stay was not ACTIVE: the backstop.
+	MarkCheckedOut(ctx context.Context, tx Tx, stayID string, at time.Time) error
+	InvoiceByStay(ctx context.Context, tx Tx, stayID string) (InvoiceRecord, bool, error)
+	InsertInvoice(ctx context.Context, tx Tx, n NewInvoice) error
+	// CountBillCodes counts the tenant's bill codes that start with prefix (picks the attempt number).
+	CountBillCodes(ctx context.Context, tx Tx, prefix string) (int, error)
 }

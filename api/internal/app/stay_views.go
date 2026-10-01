@@ -91,13 +91,17 @@ func detailFor(rec StayRecord, asOf time.Time, masked *string, loc *time.Locatio
 		ID: rec.ID, RoomID: rec.RoomID, RoomCode: rec.RoomCode, RentalType: rec.RentalType, Status: rec.Status,
 		CheckInAt: rec.CheckInAt.UTC(), CheckOutAt: utcPtr(rec.CheckOutAt), GuestName: rec.GuestName,
 		GuestPhone: rec.GuestPhone, IDNumberMasked: masked, Deposit: rec.Deposit, Extras: views,
-		Quote: QuoteView{
-			AsOf: asOf.UTC(), StayAmount: bill.StayTotal.Int64(), ExtrasAmount: bill.ExtrasTotal.Int64(),
-			Total: bill.Total.Int64(), DepositPaid: rec.Deposit, BalanceDue: bill.BalanceDue.Int64(),
-			RefundDue: bill.RefundDue.Int64(), Capped: q.Capped, Lines: lineViews(q.Lines),
-		},
+		Quote:          quoteViewOf(asOf, q, bill, rec.Deposit),
 		PricingVersion: int(plan.Version),
 	}, nil
+}
+
+func quoteViewOf(asOf time.Time, q pricing.Quote, bill pricing.Bill, deposit int64) QuoteView {
+	return QuoteView{
+		AsOf: asOf.UTC(), StayAmount: bill.StayTotal.Int64(), ExtrasAmount: bill.ExtrasTotal.Int64(),
+		Total: bill.Total.Int64(), DepositPaid: deposit, BalanceDue: bill.BalanceDue.Int64(),
+		RefundDue: bill.RefundDue.Int64(), Capped: q.Capped, Lines: lineViews(q.Lines),
+	}
 }
 
 func extrasFor(rows []ExtraRecord) ([]pricing.Extra, []ExtraView, error) {
