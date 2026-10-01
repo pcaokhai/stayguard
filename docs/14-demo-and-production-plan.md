@@ -43,7 +43,7 @@ Start each task in a fresh context (`/clear`). Paste the task text as the prompt
 
 ## 4. Demo — today
 
-### [ ] A1 Seed the demo tenant (API) — blocking
+### [x] A1 Seed the demo tenant (API) — blocking
 Files: new seed package under `api/internal/app` (or `adapter/postgres`), the session creation path, the seed JSON.
 What: when `createDemoSession` creates a trial tenant, in the same transaction insert from `contracts/fixtures/demo-tenant-seed.json` (embed the file): one property, buildings A and B with floors and rooms, unit types with rate plans (validate with the existing rate-plan validation), services with stock, and the sample occupancy (active stays created with the server clock minus fixed offsets, rooms in TO_CLEAN and MAINTENANCE). Use the existing repositories.
 Tests: one integration test: a new demo session sees 35 rooms in 2 buildings, the expected status counts, 5 services; two sessions do not see each other's rooms.

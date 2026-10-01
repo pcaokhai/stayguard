@@ -25,10 +25,14 @@ type rig struct {
 	ids *seqIDs
 }
 
+type noSeed struct{}
+
+func (noSeed) Seed(context.Context, Tx, time.Time) error { return nil }
+
 func newRig(demo bool) rig {
 	r := rig{uow: &fakeUoW{}, res: &fakeResolver{}, rep: newFakeRepo(), ids: &seqIDs{}}
 	r.s = NewSessions(SessionsConfig{DemoEnabled: demo, SessionTTL: sessionTTL, TrialTTL: trialTTL},
-		r.uow, r.res, r.rep, fixedClock{t0}, r.ids, fixedToken{rawToken})
+		r.uow, r.res, r.rep, fixedClock{t0}, r.ids, fixedToken{rawToken}, noSeed{})
 	return r
 }
 

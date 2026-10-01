@@ -1,0 +1,92 @@
+//go:build integration
+
+package main
+
+import (
+	"os"
+	"testing"
+	"time"
+
+	"github.com/pcaokhai/stayguard/api/internal/adapter/crypto"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/ids"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
+	"github.com/pcaokhai/stayguard/api/internal/app"
+)
+
+func newSeededEnv(t *testing.T) *env {
+	t.Helper()
+	enc, err := crypto.NewAESGCM(testDataKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return newEnvWith(t, newRooms, app.NewDemoSeeder(postgres.DemoSeedRepo{}, enc, ids.New(time.Now)))
+}
+
+func TestDemoSeed_A1(t *testing.T) {
+	e := newSeededEnv(t)
+	a, b := e.demo("OWNER", "vi", ""), e.demo("OWNER", "vi", "")
+	ta, tb := a.str("tenantId"), b.str("tenantId")
+
+	for _, tenant := range []string{ta, tb} {
+		counts := map[string]int{}
+		for _, st := range []string{"VACANT", "OCCUPIED", "TO_CLEAN", "MAINTENANCE"} {
+			counts[st] = e.count(`SELECT count(*) FROM app.units WHERE tenant_id = $1 AND status = $2`, tenant, st)
+		}
+		want := map[string]int{"VACANT": 19, "OCCUPIED": 11, "TO_CLEAN": 4, "MAINTENANCE": 1}
+		for st, n := range want {
+			if counts[st] != n {
+				t.Errorf("%s: %d rooms %s, want %d", tenant, counts[st], st, n)
+			}
+		}
+		if n := e.count(`SELECT count(*) FROM app.units WHERE tenant_id = $1`, tenant); n != 35 {
+			t.Errorf("%s: %d rooms, want 35", tenant, n)
+		}
+		if n := e.count(`SELECT count(*) FROM app.stays WHERE tenant_id = $1 AND status = 'ACTIVE'`, tenant); n != 11 {
+			t.Errorf("%s: %d active stays, want 11", tenant, n)
+		}
+		if n := e.count(`SELECT count(*) FROM app.tenants WHERE id = $1 AND bank_account_enc IS NOT NULL`, tenant); n != 1 {
+			t.Errorf("%s: bank account not stored", tenant)
+		}
+	}
+
+	// The API sees 2 buildings and 5 services, and tenant B's buildings are not tenant A's.
+	ids := func(r reply) map[string]bool {
+		out := map[string]bool{}
+		items, _ := r.body["items"].([]any)
+		for _, it := range items {
+			m, _ := it.(map[string]any)
+			out[m["id"].(string)] = true
+		}
+		return out
+	}
+	ba := e.call("GET", "/v1/buildings", a.str("accessToken"), nil)
+	bb := e.call("GET", "/v1/buildings", b.str("accessToken"), nil)
+	ia, ib := ids(ba), ids(bb)
+	if len(ia) != 2 || len(ib) != 2 {
+		t.Fatalf("buildings: a=%v b=%v", ba.body, bb.body)
+	}
+	for id := range ia {
+		if ib[id] {
+			t.Errorf("building %s visible to both tenants", id)
+		}
+	}
+	svc := e.call("GET", "/v1/services", a.str("accessToken"), nil)
+	if items, _ := svc.body["items"].([]any); len(items) != 5 {
+		t.Errorf("services: %d, want 5 (status %d)", len(items), svc.status)
+	}
+}
+
+// The embedded copy must equal the contract fixture it is copied from.
+func TestDemoSeedCopyMatchesContract_A1(t *testing.T) {
+	want, err := os.ReadFile("../../../contracts/fixtures/demo-tenant-seed.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile("../../internal/app/demo-tenant-seed.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatal("api/internal/app/demo-tenant-seed.json differs from contracts/fixtures/demo-tenant-seed.json")
+	}
+}

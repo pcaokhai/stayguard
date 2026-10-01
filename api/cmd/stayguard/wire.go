@@ -46,9 +46,14 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	sessions, err := newSessions(cfg, pool, uow, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	return deps{
 		pool:     pool,
-		sessions: newSessions(cfg, pool, uow, clock.System{}),
+		sessions: sessions,
 		rooms:    newRooms(uow, clock.System{}),
 		stays:    stays,
 		billing:  billing,
@@ -60,11 +65,20 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 }
 
 // newSessions builds the session use cases; the clock is a parameter so tests can move time.
-func newSessions(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, clk app.Clock) *app.Sessions {
+func newSessions(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, clk app.Clock) (*app.Sessions, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return newSessionsWith(cfg, pool, uow, clk, app.NewDemoSeeder(postgres.DemoSeedRepo{}, enc, ids.New(clk.Now))), nil
+}
+
+// newSessionsWith lets a test swap the trial seeder (an empty tenant keeps older e2e fixtures simple).
+func newSessionsWith(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, clk app.Clock, seeder app.TrialSeeder) *app.Sessions {
 	return app.NewSessions(
 		app.SessionsConfig{DemoEnabled: cfg.DemoMode, SessionTTL: cfg.SessionTTL, TrialTTL: cfg.TrialTTL},
 		uow, postgres.NewSessionResolver(pool), postgres.NewIdentityRepo(),
-		clk, ids.New(clk.Now), crypto.TokenGenerator{},
+		clk, ids.New(clk.Now), crypto.TokenGenerator{}, seeder,
 	)
 }
 

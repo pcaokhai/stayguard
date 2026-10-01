@@ -60,9 +60,23 @@ func newEnv(t *testing.T) *env {
 	return newEnvRooms(t, newRooms)
 }
 
+// emptyTrial leaves new trial tenants empty, which most fixtures assume; the seed test uses newSeededEnv.
+type emptyTrial struct{}
+
+func (emptyTrial) Seed(context.Context, app.Tx, time.Time) error { return nil }
+
 // newEnvRooms is newEnv with the room use cases built by mk, so a test can swap one port.
 func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *env {
 	t.Helper()
+	return newEnvWith(t, mk, nil)
+}
+
+// newEnvWith builds the env; a nil seeder means empty trial tenants.
+func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, seeder app.TrialSeeder) *env {
+	t.Helper()
+	if seeder == nil {
+		seeder = emptyTrial{}
+	}
 	db := newMigratedDB(t)
 	pool, err := postgres.NewPool(context.Background(), postgres.PoolConfig{URL: urlFor(db, appRole), MaxConns: 4})
 	if err != nil {
@@ -73,7 +87,7 @@ func newEnvRooms(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms) *e
 	clk := &fakeClock{t: start}
 	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true, CheckoutEnabled: true}
 	uow := postgres.NewUnitOfWork(pool)
-	sessions := newSessions(cfg, pool, uow, clk)
+	sessions := newSessionsWith(cfg, pool, uow, clk, seeder)
 	stays, err := newStays(cfg, uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
 	if err != nil {
 		t.Fatalf("stays: %v", err)

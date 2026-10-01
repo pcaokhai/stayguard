@@ -33,11 +33,17 @@ type Sessions struct {
 	clock    Clock
 	ids      IDGenerator
 	tokens   TokenGenerator
+	seeder   TrialSeeder
+}
+
+// TrialSeeder fills a newly created trial tenant (rooms, prices, services, sample stays).
+type TrialSeeder interface {
+	Seed(ctx context.Context, tx Tx, now time.Time) error
 }
 
 func NewSessions(cfg SessionsConfig, uow UnitOfWork, resolver SessionResolver, repo IdentityRepo,
-	clock Clock, ids IDGenerator, tokens TokenGenerator) *Sessions {
-	return &Sessions{cfg, uow, resolver, repo, clock, ids, tokens}
+	clock Clock, ids IDGenerator, tokens TokenGenerator, seeder TrialSeeder) *Sessions {
+	return &Sessions{cfg, uow, resolver, repo, clock, ids, tokens, seeder}
 }
 
 // DemoSession carries the raw token, which exists only in this value.
@@ -122,7 +128,10 @@ func validTenantID(id string) bool {
 
 func (s *Sessions) prepareTenant(ctx context.Context, tx Tx, id string, create bool, now time.Time) error {
 	if create {
-		return s.repo.CreateTrialTenant(ctx, tx, id, trialTenantName, now.Add(s.cfg.TrialTTL))
+		if err := s.repo.CreateTrialTenant(ctx, tx, id, trialTenantName, now.Add(s.cfg.TrialTTL)); err != nil {
+			return err
+		}
+		return s.seeder.Seed(ctx, tx, now)
 	}
 	found, err := s.repo.TrialTenant(ctx, tx, id, now)
 	if err != nil {
