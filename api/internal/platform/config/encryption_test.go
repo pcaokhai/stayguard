@@ -69,3 +69,23 @@ func TestCheckInConfig_SG203_AC1(t *testing.T) {
 		t.Fatal("invalid value must fail startup")
 	}
 }
+
+func TestCheckoutConfig_SG205_AC3(t *testing.T) {
+	base := map[string]string{"DATABASE_URL": testDBURL, "DATA_ENCRYPTION_KEY": randKey(t, 32)}
+	with := func(v string) map[string]string {
+		m := map[string]string{"FF_S3_CHECKOUT": v}
+		for k, x := range base {
+			m[k] = x
+		}
+		return m
+	}
+	if c, err := Load(env(base)); err != nil || c.CheckoutEnabled {
+		t.Fatalf("default must be off: %v", err)
+	}
+	if c, err := Load(env(with("true"))); err != nil || !c.CheckoutEnabled || c.CheckInEnabled {
+		t.Fatalf("true not applied alone: %v", err)
+	}
+	if _, err := Load(env(with("maybe"))); err == nil {
+		t.Fatal("invalid value must fail startup")
+	}
+}
