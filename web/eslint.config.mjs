@@ -3,5 +3,13 @@ import next from "eslint-config-next";
 
 export default defineConfig([
   ...next,
-  globalIgnores([".next/**", "out/**", "node_modules/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "node_modules/**",
+    "next-env.d.ts",
+    "src/api/generated/**",
+    "src/mocks/generated/**",
+    "public/mockServiceWorker.js",
+  ]),
 ]);

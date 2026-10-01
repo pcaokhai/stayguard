@@ -1,7 +1,7 @@
 # StayGuard task runner. Targets not yet built print the story that adds them and fail.
 COMPOSE := docker compose -f deploy/compose.yaml
 
-.PHONY: gen-api up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
+.PHONY: gen-api gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
 
 up:
 	$(COMPOSE) up --build
@@ -55,9 +55,12 @@ endef
 
 OAPI_CODEGEN_VERSION := v2.8.0
 
-gen: gen-api
+gen: gen-api gen-web
 
 # Go strict server stubs; the contract is the only input, output is committed (see api/CLAUDE.md).
+gen-web:
+	cd web && npm run gen
+
 gen-api:
 	cd api && go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION) -config oapi-codegen.yaml ../contracts/openapi.yaml
 contracts:
