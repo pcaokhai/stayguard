@@ -23,7 +23,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | SG-001 | Repository scaffold, tooling and CI | PLAT | 3 | 0 | Merged (flag off) | PR #1, 69cf067 | | AC4 CI proof: run 36802418823 |
 | SG-002 | Contract pipeline | PLAT | 3 | 0 | Merged (flag off) | PR #7, 09be60f | | R-14: 3.1 kept, orval for mocks; AC4 CI proof: run 36813246897; PR size above 400 accepted by tech lead; follow-up contracts PR: x-story on POST /v1/webhooks/bank; MSW worker not yet checked in a real browser |
-| SG-003 | Database foundation | API | 3 | 0 | In review | feat/SG-003-database-foundation | none | Draft PR; size exception (SQL counts); CI pending; see plan Rulings 1-10 |
+| SG-003 | Database foundation | API | 3 | 0 | Merged (flag off) | PR #10, 1cf214b | none | CI green incl. -race; PR size above 400 accepted by tech lead; owned follow-ups in plan Ruling 11 |
 | SG-004 | Web foundation | WEB | 2 | 0 | Backlog | | | Static-export i18n spike (A-06) |
 | SG-101 | Pricing engine | API | 5 | 0 | Backlog | | | Needs A-01 answer if available |
 | SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Backlog | | | |
