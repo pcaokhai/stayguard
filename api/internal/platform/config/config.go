@@ -34,6 +34,8 @@ type Config struct {
 	DemoMode   bool
 	SessionTTL time.Duration // SESSION_TTL_HOURS, default 12
 	TrialTTL   time.Duration // TRIAL_TTL_HOURS, default 24
+	// RoomMapEnabled (FF_S1_ROOM_MAP, default false) turns on the room map operations (slice S1).
+	RoomMapEnabled bool
 }
 
 // Load takes the env lookup as a parameter so tests need no process environment.
@@ -58,7 +60,10 @@ func Load(getenv func(string) string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return loadSessions(c, getenv)
+	if c, err = loadSessions(c, getenv); err != nil {
+		return Config{}, err
+	}
+	return loadRoomMap(c, getenv)
 }
 
 func loadDatabase(c Config, getenv func(string) string) (Config, error) {

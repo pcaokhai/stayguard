@@ -118,6 +118,7 @@ type AppStay struct {
 	RatePlanSnapshot []byte
 	IDNumberEnc      []byte
 	BillingMode      string
+	GuestName        string
 }
 
 type AppStayExtra struct {
@@ -160,6 +161,7 @@ type AppUnitType struct {
 	Name            []byte
 	RatePlan        []byte
 	RatePlanVersion int32
+	Code            string
 }
 
 type AppUser struct {

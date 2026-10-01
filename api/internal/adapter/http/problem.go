@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
+	"github.com/pcaokhai/stayguard/api/internal/domain/access"
 )
 
 const problemContentType = "application/problem+json"
@@ -53,7 +54,7 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 			return
 		}
-		if mapSessionError(w, err) {
+		if mapSessionError(w, err) || mapRoomError(w, err) {
 			return
 		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
@@ -78,6 +79,28 @@ func mapSessionError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "VALIDATION_FAILED")
 	case errors.Is(err, app.ErrConflict):
 		writeProblem(w, http.StatusConflict, "Conflict", "CONFLICT")
+	default:
+		return false
+	}
+	return true
+}
+
+// mapRoomError writes the problem for room map errors and reports whether it matched. A foreign
+// tenant's id and an unknown id are both app.ErrNotFound, so their bodies are identical.
+func mapRoomError(w http.ResponseWriter, err error) bool {
+	switch {
+	case errors.Is(err, errInvalidParam):
+		writeProblem(w, http.StatusBadRequest, "Bad Request", "BAD_REQUEST")
+	case errors.Is(err, access.ErrRoleForbidden):
+		writeProblem(w, http.StatusForbidden, "Forbidden", "ROLE_FORBIDDEN")
+	case errors.Is(err, access.ErrBuildingForbidden):
+		writeProblem(w, http.StatusForbidden, "Forbidden", "BUILDING_FORBIDDEN")
+	case errors.Is(err, app.ErrNotFound):
+		writeProblem(w, http.StatusNotFound, "Not Found", "NOT_FOUND")
+	case errors.Is(err, app.ErrFeatureDisabled):
+		writeProblem(w, http.StatusNotFound, "Not Found", "FEATURE_DISABLED")
+	case errors.Is(err, app.ErrPricingUnavailable):
+		writeProblem(w, http.StatusServiceUnavailable, "Service Unavailable", "PRICING_UNAVAILABLE")
 	default:
 		return false
 	}

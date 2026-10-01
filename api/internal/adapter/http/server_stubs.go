@@ -17,11 +17,13 @@ var errNotImplemented = errors.New("operation not implemented")
 type Server struct {
 	sessions    sessionService
 	demoEnabled bool
+	rooms       RoomService
+	roomMap     bool
 }
 
-// NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE.
-func NewServer(sessions sessionService, demoEnabled bool) Server {
-	return Server{sessions: sessions, demoEnabled: demoEnabled}
+// NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP.
+func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool) Server {
+	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -29,14 +31,6 @@ func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHea
 }
 
 func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.GetReadinessResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListBuildings(context.Context, gen.ListBuildingsRequestObject) (gen.ListBuildingsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListRooms(context.Context, gen.ListRoomsRequestObject) (gen.ListRoomsResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -77,10 +71,6 @@ func (Server) GetPayment(context.Context, gen.GetPaymentRequestObject) (gen.GetP
 }
 
 func (Server) StreamPaymentEvents(context.Context, gen.StreamPaymentEventsRequestObject) (gen.StreamPaymentEventsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetRoom(context.Context, gen.GetRoomRequestObject) (gen.GetRoomResponseObject, error) {
 	return nil, errNotImplemented
 }
 
