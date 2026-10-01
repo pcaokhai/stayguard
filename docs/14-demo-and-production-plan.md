@@ -54,7 +54,7 @@ What: `createPayment` (CASH settles immediately; TRANSFER returns PENDING with b
 Tests: settle happy path; duplicate event changes nothing; wrong amount gives MISMATCH; no other code path sets a transfer to PAID; QR payload CRC check against a known sample.
 Verify: tests by name; curl through check-in → check-out → create transfer → simulate → get payment shows PAID.
 
-### [ ] A3 Housekeeping (API)
+### [x] A3 Housekeeping (API)
 What: `listHousekeepingTasks` returns rooms in TO_CLEAN (task id = room id); `completeHousekeepingTask` sets VACANT, idempotent; roles OWNER or HOUSEKEEPING. `reportRoomUsage` stays 501. No new flag.
 Tests: one use-case test for complete (role check, idempotent).
 

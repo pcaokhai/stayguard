@@ -18,16 +18,17 @@ import (
 
 // deps are the constructed adapters; the wiring has one home here.
 type deps struct {
-	pool     *pgxpool.Pool
-	uow      app.UnitOfWork
-	idem     app.IdempotencyStore
-	audit    app.AuditWriter
-	probe    app.ReadinessProbe
-	sessions *app.Sessions
-	rooms    *app.Rooms
-	stays    *app.Stays
-	billing  *app.Billing
-	payments *app.Payments
+	pool         *pgxpool.Pool
+	uow          app.UnitOfWork
+	idem         app.IdempotencyStore
+	audit        app.AuditWriter
+	probe        app.ReadinessProbe
+	sessions     *app.Sessions
+	rooms        *app.Rooms
+	stays        *app.Stays
+	billing      *app.Billing
+	payments     *app.Payments
+	housekeeping *app.Housekeeping
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -58,16 +59,17 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		return deps{}, err
 	}
 	return deps{
-		pool:     pool,
-		sessions: sessions,
-		rooms:    newRooms(uow, clock.System{}),
-		stays:    stays,
-		billing:  billing,
-		payments: payments,
-		uow:      uow,
-		idem:     idem,
-		audit:    audit,
-		probe:    postgres.NewReadinessProbe(pool),
+		pool:         pool,
+		sessions:     sessions,
+		rooms:        newRooms(uow, clock.System{}),
+		stays:        stays,
+		billing:      billing,
+		payments:     payments,
+		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, audit, ids.New(clock.System{}.Now), clock.System{}),
+		uow:          uow,
+		idem:         idem,
+		audit:        audit,
+		probe:        postgres.NewReadinessProbe(pool),
 	}, nil
 }
 

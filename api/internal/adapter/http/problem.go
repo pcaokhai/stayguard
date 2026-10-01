@@ -77,7 +77,7 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 			return
 		}
-		if mapSessionError(w, err) || mapRoomError(w, err) || mapStayError(w, err) || mapPaymentError(w, err) {
+		if mapSessionError(w, err) || mapRoomError(w, err) || mapStayError(w, err) || mapPaymentError(w, err) || mapHousekeepingError(w, err) {
 			return
 		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
@@ -171,5 +171,13 @@ func mapPaymentError(w http.ResponseWriter, err error) bool {
 	default:
 		return false
 	}
+	return true
+}
+
+func mapHousekeepingError(w http.ResponseWriter, err error) bool {
+	if !errors.Is(err, app.ErrRoomNotToClean) {
+		return false
+	}
+	writeProblem(w, http.StatusConflict, "Conflict", "ROOM_NOT_TO_CLEAN")
 	return true
 }

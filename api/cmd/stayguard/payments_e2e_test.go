@@ -203,3 +203,33 @@ func TestPaymentIdempotency_A2(t *testing.T) {
 		t.Fatalf("replay created a second payment: %v", ids)
 	}
 }
+
+func TestHousekeepingAfterPayment_A3(t *testing.T) {
+	r := newPayRig(t, "A102")
+	r.pay("CASH") // closes the invoice and puts A102 in TO_CLEAN
+	hk := r.e.demo("HOUSEKEEPING", "vi", r.tenant).str("accessToken")
+	list := r.e.call("GET", "/v1/housekeeping/tasks", hk, nil)
+	items, _ := list.body["items"].([]any)
+	if list.status != 200 || len(items) != 5 { // 4 seeded TO_CLEAN rooms plus A102
+		t.Fatalf("list: %d %v", list.status, list.body)
+	}
+	var id string
+	for _, it := range items {
+		if m := it.(map[string]any); m["roomCode"] == "A102" {
+			id = m["id"].(string)
+		}
+	}
+	for range 2 {
+		st, raw := r.e.send("POST", "/v1/housekeeping/tasks/"+id+"/complete", hk, newKey(), nil)
+		if got := parse(raw); st != 200 || got["status"] != "DONE" {
+			t.Fatalf("complete: %d %s", st, raw)
+		}
+	}
+	if r.roomStatus() != "VACANT" {
+		t.Errorf("room = %s, want VACANT", r.roomStatus())
+	}
+	rec := r.e.demo("RECEPTIONIST", "vi", r.tenant).str("accessToken")
+	if st, _ := r.e.send("POST", "/v1/housekeeping/tasks/"+id+"/complete", rec, newKey(), nil); st != 403 {
+		t.Errorf("receptionist complete = %d, want 403", st)
+	}
+}

@@ -15,23 +15,24 @@ var errNotImplemented = errors.New("operation not implemented")
 // of its own operations with real handlers in its own file and deletes those stubs from here;
 // an operation with neither a stub nor a handler does not compile (SG-002 AC2).
 type Server struct {
-	sessions    sessionService
-	demoEnabled bool
-	rooms       RoomService
-	roomMap     bool
-	stays       StayService
-	checkIn     bool
-	billing     BillingService
-	checkout    bool
-	payments    PaymentService
+	sessions     sessionService
+	demoEnabled  bool
+	rooms        RoomService
+	roomMap      bool
+	stays        StayService
+	checkIn      bool
+	billing      BillingService
+	checkout     bool
+	payments     PaymentService
+	housekeeping HousekeepingService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
 // checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
 func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
-	billing BillingService, checkout bool, payments PaymentService) Server {
+	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService) Server {
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
-		billing: billing, checkout: checkout, payments: payments}
+		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -39,14 +40,6 @@ func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHea
 }
 
 func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.GetReadinessResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListHousekeepingTasks(context.Context, gen.ListHousekeepingTasksRequestObject) (gen.ListHousekeepingTasksResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CompleteHousekeepingTask(context.Context, gen.CompleteHousekeepingTaskRequestObject) (gen.CompleteHousekeepingTaskResponseObject, error) {
 	return nil, errNotImplemented
 }
 

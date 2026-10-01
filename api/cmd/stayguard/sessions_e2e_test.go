@@ -18,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	httpadapter "github.com/pcaokhai/stayguard/api/internal/adapter/http"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/ids"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/permissions"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
@@ -104,6 +106,7 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
 		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true, Payments: payments,
+		Housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, postgres.NewAuditWriter(), ids.New(clk.Now), clk),
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)

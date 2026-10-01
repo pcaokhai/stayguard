@@ -61,13 +61,15 @@ type Options struct {
 	CheckoutEnabled bool
 	// Payments serves createPayment, getPayment and simulatePaymentReceived (no flag; the simulator needs DemoEnabled).
 	Payments PaymentService
+	// Housekeeping serves listHousekeepingTasks and completeHousekeepingTask (no flag).
+	Housekeeping HousekeepingService
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})
