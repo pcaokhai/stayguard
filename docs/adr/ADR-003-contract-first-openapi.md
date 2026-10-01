@@ -29,8 +29,8 @@ Tools run against the unmodified spec: oapi-codegen v2.8.0 (chi, strict server, 
 
 | Feature in the spec | oapi-codegen | openapi-typescript | orval (client and MSW) | Spectral |
 | --- | --- | --- | --- | --- |
-| `type: [x, null]` arrays (10 fields) | ok: pointer field, absent and null merge | ok: `x \| null` | ok: `x \| null` | ok |
-| `oneOf` with a `$ref` and `type: 'null'` (4 fields) | ok: pointer to the referenced type | ok: `Ref \| null` | ok: `Ref \| null` | ok |
+| `type: [x, null]` arrays (16 lines) | ok: pointer field, absent and null merge | ok: `x \| null` | ok: `x \| null` | ok |
+| `oneOf` with a `$ref` and `type: 'null'` (4 sites) | ok: pointer to the referenced type | ok: `Ref \| null` | ok: `Ref \| null` | ok |
 | `const: VND` | ok: single-value enum with a validity check | ok: literal type | ok: literal type | ok |
 | webhook (`/v1/webhooks/bank` is an ordinary path; no top-level `webhooks` object) | ok | ok | ok | ok |
 
