@@ -1,0 +1,12 @@
+# Demo override: `docker compose -f deploy/compose.yaml -f deploy/compose.demo.override.yaml up --build`
+# Turns on demo sessions and every finished slice. Local and demo environments only.
+services:
+  api:
+    environment:
+      DEMO_MODE: "1"
+      FF_S1_ROOM_MAP: "1"
+      FF_S2_CHECKIN: "1"
+      FF_S3_CHECKOUT: "1"
+      FF_S4_PAYMENTS: "1"
+      FF_S5_HOUSEKEEPING: "1"
+      FF_S6_OWNER: "1"

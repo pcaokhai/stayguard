@@ -1,47 +1,32 @@
-# web — CLAUDE.md
+# web — CLAUDE.md (FAST MODE)
 
-Next.js static export (App Router) for staff, owner and housekeeping in Vietnamese and English, on phone and desktop. Lane: **WEB**. Owns `web/**`. Read the root `CLAUDE.md` first.
+Next.js App Router, `output: 'export'`, served by the Go binary. Read the root CLAUDE.md first. Current tasks: docs/14 §4 (W-tasks).
 
-## Commands
+## Stack (add only these)
 
-`make test-web` (Vitest), `make lint`, `make fmt`, `make gen` (client and MSW handlers from the contract), `make e2e` (Playwright, after `make up`). Run with mocks: set `NEXT_PUBLIC_MOCK=1`. While iterating, run a single test file and pipe to `tail -n 20`. Created by SG-001, SG-002 and SG-004.
+Tailwind CSS v4, `@tanstack/react-query`, a QR renderer (`qrcode`), plus what is already in package.json (`openapi-fetch`, msw, orval). No component library unless a task names one.
 
-## Layout
+## Where the design is
 
-```
-web/
-  src/app/[locale]/...    routes; locale prefix /vi or /en; entity ids in query strings (ADR-011)
-  src/features/           rooms, stays, payments, housekeeping, owner, permissions, shifts, session
-  src/components/ui/      shared presentational components
-  src/lib/                api (generated client wrapper), format (Intl helpers), i18n, tokens
-  src/api/generated/      typed schema from the contract (openapi-typescript), committed, Read-denied
-  src/mocks/generated/    MSW handlers from the contract (orval), committed, Read-denied
-  src/mocks/setup/        hand-written worker and test wiring; `NEXT_PUBLIC_MOCK=1` build bundles it via the `mock-layer` alias in next.config.ts
-  messages/               vi.json and en.json (same keys, checked in CI)
-  e2e/                    Playwright journeys J1 to J5
-```
+- `docs/assets/design/screens/*.png`: what each screen must look like (Vietnamese files have no `EN` suffix).
+- `docs/assets/design/source/*.dc.html`: the original markup with inline styles. Read one screen at a time with grep or a line range. Reproduce the layout, colours, spacing and text in Tailwind; it is not React, so do not paste it.
+- Colours and radii: put them once in the Tailwind theme (`@theme`) from the source, then reuse.
 
-## Next.js rules
+## Routes (static export: no dynamic segments; ids go in the query string)
 
-- Static export only: no server actions, route handlers, middleware, cookies or headers at request time; dynamic segments must be known at build time, so ids go in the query string and are read in small client components inside a `Suspense` boundary.
-- Locale routes are static (`generateStaticParams` for `vi` and `en`); `/` redirects on the client by stored or browser language.
-- Server state lives in TanStack Query; no `useEffect` for fetching; local UI state stays local; derived values are computed.
-- Only the generated client talks to `/v1`; a lint rule forbids raw `fetch` to it. Errors map from `code` to translated messages.
-- Payment status: SSE with reconnect, falling back to polling every 3 s after two failures; announce changes in a live region.
-- QR: render in the browser from the payload with a lazy-loaded library; never show the full account number.
+`/vi` role picker · `/vi/rooms` room map (`?b=<buildingId>`) · `/vi/checkin?room=` · `/vi/stay?id=` (details and extras sheet) · `/vi/checkout?stay=` · `/vi/pay?payment=` · `/vi/paid?payment=` · `/vi/housekeeping` · `/vi/owner`. Only `vi` is generated now; `en` is added later by adding the locale and a message file. Components that read `useSearchParams` sit inside `Suspense`.
 
-## UI rules
+## Rules
 
-- All strings come from message files; no sentence built by concatenation; money and dates through the `Intl` helpers.
-- Design tokens only for colour, spacing, radius, type and motion; every status has a text label as well as colour; touch targets ≥ 44 px; buttons keep their label on one line in both languages.
-- Motion is short and disabled under `prefers-reduced-motion`.
-- Sensitive data: never render or store full ID numbers or account numbers; session token only in memory or session storage as decided in SG-004.
-- Initial JS on the room map route ≤ 200 KB gzip; lazy-load heavy libraries.
+- Data only through the generated client in `src/lib/api.ts` and TanStack Query hooks per feature (`src/features/<name>/`). No raw `fetch` to `/v1`.
+- Session: the role picker calls `createDemoSession`; keep the token in `sessionStorage`; a client middleware adds the `Authorization` header; 401 sends the user back to `/vi`.
+- Writes send an `Idempotency-Key` (one UUID per user action, reused on retry); disable the button while pending.
+- Payment status: `useQuery` with `refetchInterval: 3000` until the status is not PENDING.
+- Show prices and totals exactly as the API returns them; format with `Intl.NumberFormat('vi-VN')` plus `đ`. Never compute prices in the browser.
+- All text through `t('key')` from `messages/vi.json`; no hard-coded Vietnamese in components.
+- Mobile first (390 px), and the room map also works at 1280 px. Buttons keep their label on one line; touch targets at least 44 px; every status shows text, not only colour.
+- Mock mode (`NEXT_PUBLIC_MOCK=1`) must keep working so UI tasks never wait for the API.
 
-## TypeScript rules
+## Done for a screen
 
-Follow docs/10 §4.3: `strict`, `noUncheckedIndexedAccess`, no `any`, Zod at boundaries, named exports, one component per file, stable keys.
-
-## Tests
-
-Vitest and Testing Library for components and hooks; MSW for contract consumption; Playwright for journeys and screenshots in both languages; axe on every screen. Test names end with the story and criterion. Coverage and gates: docs/08 §3.
+`npm run build` and `npm run lint` pass; the screen matches its PNG at 390 px when you compare side by side; the happy path works on mocks and, once the API task is merged, against `make up`.

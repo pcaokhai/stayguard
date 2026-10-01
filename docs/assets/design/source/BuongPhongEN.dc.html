@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Housekeeping</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="ChonVaiTro.dc.html" aria-label="Switch role" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; white-space: nowrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<span style="font-size: 20px; font-weight: 700">Housekeeping</span>
+<span style="font-size: 13px; color: #5C5A55">Lan · Morning shift · 14:05</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 0 20px; flex-grow: 1">
+<span style="font-size: 14px; font-weight: 600">To clean · {{remaining}} rooms</span>
+<sc-for list="{{rooms}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: {{r.bg}}; border: 1px solid {{r.border}}">
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<span style="font-size: 17px; font-weight: 700">{{r.code}}</span>
+<span style="font-size: 12px; color: #45433F">{{r.note}}</span>
+</div>
+<sc-if value="{{r.done}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 13px; font-weight: 600; color: #1F5A30">Cleaned</span>
+</sc-if>
+<sc-if value="{{r.todo}}" hint-placeholder-val="{{true}}">
+<button type="button" onClick="{{r.finish}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Mark clean</button>
+</sc-if>
+</div>
+</sc-for>
+<div style="margin-top: 8px; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #ECE9E2">
+<span style="font-size: 14px; font-weight: 600">Found a room that was used but isn’t on this list?</span>
+<span style="font-size: 13px; color: #45433F">Report it and the owner gets an alert right away.</span>
+<button type="button" style="height: 44px; border-radius: 10px; border: 1px solid #8A3A0A; background: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; color: #8A3A0A; white-space: nowrap">Report a used room</button>
+</div>
+</div>
+<div style="height: 28px"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { done: {} }; }
+renderVals() {
+const list = [
+{ code: 'A101', note: 'Building A · Checked out 14:01' },
+{ code: 'A103', note: 'Building A · Checked out 13:20' },
+{ code: 'A302', note: 'Building A · Checked out 12:05' },
+{ code: 'B104', note: 'Building B · Checked out 11:50' },
+{ code: 'B206', note: 'Building B · Checked out 11:30' }
+];
+const rooms = list.map(r => {
+const done = !!this.state.done[r.code];
+return Object.assign({}, r, {
+done, todo: !done,
+bg: done ? '#E4F1E7' : '#F6EDC2',
+border: done ? '#B9DBC2' : '#E3D27D',
+finish: () => this.setState({ done: Object.assign({}, this.state.done, { [r.code]: true }) })
+});
+});
+return { accent: this.props.accent ?? '#1F4E5F', rooms, remaining: rooms.filter(r => !r.done).length };
+}
+}
+</script>
+</body>
+</html>

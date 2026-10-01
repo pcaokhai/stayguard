@@ -16,6 +16,9 @@ Everything needed to start Sprint 0 is here. Nothing lives only in chat.
 | 09 | [Risk register](09-risk-register.md) | Pre-mortem and actions | Tech lead | v1.0 |
 | 10 | [Engineering standards](10-engineering-standards.md) | Non-negotiables, patterns, conventions, review checklist | All lanes | v1.0 |
 | 11 | [AI workflow and tracking](11-ai-workflow-and-tracking.md) | Superpowers, token discipline, plans, bug log, public repository rules | All lanes | v1.0 |
+| 12 | [MVP strategy review (Gemini)](12-mvp-to-production-strategy.md) | External review, kept as input | Khai | Input |
+| 13 | [Pragmatic MVP review (Codex)](13-pragmatic-mvp-review.md) | External review, kept as input | Khai | Input |
+| 14 | [Demo and production v1 plan](14-demo-and-production-plan.md) | **Current plan (FAST MODE); overrides 07 and 11** | Everyone | Active |
 | | [ADRs](adr/README.md) | Architecture decisions | Everyone | 14 accepted |
 | | [Progress](progress.md), [Release notes](release-notes.md), [Bug log](bugs/README.md), [Plans](plans/README.md) | Live tracking | Everyone | Living |
 
@@ -31,7 +34,7 @@ Document 03 (interface specification) is intentionally absent: there is no inter
 
 ## Design references
 
-Screen designs (Vietnamese and English, phone and desktop) live on the design canvas: https://claude.ai/artifact/9iqS9mqkCH4MyETQsADLAv. The earlier bilingual planning document is at https://claude.ai/code/artifact/6d2dba08-646e-475b-8f81-0e130ca964f4 and is superseded where docs/02 §12 lists changes. Both links are private; before the public push replace them with exported images or PDFs in `docs/assets/` (docs/11 §6).
+Screen designs are in `docs/assets/design/` (`screens/` PNG, `source/` markup). The original canvas: https://claude.ai/artifact/9iqS9mqkCH4MyETQsADLAv. The earlier bilingual planning document is at https://claude.ai/code/artifact/6d2dba08-646e-475b-8f81-0e130ca964f4 and is superseded where docs/02 §12 lists changes. Both links are private; before the public push replace them with exported images or PDFs in `docs/assets/` (docs/11 §6).
 
 ## Conventions
 

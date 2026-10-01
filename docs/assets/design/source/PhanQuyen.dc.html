@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phân quyền nhân viên</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="TongQuanChu.dc.html" aria-label="Về tổng quan" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; white-space: nowrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<span style="font-size: 20px; font-weight: 700">Phân quyền nhân viên</span>
+<span style="font-size: 13px; color: #5C5A55">Nhà nghỉ Demo · 2 tòa</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; margin: 8px 20px 4px 20px; padding: 12px 14px; border-radius: 12px; background: #ECE9E2; font-size: 13px; color: #45433F">
+<span><span style="font-weight: 600; color: #1C1B19">Không</span>: tòa bị ẩn với nhân viên này</span>
+<span><span style="font-weight: 600; color: #1C4A82">Xem</span>: xem sơ đồ và trạng thái, không thao tác được</span>
+<span><span style="font-weight: 600; color: #1C1B19">Sửa</span>: nhận phòng, thêm dịch vụ, trả phòng, thu tiền, đổi trạng thái</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 12px 20px 0 20px">
+<sc-for list="{{staff}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 600">{{p.name}}</span>
+<span style="font-size: 13px; color: #5C5A55">{{p.role}}</span>
+</div>
+<sc-for list="{{p.rows}}" as="row" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 78px; flex-shrink: 0; font-size: 14px; font-weight: 600">{{row.building}}</span>
+<div style="flex-grow: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 10px; background: #ECE9E2">
+<sc-for list="{{row.options}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" aria-label="{{o.aria}}" style="height: 40px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; background: {{o.bg}}; color: {{o.fg}}; border: {{o.border}}; white-space: nowrap">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<button type="button" style="height: 48px; border-radius: 12px; border: 1px dashed #A8A39A; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #1C1B19; white-space: nowrap">+ Thêm nhân viên</button>
+<div style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #5C5A55"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span>Mỗi thay đổi được lưu và có hiệu lực ngay, kèm ghi vào nhật ký thao tác. Với buồng phòng, Sửa chỉ gồm trạng thái dọn phòng.</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { perms: { u1: { A: 'edit', B: 'view' }, u2: { A: 'none', B: 'edit' }, u3: { A: 'edit', B: 'edit' }, u4: { A: 'edit', B: 'edit' } } };
+}
+renderVals() {
+const accent = this.props.accent ?? '#1F4E5F';
+const people = [['u1', 'Lễ tân demo', 'Lễ tân · ca sáng'], ['u2', 'Chị Hoa', 'Lễ tân · ca chiều'], ['u3', 'Anh Minh', 'Lễ tân · ca đêm'], ['u4', 'Chị Lan', 'Buồng phòng']];
+const levels = [['none', 'Không'], ['view', 'Xem'], ['edit', 'Sửa']];
+const buildings = [['A', 'Tòa A'], ['B', 'Tòa B']];
+const onStyle = { none: { bg: '#FFFFFF', fg: '#1C1B19', border: '1px solid #A8A39A' }, view: { bg: '#DDE8F6', fg: '#1C4A82', border: '1px solid #AFC6E6' }, edit: { bg: accent, fg: '#FFFFFF', border: 'none' } };
+const offStyle = { bg: 'transparent', fg: '#5C5A55', border: 'none' };
+const perms = this.state.perms;
+const staff = people.map(([id, name, role]) => ({
+name, role,
+rows: buildings.map(([b, building]) => ({
+building,
+options: levels.map(([lv, label]) => {
+const on = perms[id][b] === lv;
+const st = on ? onStyle[lv] : offStyle;
+return { label, on, aria: building + ': ' + label, bg: st.bg, fg: st.fg, border: st.border,
+pick: () => this.setState({ perms: Object.assign({}, perms, { [id]: Object.assign({}, perms[id], { [b]: lv }) }) }) };
+})
+}))
+}));
+return { accent, staff };
+}
+}
+</script>
+</body>
+</html>

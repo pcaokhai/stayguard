@@ -1,5 +1,7 @@
 # api — CLAUDE.md
 
+> **FAST MODE (docs/14):** the root CLAUDE.md §3–§5 override the workflow and test rules below. Keep the layering for existing code; new read-only endpoints may be thin. No SSE hub (polling instead); housekeeping uses rooms in TO_CLEAN; demo tenants are seeded from `contracts/fixtures/demo-tenant-seed.json` (task A1).
+
 Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL access, and it serves the embedded web export. Lane: **API**. Owns `api/**`, the database schema `app` and migrations in `api/migrations/`. Read the root `CLAUDE.md` first.
 
 ## Commands

@@ -2,7 +2,7 @@
 
 Anti-loss management for small guesthouses: automatic pricing by hour, night and day, QR payments that always reach the owner's account, per-building staff permissions, and shift cash reconciliation.
 
-Status: **pre-implementation**. The specification pack in this repository is complete; code is built story by story (see `docs/progress.md`).
+Status: **FAST MODE** — API foundations, pricing, check-in and check-out are built; web screens, payments, housekeeping and owner overview are in progress. Plan: `docs/14-demo-and-production-plan.md`; live status: `docs/progress.md`.
 
 > The demo is for trying the product. Do not enter real guest data.
 

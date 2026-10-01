@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thanh toán bằng mã QR</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="TraPhong.dc.html" aria-label="Quay lại trả phòng" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; white-space: nowrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 20px; font-weight: 700">Thanh toán A101</span>
+<span style="font-size: 13px; color: #5C5A55">Phiếu PH0930A101</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 20px 0 20px; flex-grow: 1">
+<span style="font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums">40.000đ</span>
+<div style="padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<div style="display: grid; grid-template-columns: repeat(25, minmax(0, 1fr)); width: 200px; height: 200px">
+<sc-for list="{{cells}}" as="q" hint-placeholder-count="625">
+<span style="background: {{q.fill}}"></span>
+</sc-for>
+</div>
+</div>
+<div style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E2DED6; font-size: 14px">
+<div style="display: flex; justify-content: space-between"><span style="color: #5C5A55">Ngân hàng</span><span>[NGÂN HÀNG]</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #5C5A55">Số tài khoản</span><span style="font-variant-numeric: tabular-nums">•••• 6789</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #5C5A55">Chủ tài khoản</span><span>NHA NGHI DEMO</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #5C5A55">Nội dung</span><span style="font-weight: 600">PH0930A101</span></div>
+</div>
+<div style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: #FBE1CC; color: #6E2E08">
+<span style="width: 10px; height: 10px; border-radius: 999px; background: #B8520F; flex-shrink: 0"></span>
+<span style="font-size: 14px; font-weight: 600">Đang chờ tiền về tài khoản chủ</span>
+</div>
+<span style="font-size: 12px; color: #5C5A55; text-align: center">Phiếu tự chuyển sang đã thanh toán khi tiền về.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 28px 20px">
+<a href="DaThanhToan.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 2px dashed {{accent}}; background: #FFFFFF; color: {{accent}}; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap">Giả lập tiền về</a>
+<a href="TraPhong.dc.html" style="height: 44px; display: flex; align-items: center; justify-content: center; color: #45433F; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap">Đổi cách thanh toán</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const n = 25;
+const finder = (r, c) => {
+const spots = [[0, 0], [0, n - 7], [n - 7, 0]];
+for (const [fr, fc] of spots) {
+if (r >= fr && r < fr + 7 && c >= fc && c < fc + 7) {
+const y = r - fr, x = c - fc;
+if (y === 0 || y === 6 || x === 0 || x === 6) return 1;
+if (y >= 2 && y <= 4 && x >= 2 && x <= 4) return 1;
+return 0;
+}
+if (r >= fr - 1 && r <= fr + 7 && c >= fc - 1 && c <= fc + 7) return 0;
+}
+return -1;
+};
+const cells = [];
+for (let r = 0; r < n; r++) {
+for (let c = 0; c < n; c++) {
+const f = finder(r, c);
+const on = f === -1 ? ((r * r * 7 + c * 13 + r * c * 3) % 11) < 5 : f === 1;
+cells.push({ fill: on ? '#1C1B19' : '#FFFFFF' });
+}
+}
+return { accent: this.props.accent ?? '#1F4E5F', cells };
+}
+}
+</script>
+</body>
+</html>
