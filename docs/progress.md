@@ -26,7 +26,7 @@ Status values: Backlog, Ready, In progress, In review, Merged (flag off), Releas
 | SG-003 | Database foundation | API | 3 | 0 | Merged (flag off) | PR #10, 1cf214b | none | CI green incl. -race; PR size above 400 accepted by tech lead; owned follow-ups in plan Ruling 11 |
 | SG-004 | Web foundation | WEB | 2 | 0 | Backlog | | | Static-export i18n spike (A-06) |
 | SG-101 | Pricing engine | API | 5 | 0 | Backlog | | | Needs A-01 answer if available |
-| SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Merged (flag off) | PR #12, 828feca | none | CI green; PR size above 400 (one PR chosen by tech lead); ADR-015 still Proposed; DEMO_MODE off in public deploys until SG-601; follow-ups in plan Rulings 7 and 8 |
+| SG-102 | Sessions, identity and tenant context | API | 3 | 0 | Merged (flag off) | PR #12, 828feca | none | CI green; PR size above 400 (one PR chosen by tech lead); DEMO_MODE off in public deploys until SG-601; follow-ups in plan Rulings 7 and 8 |
 | SG-202 | Room map screen | WEB | 3 | 0 | Backlog | | FF_S1_ROOM_MAP | |
 | SG-201 | Rooms and buildings read API | API | 2 | 1 | Backlog | | FF_S1_ROOM_MAP | |
 | SG-203 | Check-in API | API | 3 | 1 | Backlog | | FF_S2_CHECKIN | |

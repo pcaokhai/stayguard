@@ -1,8 +1,8 @@
 # ADR-015 Session lookup by token hash before the tenant is known
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-01
-- Deciders: Tech lead (to confirm)
+- Deciders: Tech lead
 - Related: ADR-005, ADR-010, SG-003 Ruling 11, SG-102
 
 ## Context
