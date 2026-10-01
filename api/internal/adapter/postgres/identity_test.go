@@ -103,8 +103,12 @@ func TestIdentityRepo_SG102_AC3(t *testing.T) {
 			if _, err := r.TenantInfo(ctx, tx); err != nil {
 				t.Errorf("B own info: %v", err)
 			}
-			if got, _ := r.TrialTenant(ctx, tx, "tnt_id_a", idNow); got {
-				t.Error("B saw A's tenant")
+			if got, err := r.TrialTenant(ctx, tx, "tnt_id_a", idNow); got || !errors.Is(err, ErrTenantMismatch) {
+				t.Errorf("B saw A's tenant: got=%v err=%v", got, err)
+			}
+			err := r.CreateTrialTenant(ctx, tx, "tnt_id_a", "x", idNow)
+			if !errors.Is(err, ErrTenantMismatch) || strings.Contains(err.Error(), "tnt_id") {
+				t.Errorf("CreateTrialTenant with A's id: %v", err)
 			}
 			if err := r.SetLocale(ctx, tx, ua.ID, "vi"); err == nil {
 				t.Error("B changed A's locale")

@@ -14,6 +14,10 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
 )
 
+// ErrTenantMismatch means a tenant id argument differs from the transaction's tenant. The message
+// carries no ids.
+var ErrTenantMismatch = errors.New("tenant id does not match the transaction tenant")
+
 // IdentityRepo implements app.IdentityRepo. The tenant always comes from the Tx, never from callers.
 type IdentityRepo struct{}
 
@@ -23,23 +27,23 @@ var _ app.IdentityRepo = IdentityRepo{}
 func NewIdentityRepo() IdentityRepo { return IdentityRepo{} }
 
 func (IdentityRepo) CreateTrialTenant(ctx context.Context, tx app.Tx, id, name string, expiresAt time.Time) error {
-	t, err := pgTx(tx)
+	t, err := ownTx(tx, id)
 	if err != nil {
 		return err
 	}
 	err = sqlcgen.New(t).InsertTrialTenant(ctx, sqlcgen.InsertTrialTenantParams{
-		ID: id, Name: name, ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		ID: t.tenant, Name: name, ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	return wrap("insert trial tenant", err)
 }
 
 func (IdentityRepo) TrialTenant(ctx context.Context, tx app.Tx, id string, now time.Time) (bool, error) {
-	t, err := pgTx(tx)
+	t, err := ownTx(tx, id)
 	if err != nil {
 		return false, err
 	}
 	ok, err := sqlcgen.New(t).TrialTenantActive(ctx, sqlcgen.TrialTenantActiveParams{
-		TenantID: id, Now: pgtype.Timestamptz{Time: now, Valid: true},
+		TenantID: t.tenant, Now: pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	return ok, wrap("select trial tenant", err)
 }
@@ -155,4 +159,16 @@ func optUser(id, name, role, locale string, err error, what string) (app.User, b
 		return app.User{}, false, fmt.Errorf("%s: %w", what, err)
 	}
 	return app.User{ID: id, Name: name, Role: r, Locale: locale}, true, nil
+}
+
+// ownTx is pgTx plus a check that id is the transaction's own tenant, so the SQL filter comes from the Tx.
+func ownTx(tx app.Tx, id string) (Tx, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return Tx{}, err
+	}
+	if id != t.tenant {
+		return Tx{}, ErrTenantMismatch
+	}
+	return t, nil
 }

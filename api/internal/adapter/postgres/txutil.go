@@ -41,8 +41,10 @@ func inSavepoint(ctx context.Context, t Tx, fn func(q pgx.Tx) error) error {
 		return fmt.Errorf("begin savepoint: %w", err)
 	}
 	if err := fn(sp); err != nil {
+		// A failed rollback leaves the transaction in doubt: report that, not the original error,
+		// which could otherwise be mapped to a benign conflict.
 		if rerr := rollback(ctx, sp); rerr != nil {
-			err = errors.Join(err, rerr)
+			return fmt.Errorf("savepoint: %w", rerr)
 		}
 		return err
 	}
