@@ -3,10 +3,14 @@ COMPOSE := docker compose -f deploy/compose.yaml
 
 .PHONY: gen-api gen-sqlc gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
 
-up:
+# Local data encryption key, created once and never committed (deploy/.env.local is git-ignored).
+deploy/.env.local:
+	@umask 077 && printf 'DATA_ENCRYPTION_KEY=%s\n' "$$(openssl rand -base64 32)" > $@
+
+up: deploy/.env.local
 	$(COMPOSE) up --build
 
-down:
+down: deploy/.env.local
 	$(COMPOSE) down
 
 test: test-api test-web

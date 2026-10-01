@@ -35,10 +35,10 @@ func (e *env) seedBenchBuilding(tenant, bld string) {
 		SELECT $2 || '_u' || n, $1, $2, $2 || '_f' || (n % $3::int + 1), $2 || '_ut', 'R' || n,
 			CASE WHEN n <= $4::int THEN 'OCCUPIED' ELSE 'VACANT' END, '{}'
 		FROM generate_series(1, $5::int) n`, tenant, bld, benchFloors, benchOccupied, benchRooms)
-	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, check_in_at, rate_plan_snapshot)
-		SELECT $2 || '_s' || n, $1, $2 || '_u' || n, 'OVERNIGHT', 'ACTIVE', 'Guest',
+	e.exec(`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, guest_phone, check_in_at, rate_plan_snapshot, rate_plan_schema)
+		SELECT $2 || '_s' || n, $1, $2 || '_u' || n, 'OVERNIGHT', 'ACTIVE', 'Guest', '0900000000',
 			CASE WHEN n % 2 = 0 THEN $3::timestamptz - interval '48 hours' ELSE $3::timestamptz - interval '1 hour' END,
-			$5
+			$5, 1
 		FROM generate_series(1, $4::int) n`, tenant, bld, e.start, benchOccupied, seedPlanSnapshot())
 }
 

@@ -40,9 +40,9 @@ func seedRoomTenant(t *testing.T, db, id string) {
 			('{t}_u2', '{t}', '{t}_b1', '{t}_f2', '{t}_ut2', 'A201', 'VACANT', '{"note":"sea view"}'),
 			('{t}_u3', '{t}', '{t}_b1', '{t}_f2', '{t}_ut1', 'A202', 'MAINTENANCE', '{"note":5}'),
 			('{t}_u4', '{t}', '{t}_b2', '{t}_f3', '{t}_ut1', 'B101', 'VACANT', '{}')`,
-		`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, check_in_at, rate_plan_snapshot) VALUES
-			('{t}_s1', '{t}', '{t}_u1', 'OVERNIGHT', 'ACTIVE', 'Guest One', '2026-10-01T01:30:00Z', '{"v":1}'),
-			('{t}_s2', '{t}', '{t}_u2', 'HOURLY', 'CHECKED_OUT', 'Gone', '2026-09-30T01:30:00Z', '{}')`,
+		`INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, guest_name, guest_phone, check_in_at, rate_plan_snapshot, rate_plan_schema) VALUES
+			('{t}_s1', '{t}', '{t}_u1', 'OVERNIGHT', 'ACTIVE', 'Guest One', '0900000001', '2026-10-01T01:30:00Z', '{"v":1}', 1),
+			('{t}_s2', '{t}', '{t}_u2', 'HOURLY', 'CHECKED_OUT', 'Gone', '0900000002', '2026-09-30T01:30:00Z', '{}', 1)`,
 	}
 	conn := connAs(t, db, "owner")
 	for _, s := range stmts {
