@@ -32,7 +32,7 @@ api/
 - Server-Sent Events: one hub per process, bounded buffers, drop slow clients, close on terminal state, heartbeat every 15 s; goroutines are owned by the hub and stop on shutdown.
 - Configuration is typed and validated at start; missing `DATA_ENCRYPTION_KEY` or `DATABASE_URL` stops the process. Other database settings: `MIGRATE_DATABASE_URL` (owner role for `migrate`, defaults to `DATABASE_URL`) and `IDEMPOTENCY_TTL` (default 24h). The server refuses to start as a superuser, BYPASSRLS, table-owner or member-of-such role; `ALLOW_PRIVILEGED_DB=1` lifts that for local dev only.
 - The server connects as the application role (no BYPASSRLS, no DDL); only `stayguard migrate` uses the owner role and migrations never run at request time. `/readyz` is 503 until every embedded migration is applied.
-- Demo-only routes (`/v1/demo/*`) are registered only when `DEMO_MODE` is on; an architecture test proves they are absent otherwise.
+- Demo routes (`/v1/demo/*`): the generated route always exists but returns 404 `DEMO_DISABLED` before any I/O when `DEMO_MODE` is off (default). Session settings: `DEMO_MODE`, `SESSION_TTL_HOURS` (default 12), `TRIAL_TTL_HOURS` (default 24). The auth middleware protects every `/v1` path except `POST /v1/demo/sessions` and `POST /v1/webhooks/bank`.
 
 ## Domain rules
 

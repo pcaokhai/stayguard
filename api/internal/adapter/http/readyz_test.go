@@ -33,7 +33,7 @@ func TestReadyz_SG003_AC6(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs bytes.Buffer
-			r := NewRouter(slog.New(slog.NewJSONHandler(&logs, nil)), "", app.ReadinessProbe(fakeProbe{tc.err}))
+			r := NewRouter(slog.New(slog.NewJSONHandler(&logs, nil)), Options{Probe: app.ReadinessProbe(fakeProbe{tc.err}), Sessions: &fakeSessions{}})
 			rec := httptest.NewRecorder()
 			r.ServeHTTP(rec, httptest.NewRequest("GET", "/readyz", nil))
 

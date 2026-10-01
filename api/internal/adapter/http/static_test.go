@@ -61,8 +61,8 @@ func TestStaticDoesNotShadowHealthzOrAPI_SG001_AC3(t *testing.T) {
 		t.Errorf("healthz shadowed: %q", rec.Body.String())
 	}
 	for _, p := range []string{"/v1", "/v1/", "/v1/stays"} {
-		if rec := get(h, p); rec.Code != 404 || rec.Body.String() == "INDEX" {
-			t.Errorf("%s served web: code=%d body=%q", p, rec.Code, rec.Body.String())
+		if rec := get(h, p); (rec.Code != 404 && rec.Code != 401) || rec.Body.String() == "INDEX" {
+			t.Errorf("%s served web (404, or 401 behind the auth middleware): code=%d body=%q", p, rec.Code, rec.Body.String())
 		}
 	}
 }
