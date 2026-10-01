@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -92,5 +93,26 @@ func TestDemoSeedCopyMatchesContract_A1(t *testing.T) {
 	}
 	if string(got) != string(want) {
 		t.Fatal("api/internal/app/demo-tenant-seed.json differs from contracts/fixtures/demo-tenant-seed.json")
+	}
+}
+
+// A101 must check out with a balance, so the demo script reaches the QR step.
+func TestDemoSeedA101HasBalance_A1(t *testing.T) {
+	e := newSeededEnv(t)
+	s := e.demo("OWNER", "vi", "")
+	tok := s.str("accessToken")
+	var stay string
+	if err := e.owner.QueryRow(context.Background(), `SELECT s.id FROM app.stays s JOIN app.units u ON u.id = s.unit_id
+		WHERE s.tenant_id = $1 AND u.code = 'A101'`, s.str("tenantId")).Scan(&stay); err != nil {
+		t.Fatal(err)
+	}
+	st, raw := e.checkout(tok, stay, newKey())
+	q, _ := parse(raw)["quote"].(map[string]any)
+	if st != 201 || q["total"] != float64(140000) || q["balanceDue"] != float64(40000) {
+		t.Fatalf("checkout: %d %s", st, raw)
+	}
+	inv, _ := parse(raw)["id"].(string)
+	if st, raw := e.send("POST", "/v1/invoices/"+inv+"/payments", tok, newKey(), map[string]any{"method": "TRANSFER"}); st != 201 {
+		t.Fatalf("transfer: %d %s", st, raw)
 	}
 }

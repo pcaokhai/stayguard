@@ -32,6 +32,7 @@ type DemoData struct {
 	Rooms                    []DemoRoom
 	Services                 []DemoService
 	Stays                    []NewStay
+	Extras                   []NewExtra
 }
 
 type DemoBuilding struct{ ID, Code, Name string }
@@ -116,11 +117,18 @@ func (r roomsPerRow) onFloor(i int) int {
 
 // stayAge is how long ago a sample stay checked in, by the server clock minus a fixed offset.
 var (
-	hourlyAges  = []time.Duration{25 * time.Minute, 50 * time.Minute, 85 * time.Minute, 130 * time.Minute, 20 * time.Minute, 70 * time.Minute, 100 * time.Minute}
+	hourlyAges  = []time.Duration{155 * time.Minute, 50 * time.Minute, 85 * time.Minute, 130 * time.Minute, 20 * time.Minute, 70 * time.Minute, 100 * time.Minute}
 	dailyAges   = []time.Duration{5 * time.Hour, 9 * time.Hour, 18 * time.Hour}
 	overdueAge  = 50 * time.Hour
 	sampleDepos = int64(100000)
 )
+
+// sampleExtras are drinks already on a sample stay, so its check-out has a balance left after the deposit
+// (A101: 2h35 room 120.000 + 2 water 20.000 - deposit 100.000 = 40.000).
+var sampleExtras = []struct {
+	room, service string
+	qty           int64
+}{{"A101", "WATER", 2}}
 
 // Seed inserts the demo tenant's rooms, prices, services, bank account and sample stays.
 func (d *DemoSeeder) Seed(ctx context.Context, tx Tx, now time.Time) error {
@@ -170,7 +178,35 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 			}
 		}
 	}
-	return d.occupy(out, f, plans, now)
+	out, err = d.occupy(out, f, plans, now)
+	if err != nil {
+		return DemoData{}, err
+	}
+	return d.addExtras(out, now)
+}
+
+func (d *DemoSeeder) addExtras(out DemoData, now time.Time) (DemoData, error) {
+	stayByRoom := map[string]string{}
+	codeByRoomID := map[string]string{}
+	for _, r := range out.Rooms {
+		codeByRoomID[r.ID] = r.Code
+	}
+	for _, st := range out.Stays {
+		stayByRoom[codeByRoomID[st.RoomID]] = st.ID
+	}
+	services := map[string]DemoService{}
+	for _, sv := range out.Services {
+		services[sv.Code] = sv
+	}
+	for _, x := range sampleExtras {
+		stayID, sv := stayByRoom[x.room], services[x.service]
+		if stayID == "" || sv.ID == "" {
+			return DemoData{}, fmt.Errorf("demo seed: extras for %s/%s have no stay or service", x.room, x.service)
+		}
+		out.Extras = append(out.Extras, NewExtra{ID: d.ids.New(extraIDPrefix), StayID: stayID, ServiceID: sv.ID,
+			Quantity: x.qty, UnitAmount: sv.Price, Amount: x.qty * sv.Price, CreatedAt: now.Add(-time.Minute)})
+	}
+	return out, nil
 }
 
 // occupy sets the sample statuses and adds one ACTIVE stay per occupied room.

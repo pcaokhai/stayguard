@@ -57,5 +57,10 @@ func (DemoSeedRepo) InsertDemoData(ctx context.Context, tx app.Tx, d app.DemoDat
 			return err
 		}
 	}
+	for _, e := range d.Extras {
+		if err := (BillingRepo{}).InsertExtra(ctx, tx, e); err != nil {
+			return err
+		}
+	}
 	return nil
 }
