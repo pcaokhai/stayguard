@@ -17,8 +17,7 @@ import (
 var _ gen.StrictServerInterface = (*Server)(nil)
 
 func TestUnimplementedOperation_Returns501Problem_SG002_AC2(t *testing.T) {
-	rec := httptest.NewRecorder()
-	newTestRouter(&bytes.Buffer{}).ServeHTTP(rec, httptest.NewRequest("GET", "/v1/services", nil))
+	rec := do(newTestRouter(&bytes.Buffer{}), "GET", "/v1/services", "Bearer "+goodToken)
 
 	if rec.Code != 501 || rec.Header().Get("Content-Type") != "application/problem+json" {
 		t.Fatalf("code=%d ct=%q", rec.Code, rec.Header().Get("Content-Type"))
@@ -36,6 +35,7 @@ func TestMalformedBody_Returns400Problem_SG002_AC2(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/v1/rooms/r1/stays", strings.NewReader("{not json"))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+goodToken)
 	newTestRouter(&bytes.Buffer{}).ServeHTTP(rec, req)
 
 	if rec.Code != 400 || rec.Header().Get("Content-Type") != "application/problem+json" {

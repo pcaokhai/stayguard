@@ -168,4 +168,5 @@ type AppUser struct {
 	Name      string
 	Role      string
 	CreatedAt pgtype.Timestamptz
+	Locale    string
 }

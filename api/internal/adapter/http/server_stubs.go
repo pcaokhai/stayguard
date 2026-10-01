@@ -14,7 +14,15 @@ var errNotImplemented = errors.New("operation not implemented")
 // Server implements every operation of contracts/openapi.yaml. Each story replaces the stubs
 // of its own operations with real handlers in its own file and deletes those stubs from here;
 // an operation with neither a stub nor a handler does not compile (SG-002 AC2).
-type Server struct{}
+type Server struct {
+	sessions    sessionService
+	demoEnabled bool
+}
+
+// NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE.
+func NewServer(sessions sessionService, demoEnabled bool) Server {
+	return Server{sessions: sessions, demoEnabled: demoEnabled}
+}
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
 	return nil, errNotImplemented
@@ -36,10 +44,6 @@ func (Server) SimulatePaymentReceived(context.Context, gen.SimulatePaymentReceiv
 	return nil, errNotImplemented
 }
 
-func (Server) CreateDemoSession(context.Context, gen.CreateDemoSessionRequestObject) (gen.CreateDemoSessionResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListHousekeepingTasks(context.Context, gen.ListHousekeepingTasksRequestObject) (gen.ListHousekeepingTasksResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -49,14 +53,6 @@ func (Server) CompleteHousekeepingTask(context.Context, gen.CompleteHousekeeping
 }
 
 func (Server) CreatePayment(context.Context, gen.CreatePaymentRequestObject) (gen.CreatePaymentResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetMe(context.Context, gen.GetMeRequestObject) (gen.GetMeResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) SetMyLocale(context.Context, gen.SetMyLocaleRequestObject) (gen.SetMyLocaleResponseObject, error) {
 	return nil, errNotImplemented
 }
 

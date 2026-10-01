@@ -19,16 +19,32 @@ func useBaseMiddleware(r chi.Router, log *slog.Logger) {
 	r.Use(middleware.Recoverer)
 }
 
-func NewRouter(log *slog.Logger, staticDir string, probe app.ReadinessProbe) http.Handler {
+// SessionService is the application surface the router needs: authentication for the middleware
+// and the session use cases for the handlers.
+type SessionService interface {
+	authenticator
+	sessionService
+}
+
+// Options are the router's collaborators; DemoEnabled mirrors DEMO_MODE.
+type Options struct {
+	StaticDir   string
+	Probe       app.ReadinessProbe
+	Sessions    SessionService
+	DemoEnabled bool
+}
+
+func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r := chi.NewRouter()
 	useBaseMiddleware(r, log)
-	strict := gen.NewStrictHandlerWithOptions(Server{}, nil, gen.StrictHTTPServerOptions{
+	r.Use(authenticate(log, o.Sessions))
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})
 	gen.HandlerWithOptions(strict, gen.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: badRequestResponse})
 	r.Get("/healthz", healthz) // keeps the SG-001 body; replaced by Server.GetHealth when ops are implemented
-	r.Get("/readyz", readyz(log, probe))
-	r.NotFound(staticHandler(staticDir).ServeHTTP)
+	r.Get("/readyz", readyz(log, o.Probe))
+	r.NotFound(staticHandler(o.StaticDir).ServeHTTP)
 	return r
 }

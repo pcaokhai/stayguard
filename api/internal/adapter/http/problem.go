@@ -20,6 +20,9 @@ type problemBody struct {
 }
 
 func writeProblem(w http.ResponseWriter, status int, title, code string) {
+	if status == http.StatusUnauthorized {
+		w.Header().Set("WWW-Authenticate", "Bearer")
+	}
 	w.Header().Set("Content-Type", problemContentType)
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(problemBody{Type: "about:blank", Title: title, Status: status, Code: code})
@@ -33,6 +36,8 @@ func badRequestResponse(w http.ResponseWriter, _ *http.Request, _ error) {
 
 // problemResponder is the single place where handler errors become HTTP problem responses
 // (CLAUDE.md §6 rule 10). Unknown errors are logged, never echoed to the client.
+// Errors from the authenticator reach this function too: they must never wrap or quote the bearer
+// token (the middleware logs unknown errors).
 func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		if errors.Is(err, errNotImplemented) {
@@ -48,7 +53,33 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 			writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 			return
 		}
+		if mapSessionError(w, err) {
+			return
+		}
 		log.ErrorContext(r.Context(), "unhandled handler error", "error", err)
 		writeProblem(w, http.StatusInternalServerError, "Internal Server Error", "INTERNAL")
 	}
+}
+
+// mapSessionError writes the problem for identity errors and reports whether it matched. Titles are
+// generic and nothing from the request is echoed.
+func mapSessionError(w http.ResponseWriter, err error) bool {
+	var ve *app.ValidationError
+	switch {
+	case errors.Is(err, app.ErrDemoDisabled):
+		writeProblem(w, http.StatusNotFound, "Not Found", "DEMO_DISABLED")
+	case errors.Is(err, app.ErrTrialNotFound):
+		writeProblem(w, http.StatusNotFound, "Not Found", "TRIAL_NOT_FOUND")
+	case errors.Is(err, app.ErrUnauthenticated):
+		writeProblem(w, http.StatusUnauthorized, "Unauthorized", "UNAUTHENTICATED")
+	case errors.Is(err, app.ErrSessionExpired):
+		writeProblem(w, http.StatusUnauthorized, "Unauthorized", "SESSION_EXPIRED")
+	case errors.As(err, &ve):
+		writeProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "VALIDATION_FAILED")
+	case errors.Is(err, app.ErrConflict):
+		writeProblem(w, http.StatusConflict, "Conflict", "CONFLICT")
+	default:
+		return false
+	}
+	return true
 }

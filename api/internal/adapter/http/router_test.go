@@ -22,7 +22,15 @@ func newTestRouter(buf *bytes.Buffer) http.Handler {
 }
 
 func newTestRouterDir(buf *bytes.Buffer, dir string) http.Handler {
-	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)), dir, readyProbe{})
+	return newRouterWithDir(buf, dir, &fakeSessions{}, false)
+}
+
+func newRouterWith(buf *bytes.Buffer, s *fakeSessions, demo bool) http.Handler {
+	return newRouterWithDir(buf, "", s, demo)
+}
+
+func newRouterWithDir(buf *bytes.Buffer, dir string, s *fakeSessions, demo bool) http.Handler {
+	return NewRouter(slog.New(slog.NewJSONHandler(buf, nil)), Options{StaticDir: dir, Probe: readyProbe{}, Sessions: s, DemoEnabled: demo})
 }
 
 func TestHealthz_SG001_AC2(t *testing.T) {

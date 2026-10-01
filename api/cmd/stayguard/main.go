@@ -64,8 +64,10 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 	defer d.pool.Close()
 
 	srv := &http.Server{
-		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
-		Handler:           httpadapter.NewRouter(log, cfg.StaticDir, d.probe),
+		Addr: net.JoinHostPort("", strconv.Itoa(cfg.Port)),
+		Handler: httpadapter.NewRouter(log, httpadapter.Options{
+			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
+		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,

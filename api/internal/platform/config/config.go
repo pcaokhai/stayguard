@@ -30,6 +30,10 @@ type Config struct {
 	// AllowPrivilegedDB (ALLOW_PRIVILEGED_DB, default false) lets the server run as a superuser, BYPASSRLS
 	// or owner role. LOCAL DEV ONLY: it switches off the second guard (RLS).
 	AllowPrivilegedDB bool
+	// DemoMode (DEMO_MODE, default false) registers the demo routes; off in production.
+	DemoMode   bool
+	SessionTTL time.Duration // SESSION_TTL_HOURS, default 12
+	TrialTTL   time.Duration // TRIAL_TTL_HOURS, default 24
 }
 
 // Load takes the env lookup as a parameter so tests need no process environment.
@@ -50,7 +54,11 @@ func Load(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("LOG_LEVEL must be debug, info, warn or error, got %q", v)
 		}
 	}
-	return loadDatabase(c, getenv)
+	c, err := loadDatabase(c, getenv)
+	if err != nil {
+		return Config{}, err
+	}
+	return loadSessions(c, getenv)
 }
 
 func loadDatabase(c Config, getenv func(string) string) (Config, error) {
