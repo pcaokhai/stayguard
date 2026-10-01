@@ -14,7 +14,9 @@ web/
   src/features/           rooms, stays, payments, housekeeping, owner, permissions, shifts, session
   src/components/ui/      shared presentational components
   src/lib/                api (generated client wrapper), format (Intl helpers), i18n, tokens
-  src/mocks/              MSW handlers generated from the contract
+  src/api/generated/      typed schema from the contract (openapi-typescript), committed, Read-denied
+  src/mocks/generated/    MSW handlers from the contract (orval), committed, Read-denied
+  src/mocks/setup/        hand-written worker and test wiring; `NEXT_PUBLIC_MOCK=1` build bundles it via the `mock-layer` alias in next.config.ts
   messages/               vi.json and en.json (same keys, checked in CI)
   e2e/                    Playwright journeys J1 to J5
 ```
