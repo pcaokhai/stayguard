@@ -10,6 +10,7 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/invoice"
 	"github.com/pcaokhai/stayguard/api/internal/domain/payment"
+	"github.com/pcaokhai/stayguard/api/internal/domain/shift"
 )
 
 const (
@@ -62,8 +63,13 @@ type Payments struct {
 	clock Clock
 	// alerts is optional (nil raises nothing): PAYMENT_MISMATCH and UNMATCHED_TRANSFER for the owner (SG-801).
 	alerts AlertWriter
+	// cash is optional (nil records nothing): cash taken and refunded goes on the drawer ledger (SG-503).
+	cash CashLedger
 	guard
 }
+
+// WithCash puts cash payments and refunds on the receptionist's drawer ledger.
+func (p *Payments) WithCash(l CashLedger) *Payments { p.cash = l; return p }
 
 // WithAlerts turns on the owner alerts for bank events that cannot settle an invoice.
 func (p *Payments) WithAlerts(a AlertWriter) *Payments { p.alerts = a; return p }
@@ -146,10 +152,29 @@ func (p *Payments) create(ctx context.Context, tx Tx, c Caller, inv PayInvoice, 
 	if err := p.auditPayment(ctx, tx, c.UserID, auditPaySettled, n.ID, payment.MethodCash, inv.ID, q.BalanceDue); err != nil {
 		return PaymentView{}, err
 	}
+	if err := p.recordCash(ctx, tx, c, inv, n.ID, q); err != nil {
+		return PaymentView{}, err
+	}
 	paid := now
 	recv := q.BalanceDue
 	return PaymentView{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodCash, Status: payment.StatusPaid,
 		Amount: q.BalanceDue, ReceivedAmount: &recv, PaidAt: &paid}, nil
+}
+
+// recordCash writes what the drawer received (the balance) and gave back (a deposit refund) to the ledger.
+func (p *Payments) recordCash(ctx context.Context, tx Tx, c Caller, inv PayInvoice, paymentID string, q QuoteView) error {
+	if p.cash == nil {
+		return nil
+	}
+	for _, e := range []CashRecord{
+		{Kind: shift.Payment, StayID: inv.StayID, PaymentID: paymentID, Amount: q.BalanceDue},
+		{Kind: shift.Refund, StayID: inv.StayID, PaymentID: paymentID, Amount: q.RefundDue},
+	} {
+		if err := p.cash.Record(ctx, tx, c, e); err != nil {
+			return fmt.Errorf("record cash: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p *Payments) createTransfer(ctx context.Context, tx Tx, c Caller, inv PayInvoice, amount int64, now time.Time) (PaymentView, error) {

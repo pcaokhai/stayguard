@@ -72,6 +72,8 @@ type Options struct {
 	TrustProxy bool
 	// StayOps serves stay history, timeline, receipt and the check-in time and move corrections (no flag).
 	StayOps StayOpsService
+	// Shifts serves the shift and cash operations (no flag).
+	Shifts ShiftService
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
@@ -79,7 +81,7 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 	useBaseMiddleware(r, log)
 	r.Use(clientIP(o.TrustProxy))
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithShifts(o.Shifts), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

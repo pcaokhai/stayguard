@@ -24,8 +24,13 @@ type Stays struct {
 	audit AuditWriter
 	ids   IDGenerator
 	clock Clock
+	// cash is optional (nil records nothing): the deposit taken at check-in goes on the drawer ledger (SG-503).
+	cash CashLedger
 	guard
 }
+
+// WithCash puts the cash deposits of check-in on the receptionist's drawer ledger.
+func (s *Stays) WithCash(l CashLedger) *Stays { s.cash = l; return s }
 
 func NewStays(uow UnitOfWork, repo StayRepo, levels BuildingLevels, enc Encryptor, idem IdempotencyStore,
 	audit AuditWriter, ids IDGenerator, clock Clock) *Stays {

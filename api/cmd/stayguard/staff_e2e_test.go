@@ -171,7 +171,14 @@ func TestStaffLifecycle_SG1101_SG501(t *testing.T) {
 		t.Fatalf("reset: %d %s", st, raw)
 	}
 
-	// Removing needs the owner PIN; afterwards the person cannot sign in.
+	// Removing needs the owner PIN, and an open shift must be closed first (docs/15 rule 13).
+	if r := e.call("POST", "/v1/owner/staff/"+id+"/remove", owner, map[string]any{"ownerPin": ownerPIN}); r.status != 409 || r.str("code") != "SHIFT_OPEN" {
+		t.Fatalf("remove with an open shift: %d %v", r.status, r.body)
+	}
+	// The person's sessions ended with the PIN reset, so the shift is closed directly (the close use case is tested in shifts_e2e_test.go).
+	e.exec(`UPDATE app.shifts SET status = 'CLOSED', closed_at = now(), expected_cash = 0, counted_cash = 0, difference = 0, float_left = 0
+		WHERE user_id = $1 AND status = 'OPEN'`, id)
+	// Afterwards the person cannot sign in.
 	if r := e.call("POST", "/v1/owner/staff/"+id+"/remove", owner, map[string]any{"ownerPin": "159357"}); r.status != 403 || r.str("code") != "OWNER_PIN_INVALID" {
 		t.Fatalf("wrong owner PIN: %d %v", r.status, r.body)
 	}

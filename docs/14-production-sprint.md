@@ -101,7 +101,7 @@ Tests: `previewPrice` uses `domain/pricing` (one golden case through the endpoin
 `editCheckInTime`, `moveStay`, `listStays` (date or range, receptionist window `frontDeskHistoryDays`, `guestId` indicators all false until F-A2), `getReceipt`, `getStayTimeline`; `alerts` table and the alert writer (STAY_TIME_EDITED, PAYMENT_MISMATCH, UNMATCHED_TRANSFER); `stay_edits`.
 Tests (required): SG-801 AC1–AC3 (the edit changes the price through pricing; out-of-range 422), receptionist window 422.
 
-#### [ ] L-B2 Shifts and cash (API-2) — migration 0014
+#### [x] L-B2 Shifts and cash (API-2) — migration 0014
 `getCurrentShift`, `recordCashPayout`, `closeShift`, `getShiftReview`, `listClosedShifts`; a shift opens on the first cash action of a signed-in receptionist; expected cash = float + cash taken − payouts; closing locks figures and alerts on any difference.
 Tests (required): expected cash with deposits, refunds and payouts; a closed shift cannot change; difference creates an alert.
 

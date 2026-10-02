@@ -34,6 +34,8 @@ var isolationFixtures = []fixture{
 	{"payment_events", `INSERT INTO app.payment_events (id, tenant_id, provider, external_id, amount, result) VALUES ($2::text || '_pe', $1::text, 'sim', $2::text || '_x', 1, 'SETTLED')`},
 	{"stay_edits", `INSERT INTO app.stay_edits (id, tenant_id, stay_id, kind) VALUES ($2::text || '_sd', $1::text, $2::text || '_st', 'CHECK_IN')`},
 	{"alerts", `INSERT INTO app.alerts (id, tenant_id, kind) VALUES ($2::text || '_al', $1::text, 'CASH_OVER')`},
+	{"shifts", `INSERT INTO app.shifts (id, tenant_id, user_id, shift_code, opened_at) VALUES ($2::text || '_sh', $1::text, $2::text || '_u', 'MORNING', now())`},
+	{"cash_entries", `INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, created_at) VALUES ($2::text || '_ce', $1::text, $2::text || '_sh', 'PAYOUT', 1, now())`},
 	{"audit_logs", `INSERT INTO app.audit_logs (id, tenant_id, action, entity_type, entity_id) VALUES ($2::text || '_au', $1::text, 'a', 'e', $2::text)`},
 	{"idempotency_keys", `INSERT INTO app.idempotency_keys (tenant_id, route, key, request_hash, expires_at) VALUES ($1::text, 'r', $2::text, 'h', now() + interval '1 hour')`},
 }

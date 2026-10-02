@@ -11,6 +11,7 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
 	"github.com/pcaokhai/stayguard/api/internal/domain/room"
+	"github.com/pcaokhai/stayguard/api/internal/domain/shift"
 	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
@@ -171,6 +172,11 @@ func (s *Stays) insertStay(ctx context.Context, tx Tx, c Caller, roomID string, 
 	}
 	if err := s.persist(ctx, tx, c, ns, plan); err != nil {
 		return StayDetail{}, err
+	}
+	if s.cash != nil {
+		if err := s.cash.Record(ctx, tx, c, CashRecord{Kind: shift.Deposit, StayID: ns.ID, Amount: ns.Deposit}); err != nil {
+			return StayDetail{}, fmt.Errorf("record deposit: %w", err)
+		}
 	}
 	loc, err := s.zone(ctx, tx)
 	if err != nil {

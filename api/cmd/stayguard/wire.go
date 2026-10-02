@@ -35,6 +35,7 @@ type deps struct {
 	housekeeping *app.Housekeeping
 	owner        *app.Owner
 	stayOps      stayOps
+	shifts       *app.Shifts
 }
 
 // stayOps is the stay corrections and history behind one handler dependency.
@@ -65,6 +66,9 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	shifts := newShifts(uow, idem, audit, clock.System{})
+	stays.WithCash(shifts)
+	payments.WithCash(shifts)
 	stayOps, err := newStayOps(cfg, uow, idem, audit, clock.System{})
 	if err != nil {
 		pool.Close()
@@ -91,6 +95,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		billing:      billing,
 		payments:     payments,
 		stayOps:      stayOps,
+		shifts:       shifts,
 		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.Stored{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
@@ -181,12 +186,12 @@ func newAuth(sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, 
 		ratelimit.New(signInPerIP, signInRateEvery, clk.Now), ratelimit.New(signInPerCode, signInRateEvery, clk.Now))
 }
 
-// noOpenShifts stands in until shifts exist (L-B2), whose repository replaces it so removeStaff can answer SHIFT_OPEN.
-type noOpenShifts struct{}
-
-func (noOpenShifts) HasOpenShift(context.Context, app.Tx, string) (bool, error) { return false, nil }
-
-// newStaff builds the staff use cases; noOpenShifts is replaced when shifts exist.
+// newStaff builds the staff use cases; the shift repository tells removeStaff whether the person still has a shift open.
 func newStaff(uow app.UnitOfWork, auth *app.Auth, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Staff {
-	return app.NewStaff(uow, postgres.StaffRepo{}, auth, postgres.NewAuthRepo(), crypto.PinGenerator{}, idem, audit, noOpenShifts{}, ids.New(clk.Now), clk)
+	return app.NewStaff(uow, postgres.StaffRepo{}, auth, postgres.NewAuthRepo(), crypto.PinGenerator{}, idem, audit, postgres.ShiftRepo{}, ids.New(clk.Now), clk)
+}
+
+// newShifts builds the shift use cases; they are also the cash ledger that check-in deposits and cash payments write to.
+func newShifts(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Shifts {
+	return app.NewShifts(uow, postgres.ShiftRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
 }

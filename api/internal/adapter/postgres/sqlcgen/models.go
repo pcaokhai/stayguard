@@ -52,6 +52,19 @@ type AppBuildingPermission struct {
 	UpdatedAt  pgtype.Timestamptz
 }
 
+type AppCashEntry struct {
+	ID          string
+	TenantID    string
+	ShiftID     string
+	Kind        string
+	Amount      int64
+	StayID      pgtype.Text
+	PaymentID   pgtype.Text
+	Description pgtype.Text
+	CreatedBy   pgtype.Text
+	CreatedAt   pgtype.Timestamptz
+}
+
 type AppFloor struct {
 	ID         string
 	TenantID   string
@@ -142,6 +155,25 @@ type AppSession struct {
 	UserID    string
 	ExpiresAt pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
+}
+
+type AppShift struct {
+	ID               string
+	TenantID         string
+	UserID           string
+	Status           string
+	ShiftCode        string
+	OpenedAt         pgtype.Timestamptz
+	ClosedAt         pgtype.Timestamptz
+	OpeningFloat     int64
+	ExpectedCash     pgtype.Int8
+	CountedCash      pgtype.Int8
+	Difference       pgtype.Int8
+	Reason           pgtype.Text
+	ReasonRecordedAt pgtype.Timestamptz
+	FloatLeft        pgtype.Int8
+	HandoverToUserID pgtype.Text
+	Counts           []byte
 }
 
 type AppStaffProfile struct {

@@ -163,6 +163,8 @@ func mapStayError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusConflict, "Conflict", "INSUFFICIENT_STOCK")
 	case errors.Is(err, stay.ErrNotActive):
 		writeProblem(w, http.StatusConflict, "Conflict", "STAY_NOT_ACTIVE")
+	case errors.Is(err, app.ErrShiftNotOpen):
+		writeProblem(w, http.StatusConflict, "Conflict", "SHIFT_NOT_OPEN")
 	case errors.As(err, &ve):
 		errs := make([]fieldProblem, len(ve.Errors))
 		for i, fe := range ve.Errors {

@@ -28,6 +28,7 @@ type Server struct {
 	owner        OwnerService
 	auth         AuthService
 	stayOps      StayOpsService
+	shifts       ShiftService
 	staff        StaffService
 }
 
@@ -51,27 +52,11 @@ func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.
 	return nil, errNotImplemented
 }
 
-func (Server) GetShiftReview(context.Context, gen.GetShiftReviewRequestObject) (gen.GetShiftReviewResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) StreamPaymentEvents(context.Context, gen.StreamPaymentEventsRequestObject) (gen.StreamPaymentEventsResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) ReportRoomUsage(context.Context, gen.ReportRoomUsageRequestObject) (gen.ReportRoomUsageResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetCurrentShift(context.Context, gen.GetCurrentShiftRequestObject) (gen.GetCurrentShiftResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CloseShift(context.Context, gen.CloseShiftRequestObject) (gen.CloseShiftResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) RecordCashPayout(context.Context, gen.RecordCashPayoutRequestObject) (gen.RecordCashPayoutResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -192,10 +177,6 @@ func (Server) ListAuditLogs(context.Context, gen.ListAuditLogsRequestObject) (ge
 }
 
 func (Server) ListBankAccounts(context.Context, gen.ListBankAccountsRequestObject) (gen.ListBankAccountsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListClosedShifts(context.Context, gen.ListClosedShiftsRequestObject) (gen.ListClosedShiftsResponseObject, error) {
 	return nil, errNotImplemented
 }
 
