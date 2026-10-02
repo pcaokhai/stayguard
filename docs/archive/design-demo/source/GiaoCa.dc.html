@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Kết ca sáng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1240px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="Main.dc.html" aria-label="Về sơ đồ phòng" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; white-space: nowrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<span style="font-size: 20px; font-weight: 700">Kết ca sáng</span>
+<span style="font-size: 13px; color: #5C5A55">Lễ tân demo · 06:00 đến 14:00 · Tòa A</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 12px 20px 0 20px">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<span style="font-size: 15px; font-weight: 600">Tiền mặt hệ thống tính</span>
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #45433F">Quỹ đầu ca</span><span style="font-variant-numeric: tabular-nums">500.000đ</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #45433F">Thu tiền mặt trong ca (6 phiếu)</span><span style="font-variant-numeric: tabular-nums">1.280.000đ</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span style="color: #45433F">Chi trong ca (mua đá)</span><span style="font-variant-numeric: tabular-nums">−30.000đ</span></div>
+<div style="height: 1px; background: #E2DED6"></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">Tiền mặt phải có</span><span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums">1.750.000đ</span></div>
+<span style="font-size: 12px; color: #5C5A55">Chuyển khoản không cần đếm: 2.180.000đ đã tự đối soát với tài khoản chủ.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Tiền mặt đếm thực tế</span><span style="font-size: 12px; color: #5C5A55">Đếm theo từng mệnh giá, phần mềm tự cộng.</span></div>
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 84px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">{{n.face}}</span>
+<button type="button" onClick="{{n.dec}}" aria-label="{{n.decLabel}}" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-family: inherit; font-size: 20px; color: #1C1B19; white-space: nowrap">−</button>
+<span style="width: 28px; text-align: center; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">{{n.qty}}</span>
+<button type="button" onClick="{{n.inc}}" aria-label="{{n.incLabel}}" style="width: 44px; height: 44px; border-radius: 10px; border: none; background: #E6EEF0; font-family: inherit; font-size: 20px; color: #1C1B19; white-space: nowrap">+</button>
+<span style="flex-grow: 1; text-align: right; font-size: 14px; color: #45433F; font-variant-numeric: tabular-nums">{{n.sum}}</span>
+</div>
+</sc-for>
+<div style="height: 1px; background: #E2DED6"></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">Đếm được</span><span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums">{{counted}}</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 12px; background: {{diffBg}}; border: 1px solid {{diffBorder}}; color: {{diffFg}}">
+<span style="font-size: 13px; font-weight: 600">Chênh lệch</span>
+<span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">{{diffText}}</span>
+</div>
+<sc-if value="{{needReason}}" hint-placeholder-val="{{true}}">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Lý do chênh lệch (bắt buộc khi lệch)
+<textarea rows="3" style="box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-family: inherit; font-size: 15px; resize: none">Trả lại tiền thừa cho khách A104, lúc thu ghi nhầm số tiền.</textarea></label>
+</sc-if>
+<div style="display: flex; gap: 10px">
+<label style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Bàn giao cho
+<select style="height: 44px; box-sizing: border-box; padding: 0 10px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-family: inherit; font-size: 15px"><option>Anh Minh · ca đêm</option></select></label>
+<label style="width: 140px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Quỹ để lại
+<input type="text" value="500.000" style="height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-family: inherit; font-size: 15px"></label>
+</div>
+<span style="font-size: 12px; color: #5C5A55">Sau khi kết ca, số liệu bị khóa; chủ nhận thông báo nếu có chênh lệch.</span>
+</div>
+<div style="padding: 16px 20px 28px 20px">
+<a href="DoiSoatCa.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap">Kết ca và gửi cho chủ</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { q: { 500: 2, 200: 2, 100: 2, 50: 1, 20: 2, 10: 1 } }; }
+renderVals() {
+const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
+const expected = 1750000;
+const q = this.state.q;
+const set = (k, v) => this.setState({ q: Object.assign({}, q, { [k]: Math.max(0, v) }) });
+const faces = [500, 200, 100, 50, 20, 10];
+const notes = faces.map(k => ({
+face: fmt(k * 1000), qty: q[k], sum: fmt(k * 1000 * q[k]),
+inc: () => set(k, q[k] + 1), dec: () => set(k, q[k] - 1),
+incLabel: 'Thêm một tờ ' + fmt(k * 1000), decLabel: 'Bớt một tờ ' + fmt(k * 1000)
+}));
+const total = faces.reduce((s, k) => s + k * 1000 * q[k], 0);
+const diff = total - expected;
+const st = diff === 0 ? { bg: '#E4F1E7', border: '#B9DBC2', fg: '#1F5A30' } : { bg: '#FBE1CC', border: '#F0B78C', fg: '#6E2E08' };
+const diffText = diff === 0 ? 'Khớp' : diff < 0 ? 'Thiếu ' + fmt(-diff) : 'Thừa ' + fmt(diff);
+return { accent: this.props.accent ?? '#1F4E5F', notes, counted: fmt(total), diffText, diffBg: st.bg, diffBorder: st.border, diffFg: st.fg, needReason: diff !== 0 };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thêm dịch vụ cho A101</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EF; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 390px; height: 844px; box-sizing: border-box; padding: 28px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-left: 36px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 20px; font-weight: 700">Phòng A101</span><span style="font-size: 13px; color: #5C5A55">Tòa A · Phòng thường · Theo giờ</span></div>
+<span style="font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; background: #DDE8F6; color: #1C4A82; border: 1px solid #AFC6E6">Có khách</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<span style="font-size: 13px; color: #5C5A55">Đã ở</span>
+<span style="font-size: 34px; font-weight: 700">2 giờ 35 phút</span>
+<span style="font-size: 13px; color: #5C5A55">Vào lúc 11:25 · Anh Tuấn</span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<span style="font-size: 15px; font-weight: 600">Tiền tạm tính</span><span style="font-size: 26px; font-weight: 700">140.000đ</span>
+</div>
+</div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 390px; height: 844px; background: rgba(28, 27, 25, 0.55)"></div>
+<div style="position: relative; display: flex; flex-direction: column; gap: 14px; padding: 12px 20px 28px 20px; border-radius: 20px 20px 0 0; background: #F6F4EF">
+<div style="align-self: center; width: 40px; height: 4px; border-radius: 999px; background: #CFCBC3"></div>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 19px; font-weight: 700">Thêm dịch vụ</span>
+<span style="font-size: 13px; color: #5C5A55">Phòng A101 · đã có Nước suối × 2</span>
+</div>
+<a href="ChiTiet.dc.html" aria-label="Đóng" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; white-space: nowrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{items}}" as="it" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid {{it.border}}">
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1">
+<span style="font-size: 15px; font-weight: 600">{{it.name}}</span>
+<span style="font-size: 13px; color: #5C5A55">{{it.priceText}} · còn {{it.stock}} trong kho</span>
+</div>
+<button type="button" onClick="{{it.dec}}" aria-label="Bớt {{it.name}}" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-family: inherit; font-size: 20px; color: #1C1B19; white-space: nowrap">−</button>
+<span style="width: 24px; text-align: center; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">{{it.qty}}</span>
+<button type="button" onClick="{{it.inc}}" aria-label="Thêm {{it.name}}" style="width: 44px; height: 44px; border-radius: 10px; border: none; background: #E6EEF0; font-family: inherit; font-size: 20px; color: #1C1B19; white-space: nowrap">+</button>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 12px; color: #5C5A55">Số lượng bán được trừ vào kho, cuối ca đối chiếu với tồn thực tế.</span>
+<a href="ChiTiet.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap">{{cta}}</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { qty: { water: 1, soda: 0, beer: 0, noodle: 0, towel: 0 } }; }
+renderVals() {
+const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
+const list = [
+{ id: 'water', name: 'Nước suối', price: 10000, stock: 46 },
+{ id: 'soda', name: 'Nước ngọt', price: 15000, stock: 30 },
+{ id: 'beer', name: 'Bia lon', price: 20000, stock: 24 },
+{ id: 'noodle', name: 'Mì ly', price: 15000, stock: 18 },
+{ id: 'towel', name: 'Khăn tắm thêm', price: 10000, stock: 12 }
+];
+const q = this.state.qty;
+const set = (id, v) => this.setState({ qty: Object.assign({}, q, { [id]: Math.max(0, v) }) });
+const items = list.map(it => Object.assign({}, it, {
+qty: q[it.id],
+priceText: fmt(it.price),
+border: q[it.id] > 0 ? '#AFC6E6' : '#E2DED6',
+inc: () => set(it.id, q[it.id] + 1),
+dec: () => set(it.id, q[it.id] - 1)
+}));
+const total = list.reduce((s, it) => s + it.price * q[it.id], 0);
+return { accent: this.props.accent ?? '#1F4E5F', items, cta: total > 0 ? 'Thêm vào phòng · ' + fmt(total) : 'Chọn dịch vụ để thêm' };
+}
+}
+</script>
+</body>
+</html>

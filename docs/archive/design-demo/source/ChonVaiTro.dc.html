@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chọn vai trò dùng thử</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; padding: 20px 24px 32px 24px; gap: 28px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; justify-content: flex-end; align-items: center">
+<div style="display: flex; padding: 3px; border-radius: 12px; background: #E2DED6" aria-label="{{t.langLabel}}">
+<button type="button" onClick="{{pickVi}}" aria-pressed="{{isVi}}" style="width: 52px; height: 40px; border-radius: 9px; border: none; font-family: inherit; font-size: 14px; font-weight: 700; background: {{viBg}}; color: {{viFg}}; white-space: nowrap">VI</button>
+<button type="button" onClick="{{pickEn}}" aria-pressed="{{isEn}}" style="width: 52px; height: 40px; border-radius: 9px; border: none; font-family: inherit; font-size: 14px; font-weight: 700; background: {{enBg}}; color: {{enFg}}; white-space: nowrap">EN</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 24px">
+<h1 style="margin: 0; font-size: 30px; line-height: 1.2; font-weight: 700">{{t.title}}</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #45433F">{{t.lead}}</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 14px; font-weight: 600">{{t.tryAs}}</span>
+<a href="{{deskHref}}" style="min-height: 76px; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; display: flex; align-items: center; gap: 14px; background: #FFFFFF; border: 2px solid {{accent}}; color: #1C1B19; text-decoration: none">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M3 20h18M5 20V11h14v9M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">{{t.desk}}</span><span style="font-size: 13px; color: #5C5A55">{{t.deskSub}}</span></span>
+</a>
+<a href="{{ownerHref}}" style="min-height: 76px; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; display: flex; align-items: center; gap: 14px; background: #FFFFFF; border: 1px solid #CFCBC3; color: #1C1B19; text-decoration: none">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">{{t.owner}}</span><span style="font-size: 13px; color: #5C5A55">{{t.ownerSub}}</span></span>
+</a>
+<a href="{{hkHref}}" style="min-height: 76px; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; display: flex; align-items: center; gap: 14px; background: #FFFFFF; border: 1px solid #CFCBC3; color: #1C1B19; text-decoration: none">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M4 21l6-6M14 4l6 6-8 8-6-6z"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">{{t.hk}}</span><span style="font-size: 13px; color: #5C5A55">{{t.hkSub}}</span></span>
+</a>
+</div>
+<div style="flex-grow: 1"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"startLang":{"editor":"enum","options":["vi","en"],"default":"vi"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { lang: null }; }
+renderVals() {
+const accent = this.props.accent ?? '#1F4E5F';
+const lang = this.state.lang ?? this.props.startLang ?? 'vi';
+const T = {
+vi: {
+badge: 'Bản demo · dữ liệu mẫu', langLabel: 'Ngôn ngữ',
+title: 'Quản lý nhà nghỉ, không còn thất thoát tiền',
+lead: 'Tiền chuyển khoản luôn vào tài khoản chủ, giờ thuê do hệ thống ghi, mọi chỉnh sửa đều có dấu vết.',
+tryAs: 'Dùng thử với vai trò',
+desk: 'Lễ tân', deskSub: 'Nhận phòng, trả phòng, thu tiền bằng QR',
+owner: 'Chủ nhà nghỉ', ownerSub: 'Doanh thu, tiền về, cảnh báo bất thường',
+hk: 'Buồng phòng', hkSub: 'Xem phòng cần dọn, báo dọn xong',
+foot: 'Không cần đăng nhập. Mỗi lượt dùng thử có dữ liệu mẫu riêng, tự xóa sau 24 giờ, không có giao dịch tiền thật.'
+},
+en: {
+badge: 'Demo · sample data', langLabel: 'Language',
+title: 'Run your guesthouse without losing money',
+lead: 'Bank transfers always land in the owner’s account, stay times are recorded by the system, and every edit leaves a trail.',
+tryAs: 'Try it as',
+desk: 'Front desk', deskSub: 'Check guests in and out, collect payment by QR',
+owner: 'Owner', ownerSub: 'Revenue, incoming payments, unusual activity',
+hk: 'Housekeeping', hkSub: 'See rooms to clean, mark them done',
+foot: 'No sign-in needed. Each trial gets its own sample data, deleted after 24 hours. No real money moves.'
+}
+};
+const on = { bg: '#FFFFFF', fg: '#1C1B19' }, off = { bg: 'transparent', fg: '#5C5A55' };
+const isVi = lang === 'vi';
+return {
+accent, t: T[lang], isVi, isEn: !isVi,
+viBg: isVi ? on.bg : off.bg, viFg: isVi ? on.fg : off.fg,
+enBg: isVi ? off.bg : on.bg, enFg: isVi ? off.fg : on.fg,
+deskHref: isVi ? 'Main.dc.html' : 'MainEN.dc.html',
+ownerHref: isVi ? 'TongQuanChu.dc.html' : 'TongQuanChuEN.dc.html',
+hkHref: isVi ? 'BuongPhong.dc.html' : 'BuongPhongEN.dc.html',
+pickVi: () => this.setState({ lang: 'vi' }),
+pickEn: () => this.setState({ lang: 'en' })
+};
+}
+}
+</script>
+</body>
+</html>

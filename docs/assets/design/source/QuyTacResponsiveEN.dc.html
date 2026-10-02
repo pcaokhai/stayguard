@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Responsive rules</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; gap: 18px; padding: 36px 40px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; background: #E7E5E0; color: #4A4843; border: 1px solid #CFCBC3; font-size: 12px; font-weight: 600; white-space: nowrap">Design document</span>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">One interface that rearranges itself by screen size</h1>
+<span style="font-size: 15px; color: #5C5A55; line-height: 1.6; max-width: 900px">The phone, tablet and desktop boards on this canvas are the same page at three widths, not three apps. Each page has one route and one set of components; only the layout changes at the breakpoints below.</span>
+<div role="table" style="display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; overflow: hidden; flex-shrink: 0"><div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #E2DED6"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Pattern</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Phone < 640px</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tablet 640–1023px</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Desktop ≥ 1024px</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Page frame</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">One column, top bar with back</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">88px icon rail on the left</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Full 248px sidebar</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Room map</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">3-column grid; tap opens a detail page</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">5-column grid + 300px detail panel</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">6-column grid + 320–440px panel</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Tables (payments, history…)</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Become cards; secondary columns become a second line</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Compact table, low-priority columns hidden</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Full table</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Add and edit forms</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Full page</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Right-side drawer</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Drawer or dialog</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Confirm, date picker</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Bottom sheet</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Centred dialog</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Centred dialog</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Overview figures</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">2-column grid</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">2-column grid</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">4–5 column grid</span></div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Same at every size</span></div><span style="font-size: 14px; line-height: 1.6">Data, money rules, permissions, wording and the order of steps. Touch targets are always at least 44px.</span></section>
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">For the code</span></div><span style="font-size: 14px; line-height: 1.6">Tailwind: default is phone, md: (640px) is tablet, lg: (1024px) is desktop. No separate routes or components per device.</span></section>
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Checks</span></div><span style="font-size: 14px; line-height: 1.6">Every page is checked at 390, 834 and 1280px in both languages; no sideways scroll, no text overflowing buttons.</span></section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

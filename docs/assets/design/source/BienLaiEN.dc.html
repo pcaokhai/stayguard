@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="DaThanhToanEN.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Receipt</span>
+<span style="font-size: 13px; color: #5C5A55">Print preview · 80 mm roll</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 22px 20px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 6px; font-size: 14px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center"><span style="font-size: 18px; font-weight: 700">Demo Guesthouse</span><span style="font-size: 12px; color: #5C5A55">[ADDRESS] · [PHONE]</span></div>
+<div style="border-top: 1px dashed #A8A39A"></div>
+<div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Bill</span><span style="font-weight: 500; white-space: nowrap">PH0930A101</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Room</span><span style="font-weight: 500; white-space: nowrap">A101 · Standard</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>In · Out</span><span style="font-weight: 500; white-space: nowrap">11:25 · 14:00, 30/09</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Duration</span><span style="font-weight: 500; white-space: nowrap">2h 35m</span></div>
+<div style="border-top: 1px dashed #A8A39A"></div>
+<div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>First hour</span><span style="font-weight: 500; white-space: nowrap">₫80,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>2 extra hours × ₫20,000</span><span style="font-weight: 500; white-space: nowrap">₫40,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Still water × 2</span><span style="font-weight: 500; white-space: nowrap">₫20,000</span></div>
+<div style="border-top: 1px dashed #A8A39A"></div>
+<div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 700"><span>Total</span><span>₫140,000</span></div>
+<div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Deposit</span><span style="font-weight: 500; white-space: nowrap">-₫100,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Bank transfer 14:01</span><span style="font-weight: 500; white-space: nowrap">₫40,000</span></div>
+<div style="border-top: 1px dashed #A8A39A"></div>
+<span style="text-align: center; font-size: 12px; color: #5C5A55">Thank you · Txn FT26274…5521</span>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"></path><rect x="3" y="9" width="18" height="8" rx="2"></rect><path d="M7 14h10v7H7z"></path></svg><span>Print receipt</span></button>
+<a href="MainEN.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #FFFFFF; color: #1C1B19; border: 1px solid #A8A39A; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Done</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

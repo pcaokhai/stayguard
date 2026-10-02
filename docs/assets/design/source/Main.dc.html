@@ -18,15 +18,17 @@ a{color:#1F4E5F}a:hover{color:#163A47}
 <div style="display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 12px 20px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
 <span style="font-size: 20px; font-weight: 700">Nhà nghỉ Demo</span>
+<div style="display: flex; gap: 8px"><a href="LichSuLuotO.dc.html" aria-label="Lịch sử lượt ở" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></a><a href="TaiKhoan.dc.html" aria-label="Tài khoản" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></a></div>
 </div>
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
 <span style="font-size: 13px; color: #5C5A55">Lễ tân · Ca sáng · 14:00, 30/09</span>
 <a href="GiaoCa.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0">Kết ca</a>
 </div>
 </div>
-<div style="display: flex; gap: 8px; padding: 4px 20px 12px 20px">
-<button type="button" onClick="{{pickA}}" aria-pressed="{{isA}}" style="flex-grow: 1; height: 44px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 600; background: {{tabA.bg}}; color: {{tabA.fg}}; border: {{tabA.border}}; white-space: nowrap">Tòa A (18)</button>
-<button type="button" onClick="{{pickB}}" aria-pressed="{{isB}}" style="flex-grow: 1; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 15px; font-weight: 600; background: {{tabB.bg}}; color: {{tabB.fg}}; border: {{tabB.border}}; white-space: nowrap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span>Tòa B (17)</span></button>
+<div role="group" aria-label="Chọn tòa" style="display: flex; flex-shrink: 0; gap: 8px; overflow-x: auto; padding: 4px 20px 12px 20px">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="4">
+<button type="button" onClick="{{tb.pick}}" aria-pressed="{{tb.on}}" style="flex-shrink: 0; height: 44px; padding: 0 16px; border-radius: 999px; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; background: {{tb.bg}}; color: {{tb.fg}}; border: {{tb.border}}"><sc-if value="{{tb.locked}}" hint-placeholder-val="{{false}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></sc-if><span>{{tb.label}}</span></button>
+</sc-for>
 </div>
 <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 14px 20px">
 <sc-for list="{{counters}}" as="c" hint-placeholder-count="5">
@@ -68,16 +70,20 @@ const raw = [
 ['A304','vacant','VIP'],['A305','occupied','Ngày · đến 12:00'],['A306','vacant','VIP']
 ];
 const rawB = [['B101','vacant','Phòng thường'],['B102','occupied','Giờ · 0g25'],['B103','vacant','Phòng thường'],['B104','dirty','Khách vừa trả'],['B105','vacant','Phòng thường'],['B106','occupied','Ngày · đến 12:00'],['B201','vacant','Phòng thường'],['B202','vacant','Phòng thường'],['B203','occupied','Giờ · 1g05'],['B204','vacant','Phòng thường'],['B205','vacant','Phòng thường'],['B206','dirty','Khách vừa trả'],['B301','vacant','VIP'],['B302','occupied','Giờ · 3g10'],['B303','vacant','VIP'],['B304','vacant','VIP'],['B305','vacant','VIP']];
+const rawC = [['C101','vacant','Phòng thường'],['C102','occupied','Giờ · 0g40'],['C103','vacant','Phòng thường'],['C104','dirty','Khách vừa trả'],['C105','vacant','Phòng thường'],['C106','occupied','Giờ · 1g10'],['C201','vacant','VIP'],['C202','vacant','VIP'],['C203','occupied','Giờ · 2g00'],['C204','vacant','VIP'],['C205','vacant','VIP'],['C206','vacant','VIP']];
+const rawD = [['D101','vacant','Phòng thường'],['D102','vacant','Phòng thường'],['D103','occupied','Giờ · 0g30'],['D104','vacant','Phòng thường'],['D105','dirty','Khách vừa trả'],['D201','vacant','Phòng thường'],['D202','occupied','Giờ · 1g45'],['D203','vacant','Phòng thường'],['D204','vacant','Phòng thường'],['D205','vacant','Phòng thường']];
 const b = this.state.b;
+const lists = { A: raw, B: rawB, C: rawC, D: rawD };
 const locked = b === 'B';
-const list = locked ? rawB : raw;
+const list = lists[b];
 const self = 'Main.dc.html';
-const rooms = list.map(([code, st, sub]) => Object.assign({ code, sub, locked, opacity: locked ? '0.62' : '1', href: locked ? self : st === 'vacant' ? 'NhanPhong.dc.html' : (st === 'occupied' || st === 'overdue') ? 'ChiTiet.dc.html' : self }, S[st]));
+const rooms = list.map(([code, st, sub]) => Object.assign({ code, sub, locked, opacity: locked ? '0.62' : '1', href: locked ? self : st === 'vacant' ? 'NhanPhong.dc.html' : (st === 'occupied' || st === 'overdue') ? 'ChiTiet.dc.html' : st === 'dirty' ? 'PhongCanDon.dc.html' : self }, S[st]));
 const order = ['vacant','occupied','overdue','dirty','maint'];
 const counters = order.map(k => Object.assign({ count: list.filter(r => r[1] === k).length }, S[k]));
 const accent = this.props.accent ?? '#1F4E5F';
 const on = { bg: accent, fg: '#FFFFFF', border: 'none' }, off = { bg: '#FFFFFF', fg: '#1C1B19', border: '1px solid #CFCBC3' };
-return { accent, rooms, counters, isA: !locked, isB: locked, tabA: locked ? off : on, tabB: locked ? on : off, pickA: () => this.setState({ b: 'A' }), pickB: () => this.setState({ b: 'B' }) };
+const tabs = ['A','B','C','D'].map(k => Object.assign({ label: 'Tòa ' + k + ' · ' + lists[k].length, on: k === b, locked: k === 'B', pick: () => this.setState({ b: k }) }, k === b ? on : off));
+return { accent, rooms, counters, tabs, isA: !locked, isB: locked, tabA: locked ? off : on, tabB: locked ? on : off, pickA: () => this.setState({ b: 'A' }), pickB: () => this.setState({ b: 'B' }) };
 }
 }
 </script>

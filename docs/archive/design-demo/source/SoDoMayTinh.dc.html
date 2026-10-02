@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sơ đồ phòng trên máy tính</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; border-bottom: 1px solid #E2DED6; background: #FFFFFF">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px">
+<div style="display: flex; align-items: baseline; gap: 16px">
+<span style="font-size: 20px; font-weight: 700; white-space: nowrap">Nhà nghỉ Demo</span>
+<span style="font-size: 14px; color: #5C5A55">Lễ tân · Ca sáng · 14:00, 30/09</span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<a href="GiaoCa.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0">Kết ca</a>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{counters}}" as="c" hint-placeholder-count="5">
+<span style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; white-space: nowrap; background: {{c.bg}}; color: {{c.fg}}; border: 1px solid {{c.border}}">{{c.label}} {{c.count}}</span>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; gap: 24px; padding: 20px 24px; flex-grow: 1">
+<div style="display: flex; flex-direction: column; gap: 20px; flex-grow: 1">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; font-weight: 600">Tòa A · 18 phòng</span>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{roomsA}}" as="r" hint-placeholder-count="18">
+<a href="{{r.href}}" style="height: 72px; box-sizing: border-box; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; background: {{r.bg}}; border: {{r.ring}}; color: {{r.fg}}">
+<span style="font-size: 16px; font-weight: 700">{{r.code}}</span>
+<span style="font-size: 12px; font-weight: 600">{{r.label}}</span>
+<span style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span>
+</a>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; font-weight: 600">Tòa B · 17 phòng</span>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{roomsB}}" as="r" hint-placeholder-count="17">
+<a href="{{r.href}}" style="height: 72px; box-sizing: border-box; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; background: {{r.bg}}; border: {{r.ring}}; color: {{r.fg}}">
+<span style="font-size: 16px; font-weight: 700">{{r.code}}</span>
+<span style="font-size: 12px; font-weight: 600">{{r.label}}</span>
+<span style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span>
+</a>
+</sc-for>
+</div>
+</div>
+</div>
+<div style="width: 340px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 20px; font-weight: 700">Phòng A101</span>
+<span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #DDE8F6; color: #1C4A82; border: 1px solid #AFC6E6">Có khách</span>
+</div>
+<span style="font-size: 13px; color: #5C5A55">Phòng thường · Theo giờ · Anh Tuấn · 0901 234 567</span>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; color: #5C5A55">Đã ở từ 11:25</span>
+<span style="font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums">2 giờ 35 phút</span>
+</div>
+<div style="height: 1px; background: #E2DED6"></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span>Tiền phòng</span><span style="font-variant-numeric: tabular-nums">120.000đ</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span>Dịch vụ</span><span style="font-variant-numeric: tabular-nums">20.000đ</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #45433F"><span>Đã cọc</span><span style="font-variant-numeric: tabular-nums">−100.000đ</span></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">Còn phải thu</span><span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">40.000đ</span></div>
+<div style="flex-grow: 1"></div>
+<button type="button" style="height: 44px; border-radius: 10px; border: 1px dashed #A8A39A; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #1C1B19; white-space: nowrap">+ Thêm dịch vụ</button>
+<a href="TraPhong.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: {{accent}}; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap">Trả phòng</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const accent = this.props.accent ?? '#1F4E5F';
+const S = {
+vacant: { label: 'Trống', bg: '#E4F1E7', fg: '#1F5A30', border: '#B9DBC2' },
+occupied: { label: 'Có khách', bg: '#DDE8F6', fg: '#1C4A82', border: '#AFC6E6' },
+overdue: { label: 'Quá giờ', bg: '#FBE1CC', fg: '#8A3A0A', border: '#F0B78C' },
+dirty: { label: 'Cần dọn', bg: '#F6EDC2', fg: '#5E4A00', border: '#E3D27D' },
+maint: { label: 'Bảo trì', bg: '#E7E5E0', fg: '#4A4843', border: '#CFCBC3' }
+};
+const A = [
+['A101','occupied','Giờ · 2g35'],['A102','vacant','Phòng thường'],['A103','dirty','Khách vừa trả'],
+['A104','occupied','Ngày · đến 12:00'],['A105','vacant','Phòng thường'],['A106','vacant','Phòng thường'],
+['A201','overdue','Ngày · quá 2g'],['A202','occupied','Giờ · 0g50'],['A203','vacant','Phòng thường'],
+['A204','vacant','Phòng thường'],['A205','maint','Hỏng điều hòa'],['A206','occupied','Giờ · 1g20'],
+['A301','vacant','VIP'],['A302','dirty','Khách vừa trả'],['A303','occupied','Giờ · 0g15'],
+['A304','vacant','VIP'],['A305','occupied','Ngày · đến 12:00'],['A306','vacant','VIP']
+];
+const B = [
+['B101','vacant','Phòng thường'],['B102','occupied','Giờ · 0g25'],['B103','vacant','Phòng thường'],
+['B104','dirty','Khách vừa trả'],['B105','vacant','Phòng thường'],['B106','occupied','Ngày · đến 12:00'],
+['B201','vacant','Phòng thường'],['B202','vacant','Phòng thường'],['B203','occupied','Giờ · 1g05'],
+['B204','vacant','Phòng thường'],['B205','vacant','Phòng thường'],['B206','dirty','Khách vừa trả'],
+['B301','vacant','VIP'],['B302','occupied','Giờ · 3g10'],['B303','vacant','VIP'],
+['B304','vacant','VIP'],['B305','vacant','VIP']
+];
+const map = list => list.map(([code, st, sub]) => Object.assign({
+code, sub,
+href: st === 'vacant' ? 'NhanPhong.dc.html' : (st === 'occupied' || st === 'overdue') ? 'ChiTiet.dc.html' : 'SoDoMayTinh.dc.html',
+ring: code === 'A101' ? '2px solid ' + accent : '1px solid ' + S[st].border
+}, S[st]));
+const all = A.concat(B);
+const counters = ['vacant','occupied','overdue','dirty','maint'].map(k => Object.assign({ count: all.filter(r => r[1] === k).length }, S[k]));
+return { accent, roomsA: map(A), roomsB: map(B), counters };
+}
+}
+</script>
+</body>
+</html>

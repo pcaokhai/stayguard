@@ -1,6 +1,6 @@
 # api — CLAUDE.md
 
-> **FAST MODE (docs/14):** the root CLAUDE.md §3–§5 override the workflow and test rules below. Keep the layering for existing code; new read-only endpoints may be thin. No SSE hub (polling instead); housekeeping uses rooms in TO_CLEAN; demo tenants are seeded from `contracts/fixtures/demo-tenant-seed.json` (task A1).
+> **SHIP MODE (docs/14):** the root CLAUDE.md §3–§5 override the workflow and test rules below; required tests are in docs/14 §6. Keep the layering for existing code; new read endpoints may be thin. Use the migration number reserved in your task. No SSE hub (polling). New operations are already in the contract (1.1.0) and return 501 until your task replaces the stub.
 
 Go modular monolith: REST and SSE API, business rules, multi-tenant PostgreSQL access, and it serves the embedded web export. Lane: **API**. Owns `api/**`, the database schema `app` and migrations in `api/migrations/`. Read the root `CLAUDE.md` first.
 

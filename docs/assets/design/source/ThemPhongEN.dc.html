@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add rooms</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="ToaPhongEN.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Add rooms</span>
+<span style="font-size: 13px; color: #5C5A55">Building A · Floor 1</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">One room</button><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">A range of rooms</button></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rf" style="font-size: 13px; font-weight: 600">From</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="rf" type="text" value="A107" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rt" style="font-size: 13px; font-weight: 600">To</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="rt" type="text" value="A109" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">3 rooms will be created</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A107</span><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A108</span><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A109</span></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Room type (sets the price)</span><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Standard</button><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">VIP</button></div><span style="font-size: 12px; color: #5C5A55">Prices come from the room type's rates, not per room.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Features (optional)</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" aria-pressed="true" style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #1F4E5F; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Double bed</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Twin beds</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Window</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Bathtub</button></div><span style="font-size: 12px; color: #5C5A55">Helps the front desk match guest requests; does not change the price.</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Available right away</span><span style="font-size: 12px; color: #5C5A55">Turn off if the room is not ready</span></div><button type="button" role="switch" aria-checked="true" aria-label="Available right away" style="width: 52px; height: 32px; flex-shrink: 0; border-radius: 999px; border: none; padding: 3px; background: #1F4E5F; display: flex; justify-content: flex-end"><span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF"></span></button></div>
+<span style="flex-grow: 1"></span>
+<a href="ToaPhongEN.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Create 3 rooms</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

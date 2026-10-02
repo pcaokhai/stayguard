@@ -22,7 +22,10 @@ a{color:#1F4E5F}a:hover{color:#163A47}
 <span style="font-size: 14px; color: #5C5A55">Lễ tân · Ca sáng · 14:00, 30/09</span>
 </div>
 <div style="display: flex; align-items: center; gap: 10px">
-<a href="GiaoCa.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0">Kết ca</a>
+<a href="LichSuLeTanPC.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; gap: 6px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Lịch sử</span></a>
+<a href="LichNghiLeTanPC.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; gap: 6px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M18 14a6 6 0 0 1 3.5 6"></path></svg><span>Lịch và nghỉ</span></a>
+<a href="ChiTrongCaPC.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; gap: 6px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg><span>Chi tiền</span></a>
+<a href="GiaoCaPC.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; flex-shrink: 0">Kết ca</a>
 </div>
 </div>
 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
@@ -32,30 +35,22 @@ a{color:#1F4E5F}a:hover{color:#163A47}
 </div>
 </div>
 <div style="display: flex; gap: 24px; padding: 20px 24px; flex-grow: 1">
-<div style="display: flex; flex-direction: column; gap: 20px; flex-grow: 1">
-<div style="display: flex; flex-direction: column; gap: 10px">
-<span style="font-size: 15px; font-weight: 600">Tòa A · 18 phòng</span>
+<div style="display: flex; flex-direction: column; gap: 14px; flex-grow: 1; min-width: 0">
+<div role="group" aria-label="Chọn tòa" style="display: flex; flex-shrink: 0; gap: 8px; overflow-x: auto; padding: 0">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="4">
+<button type="button" onClick="{{tb.pick}}" aria-pressed="{{tb.on}}" style="flex-shrink: 0; height: 44px; padding: 0 16px; border-radius: 999px; display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; background: {{tb.bg}}; color: {{tb.fg}}; border: {{tb.border}}"><sc-if value="{{tb.locked}}" hint-placeholder-val="{{false}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></sc-if><span>{{tb.label}}</span></button>
+</sc-for>
+</div>
+<span style="font-size: 15px; font-weight: 600">{{bTitle}}</span>
+<sc-if value="{{locked}}" hint-placeholder-val="{{false}}"><div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #DDE8F6; color: #1C4A82; border: 1px solid #AFC6E6"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg><span style="font-size: 13px">Bạn chỉ có quyền xem Tòa B. Cần thao tác thì nhờ chủ nhà cấp quyền.</span></div></sc-if>
 <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
-<sc-for list="{{roomsA}}" as="r" hint-placeholder-count="18">
-<a href="{{r.href}}" style="height: 72px; box-sizing: border-box; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; background: {{r.bg}}; border: {{r.ring}}; color: {{r.fg}}">
+<sc-for list="{{rooms}}" as="r" hint-placeholder-count="18">
+<a href="{{r.href}}" style="height: 72px; box-sizing: border-box; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; background: {{r.bg}}; border: {{r.ring}}; color: {{r.fg}}; opacity: {{r.opacity}}">
 <span style="font-size: 16px; font-weight: 700">{{r.code}}</span>
 <span style="font-size: 12px; font-weight: 600">{{r.label}}</span>
 <span style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span>
 </a>
 </sc-for>
-</div>
-</div>
-<div style="display: flex; flex-direction: column; gap: 10px">
-<span style="font-size: 15px; font-weight: 600">Tòa B · 17 phòng</span>
-<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
-<sc-for list="{{roomsB}}" as="r" hint-placeholder-count="17">
-<a href="{{r.href}}" style="height: 72px; box-sizing: border-box; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; background: {{r.bg}}; border: {{r.ring}}; color: {{r.fg}}">
-<span style="font-size: 16px; font-weight: 700">{{r.code}}</span>
-<span style="font-size: 12px; font-weight: 600">{{r.label}}</span>
-<span style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span>
-</a>
-</sc-for>
-</div>
 </div>
 </div>
 <div style="width: 340px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
@@ -64,6 +59,7 @@ a{color:#1F4E5F}a:hover{color:#163A47}
 <span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #DDE8F6; color: #1C4A82; border: 1px solid #AFC6E6">Có khách</span>
 </div>
 <span style="font-size: 13px; color: #5C5A55">Phòng thường · Theo giờ · Anh Tuấn · 0901 234 567</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center"><span style="display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 12px; font-weight: 600; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Có số CCCD</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 12px; font-weight: 600; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Có ảnh mặt trước</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px; background: #ECE9E2; border: 1px solid #E2DED6; color: #5C5A55; font-size: 12px; font-weight: 600; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Chưa có mặt sau</span><span aria-label="Chỉ chủ hoặc quản lý xem" title="Chỉ chủ hoặc quản lý xem" style="color: #5C5A55; display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></div>
 <div style="display: flex; flex-direction: column; gap: 2px">
 <span style="font-size: 13px; color: #5C5A55">Đã ở từ 11:25</span>
 <span style="font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums">2 giờ 35 phút</span>
@@ -74,14 +70,16 @@ a{color:#1F4E5F}a:hover{color:#163A47}
 <div style="display: flex; justify-content: space-between; font-size: 14px; color: #45433F"><span>Đã cọc</span><span style="font-variant-numeric: tabular-nums">−100.000đ</span></div>
 <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">Còn phải thu</span><span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">40.000đ</span></div>
 <div style="flex-grow: 1"></div>
-<button type="button" style="height: 44px; border-radius: 10px; border: 1px dashed #A8A39A; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #1C1B19; white-space: nowrap">+ Thêm dịch vụ</button>
-<a href="TraPhong.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: {{accent}}; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap">Trả phòng</a>
+<a href="ThemDichVuPC.dc.html" style="height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px dashed #A8A39A; background: transparent; font-size: 14px; font-weight: 600; color: #1C1B19; text-decoration: none; white-space: nowrap">+ Thêm dịch vụ</a>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><a href="SuaGio.dc.html" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #1C1B19; text-decoration: none; white-space: nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg><span>Sửa giờ vào</span></a><a href="ChuyenPhong.dc.html" style="height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; border: 1px solid #CFCBC3; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #1C1B19; text-decoration: none; white-space: nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4l-3 3 3 3"></path><path d="M4 7h13"></path><path d="M17 20l3-3-3-3"></path><path d="M20 17H7"></path></svg><span>Chuyển phòng</span></a></div>
+<a href="TraPhongPC.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: {{accent}}; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap">Trả phòng</a>
 </div>
 </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4E5F","options":["#1F4E5F","#7A3E12","#2F4B2A"]},"$preview":{"width":1280,"height":800}}'>
 class Component extends DCLogic {
+constructor(props) { super(props); this.state = { b: 'A' }; }
 renderVals() {
 const accent = this.props.accent ?? '#1F4E5F';
 const S = {
@@ -107,14 +105,23 @@ const B = [
 ['B301','vacant','VIP'],['B302','occupied','Giờ · 3g10'],['B303','vacant','VIP'],
 ['B304','vacant','VIP'],['B305','vacant','VIP']
 ];
-const map = list => list.map(([code, st, sub]) => Object.assign({
+const rawC = [['C101','vacant','Phòng thường'],['C102','occupied','Giờ · 0g40'],['C103','vacant','Phòng thường'],['C104','dirty','Khách vừa trả'],['C105','vacant','Phòng thường'],['C106','occupied','Giờ · 1g10'],['C201','vacant','VIP'],['C202','vacant','VIP'],['C203','occupied','Giờ · 2g00'],['C204','vacant','VIP'],['C205','vacant','VIP'],['C206','vacant','VIP']];
+const rawD = [['D101','vacant','Phòng thường'],['D102','vacant','Phòng thường'],['D103','occupied','Giờ · 0g30'],['D104','vacant','Phòng thường'],['D105','dirty','Khách vừa trả'],['D201','vacant','Phòng thường'],['D202','occupied','Giờ · 1g45'],['D203','vacant','Phòng thường'],['D204','vacant','Phòng thường'],['D205','vacant','Phòng thường']];
+const map = (list, locked) => list.map(([code, st, sub]) => Object.assign({
 code, sub,
-href: st === 'vacant' ? 'NhanPhong.dc.html' : (st === 'occupied' || st === 'overdue') ? 'ChiTiet.dc.html' : 'SoDoMayTinh.dc.html',
+href: locked ? 'SoDoMayTinh.dc.html' : st === 'vacant' ? 'NhanPhongPC.dc.html' : (st === 'occupied' || st === 'overdue') ? 'ChiTiet.dc.html' : st === 'dirty' ? 'PhongCanDonPC.dc.html' : 'SoDoMayTinh.dc.html',
+opacity: locked ? '0.62' : '1',
 ring: code === 'A101' ? '2px solid ' + accent : '1px solid ' + S[st].border
 }, S[st]));
-const all = A.concat(B);
-const counters = ['vacant','occupied','overdue','dirty','maint'].map(k => Object.assign({ count: all.filter(r => r[1] === k).length }, S[k]));
-return { accent, roomsA: map(A), roomsB: map(B), counters };
+const lists = { A, B, C: rawC, D: rawD };
+const b = this.state.b;
+const locked = b === 'B';
+const list = lists[b];
+const counters = ['vacant','occupied','overdue','dirty','maint'].map(k => Object.assign({ count: list.filter(r => r[1] === k).length }, S[k]));
+const on = { bg: accent, fg: '#FFFFFF', border: 'none' }, off = { bg: '#FFFFFF', fg: '#1C1B19', border: '1px solid #CFCBC3' };
+const tabs = ['A','B','C','D'].map(k => Object.assign({ label: 'Tòa ' + k + ' · ' + lists[k].length, on: k === b, locked: k === 'B', pick: () => this.setState({ b: k }) }, k === b ? on : off));
+const bTitle = 'Tòa ' + b + ' · ' + list.length + ' phòng';
+return { accent, rooms: map(list, locked), counters, tabs, bTitle, locked };
 }
 }
 </script>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quy tắc responsive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; gap: 18px; padding: 36px 40px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; background: #E7E5E0; color: #4A4843; border: 1px solid #CFCBC3; font-size: 12px; font-weight: 600; white-space: nowrap">Tài liệu thiết kế</span>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">Một giao diện, tự sắp xếp theo cỡ màn hình</h1>
+<span style="font-size: 15px; color: #5C5A55; line-height: 1.6; max-width: 900px">Các bảng vẽ điện thoại, tablet và máy tính trên canvas là cùng một trang ở ba mốc chiều rộng, không phải ba ứng dụng. Mỗi trang có một đường dẫn và một bộ thành phần; chỉ bố cục đổi theo các mốc dưới đây.</span>
+<div role="table" style="display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; overflow: hidden; flex-shrink: 0"><div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #E2DED6"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Thành phần</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Điện thoại < 640px</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tablet 640–1023px</span><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Máy tính ≥ 1024px</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Khung trang</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Một cột, thanh trên có nút quay lại</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Thanh biểu tượng 88px bên trái</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Thanh điều hướng đầy đủ 248px</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Sơ đồ phòng</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 3 cột, chạm phòng mở trang chi tiết</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 5 cột + khung chi tiết 300px</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 6 cột + khung chi tiết 320–440px</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Bảng (giao dịch, lịch sử…)</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Thành thẻ, cột phụ thành dòng thứ hai</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Bảng rút gọn, ẩn cột ít quan trọng</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Bảng đầy đủ</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Form thêm, sửa</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Trang riêng toàn màn</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Khung trượt bên phải</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Khung trượt hoặc hộp thoại</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Xác nhận, chọn ngày</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Tấm trượt từ dưới lên</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Hộp thoại giữa màn</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Hộp thoại giữa màn</span></div>
+<div role="row" style="display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EFECE6"><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Chỉ số tổng quan</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 2 cột</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 2 cột</span><span style="font-size: 14px; min-width: 0; overflow-wrap: anywhere">Lưới 4–5 cột</span></div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Không đổi giữa các cỡ</span></div><span style="font-size: 14px; line-height: 1.6">Dữ liệu, quy tắc tiền, quyền, chữ và thứ tự thao tác. Nút bấm luôn cao tối thiểu 44px.</span></section>
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Cho lập trình</span></div><span style="font-size: 14px; line-height: 1.6">Tailwind: mặc định là điện thoại, md: 640px là tablet, lg: 1024px là máy tính. Không tách route hay component riêng cho từng thiết bị.</span></section>
+<section style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; min-width: 0"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Kiểm tra</span></div><span style="font-size: 14px; line-height: 1.6">Mỗi trang thử ở 390, 834 và 1280px trong cả hai ngôn ngữ; không cuộn ngang, không chữ tràn nút.</span></section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

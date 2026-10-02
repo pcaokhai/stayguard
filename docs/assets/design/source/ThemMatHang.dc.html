@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thêm mặt hàng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="DichVuKho.dc.html" aria-label="Quay lại" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Thêm mặt hàng</span>
+
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="in" style="font-size: 13px; font-weight: 600">Tên mặt hàng</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="in" type="text" value="Cà phê lon" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="ie" style="font-size: 13px; font-weight: 600">Tên tiếng Anh (không bắt buộc)</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="ie" type="text" value="Canned coffee" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+<span style="font-size: 12px; color: #5C5A55">Hiện khi lễ tân dùng tiếng Anh</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="ip" style="font-size: 13px; font-weight: 600">Giá bán</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="ip" type="text" value="18.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="ic" style="font-size: 13px; font-weight: 600">Giá vốn mỗi cái</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="ic" type="text" value="12.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+
+</div></div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="is" style="font-size: 13px; font-weight: 600">Số lượng nhập lần đầu</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="is" type="number" value="24" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="iu" style="font-size: 13px; font-weight: 600">Đơn vị</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="iu" type="text" value="lon" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="il" style="font-size: 13px; font-weight: 600">Báo sắp hết khi còn</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="il" type="number" value="5" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Đang bán</span><span style="font-size: 12px; color: #5C5A55">Tắt để ẩn khỏi danh sách thêm dịch vụ</span></div><button type="button" role="switch" aria-checked="true" aria-label="Đang bán" style="width: 52px; height: 32px; flex-shrink: 0; border-radius: 999px; border: none; padding: 3px; background: #1F4E5F; display: flex; justify-content: flex-end"><span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF"></span></button></div>
+<div style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #5C5A55; line-height: 1.45"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="8.5" r="1.5"></circle></svg><span>Đổi giá chỉ áp dụng cho lần bán sau; phòng đã thêm giữ giá cũ.</span></div>
+<span style="flex-grow: 1"></span>
+<a href="DichVuKho.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Lưu mặt hàng</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

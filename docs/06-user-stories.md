@@ -272,3 +272,174 @@ As the tech lead, I want the critical journeys and the isolation checks automate
 3. The permission matrix table test runs against the running stack, not only in unit tests.
 4. A release checklist run (docs/11 §6) is attached to the v0.1.0 pull request.
 5. The two-minute video script and the walkthrough steps are stored in `docs/assets/`.
+
+---
+
+# Production v1.1 (from docs/15)
+
+Format as above. Each story is a vertical slice: the API lane implements the operations, the WEB lane the screens in docs/15 §4 at all three breakpoints. AC numbers become test names.
+
+## E7 — Sign-in and accounts
+
+### SG-701 PIN sign-in, lockout and PIN change
+Lane API+WEB · 5 pts · Depends: SG-102 · Screens: P1, P2, P3, PC Đăng nhập, P23
+1. signIn returns a session for a valid guesthouse code, user name and PIN; any wrong part returns the same 401 PIN_INVALID.
+2. The fifth wrong PIN within 15 minutes locks the account until `lockedUntil`, returns ACCOUNT_LOCKED and creates an ACCOUNT_LOCKED alert.
+3. A session from a one-time PIN can only call changeMyPin until the PIN is changed (403 PIN_CHANGE_REQUIRED); runs and repeated digits are rejected.
+4. PINs are stored with a slow hash; no response, log or audit entry contains a PIN.
+5. Sign-in is rate-limited per IP and per guesthouse code; signOut revokes the session.
+
+### SG-702 Responsive shell and account page
+Lane WEB · 3 pts · Depends: SG-701 · Screens: DOC Quy tắc responsive, P23, owner sidebar, TAB samples
+1. One layout component renders the phone top bar, tablet icon rail and desktop grouped sidebar (Monitor, Finance, Operations, People, Settings) from the same route.
+2. Pages pass visual checks at 390, 834 and 1280 px in vi and en with no sideways page scroll.
+3. Account page changes language (setMyLocale), opens My schedule, changes PIN and signs out.
+
+### SG-703 Tenant import and SePay CLI
+Lane API · 3 pts · Depends: SG-1001 · Doc: docs/runbooks/sepay-handover.md
+1. `stayguard tenant import --file` creates tenant, buildings, rooms, rates, services, bank account and staff in one transaction and prints one-time PINs.
+2. `stayguard sepay webhook|set-secret|status --tenant` work as the runbook describes; set-secret reads the secret from a hidden prompt only.
+3. receiveBankWebhook resolves the tenant by hookId, verifies the HMAC over the raw body in constant time, settles through the existing handler, and answers duplicates with the same 2xx.
+4. Every CLI change writes an INSTALLER audit entry visible to the owner.
+
+## E8 — Front desk extras
+
+### SG-801 Edit check-in time and move room
+Lane API+WEB · 3 pts · Screens: P4, P5
+1. editCheckInTime accepts up to 60 minutes later than recorded, never in the future, with a reason code and note; otherwise 422 CHECKIN_EDIT_OUT_OF_RANGE.
+2. The quote is recomputed and a STAY_TIME_EDITED alert records old time, new time, actor and reason.
+3. moveStay keeps check-in time and extras, prices the whole stay with the new room type and sets the old room TO_CLEAN; the target must be VACANT (409 ROOM_OCCUPIED).
+
+### SG-802 Stay history and receipt
+Lane API+WEB · 3 pts · Screens: P9, PC Lịch sử (lễ tân), P8
+1. listStays takes a single date or a range; receptionists are limited to the last `frontDeskHistoryDays` days (422 outside it) in buildings they can view; owners and managers may use any range.
+4. Every row shows guestId indicators (ID number on file, front photo, back photo) and nothing more; the screens offer previous and next day, a date picker and Today and Yesterday.
+2. Search matches room code, guest name and phone; results page with a cursor.
+3. getReceipt returns the frozen invoice with property name, address and payments; the print layout fits 80 mm.
+
+### SG-803 Payment states on screen
+Lane WEB · 2 pts · Screens: P6, P7
+1. A MISMATCH payment shows due, received and remaining, offers a QR for the remainder or cash, and never offers to mark it paid.
+2. An EXPIRED payment offers a new QR or cash and explains that old-code transfers are still recorded.
+
+### SG-804 Cleaning and damage reports by any role
+Lane API+WEB · 3 pts · Screens: P37, P47, P48, P49, PC Dọn phòng
+1. completeHousekeepingTask allows OWNER, MANAGER, RECEPTIONIST and HOUSEKEEPING with EDIT; records who and when.
+2. Tapping a TO_CLEAN room on any room map opens the clean screen; housekeeping's list sorts by longest waiting and colours by waiting time.
+3. reportDamage creates a ticket and alert; LOCK_ROOM sets MAINTENANCE (409 ROOM_OCCUPIED if a guest is in it).
+
+### SG-805 Guest ID capture and protected viewing
+Lane API+WEB · 5 pts · Screens: Demo 2, PC Nhận phòng, Demo 3, Sơ đồ máy tính, P42, PC Chi tiết lượt ở, P59, PC Xem ảnh CCCD
+1. Check-in and setGuestIdNumber store the number encrypted only with consent (422 ID_CONSENT_REQUIRED otherwise); uploadGuestIdPhoto accepts JPEG or PNG up to 5 MB, strips metadata, re-encodes and encrypts.
+2. Every stay response to RECEPTIONIST or HOUSEKEEPING contains only `guestId` indicators; no field, log line or error ever contains the number or an image (log capture test and contract test).
+3. getGuestIdRecord returns the masked number and photo metadata to OWNER and MANAGER only (403 for other roles, table test).
+4. revealGuestIdNumber, getGuestIdPhoto (view and download) and both deletes write GUEST_ID audit entries; responses carry `Cache-Control: no-store`; photos are never served by a public or pre-signed URL.
+5. A daily job deletes numbers and photos past `idRetentionDays` after check-out and records the deletion.
+6. UI: front desk sees capture tiles and indicators only; owner sees the masked number with Show and Hide, thumbnails with View, Download and Delete, and a viewer with front and back tabs.
+
+## E9 — Owner monitoring
+
+### SG-901 Overview by building
+Lane API+WEB · 3 pts · Screens: PC Tổng quan, TAB Tổng quan, Demo 9
+1. getOwnerOverview returns per-building status counts, occupancy and revenue today, and an attention list (overdue rooms, long waits to clean, mismatches, unmatched transfers, cash shortages, pending leave, open tickets).
+2. Each building row links to the owner room map for that building; each attention item links to the screen that resolves it.
+
+### SG-902 Alerts and activity log
+Lane API+WEB · 3 pts · Screens: P10, P13, P36, PC Cảnh báo, PC Nhật ký
+1. listAlerts filters unread and kind; markAlertRead is per alert; money and stay-time alerts never clear themselves.
+2. listAuditLogs takes a date range, actor, category and text search; the UI offers quick ranges and a calendar range picker.
+3. The log cannot be edited or deleted by any role (test against the database grants).
+
+### SG-903 Transactions and linking unmatched transfers
+Lane API+WEB · 3 pts · Screens: P12, P43, PC Giao dịch, PC Gán tiền
+1. listTransactions shows cash and bank items with MATCHED, MISMATCH, UNMATCHED or CASH.
+2. linkTransferToInvoice is OWNER only, accepts only bank-reported events, settles the invoice, and is irreversible (409 EVENT_ALREADY_LINKED).
+3. Candidate invoices are unpaid ones, those matching the amount listed first.
+
+### SG-904 Owner stay history and timeline
+Lane API+WEB · 2 pts · Screens: P42, PC Lịch sử lượt ở, PC Chi tiết lượt ở
+1. getStayTimeline lists check-in, edits, extras, moves, check-out, payments, links and cleaning in time order from the audit log.
+
+### SG-905 Closed shifts list
+Lane API+WEB · 1 pt · Screens: P25, PC Đối soát ca
+1. listClosedShifts filters by month, person and differences only; each item opens the shift review.
+
+## E10 — Setup
+
+### SG-1001 Property and receiving accounts
+Lane API+WEB · 3 pts · Screens: P15, P38, PC Nhà nghỉ và ngân hàng, PC Thêm tài khoản
+1. Property name, address, phone and QR expiry are editable by the owner.
+2. createBankAccount stores the account encrypted as PENDING; makeDefault requires CONNECTED; the default cannot be removed; all three need the owner PIN.
+3. QR always uses the default account (existing rule, now across many accounts).
+
+### SG-1002 Buildings, floors and rooms
+Lane API+WEB · 3 pts · Screens: P16, P26, P33, P34, P35, PC Tòa và phòng
+1. createBuilding and createFloor can generate rooms; createRooms supports a single code or a range and reports the codes created.
+2. updateRoom sets type, features, maintenance with reason and date, or retires; a room with a guest returns 409 ROOM_OCCUPIED for type change or retire.
+3. New buildings grant access to nobody but the owner.
+
+### SG-1003 Rates editing with preview
+Lane API+WEB · 2 pts · Screens: P17, PC Bảng giá
+1. updateRatePlan saves a new version; stays keep their snapshot (existing SG-101 AC6).
+2. previewPrice prices sample stays with the draft plan using the same pricing engine.
+
+### SG-1004 Items and stock
+Lane API+WEB · 5 pts · Screens: P18, P40, P44, P45, P46, P28, PC Dịch vụ và kho and related
+1. createService records price, unit cost and an OPENING movement.
+2. updateService never changes stock; restock adds an IN movement with unit cost.
+3. listStockMovements pages the history with filters; the management page shows stock, price, latest cost, margin and 7-day sales.
+4. removeService deletes an item without sales, otherwise sets stop selling; the result says which.
+5. createStocktake posts COUNT movements for differences and alerts the owner.
+
+## E11 — People
+
+### SG-1101 Staff with positions, app access and contracts
+Lane API+WEB · 5 pts · Screens: P19, P20, P21, P39, PC Nhân viên and related
+1. createStaff stores position, app access and contract; a one-time PIN is returned only when app access is not NONE.
+2. MANAGER can do everything in docs/15 §2 and gets 403 on the listed exclusions (table test).
+3. removeStaff needs the owner PIN, deactivates, signs out and keeps history; 409 SHIFT_OPEN if a shift is open.
+4. The staff table shows position and status, has a sticky name column and scrolls sideways on narrow screens.
+
+### SG-1102 Roster and leave decisions
+Lane API+WEB · 5 pts · Screens: P50, PC Lịch ca và nghỉ
+1. getRoster returns assignments, leave and uncovered shifts for a range; putRoster applies set and remove atomically.
+2. copyRosterWeek copies the previous week without overwriting approved leave.
+3. approveLeave and declineLeave (with reason) notify the requester; approving a cancel request restores the shift.
+4. A person's scheduled shift is used when they open a shift at the desk.
+
+### SG-1103 My schedule and leave
+Lane API+WEB · 3 pts · Screens: P51, P52, P57, P58, PC Lịch và nghỉ (lễ tân)
+1. Staff see their week and leave balance; createLeaveRequest rejects overlaps (409 LEAVE_OVERLAP).
+2. cancelMyLeave cancels PENDING at once and turns APPROVED into CANCEL_REQUESTED.
+
+### SG-1104 Payroll
+Lane API+WEB · 5 pts · Screens: PC Bảng lương
+1. getPayroll computes earned pay from contract and roster (monthly pro-rated by standard shifts, per shift, or hourly) plus fixed allowance; numbers are whole VND with a stated rounding rule.
+2. Bonus and deduction are owner inputs; the product never deducts cash shortages automatically.
+3. markPayrollPaid freezes lines and posts STAFF_PAY expense lines; paid lines cannot be edited.
+4. The table scrolls sideways with a sticky name column and a totals row.
+
+## E12 — Finance and maintenance
+
+### SG-1201 Maintenance tickets
+Lane API+WEB · 3 pts · Screens: P53, P54, PC Bảo trì, PC Phiếu bảo trì
+1. Tickets show code, room, issue, reporter, status, expected date and cost; totals show open tickets, locked rooms, month cost and tickets without cost.
+2. updateTicket to DONE posts a MAINTENANCE expense for the completion month and unlocks the room; only OWNER edits costs (Q-04).
+
+### SG-1202 Expenses
+Lane API+WEB · 3 pts · Screens: P55, P56, PC Chi phí, PC Thêm chi phí
+1. getExpenseMonth returns categories with source and items; automatic lines come from payroll, tickets and stock; recurring templates are added on the first day of each month.
+2. Manual lines can be created, edited and deleted; automatic lines return 409 EXPENSE_AUTOMATIC.
+3. Drawer payouts stay in shift reconciliation and never appear as expenses (test with a payout in the month).
+
+### SG-1203 Income and cost report
+Lane API+WEB · 3 pts · Screens: P11, PC Báo cáo thu chi
+1. getIncomeCostReport accepts from and to months (max 24) and returns revenue, expenses, profit, margin, occupancy and the breakdowns in docs/15 §3 rule 18.
+2. Figures reconcile: revenue equals paid invoices in range, expenses equal the expense month totals (integration test with seeded data).
+
+## E13 — Quality
+
+### SG-1301 Common states
+Lane WEB · 2 pts · Screens: P29 to P32
+1. Offline, server error (with trace id), no access and empty list states are shared components used by every list and form.
+2. Retrying a write after offline reuses its Idempotency-Key.

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thêm phòng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="ToaPhong.dc.html" aria-label="Quay lại" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Thêm phòng</span>
+<span style="font-size: 13px; color: #5C5A55">Tòa A · Tầng 1</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">Một phòng</button><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Nhiều phòng liền số</button></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rf" style="font-size: 13px; font-weight: 600">Từ số</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="rf" type="text" value="A107" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rt" style="font-size: 13px; font-weight: 600">Đến số</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="rt" type="text" value="A109" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Sẽ tạo 3 phòng</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A107</span><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A108</span><span style="height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; background: #E4F1E7; border: 1px solid #B9DBC2; color: #1F5A30; font-size: 14px; font-weight: 700">A109</span></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Loại phòng (quyết định giá)</span><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Phòng thường</button><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">VIP</button></div><span style="font-size: 12px; color: #5C5A55">Giá lấy theo bảng giá của loại phòng; không đặt giá riêng từng phòng.</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Đặc điểm (không bắt buộc)</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" aria-pressed="true" style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #1F4E5F; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Giường đôi</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">2 giường</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Cửa sổ</button><button type="button" aria-pressed="false" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #CFCBC3; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap">Bồn tắm</button></div><span style="font-size: 12px; color: #5C5A55">Giúp lễ tân chọn phòng theo yêu cầu khách; không ảnh hưởng giá.</span></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Cho nhận khách ngay</span><span style="font-size: 12px; color: #5C5A55">Tắt nếu phòng còn đang sửa</span></div><button type="button" role="switch" aria-checked="true" aria-label="Cho nhận khách ngay" style="width: 52px; height: 32px; flex-shrink: 0; border-radius: 999px; border: none; padding: 3px; background: #1F4E5F; display: flex; justify-content: flex-end"><span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF"></span></button></div>
+<span style="flex-grow: 1"></span>
+<a href="ToaPhong.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Tạo 3 phòng</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

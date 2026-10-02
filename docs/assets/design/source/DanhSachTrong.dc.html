@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Danh sách trống</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="TongQuanChu.dc.html" aria-label="Quay lại" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Cảnh báo</span>
+<span style="font-size: 13px; color: #5C5A55">Hôm nay</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 28px 20px; flex-grow: 1; min-height: 0">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Chưa xem (0)</button><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">Tất cả</button></div>
+<span style="flex-grow: 1"></span>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+<span style="width: 72px; height: 72px; border-radius: 20px; background: #E4F1E7; color: #1F5A30; display: flex; align-items: center; justify-content: center"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">Không có gì cần xem</h1>
+<span style="font-size: 15px; color: #5C5A55; line-height: 1.5; max-width: 300px">Chưa có tiền lệch, giờ ở bị sửa hay ca thiếu tiền hôm nay.</span>
+</div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #FFFFFF; color: #1C1B19; border: 1px solid #A8A39A; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Xem tất cả cảnh báo cũ</span></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

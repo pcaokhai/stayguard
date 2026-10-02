@@ -1,45 +1,30 @@
 # Documentation Index
 
-Everything needed to start Sprint 0 is here. Nothing lives only in chat.
+**Now: SHIP MODE — production sprint, docs/14.** Read only what your task needs.
 
-## Documents
+## Active documents
 
-| # | Document | Purpose | Primary audience | Status |
-| --- | --- | --- | --- | --- |
-| 01 | [Product requirements](01-prd.md) | Why, for whom, objectives, releases, assumptions | Everyone | v1.0 |
-| 02 | [Software architecture](02-software-architecture.md) | Drivers, C4, runtime views, cross-cutting rules, stack | Tech lead, lanes | v1.0 |
-| 04 | [API contract](04-api-contract.md) | Conventions, errors, authorization matrix, catalogue | API and WEB lanes | v1.0 |
-| 05 | [Data model](05-data-model.md) | Tables, modelling and migration rules, indexes | API lane | v1.0 |
-| 06 | [User stories](06-user-stories.md) | 27 stories with numbered acceptance criteria | Everyone | v1.0 |
-| 07 | [Delivery plan](07-delivery-plan.md) | Lanes, slices, sprints, capacity, playbook | Tech lead, lanes | v1.0 |
-| 08 | [Test strategy](08-test-strategy.md) | Pyramid, gates, journeys, scenarios | All lanes, QA | v1.0 |
-| 09 | [Risk register](09-risk-register.md) | Pre-mortem and actions | Tech lead | v1.0 |
-| 10 | [Engineering standards](10-engineering-standards.md) | Non-negotiables, patterns, conventions, review checklist | All lanes | v1.0 |
-| 11 | [AI workflow and tracking](11-ai-workflow-and-tracking.md) | Superpowers, token discipline, plans, bug log, public repository rules | All lanes | v1.0 |
-| 12 | [MVP strategy review (Gemini)](12-mvp-to-production-strategy.md) | External review, kept as input | Khai | Input |
-| 13 | [Pragmatic MVP review (Codex)](13-pragmatic-mvp-review.md) | External review, kept as input | Khai | Input |
-| 14 | [Demo and production v1 plan](14-demo-and-production-plan.md) | **Current plan (FAST MODE); overrides 07 and 11** | Everyone | Active |
-| | [ADRs](adr/README.md) | Architecture decisions | Everyone | 14 accepted |
-| | [Progress](progress.md), [Release notes](release-notes.md), [Bug log](bugs/README.md), [Plans](plans/README.md) | Live tracking | Everyone | Living |
+| # | Document | Purpose | Who reads it |
+| --- | --- | --- | --- |
+| 14 | [Production sprint](14-production-sprint.md) | **The plan, task list and progress (checkboxes)** | Everyone, first |
+| 15 | [Production design specification](15-production-design-spec.md) | Roles, 25 product rules, screen → route → API map, open questions | Everyone |
+| 16 | [UI kit, motion and visual checks](16-ui-kit-and-motion.md) | Libraries, theme, component mapping, micro-interactions, agent-browser check | WEB lanes |
+| 01 | [Product requirements](01-prd.md) | Why, for whom, scope | Khai |
+| 02 | [Software architecture](02-software-architecture.md) | Architecture and cross-cutting rules (§13 production additions) | API lanes |
+| 04 | [API contract](04-api-contract.md) | Conventions, errors, access (§8 production additions) | API and WEB lanes |
+| 05 | [Data model](05-data-model.md) | Tables and rules (§7 production tables) | API lanes |
+| 06 | [User stories](06-user-stories.md) | Stories with numbered acceptance criteria (E7–E13 for production) | API and WEB lanes |
+| 10 | [Engineering standards](10-engineering-standards.md) | Non-negotiables and code style (process parts suspended) | All lanes |
+| | [Runbook: SePay handover](runbooks/sepay-handover.md) | Installer steps, CLI only | Khai |
+| | [Design assets](assets/design/README.md) | PNG and markup per board, `INDEX.md` | WEB lanes |
+| | [ADRs](adr/README.md) | Past architecture decisions (no new ADRs during the sprint) | Reference |
 
-Document 03 (interface specification) is intentionally absent: there is no internal protocol beyond REST and SSE. Numbering stays stable.
+Design canvas (live, both languages): https://claude.ai/artifact/9iqS9mqkCH4MyETQsADLAv (private link; the repository copy is `assets/design/`).
 
-## Reading order
+## Archived
 
-- Day 1, everyone: 01 §1–4, 02 §1–4, 07 §1–4, then `CLAUDE.md`.
-- API lane: 02 §5–7, 04, 05, 10 §4.2, `api/CLAUDE.md`, contracts.
-- WEB lane: 02 §7.9, 04, 10 §4.3, `web/CLAUDE.md`, the design references below.
-- PLAT: 07, 08 §3, 09, 11.
-- Reviewer and QA: 06, 08, 10 §12.
-
-## Design references
-
-Screen designs are in `docs/assets/design/` (`screens/` PNG, `source/` markup). The original canvas: https://claude.ai/artifact/9iqS9mqkCH4MyETQsADLAv. The earlier bilingual planning document is at https://claude.ai/code/artifact/6d2dba08-646e-475b-8f81-0e130ca964f4 and is superseded where docs/02 §12 lists changes. Both links are private; before the public push replace them with exported images or PDFs in `docs/assets/` (docs/11 §6).
+`archive/` keeps the demo plan, delivery plan, test strategy, risk register, AI workflow, external reviews, progress log, release notes, bug log, plans and the demo designs. They are not read during the sprint.
 
 ## Conventions
 
-- Language: documents are in English; the UI is Vietnamese and English.
-- Formats: money in whole VND written `40,000₫` in English text and `40.000đ` in Vietnamese; dates ISO 8601 in documents; tenant time zone Asia/Ho_Chi_Minh for the demo.
-- IDs: stories `SG-<epic><nn>`, criteria `<story>-AC<n>`, requirements `FR-nn` and `NFR-nn`, scenarios `TS-nn`, risks `R-nn`, assumptions `A-nn`, ADRs `ADR-nnn`, bugs `BUG-nnn`, pricing cases `PRC-xxx`.
-- The words MUST, MUST NOT and SHOULD carry their RFC 2119 meaning.
-- Change control: documents change in the same PR as the behaviour they describe. Accepted ADRs are superseded, not edited. Versions are bumped on structural change only.
+Money in whole VND; times RFC 3339 with offset; API returns codes, the web app renders text in vi or en; board names (`Main`, `TongQuanPC`, …) are the shared vocabulary between design, tasks and code reviews.

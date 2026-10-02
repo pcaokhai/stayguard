@@ -114,3 +114,31 @@ Forward-only; no down migrations in shared environments. Expand, migrate, contra
 | Trial cleanup | `tenants (expires_at) WHERE is_trial` |
 
 Hot queries get an EXPLAIN in the PR that adds them.
+
+## 7. Production tables (from docs/15)
+
+All new tables carry `tenant_id`, composite tenant foreign keys and an RLS policy in the same migration (§5). Money is BIGINT VND.
+
+| Table | Purpose | Key constraints |
+| --- | --- | --- |
+| `staff_profiles` | Position, phone and contract per user (including users without app access) | one row per user; `position` CHECK; `pay_type` in (MONTHLY, PER_SHIFT, HOURLY); `rate`, `fixed_allowance` ≥ 0; `standard_shifts`, `annual_leave_days` ≥ 0; `start_date` |
+| `users` (changed) | Adds `app_access` in (NONE, MANAGER, RECEPTIONIST, HOUSEKEEPING), `status` in (ACTIVE, LOCKED, REMOVED), `removed_at` | `username` unique per tenant where app_access <> NONE; owner row has role OWNER |
+| `pin_credentials` | PIN hash (slow hash), failed attempts, `locked_until`, `must_change` | one per user with app access; never returned by any API |
+| `roster_assignments` | Who works which shift on which date | unique (tenant_id, user_id, date, shift); shift in (MORNING, AFTERNOON, NIGHT) |
+| `leave_requests` | Leave with status history | status CHECK; `from_date` ≤ `to_date`; no overlapping active requests per user (exclusion constraint or app check) |
+| `payroll_lines` | Monthly computed pay per user | unique (tenant_id, month, user_id); `bonus`, `deduction` ≥ 0; `status` in (UNPAID, PAID); recalculated until PAID, frozen after |
+| `maintenance_tickets` | Damage reports and repairs | `code` unique per tenant (BT-nnn); status in (NEW, IN_REPAIR, DONE); `parts_cost`, `labour_cost` nullable ≥ 0; `room_locked` |
+| `expenses` | Manual, recurring and automatic expense lines | category CHECK; source in (MANUAL, RECURRING, PAYROLL, MAINTENANCE, STOCK); `month` (date, first of month); automatic rows reference their origin (`payroll_line_id`, `ticket_id`, `stock_movement_id`) |
+| `expense_templates` | Recurring expenses copied at the start of each month | category, amount, active |
+| `bank_accounts` | Replaces the single account on `tenants` | `account_no_enc`; `is_default` unique per tenant where true; `sepay_hook_id` unique; `sepay_secret_enc` (written only by the installer CLI); `sepay_status` |
+| `stock_movements` | Every stock change | kind in (OPENING, IN, SALE, COUNT, ADJUST); `quantity` signed; `unit_cost` for IN and OPENING; append-only |
+| `stocktakes` | A count session and its lines | lines as JSONB or a child table; differences posted as COUNT movements |
+| `services` (changed) | Adds `unit`, `low_stock_at`, `on_sale`, `stopped_at`; stock is the sum of movements (cached column updated in the same transaction) | removing an item with sales sets `on_sale = false` |
+| `units` (changed) | Adds `features` (text array), `retired_at`, `maintenance_reason`, `maintenance_until` | — |
+| `stay_edits` | Check-in corrections and moves | old and new values, reason code, note, actor; also written to `audit_logs` |
+| `payment_events` (changed) | Adds `linked_invoice_id`, `linked_by`, `linked_at` for owner linking | link once only |
+| `guest_id_records` | One per stay: encrypted ID number, consent time, `delete_after` date | RLS; readable only through the owner use cases; `id_number_enc` never selected by front-desk queries (separate repository) |
+| `guest_id_photos` | Front and back photo objects | unique (stay_id, side); encrypted bytes in object storage or `bytea`, `sha256`, `bytes`, `uploaded_by`, `deleted_at`; no public URL |
+| `tenants` (changed) | Adds `id_retention_days` (default 30), `front_desk_history_days` (default 7); also adds `guesthouse_code` (unique, used at sign-in), `address`, `phone`, `qr_expiry_minutes` | — |
+
+Key queries: roster by (tenant_id, date range); payroll by (tenant_id, month); expenses by (tenant_id, month); income-cost report aggregates paid invoices and expenses by month (consider a monthly summary view refreshed on write); stays history by (tenant_id, check_in_at DESC) with trigram index on guest name and phone for search.

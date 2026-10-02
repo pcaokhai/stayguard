@@ -1,35 +1,44 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.0.0
-  summary: Anti-loss guesthouse management API (demo scope plus marked full-product endpoints).
-  description: |
-    Contract-first source of truth. Prose companion: docs/04-api-contract.md.
-    Money is a whole number of VND. Times are RFC 3339 with offset. The API returns codes and
-    structured values, never display text; the web app translates.
-    Extensions: `x-story` (owning story), `x-access` (minimum building access on the target
-    building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
+  version: 1.1.0
+  summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
+  description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
+    \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
+    Extensions: `x-story` (owning story), `x-access` (minimum building access on the target\nbuilding: VIEW or EDIT; OWNER\
+    \ means owner role), `x-release` (demo | full).\n    x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER,\
+    \ EDIT_ANY (EDIT on at least one building).\n"
   license:
     name: Apache-2.0
     identifier: Apache-2.0
 servers:
-  - url: /
-    description: Same origin (the Go binary serves both the API and the web app)
+- url: /
+  description: Same origin (the Go binary serves both the API and the web app)
 security:
-  - bearerAuth: []
+- bearerAuth: []
 tags:
-  - {name: Session}
-  - {name: Rooms}
-  - {name: Stays}
-  - {name: Payments}
-  - {name: Housekeeping}
-  - {name: Owner}
-  - {name: Shifts}
-  - {name: Ops}
+- name: Session
+- name: Rooms
+- name: Stays
+- name: Payments
+- name: Housekeeping
+- name: Owner
+- name: Shifts
+- name: Ops
+- name: Auth
+- name: Staff
+- name: Roster
+- name: Payroll
+- name: Maintenance
+- name: Expenses
+- name: Reports
+- name: Setup
+- name: Stock
 paths:
   /v1/demo/sessions:
     post:
-      tags: [Session]
+      tags:
+      - Session
       operationId: createDemoSession
       summary: Start a trial session for a role (demo mode only)
       description: Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP.
@@ -40,19 +49,25 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CreateDemoSessionRequest'}
+            schema:
+              $ref: '#/components/schemas/CreateDemoSessionRequest'
       responses:
         '201':
           description: Session created
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Session'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
-        '429': {$ref: '#/components/responses/TooManyRequests'}
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/me:
     get:
-      tags: [Session]
+      tags:
+      - Session
       operationId: getMe
       summary: Current user, tenant and building access
       x-story: SG-102
@@ -61,11 +76,14 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Me'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/me/locale:
     put:
-      tags: [Session]
+      tags:
+      - Session
       operationId: setMyLocale
       summary: Save the caller's preferred language
       x-story: SG-102
@@ -76,16 +94,22 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [locale]
+              required:
+              - locale
               properties:
-                locale: {$ref: '#/components/schemas/Locale'}
+                locale:
+                  $ref: '#/components/schemas/Locale'
       responses:
-        '204': {description: Saved}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+        '204':
+          description: Saved
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/buildings:
     get:
-      tags: [Rooms]
+      tags:
+      - Rooms
       operationId: listBuildings
       summary: Buildings the caller may see, with status counters
       description: Buildings with access NONE are omitted.
@@ -98,26 +122,31 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required:
+                - items
                 properties:
                   items:
                     type: array
-                    items: {$ref: '#/components/schemas/Building'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
+                    items:
+                      $ref: '#/components/schemas/Building'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/buildings/{buildingId}/rooms:
     get:
-      tags: [Rooms]
+      tags:
+      - Rooms
       operationId: listRooms
       summary: Rooms of a building with status and active stay summary
       description: Bounded by domain size (at most 200 rooms per building), so not paginated.
       x-story: SG-201
       x-access: VIEW
       parameters:
-        - {$ref: '#/components/parameters/BuildingId'}
-        - name: status
-          in: query
-          required: false
-          schema: {$ref: '#/components/schemas/RoomStatus'}
+      - $ref: '#/components/parameters/BuildingId'
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/RoomStatus'
       responses:
         '200':
           description: OK
@@ -125,35 +154,46 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required:
+                - items
                 properties:
                   items:
                     type: array
-                    items: {$ref: '#/components/schemas/Room'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+                    items:
+                      $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/rooms/{roomId}:
     get:
-      tags: [Rooms]
+      tags:
+      - Rooms
       operationId: getRoom
       summary: One room with its active stay summary
       x-story: SG-201
       x-access: VIEW
       parameters:
-        - {$ref: '#/components/parameters/RoomId'}
+      - $ref: '#/components/parameters/RoomId'
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Room'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/services:
     get:
-      tags: [Stays]
+      tags:
+      - Stays
       operationId: listServices
       summary: Extras catalogue (drinks, food, towels) with stock
       x-story: SG-205
@@ -164,220 +204,262 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required:
+                - items
                 properties:
                   items:
                     type: array
-                    items: {$ref: '#/components/schemas/Service'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
+                    items:
+                      $ref: '#/components/schemas/Service'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/rooms/{roomId}/stays:
     post:
-      tags: [Stays]
+      tags:
+      - Stays
       operationId: createStay
       summary: Check a guest into a vacant room
       description: The server records check-in time; clients cannot supply it.
       x-story: SG-203
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/RoomId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/RoomId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CreateStayRequest'}
+            schema:
+              $ref: '#/components/schemas/CreateStayRequest'
       responses:
         '201':
           description: Stay created; room is now OCCUPIED
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Stay'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/Stay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/stays/{stayId}:
     get:
-      tags: [Stays]
+      tags:
+      - Stays
       operationId: getStay
       summary: Stay with a live running total
       x-story: SG-203
       x-access: VIEW
       parameters:
-        - {$ref: '#/components/parameters/StayId'}
+      - $ref: '#/components/parameters/StayId'
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Stay'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/Stay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/stays/{stayId}/extras:
     post:
-      tags: [Stays]
+      tags:
+      - Stays
       operationId: addStayExtras
       summary: Add extras to an active stay
       x-story: SG-205
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/StayId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/StayId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AddExtrasRequest'}
+            schema:
+              $ref: '#/components/schemas/AddExtrasRequest'
       responses:
         '200':
           description: Updated stay
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Stay'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/Stay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/stays/{stayId}/checkout:
     post:
-      tags: [Stays]
+      tags:
+      - Stays
       operationId: checkoutStay
       summary: End the stay and produce the final invoice
       description: The server records check-out time. Repeating the request returns the same invoice.
       x-story: SG-205
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/StayId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/StayId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '201':
           description: Invoice created; room is now TO_CLEAN once paid
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Invoice'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/invoices/{invoiceId}/payments:
     post:
-      tags: [Payments]
+      tags:
+      - Payments
       operationId: createPayment
       summary: Start a cash or bank-transfer payment for an invoice
-      description: |
-        TRANSFER returns a QR payload for the exact amount, always for the tenant's own account.
-        CASH is recorded on the caller's open shift.
+      description: 'TRANSFER returns a QR payload for the exact amount, always for the tenant''s own account.
+
+        CASH is recorded on the caller''s open shift.
+
+        '
       x-story: SG-301
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/InvoiceId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/InvoiceId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CreatePaymentRequest'}
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
       responses:
         '201':
           description: Payment created
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Payment'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/payments/{paymentId}:
     get:
-      tags: [Payments]
+      tags:
+      - Payments
       operationId: getPayment
       summary: Payment status (polling fallback for the event stream)
       x-story: SG-301
       x-access: VIEW
       parameters:
-        - {$ref: '#/components/parameters/PaymentId'}
+      - $ref: '#/components/parameters/PaymentId'
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Payment'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/payments/{paymentId}/events:
     get:
-      tags: [Payments]
+      tags:
+      - Payments
       operationId: streamPaymentEvents
       summary: Server-Sent Events for one payment
-      description: |
-        Event payload schema: contracts/events/payment-events.schema.json. The stream sends the
+      description: 'Event payload schema: contracts/events/payment-events.schema.json. The stream sends the
+
         current state first, then changes, and closes after a terminal state. Supports Last-Event-ID.
+
+        '
       x-story: SG-302
       x-access: VIEW
       parameters:
-        - {$ref: '#/components/parameters/PaymentId'}
-        - name: Last-Event-ID
-          in: header
-          required: false
-          schema: {type: string}
+      - $ref: '#/components/parameters/PaymentId'
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
       responses:
         '200':
           description: Event stream
           content:
             text/event-stream:
-              schema: {type: string}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/demo/payments/{paymentId}/simulate:
     post:
-      tags: [Payments]
+      tags:
+      - Payments
       operationId: simulatePaymentReceived
       summary: Simulate the bank reporting the money as received (demo mode only)
-      description: |
-        Returns 404 unless DEMO_MODE is enabled. Creates a payment event exactly like the real
+      description: 'Returns 404 unless DEMO_MODE is enabled. Creates a payment event exactly like the real
+
         webhook and runs the same handler.
+
+        '
       x-story: SG-302
       x-access: EDIT
       x-release: demo
       parameters:
-        - {$ref: '#/components/parameters/PaymentId'}
+      - $ref: '#/components/parameters/PaymentId'
       responses:
         '200':
           description: Handler result
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Payment'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-  /v1/webhooks/bank:
-    post:
-      tags: [Payments]
-      operationId: receiveBankWebhook
-      summary: Bank or reconciliation-provider webhook (full product)
-      description: |
-        Authenticated by an HMAC signature header, not a bearer token. The handler checks the
-        signature, deduplicates on externalId, matches referenceCode and amount, then settles.
-      security: [{webhookSignature: []}]
-      x-release: full
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/BankWebhookPayload'}
-      responses:
-        '202': {description: Accepted (also returned for duplicates)}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/housekeeping/tasks:
     get:
-      tags: [Housekeeping]
+      tags:
+      - Housekeeping
       operationId: listHousekeepingTasks
       summary: Rooms waiting to be cleaned in buildings the caller may edit or view
       x-story: SG-401
@@ -389,43 +471,54 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required:
+                - items
                 properties:
                   items:
                     type: array
-                    items: {$ref: '#/components/schemas/HousekeepingTask'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
+                    items:
+                      $ref: '#/components/schemas/HousekeepingTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/housekeeping/tasks/{taskId}/complete:
     post:
-      tags: [Housekeeping]
+      tags:
+      - Housekeeping
       operationId: completeHousekeepingTask
       summary: Mark a room clean; the room becomes VACANT
       x-story: SG-401
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/TaskId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
           description: Updated task
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/HousekeepingTask'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
+              schema:
+                $ref: '#/components/schemas/HousekeepingTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      description: Allowed for OWNER, MANAGER, RECEPTIONIST and HOUSEKEEPING with EDIT on the building; records who and when.
   /v1/rooms/{roomId}/usage-reports:
     post:
-      tags: [Housekeeping]
+      tags:
+      - Housekeeping
       operationId: reportRoomUsage
       summary: Report a room that looks used but has no active stay
       description: Creates an owner alert.
       x-story: SG-401
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/RoomId'}
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/RoomId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -434,40 +527,53 @@ paths:
               type: object
               additionalProperties: false
               properties:
-                note: {type: string, maxLength: 500}
+                note:
+                  type: string
+                  maxLength: 500
       responses:
         '201':
           description: Alert created
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Alert'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/owner/overview:
     get:
-      tags: [Owner]
+      tags:
+      - Owner
       operationId: getOwnerOverview
       summary: Revenue, cash expected, occupancy, alerts and latest payments for a day
       x-story: SG-403
       x-access: OWNER
       parameters:
-        - name: date
-          in: query
-          required: false
-          description: Tenant-local date; defaults to today.
-          schema: {type: string, format: date}
+      - name: date
+        in: query
+        required: false
+        description: Tenant-local date; defaults to today.
+        schema:
+          type: string
+          format: date
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/OwnerOverview'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
+              schema:
+                $ref: '#/components/schemas/OwnerOverview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/owner/staff-permissions:
     get:
-      tags: [Owner]
+      tags:
+      - Owner
       operationId: listStaffPermissions
       summary: Every staff member with their access level per building
       x-story: SG-501
@@ -479,24 +585,29 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required:
+                - items
                 properties:
                   items:
                     type: array
-                    items: {$ref: '#/components/schemas/StaffPermission'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
+                    items:
+                      $ref: '#/components/schemas/StaffPermission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/owner/staff/{userId}/building-permissions/{buildingId}:
     put:
-      tags: [Owner]
+      tags:
+      - Owner
       operationId: setBuildingPermission
       summary: Grant, change or revoke one staff member's access to one building
       description: Takes effect immediately and is recorded in the audit log.
       x-story: SG-501
       x-access: OWNER
       parameters:
-        - {$ref: '#/components/parameters/UserId'}
-        - {$ref: '#/components/parameters/BuildingId'}
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/BuildingId'
       requestBody:
         required: true
         content:
@@ -504,22 +615,30 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [level]
+              required:
+              - level
               properties:
-                level: {$ref: '#/components/schemas/PermissionLevel'}
+                level:
+                  $ref: '#/components/schemas/PermissionLevel'
       responses:
         '200':
           description: Updated permission row
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/BuildingAccess'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/BuildingAccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/shifts/current:
     get:
-      tags: [Shifts]
+      tags:
+      - Shifts
       operationId: getCurrentShift
       summary: The caller's open shift with the cash the system expects
       x-story: SG-503
@@ -529,351 +648,3219 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Shift'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/shifts/current/close:
     post:
-      tags: [Shifts]
+      tags:
+      - Shifts
       operationId: closeShift
       summary: Close the caller's shift with a counted cash total
       description: A reason is required when counted cash differs from expected cash. Figures lock on close.
       x-story: SG-503
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CloseShiftRequest'}
+            schema:
+              $ref: '#/components/schemas/CloseShiftRequest'
       responses:
         '200':
           description: Closed shift
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ShiftReview'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/ShiftReview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/shifts/current/payouts:
     post:
-      tags: [Shifts]
+      tags:
+      - Shifts
       operationId: recordCashPayout
       summary: Record cash paid out of the drawer during the shift (for example ice)
       x-story: SG-503
       x-access: EDIT
       parameters:
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CashPayoutRequest'}
+            schema:
+              $ref: '#/components/schemas/CashPayoutRequest'
       responses:
         '200':
           description: Updated shift
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Shift'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/Unprocessable'}
+              schema:
+                $ref: '#/components/schemas/Shift'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/owner/shifts/{shiftId}:
     get:
-      tags: [Owner]
+      tags:
+      - Owner
       operationId: getShiftReview
       summary: Reconciliation detail of a closed shift
       x-story: SG-503
       x-access: OWNER
       parameters:
-        - {$ref: '#/components/parameters/ShiftId'}
+      - $ref: '#/components/parameters/ShiftId'
       responses:
         '200':
           description: OK
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ShiftReview'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+              schema:
+                $ref: '#/components/schemas/ShiftReview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /healthz:
     get:
-      tags: [Ops]
+      tags:
+      - Ops
       operationId: getHealth
       summary: Liveness
       security: []
       x-story: SG-001
       responses:
-        '200': {description: Process is up}
+        '200':
+          description: Process is up
   /readyz:
     get:
-      tags: [Ops]
+      tags:
+      - Ops
       operationId: getReadiness
       summary: Readiness (database reachable, migrations applied)
       security: []
       x-story: SG-003
       responses:
-        '200': {description: Ready}
-        '503': {description: Not ready}
+        '200':
+          description: Ready
+        '503':
+          description: Not ready
+  /v1/auth/sign-in:
+    post:
+      tags:
+      - Auth
+      operationId: signIn
+      summary: Sign in with guesthouse code, user name and PIN
+      x-story: SG-701
+      x-access: PUBLIC
+      x-release: full
+      description: Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal
+        whether the user exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      security: []
+  /v1/auth/sign-out:
+    post:
+      tags:
+      - Auth
+      operationId: signOut
+      summary: End the current session
+      x-story: SG-701
+      x-access: ANY
+      x-release: full
+      responses:
+        '204': &id001
+          description: Done
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/me/pin:
+    put:
+      tags:
+      - Auth
+      operationId: changeMyPin
+      summary: Change my PIN (required after a one-time PIN)
+      x-story: SG-701
+      x-access: ANY
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePinRequest'
+      responses:
+        '204': *id001
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/staff:
+    get:
+      tags:
+      - Staff
+      operationId: listStaff
+      summary: Staff with position, app access, contract and building access
+      x-story: SG-1101
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: position
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Position'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Staff
+      operationId: createStaff
+      summary: Add a staff member; returns a one-time PIN when appAccess is not NONE
+      x-story: SG-1101
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - &id002
+        $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStaffRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateStaffResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/staff/{userId}:
+    patch:
+      tags:
+      - Staff
+      operationId: updateStaff
+      summary: Change position, app access or contract
+      x-story: SG-1101
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStaffRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/staff/{userId}/pin-reset:
+    post:
+      tags:
+      - Staff
+      operationId: resetStaffPin
+      summary: Issue a one-time PIN (24 h)
+      x-story: SG-1101
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneTimePin'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/owner/staff/{userId}/lock:
+    post:
+      tags:
+      - Staff
+      operationId: lockStaff
+      summary: Lock sign-in
+      x-story: SG-1101
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/staff/{userId}/unlock:
+    post:
+      tags:
+      - Staff
+      operationId: unlockStaff
+      summary: Unlock sign-in
+      x-story: SG-1101
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/staff/{userId}/remove:
+    post:
+      tags:
+      - Staff
+      operationId: removeStaff
+      summary: Remove a staff member (deactivate; history kept)
+      x-story: SG-1101
+      x-access: OWNER
+      x-release: full
+      description: 409 SHIFT_OPEN when the person has an open shift. Never deletes rows.
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerPin'
+      responses:
+        '204': *id001
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/roster:
+    get:
+      tags:
+      - Roster
+      operationId: getRoster
+      summary: Roster for a date range with leave and uncovered shifts
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema: &id003
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema: *id003
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+      - Roster
+      operationId: putRoster
+      summary: Set and remove assignments in one change
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutRosterRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/roster/copy-week:
+    post:
+      tags:
+      - Roster
+      operationId: copyRosterWeek
+      summary: Copy the previous week into a week
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - weekStart
+              properties:
+                weekStart: *id003
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/leave-requests:
+    get:
+      tags:
+      - Roster
+      operationId: listLeaveRequests
+      summary: Leave requests to decide
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/LeaveStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaveRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/leave-requests/{leaveId}/approve:
+    post:
+      tags:
+      - Roster
+      operationId: approveLeave
+      summary: Approve a request (or a cancel request)
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: leaveId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/owner/leave-requests/{leaveId}/decline:
+    post:
+      tags:
+      - Roster
+      operationId: declineLeave
+      summary: Decline with a reason
+      x-story: SG-1102
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: leaveId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/me/roster:
+    get:
+      tags:
+      - Roster
+      operationId: getMyRoster
+      summary: My shifts for a date range
+      x-story: SG-1103
+      x-access: ANY_STAFF
+      x-release: full
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema: *id003
+      - name: to
+        in: query
+        required: true
+        schema: *id003
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roster'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/me/leave-requests:
+    get:
+      tags:
+      - Roster
+      operationId: listMyLeaveRequests
+      summary: My leave requests and balance
+      x-story: SG-1103
+      x-access: ANY_STAFF
+      x-release: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                - balance
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaveRequest'
+                  balance:
+                    $ref: '#/components/schemas/LeaveBalance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Roster
+      operationId: createLeaveRequest
+      summary: Request leave
+      x-story: SG-1103
+      x-access: ANY_STAFF
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeaveRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/me/leave-requests/{leaveId}/cancel:
+    post:
+      tags:
+      - Roster
+      operationId: cancelMyLeave
+      summary: Cancel a pending request, or ask to cancel an approved one
+      x-story: SG-1103
+      x-access: ANY_STAFF
+      x-release: full
+      description: PENDING becomes CANCELLED at once; APPROVED becomes CANCEL_REQUESTED until the owner approves.
+      parameters:
+      - name: leaveId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/owner/payroll/{month}:
+    get:
+      tags:
+      - Payroll
+      operationId: getPayroll
+      summary: Payroll for a month from contracts and the roster
+      x-story: SG-1104
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: month
+        in: path
+        required: true
+        schema: &id004
+          type: string
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          description: YYYY-MM
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payroll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/payroll/{month}/lines/{userId}:
+    patch:
+      tags:
+      - Payroll
+      operationId: updatePayrollLine
+      summary: Set bonus, deduction or note
+      x-story: SG-1104
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: month
+        in: path
+        required: true
+        schema: *id004
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePayrollLineRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayrollLine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/payroll/{month}/mark-paid:
+    post:
+      tags:
+      - Payroll
+      operationId: markPayrollPaid
+      summary: Mark lines paid; posts STAFF_PAY expense
+      x-story: SG-1104
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: month
+        in: path
+        required: true
+        schema: *id004
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: []
+              properties:
+                userIds:
+                  type: array
+                  items: &id005
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payroll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/rooms/{roomId}/damage-reports:
+    post:
+      tags:
+      - Maintenance
+      operationId: reportDamage
+      summary: Report damage or missing items; creates a ticket
+      x-story: SG-1201
+      x-access: EDIT
+      x-release: full
+      description: LOCK_ROOM sets the room to MAINTENANCE at once (409 ROOM_OCCUPIED if a guest is in it).
+      parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DamageReportRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/maintenance-tickets:
+    get:
+      tags:
+      - Maintenance
+      operationId: listTickets
+      summary: Tickets with totals
+      x-story: SG-1201
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TicketStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaintenanceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/maintenance-tickets/{ticketId}:
+    get:
+      tags:
+      - Maintenance
+      operationId: getTicket
+      summary: One ticket
+      x-story: SG-1201
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+      - Maintenance
+      operationId: updateTicket
+      summary: Set status, lock, expected date and costs
+      x-story: SG-1201
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      description: DONE posts a MAINTENANCE expense for the completion month and unlocks the room. Costs are editable only
+        by OWNER.
+      parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTicketRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/expenses:
+    get:
+      tags:
+      - Expenses
+      operationId: getExpenseMonth
+      summary: Expenses of a month by category with manual items
+      x-story: SG-1202
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: month
+        in: query
+        required: true
+        schema: *id004
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseMonth'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Expenses
+      operationId: createExpense
+      summary: Add a manual or recurring expense
+      x-story: SG-1202
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/expenses/{expenseId}:
+    patch:
+      tags:
+      - Expenses
+      operationId: updateExpense
+      summary: Edit a manual or recurring expense
+      x-story: SG-1202
+      x-access: OWNER
+      x-release: full
+      description: Automatic lines (PAYROLL, MAINTENANCE, STOCK) return 409 EXPENSE_AUTOMATIC.
+      parameters:
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+    delete:
+      tags:
+      - Expenses
+      operationId: deleteExpense
+      summary: Delete a manual expense
+      x-story: SG-1202
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      responses:
+        '204': *id001
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/owner/reports/income-costs:
+    get:
+      tags:
+      - Reports
+      operationId: getIncomeCostReport
+      summary: Revenue, expenses and profit for a month range
+      x-story: SG-1203
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema: *id004
+      - name: to
+        in: query
+        required: true
+        schema: *id004
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncomeCostReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/property:
+    get:
+      tags:
+      - Setup
+      operationId: getProperty
+      summary: Property details and QR expiry
+      x-story: SG-1001
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      tags:
+      - Setup
+      operationId: updateProperty
+      summary: Update property details
+      x-story: SG-1001
+      x-access: OWNER
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePropertyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/bank-accounts:
+    get:
+      tags:
+      - Setup
+      operationId: listBankAccounts
+      summary: Receiving accounts
+      x-story: SG-1001
+      x-access: OWNER
+      x-release: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BankAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Setup
+      operationId: createBankAccount
+      summary: Add a receiving account (pending SePay)
+      x-story: SG-1001
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/bank-accounts/{accountId}/make-default:
+    post:
+      tags:
+      - Setup
+      operationId: makeDefaultBankAccount
+      summary: Make an account the QR default (must be CONNECTED)
+      x-story: SG-1001
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerPin'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/bank-accounts/{accountId}/remove:
+    post:
+      tags:
+      - Setup
+      operationId: removeBankAccount
+      summary: Remove a non-default account
+      x-story: SG-1001
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerPin'
+      responses:
+        '204': *id001
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/sepay-status:
+    get:
+      tags:
+      - Setup
+      operationId: getSepayStatus
+      summary: Connection status of the default account
+      x-story: SG-1001
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SepayStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/buildings:
+    post:
+      tags:
+      - Setup
+      operationId: createBuilding
+      summary: Create a building with generated floors and rooms
+      x-story: SG-1002
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBuildingRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/buildings/{buildingId}:
+    patch:
+      tags:
+      - Setup
+      operationId: updateBuilding
+      summary: Rename a building
+      x-story: SG-1002
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - $ref: '#/components/parameters/BuildingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBuildingRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/buildings/{buildingId}/floors:
+    post:
+      tags:
+      - Setup
+      operationId: createFloor
+      summary: Add a floor, optionally with rooms
+      x-story: SG-1002
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - $ref: '#/components/parameters/BuildingId'
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFloorRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/rooms:
+    post:
+      tags:
+      - Setup
+      operationId: createRooms
+      summary: Create one room or a range of rooms
+      x-story: SG-1002
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomsRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/rooms/{roomId}:
+    patch:
+      tags:
+      - Setup
+      operationId: updateRoom
+      summary: Edit a room, set maintenance or retire it
+      x-story: SG-1002
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      description: 409 ROOM_OCCUPIED for type change or retire while a guest is in the room.
+      parameters:
+      - $ref: '#/components/parameters/RoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/rate-plans:
+    get:
+      tags:
+      - Setup
+      operationId: listRatePlans
+      summary: Rate plans per unit type
+      x-story: SG-1003
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UnitTypeRates'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/unit-types/{unitTypeCode}/rate-plan:
+    put:
+      tags:
+      - Setup
+      operationId: updateRatePlan
+      summary: Save a new rate plan version (applies to later check-ins)
+      x-story: SG-1003
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: unitTypeCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatePlan'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitTypeRates'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/rate-plans/preview:
+    post:
+      tags:
+      - Setup
+      operationId: previewPrice
+      summary: Price a sample stay with a draft rate plan
+      x-story: SG-1003
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricePreviewRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/services:
+    post:
+      tags:
+      - Stock
+      operationId: createService
+      summary: Add an item with price, cost and opening quantity
+      x-story: SG-1004
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/services/{serviceCode}:
+    patch:
+      tags:
+      - Stock
+      operationId: updateService
+      summary: Edit details (never the stock count)
+      x-story: SG-1004
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: serviceCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/services/{serviceCode}/restock:
+    post:
+      tags:
+      - Stock
+      operationId: restockService
+      summary: Record stock in with unit cost
+      x-story: SG-1004
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: serviceCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestockRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/services/{serviceCode}/movements:
+    get:
+      tags:
+      - Stock
+      operationId: listStockMovements
+      summary: Stock history
+      x-story: SG-1004
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: serviceCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: kind
+        in: query
+        required: false
+        schema: *id005
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockMovement'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/services/{serviceCode}/remove:
+    post:
+      tags:
+      - Stock
+      operationId: removeService
+      summary: Remove an item (stops selling if it has sales)
+      x-story: SG-1004
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: serviceCode
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoveServiceResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/stocktakes:
+    post:
+      tags:
+      - Stock
+      operationId: createStocktake
+      summary: Record a stocktake; differences alert the owner
+      x-story: SG-1004
+      x-access: EDIT_ANY
+      x-release: full
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StocktakeRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StocktakeResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/stays/{stayId}/check-in-time:
+    post:
+      tags:
+      - Stays
+      operationId: editCheckInTime
+      summary: Correct the check-in time with a reason
+      x-story: SG-801
+      x-access: EDIT
+      x-release: full
+      description: At most 60 minutes later than recorded and not in the future; creates a STAY_TIME_EDITED alert. Check-out
+        time can never be edited.
+      parameters:
+      - $ref: '#/components/parameters/StayId'
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditCheckInRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/stays/{stayId}/move:
+    post:
+      tags:
+      - Stays
+      operationId: moveStay
+      summary: Move the guest to another vacant room
+      x-story: SG-801
+      x-access: EDIT
+      x-release: full
+      description: Keeps check-in time and extras; the whole stay is priced with the new room type. Old room becomes TO_CLEAN.
+      parameters:
+      - $ref: '#/components/parameters/StayId'
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveStayRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stay'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/stays:
+    get:
+      tags:
+      - Stays
+      operationId: listStays
+      summary: Stay history
+      x-story: SG-802
+      x-access: VIEW
+      x-release: full
+      description: Receptionists can query any day within the last `frontDeskHistoryDays` (property setting, default 7) in
+        buildings with VIEW or EDIT; owners and managers any range. Each item carries guestId indicators only; numbers and
+        photos are never returned here.
+      parameters:
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Single day; alternative to from and to
+      - name: from
+        in: query
+        required: false
+        schema: *id003
+      - name: to
+        in: query
+        required: false
+        schema: *id003
+      - name: q
+        in: query
+        required: false
+        schema: *id005
+        description: Room, guest name or phone
+      - name: buildingId
+        in: query
+        required: false
+        schema: *id005
+      - name: state
+        in: query
+        required: false
+        schema: *id005
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StayListItem'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/stays/{stayId}/timeline:
+    get:
+      tags:
+      - Stays
+      operationId: getStayTimeline
+      summary: Everything that happened to a stay
+      x-story: SG-904
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - $ref: '#/components/parameters/StayId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StayTimelineEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/invoices/{invoiceId}/receipt:
+    get:
+      tags:
+      - Payments
+      operationId: getReceipt
+      summary: Receipt data for printing
+      x-story: SG-802
+      x-access: VIEW
+      x-release: full
+      parameters:
+      - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/transactions:
+    get:
+      tags:
+      - Payments
+      operationId: listTransactions
+      summary: Cash and bank transactions with reconciliation state
+      x-story: SG-903
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema: *id003
+      - name: to
+        in: query
+        required: false
+        schema: *id003
+      - name: filter
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ALL
+          - TRANSFER
+          - CASH
+          - NEEDS_ACTION
+      - name: q
+        in: query
+        required: false
+        schema: *id005
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/payment-events/{eventId}/link:
+    post:
+      tags:
+      - Payments
+      operationId: linkTransferToInvoice
+      summary: Link an unmatched bank transfer to an unpaid invoice
+      x-story: SG-903
+      x-access: OWNER
+      x-release: full
+      description: OWNER only; only events reported by the bank provider; irreversible; audited. 409 when the event is already
+        linked or the invoice is paid.
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkTransferRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/alerts:
+    get:
+      tags:
+      - Owner
+      operationId: listAlerts
+      summary: Alerts
+      x-story: SG-902
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: unread
+        in: query
+        required: false
+        schema: &id006
+          type: boolean
+      - name: kind
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/AlertKind'
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/alerts/{alertId}/read:
+    post:
+      tags:
+      - Owner
+      operationId: markAlertRead
+      summary: Mark an alert read
+      x-story: SG-902
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: alertId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      responses:
+        '204': *id001
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/audit-logs:
+    get:
+      tags:
+      - Owner
+      operationId: listAuditLogs
+      summary: Activity log (append-only)
+      x-story: SG-902
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema: *id003
+      - name: to
+        in: query
+        required: true
+        schema: *id003
+      - name: actorId
+        in: query
+        required: false
+        schema: *id005
+      - name: category
+        in: query
+        required: false
+        schema: *id005
+      - name: q
+        in: query
+        required: false
+        schema: *id005
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/owner/shifts:
+    get:
+      tags:
+      - Shifts
+      operationId: listClosedShifts
+      summary: Closed shifts with differences
+      x-story: SG-905
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - name: month
+        in: query
+        required: false
+        schema: *id004
+      - name: userId
+        in: query
+        required: false
+        schema: *id005
+      - name: onlyDifferences
+        in: query
+        required: false
+        schema: *id006
+      - name: cursor
+        in: query
+        required: false
+        schema: *id005
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClosedShift'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/webhooks/bank/{hookId}:
+    post:
+      tags:
+      - Payments
+      operationId: receiveBankWebhook
+      summary: Bank or reconciliation-provider webhook (full product)
+      description: Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body
+        with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns
+        404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md);
+        no endpoint reads or writes it.
+      security:
+      - webhookSignature: []
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankWebhookPayload'
+      responses:
+        '202':
+          description: Accepted (also returned for duplicates)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+      parameters:
+      - name: hookId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      x-story: SG-703
+  /v1/webhooks/bank:
+    post:
+      tags:
+      - Payments
+      operationId: receiveBankWebhookLegacy
+      summary: 'Deprecated: single bank webhook (replaced by /v1/webhooks/bank/{hookId})'
+      description: 'Kept only so existing configurations fail loudly: answers 410 GONE. Use receiveBankWebhook at /v1/webhooks/bank/{hookId}.'
+      security:
+      - webhookSignature: []
+      x-release: full
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankWebhookPayload'
+      responses:
+        '202':
+          description: Accepted (also returned for duplicates)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '410':
+          description: GONE
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      deprecated: true
+  /v1/stays/{stayId}/guest-id/number:
+    put:
+      tags:
+      - Stays
+      operationId: setGuestIdNumber
+      summary: Add or replace the guest ID number (write-only for front desk)
+      x-story: SG-805
+      x-access: EDIT
+      x-release: full
+      parameters:
+      - &id007
+        $ref: '#/components/parameters/StayId'
+      - &id008
+        $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - idNumber
+              - consent
+              properties:
+                idNumber:
+                  type: string
+                  pattern: ^[0-9]{9,12}$
+                  writeOnly: true
+                consent:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Indicators only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestIdIndicators'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/stays/{stayId}/guest-id/photos/{side}:
+    put:
+      tags:
+      - Stays
+      operationId: uploadGuestIdPhoto
+      summary: Upload or replace an ID photo (front desk cannot read it back)
+      x-story: SG-805
+      x-access: EDIT
+      x-release: full
+      parameters:
+      - *id007
+      - &id009
+        name: side
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - FRONT
+          - BACK
+      - *id008
+      description: JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while
+        the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  contentMediaType: image/jpeg
+                consent:
+                  type: boolean
+      responses:
+        '200':
+          description: Indicators only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestIdIndicators'
+        '413':
+          description: PHOTO_TOO_LARGE
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: UNSUPPORTED_MEDIA
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /v1/owner/stays/{stayId}/guest-id:
+    get:
+      tags:
+      - Stays
+      operationId: getGuestIdRecord
+      summary: Masked ID number and photo metadata
+      x-story: SG-805
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id007
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestIdRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/stays/{stayId}/guest-id/reveal:
+    post:
+      tags:
+      - Stays
+      operationId: revealGuestIdNumber
+      summary: Show the full ID number (audited)
+      x-story: SG-805
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id007
+      description: 'Writes a GUEST_ID audit entry. Response has Cache-Control: no-store.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - idNumber
+                properties:
+                  idNumber: &id015
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/stays/{stayId}/guest-id/photos/{side}:
+    get:
+      tags:
+      - Stays
+      operationId: getGuestIdPhoto
+      summary: Stream an ID photo to view or download (audited)
+      x-story: SG-805
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id007
+      - *id009
+      - name: download
+        in: query
+        required: false
+        schema: &id014
+          type: boolean
+      description: 'Streams through the API only (no public or pre-signed URL). Cache-Control: no-store. download=true sets
+        Content-Disposition attachment and is audited as a download.'
+      responses:
+        '200':
+          description: Image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                contentMediaType: image/jpeg
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+      - Stays
+      operationId: deleteGuestIdPhoto
+      summary: Delete an ID photo (audited)
+      x-story: SG-805
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id007
+      - *id009
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/owner/stays/{stayId}/guest-id/number:
+    delete:
+      tags:
+      - Stays
+      operationId: deleteGuestIdNumber
+      summary: Delete the stored ID number (audited)
+      x-story: SG-805
+      x-access: OWNER_OR_MANAGER
+      x-release: full
+      parameters:
+      - *id007
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
-    bearerAuth: {type: http, scheme: bearer, description: Opaque session token}
-    webhookSignature: {type: apiKey, in: header, name: X-Signature, description: HMAC of the raw body}
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Opaque session token
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: HMAC of the raw body
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: true
-      description: Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
-      schema: {type: string, format: uuid}
-    BuildingId: {name: buildingId, in: path, required: true, schema: {type: string, minLength: 1}}
-    RoomId: {name: roomId, in: path, required: true, schema: {type: string, minLength: 1}}
-    StayId: {name: stayId, in: path, required: true, schema: {type: string, minLength: 1}}
-    InvoiceId: {name: invoiceId, in: path, required: true, schema: {type: string, minLength: 1}}
-    PaymentId: {name: paymentId, in: path, required: true, schema: {type: string, minLength: 1}}
-    TaskId: {name: taskId, in: path, required: true, schema: {type: string, minLength: 1}}
-    UserId: {name: userId, in: path, required: true, schema: {type: string, minLength: 1}}
-    ShiftId: {name: shiftId, in: path, required: true, schema: {type: string, minLength: 1}}
+      description: Client-generated UUID. Same key and body returns the first result; same key with a different body returns
+        409.
+      schema:
+        type: string
+        format: uuid
+    BuildingId:
+      name: buildingId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    StayId:
+      name: stayId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    InvoiceId:
+      name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    ShiftId:
+      name: shiftId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
   responses:
     Unauthorized:
       description: Missing or expired credentials
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
     Forbidden:
       description: Authenticated but not allowed (for example BUILDING_FORBIDDEN)
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
     NotFound:
       description: Not found, or not visible to this tenant
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
     Conflict:
       description: State conflict or idempotency-key reuse
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
     Unprocessable:
       description: Validation failed
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
     TooManyRequests:
       description: Rate limit exceeded
       headers:
-        Retry-After: {schema: {type: integer}}
+        Retry-After:
+          schema:
+            type: integer
       content:
         application/problem+json:
-          schema: {$ref: '#/components/schemas/Problem'}
+          schema:
+            $ref: '#/components/schemas/Problem'
   schemas:
     Problem:
       type: object
-      required: [type, title, status, code]
+      required:
+      - type
+      - title
+      - status
+      - code
       properties:
-        type: {type: string, description: URI reference identifying the problem type}
-        title: {type: string}
-        status: {type: integer}
-        detail: {type: string}
-        instance: {type: string}
-        code: {type: string, description: 'Stable machine code, e.g. ROOM_NOT_VACANT, BUILDING_FORBIDDEN'}
-        traceId: {type: string}
+        type:
+          type: string
+          description: URI reference identifying the problem type
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable machine code, e.g. ROOM_NOT_VACANT, BUILDING_FORBIDDEN
+        traceId:
+          type: string
         errors:
           type: array
           items:
             type: object
-            required: [field, code]
+            required:
+            - field
+            - code
             properties:
-              field: {type: string}
-              code: {type: string}
-    Vnd: {type: integer, format: int64, description: Whole Vietnamese dong}
-    Locale: {type: string, enum: [vi, en]}
+              field:
+                type: string
+              code:
+                type: string
+    Vnd:
+      type: integer
+      format: int64
+      description: Whole Vietnamese dong
+    Locale:
+      type: string
+      enum:
+      - vi
+      - en
     LocalizedText:
       type: object
-      required: [vi, en]
+      required:
+      - vi
+      - en
       properties:
-        vi: {type: string}
-        en: {type: string}
-    Role: {type: string, enum: [OWNER, RECEPTIONIST, HOUSEKEEPING]}
-    PermissionLevel: {type: string, enum: [NONE, VIEW, EDIT]}
-    RoomStatus: {type: string, enum: [VACANT, OCCUPIED, OVERDUE, TO_CLEAN, MAINTENANCE]}
-    RentalType: {type: string, enum: [HOURLY, OVERNIGHT, DAILY]}
-    StayStatus: {type: string, enum: [ACTIVE, CHECKED_OUT]}
-    PaymentMethod: {type: string, enum: [CASH, TRANSFER]}
-    PaymentStatus: {type: string, enum: [PENDING, PAID, EXPIRED, MISMATCH]}
-    AlertKind: {type: string, enum: [UNUSED_ROOM_REPORT, STAY_TIME_EDITED, CASH_SHORT, CASH_OVER]}
+        vi:
+          type: string
+        en:
+          type: string
+    Role:
+      type: string
+      enum:
+      - OWNER
+      - MANAGER
+      - RECEPTIONIST
+      - HOUSEKEEPING
+    PermissionLevel:
+      type: string
+      enum:
+      - NONE
+      - VIEW
+      - EDIT
+    RoomStatus:
+      type: string
+      enum:
+      - VACANT
+      - OCCUPIED
+      - OVERDUE
+      - TO_CLEAN
+      - MAINTENANCE
+    RentalType:
+      type: string
+      enum:
+      - HOURLY
+      - OVERNIGHT
+      - DAILY
+    StayStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - CHECKED_OUT
+    PaymentMethod:
+      type: string
+      enum:
+      - CASH
+      - TRANSFER
+    PaymentStatus:
+      type: string
+      enum:
+      - PENDING
+      - PAID
+      - EXPIRED
+      - MISMATCH
+    AlertKind:
+      type: string
+      enum:
+      - ACCOUNT_LOCKED
+      - CASH_OVER
+      - CASH_SHORT
+      - DAMAGE_REPORTED
+      - LEAVE_REQUESTED
+      - PAYMENT_MISMATCH
+      - SEPAY_UPDATED
+      - STAY_TIME_EDITED
+      - STOCKTAKE_DIFFERENCE
+      - UNMATCHED_TRANSFER
+      - UNUSED_ROOM_REPORT
     CreateDemoSessionRequest:
       type: object
       additionalProperties: false
-      required: [role, locale]
+      required:
+      - role
+      - locale
       properties:
-        role: {$ref: '#/components/schemas/Role'}
-        locale: {$ref: '#/components/schemas/Locale'}
-        tenantId: {type: string, description: Reuse an existing trial tenant so role switches share data}
+        role:
+          $ref: '#/components/schemas/Role'
+        locale:
+          $ref: '#/components/schemas/Locale'
+        tenantId:
+          type: string
+          description: Reuse an existing trial tenant so role switches share data
     User:
       type: object
-      required: [id, name, role, locale]
+      required:
+      - id
+      - name
+      - role
+      - locale
       properties:
-        id: {type: string}
-        name: {type: string}
-        role: {$ref: '#/components/schemas/Role'}
-        locale: {$ref: '#/components/schemas/Locale'}
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        locale:
+          $ref: '#/components/schemas/Locale'
     Session:
       type: object
-      required: [accessToken, expiresAt, tenantId, user]
+      required:
+      - accessToken
+      - expiresAt
+      - tenantId
+      - user
       properties:
-        accessToken: {type: string}
-        expiresAt: {type: string, format: date-time}
-        tenantId: {type: string}
-        user: {$ref: '#/components/schemas/User'}
+        accessToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        tenantId:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
     BuildingAccess:
       type: object
-      required: [buildingId, level]
+      required:
+      - buildingId
+      - level
       properties:
-        buildingId: {type: string}
-        level: {$ref: '#/components/schemas/PermissionLevel'}
+        buildingId:
+          type: string
+        level:
+          $ref: '#/components/schemas/PermissionLevel'
     Me:
       type: object
-      required: [user, tenant, buildingAccess]
+      required:
+      - user
+      - tenant
+      - buildingAccess
       properties:
-        user: {$ref: '#/components/schemas/User'}
+        user:
+          $ref: '#/components/schemas/User'
         tenant:
           type: object
-          required: [id, name, timezone, currency]
+          required:
+          - id
+          - name
+          - timezone
+          - currency
           properties:
-            id: {type: string}
-            name: {type: string}
-            timezone: {type: string}
-            currency: {type: string, const: VND}
+            id:
+              type: string
+            name:
+              type: string
+            timezone:
+              type: string
+            currency:
+              type: string
+              const: VND
         buildingAccess:
           type: array
-          items: {$ref: '#/components/schemas/BuildingAccess'}
+          items:
+            $ref: '#/components/schemas/BuildingAccess'
     StatusCounts:
       type: object
-      required: [vacant, occupied, overdue, toClean, maintenance]
+      required:
+      - vacant
+      - occupied
+      - overdue
+      - toClean
+      - maintenance
       properties:
-        vacant: {type: integer}
-        occupied: {type: integer}
-        overdue: {type: integer}
-        toClean: {type: integer}
-        maintenance: {type: integer}
+        vacant:
+          type: integer
+        occupied:
+          type: integer
+        overdue:
+          type: integer
+        toClean:
+          type: integer
+        maintenance:
+          type: integer
     Building:
       type: object
-      required: [id, code, name, level, counts]
+      required:
+      - id
+      - code
+      - name
+      - level
+      - counts
       properties:
-        id: {type: string}
-        code: {type: string}
-        name: {type: string}
-        level: {$ref: '#/components/schemas/PermissionLevel'}
-        counts: {$ref: '#/components/schemas/StatusCounts'}
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        level:
+          $ref: '#/components/schemas/PermissionLevel'
+        counts:
+          $ref: '#/components/schemas/StatusCounts'
     StaySummary:
       type: object
-      required: [id, rentalType, checkInAt, guestName, elapsedMinutes, runningTotal]
+      required:
+      - id
+      - rentalType
+      - checkInAt
+      - guestName
+      - elapsedMinutes
+      - runningTotal
       properties:
-        id: {type: string}
-        rentalType: {$ref: '#/components/schemas/RentalType'}
-        checkInAt: {type: string, format: date-time}
-        guestName: {type: string}
-        elapsedMinutes: {type: integer}
-        runningTotal: {$ref: '#/components/schemas/Vnd'}
+        id:
+          type: string
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+        checkInAt:
+          type: string
+          format: date-time
+        guestName:
+          type: string
+        elapsedMinutes:
+          type: integer
+        runningTotal:
+          $ref: '#/components/schemas/Vnd'
     Room:
       type: object
-      required: [id, code, buildingId, floor, unitType, status]
+      required:
+      - id
+      - code
+      - buildingId
+      - floor
+      - unitType
+      - status
       properties:
-        id: {type: string}
-        code: {type: string}
-        buildingId: {type: string}
-        floor: {type: integer}
+        id:
+          type: string
+        code:
+          type: string
+        buildingId:
+          type: string
+        floor:
+          type: integer
         unitType:
           type: object
-          required: [code, name]
+          required:
+          - code
+          - name
           properties:
-            code: {type: string}
-            name: {$ref: '#/components/schemas/LocalizedText'}
-        status: {$ref: '#/components/schemas/RoomStatus'}
-        note: {type: [string, 'null'], description: Free text such as a maintenance reason}
+            code:
+              type: string
+            name:
+              $ref: '#/components/schemas/LocalizedText'
+        status:
+          $ref: '#/components/schemas/RoomStatus'
+        note:
+          type:
+          - string
+          - 'null'
+          description: Free text such as a maintenance reason
         activeStay:
           oneOf:
-            - {$ref: '#/components/schemas/StaySummary'}
-            - {type: 'null'}
+          - $ref: '#/components/schemas/StaySummary'
+          - type: 'null'
     Service:
       type: object
-      required: [code, name, price, stock]
+      required:
+      - code
+      - name
+      - price
+      - stock
       properties:
-        code: {type: string}
-        name: {$ref: '#/components/schemas/LocalizedText'}
-        price: {$ref: '#/components/schemas/Vnd'}
-        stock: {type: integer, minimum: 0}
+        code:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedText'
+        price:
+          $ref: '#/components/schemas/Vnd'
+        stock:
+          type: integer
+          minimum: 0
+        unit:
+          type: string
+        lowStockAt:
+          type: integer
+          minimum: 0
+        onSale: *id006
+        latestUnitCost:
+          oneOf:
+          - &id011
+            $ref: '#/components/schemas/Vnd'
+          - type: 'null'
+        soldLast7Days: &id010
+          type: integer
     CreateStayRequest:
       type: object
       additionalProperties: false
-      required: [rentalType, guestName, guestPhone, deposit]
+      required:
+      - rentalType
+      - guestName
+      - guestPhone
+      - deposit
       properties:
-        rentalType: {$ref: '#/components/schemas/RentalType'}
-        guestName: {type: string, minLength: 1, maxLength: 120}
-        guestPhone: {type: string, minLength: 6, maxLength: 20}
-        idNumber: {type: [string, 'null'], maxLength: 20, description: Optional national ID; encrypted at rest, never returned in full}
-        deposit: {$ref: '#/components/schemas/Vnd'}
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+        guestName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        guestPhone:
+          type: string
+          minLength: 6
+          maxLength: 20
+        idNumber:
+          type:
+          - string
+          - 'null'
+          maxLength: 20
+          description: Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING
+          never returned in full: null
+        deposit:
+          $ref: '#/components/schemas/Vnd'
+        idConsent:
+          type: boolean
+          description: Required true when idNumber is given
     BillLine:
       type: object
-      required: [code, quantity, unitAmount, amount]
+      required:
+      - code
+      - quantity
+      - unitAmount
+      - amount
       properties:
-        code: {type: string, description: 'Pricing line code, e.g. FIRST_HOUR, EXTRA_HOUR, OVERNIGHT, DAILY'}
-        quantity: {type: integer, minimum: 1}
-        unitAmount: {$ref: '#/components/schemas/Vnd'}
-        amount: {$ref: '#/components/schemas/Vnd'}
+        code:
+          type: string
+          description: Pricing line code, e.g. FIRST_HOUR, EXTRA_HOUR, OVERNIGHT, DAILY
+        quantity:
+          type: integer
+          minimum: 1
+        unitAmount:
+          $ref: '#/components/schemas/Vnd'
+        amount:
+          $ref: '#/components/schemas/Vnd'
     ExtraLine:
       type: object
-      required: [serviceCode, name, quantity, unitAmount, amount]
+      required:
+      - serviceCode
+      - name
+      - quantity
+      - unitAmount
+      - amount
       properties:
-        serviceCode: {type: string}
-        name: {$ref: '#/components/schemas/LocalizedText'}
-        quantity: {type: integer, minimum: 1}
-        unitAmount: {$ref: '#/components/schemas/Vnd'}
-        amount: {$ref: '#/components/schemas/Vnd'}
+        serviceCode:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedText'
+        quantity:
+          type: integer
+          minimum: 1
+        unitAmount:
+          $ref: '#/components/schemas/Vnd'
+        amount:
+          $ref: '#/components/schemas/Vnd'
     Quote:
       type: object
-      required: [asOf, stayAmount, extrasAmount, total, depositPaid, balanceDue, refundDue, capped, lines]
+      required:
+      - asOf
+      - stayAmount
+      - extrasAmount
+      - total
+      - depositPaid
+      - balanceDue
+      - refundDue
+      - capped
+      - lines
       properties:
-        asOf: {type: string, format: date-time}
-        stayAmount: {$ref: '#/components/schemas/Vnd'}
-        extrasAmount: {$ref: '#/components/schemas/Vnd'}
-        total: {$ref: '#/components/schemas/Vnd'}
-        depositPaid: {$ref: '#/components/schemas/Vnd'}
-        balanceDue: {$ref: '#/components/schemas/Vnd'}
-        refundDue: {$ref: '#/components/schemas/Vnd'}
-        capped: {type: boolean}
+        asOf:
+          type: string
+          format: date-time
+        stayAmount:
+          $ref: '#/components/schemas/Vnd'
+        extrasAmount:
+          $ref: '#/components/schemas/Vnd'
+        total:
+          $ref: '#/components/schemas/Vnd'
+        depositPaid:
+          $ref: '#/components/schemas/Vnd'
+        balanceDue:
+          $ref: '#/components/schemas/Vnd'
+        refundDue:
+          $ref: '#/components/schemas/Vnd'
+        capped:
+          type: boolean
         lines:
           type: array
-          items: {$ref: '#/components/schemas/BillLine'}
+          items:
+            $ref: '#/components/schemas/BillLine'
     Stay:
       type: object
-      required: [id, roomId, roomCode, rentalType, status, checkInAt, guestName, guestPhone, deposit, extras, quote, pricingVersion]
+      required:
+      - id
+      - roomId
+      - roomCode
+      - rentalType
+      - status
+      - checkInAt
+      - guestName
+      - guestPhone
+      - deposit
+      - extras
+      - quote
+      - pricingVersion
       properties:
-        id: {type: string}
-        roomId: {type: string}
-        roomCode: {type: string}
-        rentalType: {$ref: '#/components/schemas/RentalType'}
-        status: {$ref: '#/components/schemas/StayStatus'}
-        checkInAt: {type: string, format: date-time}
-        checkOutAt: {type: [string, 'null'], format: date-time}
-        guestName: {type: string}
-        guestPhone: {type: string}
-        idNumberMasked: {type: [string, 'null']}
-        deposit: {$ref: '#/components/schemas/Vnd'}
+        id:
+          type: string
+        roomId:
+          type: string
+        roomCode:
+          type: string
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+        status:
+          $ref: '#/components/schemas/StayStatus'
+        checkInAt:
+          type: string
+          format: date-time
+        checkOutAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        guestName:
+          type: string
+        guestPhone:
+          type: string
+        deposit:
+          $ref: '#/components/schemas/Vnd'
         extras:
           type: array
-          items: {$ref: '#/components/schemas/ExtraLine'}
-        quote: {$ref: '#/components/schemas/Quote'}
-        pricingVersion: {type: integer, description: Rate plan version snapshotted at check-in}
+          items:
+            $ref: '#/components/schemas/ExtraLine'
+        quote:
+          $ref: '#/components/schemas/Quote'
+        pricingVersion:
+          type: integer
+          description: Rate plan version snapshotted at check-in
+        guestId:
+          $ref: '#/components/schemas/GuestIdIndicators'
     AddExtrasRequest:
       type: object
       additionalProperties: false
-      required: [items]
+      required:
+      - items
       properties:
         items:
           type: array
@@ -881,202 +3868,1993 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [serviceCode, quantity]
+            required:
+            - serviceCode
+            - quantity
             properties:
-              serviceCode: {type: string}
-              quantity: {type: integer, minimum: 1, maximum: 99}
+              serviceCode:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+                maximum: 99
     Invoice:
       type: object
-      required: [id, stayId, roomCode, status, createdAt, quote]
+      required:
+      - id
+      - stayId
+      - roomCode
+      - status
+      - createdAt
+      - quote
       properties:
-        id: {type: string}
-        stayId: {type: string}
-        roomCode: {type: string}
-        billCode: {type: string, description: 'Short reference such as PH0930A101, used as the transfer note'}
-        status: {type: string, enum: [OPEN, PAID]}
-        createdAt: {type: string, format: date-time}
-        quote: {$ref: '#/components/schemas/Quote'}
+        id:
+          type: string
+        stayId:
+          type: string
+        roomCode:
+          type: string
+        billCode:
+          type: string
+          description: Short reference such as PH0930A101, used as the transfer note
+        status:
+          type: string
+          enum:
+          - OPEN
+          - PAID
+        createdAt:
+          type: string
+          format: date-time
+        quote:
+          $ref: '#/components/schemas/Quote'
     CreatePaymentRequest:
       type: object
       additionalProperties: false
-      required: [method]
+      required:
+      - method
       properties:
-        method: {$ref: '#/components/schemas/PaymentMethod'}
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
     PaymentQr:
       type: object
-      required: [payload, accountNoMasked, accountName, transferNote, amount]
+      required:
+      - payload
+      - accountNoMasked
+      - accountName
+      - transferNote
+      - amount
       properties:
-        payload: {type: string, description: VietQR (EMVCo) string; the client renders it as a QR image}
-        accountNoMasked: {type: string}
-        accountName: {type: string}
-        transferNote: {type: string}
-        amount: {$ref: '#/components/schemas/Vnd'}
+        payload:
+          type: string
+          description: VietQR (EMVCo) string; the client renders it as a QR image
+        accountNoMasked:
+          type: string
+        accountName:
+          type: string
+        transferNote:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Vnd'
     Payment:
       type: object
-      required: [id, invoiceId, method, status, amount]
+      required:
+      - id
+      - invoiceId
+      - method
+      - status
+      - amount
       properties:
-        id: {type: string}
-        invoiceId: {type: string}
-        method: {$ref: '#/components/schemas/PaymentMethod'}
-        status: {$ref: '#/components/schemas/PaymentStatus'}
-        amount: {$ref: '#/components/schemas/Vnd'}
-        receivedAmount: {oneOf: [{$ref: '#/components/schemas/Vnd'}, {type: 'null'}]}
-        paidAt: {type: [string, 'null'], format: date-time}
-        transactionId: {type: [string, 'null']}
+        id:
+          type: string
+        invoiceId:
+          type: string
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        amount:
+          $ref: '#/components/schemas/Vnd'
+        receivedAmount:
+          oneOf:
+          - $ref: '#/components/schemas/Vnd'
+          - type: 'null'
+        paidAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        transactionId:
+          type:
+          - string
+          - 'null'
         qr:
           oneOf:
-            - {$ref: '#/components/schemas/PaymentQr'}
-            - {type: 'null'}
+          - $ref: '#/components/schemas/PaymentQr'
+          - type: 'null'
     BankWebhookPayload:
       type: object
       additionalProperties: false
-      required: [externalId, amount, content, receivedAt]
+      required:
+      - externalId
+      - amount
+      - content
+      - receivedAt
       properties:
-        externalId: {type: string, description: Provider transaction id; deduplication key}
-        amount: {$ref: '#/components/schemas/Vnd'}
-        content: {type: string, description: Transfer note as typed by the payer}
-        receivedAt: {type: string, format: date-time}
+        externalId:
+          type: string
+          description: Provider transaction id; deduplication key
+        amount:
+          $ref: '#/components/schemas/Vnd'
+        content:
+          type: string
+          description: Transfer note as typed by the payer
+        receivedAt:
+          type: string
+          format: date-time
     HousekeepingTask:
       type: object
-      required: [id, roomId, roomCode, buildingId, status, createdAt]
+      required:
+      - id
+      - roomId
+      - roomCode
+      - buildingId
+      - status
+      - createdAt
       properties:
-        id: {type: string}
-        roomId: {type: string}
-        roomCode: {type: string}
-        buildingId: {type: string}
-        status: {type: string, enum: [OPEN, DONE]}
-        createdAt: {type: string, format: date-time, description: Time the previous guest checked out}
-        completedAt: {type: [string, 'null'], format: date-time}
+        id:
+          type: string
+        roomId:
+          type: string
+        roomCode:
+          type: string
+        buildingId:
+          type: string
+        status:
+          type: string
+          enum:
+          - OPEN
+          - DONE
+        createdAt:
+          type: string
+          format: date-time
+          description: Time the previous guest checked out
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        waitingMinutes: *id010
     Alert:
       type: object
-      required: [id, kind, createdAt]
+      required:
+      - id
+      - kind
+      - createdAt
       properties:
-        id: {type: string}
-        kind: {$ref: '#/components/schemas/AlertKind'}
-        createdAt: {type: string, format: date-time}
-        roomCode: {type: [string, 'null']}
-        shiftId: {type: [string, 'null']}
-        stayId: {type: [string, 'null']}
-        actorName: {type: [string, 'null']}
-        amount: {oneOf: [{$ref: '#/components/schemas/Vnd'}, {type: 'null'}]}
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AlertKind'
+        createdAt:
+          type: string
+          format: date-time
+        roomCode:
+          type:
+          - string
+          - 'null'
+        shiftId:
+          type:
+          - string
+          - 'null'
+        stayId:
+          type:
+          - string
+          - 'null'
+        actorName:
+          type:
+          - string
+          - 'null'
+        amount:
+          oneOf:
+          - $ref: '#/components/schemas/Vnd'
+          - type: 'null'
         details:
           type: object
-          additionalProperties: {type: string}
+          additionalProperties:
+            type: string
           description: Kind-specific values, for example oldTime and newTime
     PaymentSummary:
       type: object
-      required: [paymentId, roomCode, method, amount, at]
+      required:
+      - paymentId
+      - roomCode
+      - method
+      - amount
+      - at
       properties:
-        paymentId: {type: string}
-        roomCode: {type: string}
-        method: {$ref: '#/components/schemas/PaymentMethod'}
-        amount: {$ref: '#/components/schemas/Vnd'}
-        at: {type: string, format: date-time}
+        paymentId:
+          type: string
+        roomCode:
+          type: string
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        amount:
+          $ref: '#/components/schemas/Vnd'
+        at:
+          type: string
+          format: date-time
     OwnerOverview:
       type: object
-      required: [date, revenueTotal, transfersReceived, cashExpected, byBuilding, occupancy, alerts, latestPayments]
+      required:
+      - date
+      - revenueTotal
+      - transfersReceived
+      - cashExpected
+      - byBuilding
+      - occupancy
+      - alerts
+      - latestPayments
       properties:
-        date: {type: string, format: date}
-        revenueTotal: {$ref: '#/components/schemas/Vnd'}
-        transfersReceived: {$ref: '#/components/schemas/Vnd'}
-        cashExpected: {$ref: '#/components/schemas/Vnd'}
+        date:
+          type: string
+          format: date
+        revenueTotal:
+          $ref: '#/components/schemas/Vnd'
+        transfersReceived:
+          $ref: '#/components/schemas/Vnd'
+        cashExpected:
+          $ref: '#/components/schemas/Vnd'
         byBuilding:
           type: array
           items:
             type: object
-            required: [buildingId, name, revenue]
+            required:
+            - buildingId
+            - name
+            - revenue
             properties:
-              buildingId: {type: string}
-              name: {type: string}
-              revenue: {$ref: '#/components/schemas/Vnd'}
+              buildingId:
+                type: string
+              name:
+                type: string
+              revenue:
+                $ref: '#/components/schemas/Vnd'
         occupancy:
           type: object
-          required: [occupiedRooms, totalRooms, overdueRooms]
+          required:
+          - occupiedRooms
+          - totalRooms
+          - overdueRooms
           properties:
-            occupiedRooms: {type: integer}
-            totalRooms: {type: integer}
-            overdueRooms: {type: integer}
+            occupiedRooms:
+              type: integer
+            totalRooms:
+              type: integer
+            overdueRooms:
+              type: integer
         alerts:
           type: array
-          items: {$ref: '#/components/schemas/Alert'}
+          items:
+            $ref: '#/components/schemas/Alert'
         latestPayments:
           type: array
-          items: {$ref: '#/components/schemas/PaymentSummary'}
+          items:
+            $ref: '#/components/schemas/PaymentSummary'
+        buildings:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildingStatus'
+        attention:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttentionItem'
     StaffPermission:
       type: object
-      required: [userId, name, role, access]
+      required:
+      - userId
+      - name
+      - role
+      - access
       properties:
-        userId: {type: string}
-        name: {type: string}
-        role: {$ref: '#/components/schemas/Role'}
+        userId:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
         access:
           type: array
-          items: {$ref: '#/components/schemas/BuildingAccess'}
+          items:
+            $ref: '#/components/schemas/BuildingAccess'
     Shift:
       type: object
-      required: [id, userId, userName, status, openedAt, openingFloat, cashIn, cashOut, expectedCash, transfersReceived, buildingIds]
+      required:
+      - id
+      - userId
+      - userName
+      - status
+      - openedAt
+      - openingFloat
+      - cashIn
+      - cashOut
+      - expectedCash
+      - transfersReceived
+      - buildingIds
       properties:
-        id: {type: string}
-        userId: {type: string}
-        userName: {type: string}
-        status: {type: string, enum: [OPEN, CLOSED]}
-        openedAt: {type: string, format: date-time}
-        closedAt: {type: [string, 'null'], format: date-time}
-        openingFloat: {$ref: '#/components/schemas/Vnd'}
-        cashIn: {$ref: '#/components/schemas/Vnd'}
-        cashOut: {$ref: '#/components/schemas/Vnd'}
-        expectedCash: {$ref: '#/components/schemas/Vnd'}
-        transfersReceived: {$ref: '#/components/schemas/Vnd'}
+        id:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+        status:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        openingFloat:
+          $ref: '#/components/schemas/Vnd'
+        cashIn:
+          $ref: '#/components/schemas/Vnd'
+        cashOut:
+          $ref: '#/components/schemas/Vnd'
+        expectedCash:
+          $ref: '#/components/schemas/Vnd'
+        transfersReceived:
+          $ref: '#/components/schemas/Vnd'
         buildingIds:
           type: array
-          items: {type: string}
+          items:
+            type: string
     CashCount:
       type: object
       additionalProperties: false
-      required: [denomination, quantity]
+      required:
+      - denomination
+      - quantity
       properties:
-        denomination: {type: integer, enum: [500000, 200000, 100000, 50000, 20000, 10000]}
-        quantity: {type: integer, minimum: 0}
+        denomination:
+          type: integer
+          enum:
+          - 500000
+          - 200000
+          - 100000
+          - 50000
+          - 20000
+          - 10000
+        quantity:
+          type: integer
+          minimum: 0
     CashPayoutRequest:
       type: object
       additionalProperties: false
-      required: [amount, description]
+      required:
+      - amount
+      - description
       properties:
-        amount: {type: integer, minimum: 1}
-        description: {type: string, minLength: 1, maxLength: 200}
+        amount:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          minLength: 1
+          maxLength: 200
     CloseShiftRequest:
       type: object
       additionalProperties: false
-      required: [counts, floatLeft]
+      required:
+      - counts
+      - floatLeft
       properties:
         counts:
           type: array
-          items: {$ref: '#/components/schemas/CashCount'}
-        reason: {type: [string, 'null'], maxLength: 500, description: Required when counted cash differs from expected cash}
-        handoverToUserId: {type: [string, 'null']}
-        floatLeft: {$ref: '#/components/schemas/Vnd'}
+          items:
+            $ref: '#/components/schemas/CashCount'
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+          description: Required when counted cash differs from expected cash
+        handoverToUserId:
+          type:
+          - string
+          - 'null'
+        floatLeft:
+          $ref: '#/components/schemas/Vnd'
     ShiftReview:
       type: object
-      required: [shift, countedCash, difference, cashPayments, staffHistory]
+      required:
+      - shift
+      - countedCash
+      - difference
+      - cashPayments
+      - staffHistory
       properties:
-        shift: {$ref: '#/components/schemas/Shift'}
-        countedCash: {$ref: '#/components/schemas/Vnd'}
-        difference: {$ref: '#/components/schemas/Vnd'}
-        reason: {type: [string, 'null']}
-        reasonRecordedAt: {type: [string, 'null'], format: date-time}
+        shift:
+          $ref: '#/components/schemas/Shift'
+        countedCash:
+          $ref: '#/components/schemas/Vnd'
+        difference:
+          $ref: '#/components/schemas/Vnd'
+        reason:
+          type:
+          - string
+          - 'null'
+        reasonRecordedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
         cashPayments:
           type: array
           items:
             type: object
-            required: [roomCode, rentalType, at, amount]
+            required:
+            - roomCode
+            - rentalType
+            - at
+            - amount
             properties:
-              roomCode: {type: string}
-              rentalType: {$ref: '#/components/schemas/RentalType'}
-              at: {type: string, format: date-time}
-              amount: {$ref: '#/components/schemas/Vnd'}
+              roomCode:
+                type: string
+              rentalType:
+                $ref: '#/components/schemas/RentalType'
+              at:
+                type: string
+                format: date-time
+              amount:
+                $ref: '#/components/schemas/Vnd'
         staffHistory:
           type: object
-          required: [shiftsWithDifference, totalShort]
+          required:
+          - shiftsWithDifference
+          - totalShort
           properties:
-            shiftsWithDifference: {type: integer, description: Shifts with a non-zero difference in the current month}
-            totalShort: {$ref: '#/components/schemas/Vnd'}
+            shiftsWithDifference:
+              type: integer
+              description: Shifts with a non-zero difference in the current month
+            totalShort:
+              $ref: '#/components/schemas/Vnd'
+    AppAccess:
+      type: string
+      enum:
+      - NONE
+      - MANAGER
+      - RECEPTIONIST
+      - HOUSEKEEPING
+      description: NONE = no sign-in (roster and payroll only, e.g. security). MANAGER = owner rights except bank accounts,
+        removing staff and pay.
+    Position:
+      type: string
+      enum:
+      - FRONT_DESK
+      - HOUSEKEEPING
+      - SECURITY
+      - MANAGER
+      - MAINTENANCE
+      - OTHER
+    PayType:
+      type: string
+      enum:
+      - MONTHLY
+      - PER_SHIFT
+      - HOURLY
+    ShiftCode:
+      type: string
+      enum:
+      - MORNING
+      - AFTERNOON
+      - NIGHT
+    OwnerPin:
+      type: object
+      additionalProperties: false
+      required:
+      - ownerPin
+      properties:
+        ownerPin:
+          type: string
+          pattern: ^[0-9]{6}$
+          writeOnly: true
+      description: Re-entered owner PIN for sensitive changes (bank accounts, removing staff).
+    OneTimePin:
+      type: object
+      required:
+      - pin
+      - expiresAt
+      properties:
+        pin:
+          type: string
+          pattern: ^[0-9]{6}$
+          description: Shown once; never retrievable again
+        expiresAt: &id012
+          type: string
+          format: date-time
+    SignInRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - guesthouseCode
+      - username
+      - pin
+      properties:
+        guesthouseCode:
+          type: string
+          minLength: 3
+          maxLength: 16
+        username:
+          type: string
+          minLength: 1
+          maxLength: 32
+        pin:
+          type: string
+          pattern: ^[0-9]{6}$
+          writeOnly: true
+    SignInResponse:
+      allOf:
+      - $ref: '#/components/schemas/Session'
+      - type: object
+        required:
+        - mustChangePin
+        properties:
+          mustChangePin: *id006
+    ChangePinRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - currentPin
+      - newPin
+      properties:
+        currentPin:
+          type: string
+          pattern: ^[0-9]{6}$
+          writeOnly: true
+        newPin:
+          type: string
+          pattern: ^[0-9]{6}$
+          writeOnly: true
+          description: Not a run (123456) or repeated digit (111111)
+    Contract:
+      type: object
+      additionalProperties: false
+      required:
+      - payType
+      - rate
+      - fixedAllowance
+      - standardShifts
+      - startDate
+      - annualLeaveDays
+      properties:
+        payType:
+          $ref: '#/components/schemas/PayType'
+        rate: *id011
+        fixedAllowance: *id011
+        standardShifts:
+          type: integer
+          minimum: 0
+        startDate: *id003
+        annualLeaveDays:
+          type: integer
+          minimum: 0
+    StaffStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - LOCKED
+      - REMOVED
+    Staff:
+      type: object
+      required:
+      - id
+      - name
+      - position
+      - appAccess
+      - status
+      - contract
+      - buildingAccess
+      properties:
+        id: *id005
+        name: *id005
+        phone:
+          type:
+          - string
+          - 'null'
+        position:
+          $ref: '#/components/schemas/Position'
+        appAccess:
+          $ref: '#/components/schemas/AppAccess'
+        username:
+          type:
+          - string
+          - 'null'
+        status:
+          $ref: '#/components/schemas/StaffStatus'
+        lockedUntil:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        lastActivityAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        contract:
+          $ref: '#/components/schemas/Contract'
+        buildingAccess:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildingAccess'
+    CreateStaffRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - position
+      - appAccess
+      - contract
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        phone:
+          type:
+          - string
+          - 'null'
+        position:
+          $ref: '#/components/schemas/Position'
+        appAccess:
+          $ref: '#/components/schemas/AppAccess'
+        username:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-z0-9_.]{2,32}$
+          description: Required unless appAccess is NONE
+        contract:
+          $ref: '#/components/schemas/Contract'
+        buildingAccess:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildingAccess'
+    UpdateStaffRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id005
+        phone:
+          type:
+          - string
+          - 'null'
+        position:
+          $ref: '#/components/schemas/Position'
+        appAccess:
+          $ref: '#/components/schemas/AppAccess'
+        contract:
+          $ref: '#/components/schemas/Contract'
+    CreateStaffResponse:
+      type: object
+      required:
+      - staff
+      properties:
+        staff:
+          $ref: '#/components/schemas/Staff'
+        oneTimePin:
+          oneOf:
+          - $ref: '#/components/schemas/OneTimePin'
+          - type: 'null'
+    RosterAssignment:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - date
+      - shift
+      properties:
+        userId: *id005
+        date: *id003
+        shift:
+          $ref: '#/components/schemas/ShiftCode'
+    LeaveKind:
+      type: string
+      enum:
+      - PAID
+      - SICK
+      - UNPAID
+    LeaveStatus:
+      type: string
+      enum:
+      - PENDING
+      - APPROVED
+      - DECLINED
+      - CANCELLED
+      - CANCEL_REQUESTED
+      - TAKEN
+    LeaveRequest:
+      type: object
+      required:
+      - id
+      - userId
+      - userName
+      - fromDate
+      - toDate
+      - kind
+      - status
+      - createdAt
+      properties:
+        id: *id005
+        userId: *id005
+        userName: *id005
+        fromDate: *id003
+        toDate: *id003
+        shift:
+          oneOf:
+          - $ref: '#/components/schemas/ShiftCode'
+          - type: 'null'
+        kind:
+          $ref: '#/components/schemas/LeaveKind'
+        reason:
+          type:
+          - string
+          - 'null'
+        coverUserId:
+          type:
+          - string
+          - 'null'
+        status:
+          $ref: '#/components/schemas/LeaveStatus'
+        declineReason:
+          type:
+          - string
+          - 'null'
+        createdAt: *id012
+        decidedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    CreateLeaveRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - fromDate
+      - toDate
+      - kind
+      properties:
+        fromDate: *id003
+        toDate: *id003
+        shift:
+          oneOf:
+          - $ref: '#/components/schemas/ShiftCode'
+          - type: 'null'
+        kind:
+          $ref: '#/components/schemas/LeaveKind'
+        reason:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        coverUserId:
+          type:
+          - string
+          - 'null'
+    LeaveBalance:
+      type: object
+      required:
+      - year
+      - annual
+      - used
+      - left
+      properties:
+        year: *id010
+        annual: *id010
+        used: *id010
+        left: *id010
+    Roster:
+      type: object
+      required:
+      - from
+      - to
+      - assignments
+      - leave
+      properties:
+        from: *id003
+        to: *id003
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/RosterAssignment'
+        leave:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRequest'
+        gaps:
+          type: array
+          items:
+            type: object
+            required:
+            - date
+            - shift
+            properties:
+              date: *id003
+              shift:
+                $ref: '#/components/schemas/ShiftCode'
+    PutRosterRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - set
+      - remove
+      properties:
+        set:
+          type: array
+          items:
+            $ref: '#/components/schemas/RosterAssignment'
+        remove:
+          type: array
+          items:
+            $ref: '#/components/schemas/RosterAssignment'
+    PayrollLine:
+      type: object
+      required:
+      - userId
+      - name
+      - position
+      - payType
+      - rate
+      - shiftsWorked
+      - leaveDays
+      - earnedPay
+      - allowance
+      - bonus
+      - deduction
+      - net
+      - status
+      properties:
+        userId: *id005
+        name: *id005
+        position:
+          $ref: '#/components/schemas/Position'
+        payType:
+          $ref: '#/components/schemas/PayType'
+        rate: *id011
+        shiftsWorked: *id010
+        standardShifts: *id010
+        leaveDays: *id010
+        earnedPay: *id011
+        allowance: *id011
+        bonus: *id011
+        deduction: *id011
+        net: *id011
+        note:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - UNPAID
+          - PAID
+    Payroll:
+      type: object
+      required:
+      - month
+      - lines
+      - totalNet
+      properties:
+        month: *id004
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayrollLine'
+        totalNet: *id011
+    UpdatePayrollLineRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        bonus: *id011
+        deduction: *id011
+        note:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+    DamageCategory:
+      type: string
+      enum:
+      - AIR_CONDITIONER
+      - HOT_WATER
+      - PLUMBING
+      - POWER_LIGHTS
+      - TV
+      - DOOR_LOCK
+      - MISSING_ITEMS
+      - OTHER
+    TicketStatus:
+      type: string
+      enum:
+      - NEW
+      - IN_REPAIR
+      - DONE
+    DamageReportRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - category
+      - description
+      - severity
+      properties:
+        category:
+          $ref: '#/components/schemas/DamageCategory'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        severity:
+          type: string
+          enum:
+          - STILL_RENTABLE
+          - LOCK_ROOM
+        photoAssetIds:
+          type: array
+          items: *id005
+    MaintenanceTicket:
+      type: object
+      required:
+      - id
+      - code
+      - roomId
+      - roomCode
+      - category
+      - description
+      - status
+      - roomLocked
+      - reportedBy
+      - reportedAt
+      - totalCost
+      properties:
+        id: *id005
+        code:
+          type: string
+          description: Human code such as BT-031
+        roomId: *id005
+        roomCode: *id005
+        category:
+          $ref: '#/components/schemas/DamageCategory'
+        description: *id005
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        roomLocked: *id006
+        reportedBy: *id005
+        reportedAt: *id012
+        expectedDoneOn:
+          type:
+          - string
+          - 'null'
+          format: date
+        partsCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        labourCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        totalCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        repairer:
+          type:
+          - string
+          - 'null'
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    UpdateTicketRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        roomLocked: *id006
+        expectedDoneOn:
+          type:
+          - string
+          - 'null'
+          format: date
+        partsCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        labourCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        repairer:
+          type:
+          - string
+          - 'null'
+        note:
+          type:
+          - string
+          - 'null'
+    ExpenseCategory:
+      type: string
+      enum:
+      - STAFF_PAY
+      - RENT
+      - ELECTRICITY
+      - WATER
+      - LAUNDRY
+      - MAINTENANCE
+      - SUPPLIES
+      - COST_OF_GOODS
+      - TAX_FEES
+      - INTERNET_TV
+      - PAYMENT_FEES
+      - OTHER
+    ExpenseSource:
+      type: string
+      enum:
+      - MANUAL
+      - RECURRING
+      - PAYROLL
+      - MAINTENANCE
+      - STOCK
+    Expense:
+      type: object
+      required:
+      - id
+      - category
+      - amount
+      - month
+      - source
+      properties:
+        id: *id005
+        category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        amount: *id011
+        month: *id004
+        paidOn:
+          type:
+          - string
+          - 'null'
+          format: date
+        note:
+          type:
+          - string
+          - 'null'
+        recurring: *id006
+        source:
+          $ref: '#/components/schemas/ExpenseSource'
+        attachmentAssetId:
+          type:
+          - string
+          - 'null'
+    CreateExpenseRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - category
+      - amount
+      - month
+      properties:
+        category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        amount: *id011
+        month: *id004
+        paidOn:
+          type:
+          - string
+          - 'null'
+          format: date
+        note:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        recurring: *id006
+        attachmentAssetId:
+          type:
+          - string
+          - 'null'
+    ExpenseMonth:
+      type: object
+      required:
+      - month
+      - categories
+      - items
+      - total
+      - revenue
+      properties:
+        month: *id004
+        categories:
+          type: array
+          items:
+            type: object
+            required:
+            - category
+            - amount
+            - source
+            properties:
+              category:
+                $ref: '#/components/schemas/ExpenseCategory'
+              amount: *id011
+              source:
+                $ref: '#/components/schemas/ExpenseSource'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+        total: *id011
+        revenue: *id011
+    AmountShare:
+      type: object
+      required:
+      - key
+      - amount
+      properties:
+        key: *id005
+        amount: *id011
+    IncomeCostReport:
+      type: object
+      required:
+      - from
+      - to
+      - revenue
+      - expenses
+      - profit
+      - marginPct
+      - occupancyPct
+      - months
+      - expensesByCategory
+      - revenueByRentalType
+      - revenueByBuilding
+      - revenueByMethod
+      properties:
+        from: *id004
+        to: *id004
+        revenue: *id011
+        expenses: *id011
+        profit:
+          type: integer
+        marginPct:
+          type: number
+        occupancyPct:
+          type: number
+        months:
+          type: array
+          items:
+            type: object
+            required:
+            - month
+            - revenue
+            - expenses
+            properties:
+              month: *id004
+              revenue: *id011
+              expenses: *id011
+        expensesByCategory:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmountShare'
+        revenueByRentalType:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmountShare'
+        revenueByBuilding:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmountShare'
+        revenueByMethod:
+          type: array
+          items:
+            $ref: '#/components/schemas/AmountShare'
+    Property:
+      type: object
+      required:
+      - guesthouseCode
+      - name
+      - qrExpiryMinutes
+      properties:
+        guesthouseCode: *id005
+        name: *id005
+        address:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        qrExpiryMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        idRetentionDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Guest ID number and photos are deleted this many days after check-out (default 30)
+        frontDeskHistoryDays:
+          type: integer
+          minimum: 1
+          maximum: 90
+          description: How many recent days of stay history receptionists can see (default 7)
+    UpdatePropertyRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id005
+        address:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        qrExpiryMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        idRetentionDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+        frontDeskHistoryDays:
+          type: integer
+          minimum: 1
+          maximum: 90
+          description: How many recent days of stay history receptionists can see (default 7)
+    BankAccount:
+      type: object
+      required:
+      - id
+      - bankBin
+      - bankName
+      - accountNoMasked
+      - accountName
+      - isDefault
+      - sepayStatus
+      properties:
+        id: *id005
+        bankBin: *id005
+        bankName: *id005
+        accountNoMasked: *id005
+        accountName: *id005
+        isDefault: *id006
+        sepayStatus:
+          type: string
+          enum:
+          - CONNECTED
+          - PENDING
+        lastWebhookAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    CreateBankAccountRequest:
+      allOf:
+      - $ref: '#/components/schemas/OwnerPin'
+      - type: object
+        additionalProperties: false
+        required:
+        - bankBin
+        - accountNo
+        - accountName
+        properties:
+          bankBin: *id005
+          accountNo:
+            type: string
+            pattern: ^[0-9]{6,20}$
+            writeOnly: true
+          accountName:
+            type: string
+            maxLength: 60
+          makeDefaultWhenConnected: *id006
+    SepayStatus:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - CONNECTED
+          - NOT_CONNECTED
+        lastWebhookAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        signatureValid:
+          type:
+          - boolean
+          - 'null'
+    CreateBuildingRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - floors
+      - roomsPerFloor
+      - unitTypeCode
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z]{1,3}$
+        name: *id005
+        floors:
+          type: integer
+          minimum: 1
+          maximum: 30
+        roomsPerFloor:
+          type: integer
+          minimum: 0
+          maximum: 50
+        unitTypeCode: *id005
+    UpdateBuildingRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id005
+    CreateFloorRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name: *id005
+        rooms:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - count
+            - startCode
+            - unitTypeCode
+            properties:
+              count:
+                type: integer
+                minimum: 1
+                maximum: 50
+              startCode: *id005
+              unitTypeCode: *id005
+          - type: 'null'
+    CreateRoomsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - buildingId
+      - floorId
+      - fromCode
+      - toCode
+      - unitTypeCode
+      properties:
+        buildingId: *id005
+        floorId: *id005
+        fromCode: *id005
+        toCode:
+          type: string
+          description: Equal to fromCode for a single room
+        unitTypeCode: *id005
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomFeature'
+        availableNow: *id006
+    RoomFeature:
+      type: string
+      enum:
+      - DOUBLE_BED
+      - TWIN_BEDS
+      - WINDOW
+      - BATHTUB
+    UpdateRoomRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        code: *id005
+        unitTypeCode: *id005
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomFeature'
+        maintenance:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - 'on'
+            properties:
+              'on': *id006
+              reason:
+                type:
+                - string
+                - 'null'
+              expectedBackOn:
+                type:
+                - string
+                - 'null'
+                format: date
+          - type: 'null'
+        retired: *id006
+    RatePlan:
+      type: object
+      additionalProperties: false
+      required:
+      - graceMinutes
+      - hourly
+      - overnight
+      - daily
+      properties:
+        version:
+          type: integer
+          readOnly: true
+        graceMinutes:
+          type: integer
+          minimum: 0
+          maximum: 60
+        hourly:
+          type: object
+          additionalProperties: false
+          required:
+          - firstHour
+          - extraHour
+          properties:
+            firstHour: *id011
+            extraHour: *id011
+        overnight:
+          type: object
+          additionalProperties: false
+          required:
+          - price
+          - windowStart
+          - windowEnd
+          properties:
+            price: *id011
+            windowStart: *id005
+            windowEnd: *id005
+        daily:
+          type: object
+          additionalProperties: false
+          required:
+          - price
+          - windowStart
+          - windowEnd
+          properties:
+            price: *id011
+            windowStart: *id005
+            windowEnd: *id005
+      description: Mirrors contracts/pricing/rate-plan.schema.json
+    UnitTypeRates:
+      type: object
+      required:
+      - code
+      - name
+      - ratePlan
+      - updatedAt
+      properties:
+        code: *id005
+        name: &id013
+          $ref: '#/components/schemas/LocalizedText'
+        ratePlan:
+          $ref: '#/components/schemas/RatePlan'
+        updatedAt: *id012
+    PricePreviewRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - rentalType
+      - checkIn
+      - checkOut
+      - ratePlan
+      properties:
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+        checkIn: *id012
+        checkOut: *id012
+        ratePlan:
+          $ref: '#/components/schemas/RatePlan'
+    CreateServiceRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - price
+      - unitCost
+      - openingQuantity
+      - unit
+      - lowStockAt
+      properties:
+        name: *id013
+        price: *id011
+        unitCost: *id011
+        openingQuantity:
+          type: integer
+          minimum: 0
+        unit: *id005
+        lowStockAt:
+          type: integer
+          minimum: 0
+        onSale: *id006
+    UpdateServiceRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id013
+        price: *id011
+        unit: *id005
+        lowStockAt:
+          type: integer
+          minimum: 0
+        onSale: *id006
+    RestockRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - quantity
+      - unitCost
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+        unitCost: *id011
+    StockMovement:
+      type: object
+      required:
+      - at
+      - kind
+      - quantity
+      - actorName
+      properties:
+        at: *id012
+        kind:
+          type: string
+          enum:
+          - OPENING
+          - IN
+          - SALE
+          - COUNT
+          - ADJUST
+        quantity:
+          type: integer
+        unitCost:
+          oneOf:
+          - *id011
+          - type: 'null'
+        ref:
+          type:
+          - string
+          - 'null'
+          description: Room code or stocktake id
+        actorName: *id005
+    RemoveServiceResult:
+      type: object
+      required:
+      - result
+      properties:
+        result:
+          type: string
+          enum:
+          - DELETED
+          - STOPPED_SELLING
+          description: Items with sales history are never deleted
+    StocktakeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - lines
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - serviceCode
+            - counted
+            properties:
+              serviceCode: *id005
+              counted:
+                type: integer
+                minimum: 0
+        note:
+          type:
+          - string
+          - 'null'
+    StocktakeResult:
+      type: object
+      required:
+      - id
+      - differences
+      - valueDifference
+      properties:
+        id: *id005
+        differences:
+          type: array
+          items:
+            type: object
+            required:
+            - serviceCode
+            - system
+            - counted
+            properties:
+              serviceCode: *id005
+              system: *id010
+              counted: *id010
+        valueDifference:
+          type: integer
+    EditCheckInRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - newCheckInAt
+      - reasonCode
+      - note
+      properties:
+        newCheckInAt: *id012
+        reasonCode:
+          type: string
+          enum:
+          - WRONG_TIME
+          - LATE_ARRIVAL
+          - OTHER
+        note:
+          type: string
+          minLength: 3
+          maxLength: 300
+    MoveStayRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - toRoomId
+      - rentalType
+      properties:
+        toRoomId: *id005
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+    StayListItem:
+      type: object
+      required:
+      - id
+      - roomCode
+      - guestName
+      - rentalType
+      - checkInAt
+      - status
+      - guestId
+      properties:
+        id: *id005
+        roomCode: *id005
+        guestName: *id005
+        rentalType:
+          $ref: '#/components/schemas/RentalType'
+        checkInAt: *id012
+        checkOutAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        total:
+          oneOf:
+          - *id011
+          - type: 'null'
+        paymentMethod:
+          oneOf:
+          - $ref: '#/components/schemas/PaymentMethod'
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - IN_STAY
+          - PAID
+          - UNPAID
+          - MISMATCH
+          - TIME_EDITED
+        status:
+          $ref: '#/components/schemas/StayStatus'
+        frontDeskName: *id005
+        guestId:
+          $ref: '#/components/schemas/GuestIdIndicators'
+    StayTimelineEvent:
+      type: object
+      required:
+      - at
+      - kind
+      - actorName
+      properties:
+        at: *id012
+        kind:
+          type: string
+          enum:
+          - CHECKED_IN
+          - CHECK_IN_EDITED
+          - EXTRAS_ADDED
+          - MOVED
+          - CHECKED_OUT
+          - PAYMENT_RECEIVED
+          - PAYMENT_MISMATCH
+          - LINKED_BY_OWNER
+          - CLEANED
+        actorName: *id005
+        details:
+          type: object
+          additionalProperties:
+            type: string
+    Receipt:
+      type: object
+      required:
+      - propertyName
+      - billCode
+      - roomCode
+      - checkInAt
+      - checkOutAt
+      - lines
+      - total
+      - payments
+      properties:
+        propertyName: *id005
+        propertyAddress:
+          type:
+          - string
+          - 'null'
+        propertyPhone:
+          type:
+          - string
+          - 'null'
+        billCode: *id005
+        roomCode: *id005
+        checkInAt: *id012
+        checkOutAt: *id012
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillLine'
+        extras:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraLine'
+        total: *id011
+        deposit: *id011
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentSummary'
+    Transaction:
+      type: object
+      required:
+      - id
+      - at
+      - amount
+      - method
+      - reconciliation
+      properties:
+        id: *id005
+        at: *id012
+        amount: *id011
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        roomCode:
+          type:
+          - string
+          - 'null'
+        billCode:
+          type:
+          - string
+          - 'null'
+        reconciliation:
+          type: string
+          enum:
+          - MATCHED
+          - MISMATCH
+          - UNMATCHED
+          - CASH
+        transferNote:
+          type:
+          - string
+          - 'null'
+        paymentEventId:
+          type:
+          - string
+          - 'null'
+        shiftId:
+          type:
+          - string
+          - 'null'
+    LinkTransferRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - invoiceId
+      properties:
+        invoiceId: *id005
+    BuildingStatus:
+      type: object
+      required:
+      - buildingId
+      - code
+      - totalRooms
+      - occupied
+      - vacant
+      - toClean
+      - overdue
+      - maintenance
+      - occupancyPct
+      - revenueToday
+      properties:
+        buildingId: *id005
+        code: *id005
+        totalRooms: *id010
+        occupied: *id010
+        vacant: *id010
+        toClean: *id010
+        overdue: *id010
+        maintenance: *id010
+        occupancyPct:
+          type: number
+        revenueToday: *id011
+    AttentionItem:
+      type: object
+      required:
+      - kind
+      - ref
+      properties:
+        kind:
+          type: string
+          enum:
+          - OVERDUE_ROOM
+          - LONG_TO_CLEAN
+          - PAYMENT_MISMATCH
+          - UNMATCHED_TRANSFER
+          - CASH_SHORT
+          - LEAVE_PENDING
+          - TICKET_OPEN
+        ref: *id005
+        roomCode:
+          type:
+          - string
+          - 'null'
+        minutes:
+          type:
+          - integer
+          - 'null'
+        amount:
+          oneOf:
+          - *id011
+          - type: 'null'
+    AuditEntry:
+      type: object
+      required:
+      - id
+      - at
+      - actorName
+      - category
+      - action
+      properties:
+        id: *id005
+        at: *id012
+        actorName: *id005
+        actorRole:
+          $ref: '#/components/schemas/Role'
+        category:
+          type: string
+          enum:
+          - MONEY
+          - STAY_TIME
+          - ACCESS_STAFF
+          - RATES_SETTINGS
+          - SHIFT
+          - STOCK
+          - MAINTENANCE
+          - INSTALLER
+          - GUEST_ID
+        action:
+          type: string
+          description: Stable code; the web app renders text from it and details
+        details:
+          type: object
+          additionalProperties:
+            type: string
+    ClosedShift:
+      type: object
+      required:
+      - id
+      - userName
+      - openedAt
+      - closedAt
+      - difference
+      properties:
+        id: *id005
+        userName: *id005
+        shift:
+          oneOf:
+          - $ref: '#/components/schemas/ShiftCode'
+          - type: 'null'
+        openedAt: *id012
+        closedAt: *id012
+        difference:
+          type: integer
+    GuestIdIndicators:
+      type: object
+      required:
+      - hasIdNumber
+      - hasFrontPhoto
+      - hasBackPhoto
+      properties:
+        hasIdNumber: *id014
+        hasFrontPhoto: *id014
+        hasBackPhoto: *id014
+    IdPhotoMeta:
+      type: object
+      required:
+      - side
+      - uploadedAt
+      - uploadedBy
+      properties:
+        side:
+          type: string
+          enum:
+          - FRONT
+          - BACK
+        uploadedAt:
+          type: string
+          format: date-time
+        uploadedBy: *id015
+        bytes:
+          type: integer
+    GuestIdRecord:
+      type: object
+      required:
+      - indicators
+      - idNumberMasked
+      - front
+      - back
+      - deleteAfter
+      properties:
+        indicators:
+          $ref: '#/components/schemas/GuestIdIndicators'
+        idNumberMasked:
+          type:
+          - string
+          - 'null'
+          description: First 3 and last 3 digits only
+        front:
+          oneOf:
+          - $ref: '#/components/schemas/IdPhotoMeta'
+          - type: 'null'
+        back:
+          oneOf:
+          - $ref: '#/components/schemas/IdPhotoMeta'
+          - type: 'null'
+        consentAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        deleteAfter:
+          type:
+          - string
+          - 'null'
+          format: date

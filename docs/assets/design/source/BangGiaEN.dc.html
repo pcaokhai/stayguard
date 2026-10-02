@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rates</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 1260px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="CaiDatEN.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Rates</span>
+<span style="font-size: 13px; color: #5C5A55">Version 1 · updated 30 Sep</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Standard</button><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">VIP</button></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="fh" style="font-size: 13px; font-weight: 600">First hour</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="fh" type="text" value="80.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="eh" style="font-size: 13px; font-weight: 600">Each extra hour</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="eh" type="text" value="20.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+
+</div></div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="on" style="font-size: 13px; font-weight: 600">Overnight</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="on" type="text" value="200.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+<span style="font-size: 12px; color: #5C5A55">Window 21:00 to 12:00 next day</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="dy" style="font-size: 13px; font-weight: 600">Daily</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="dy" type="text" value="300.000" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">đ</span>
+</div>
+<span style="font-size: 12px; color: #5C5A55">Check in from 14:00, out by 12:00</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="gr" style="font-size: 13px; font-weight: 600">Grace period</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="gr" type="text" value="15" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+<span style="font-size: 14px; color: #5C5A55; white-space: nowrap">min</span>
+</div>
+<span style="font-size: 12px; color: #5C5A55">An extra hour is charged only past the grace period</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Check the price</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span style="color: #5C5A55">Stay 1h 10m</span><span style="font-weight: 600; white-space: nowrap">₫80,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span style="color: #5C5A55">Stay 2h 35m</span><span style="font-weight: 600; white-space: nowrap">₫120,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span style="color: #5C5A55">Overnight, in at 19:30</span><span style="font-weight: 600; white-space: nowrap">₫240,000</span></div><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span style="color: #5C5A55">Stay 14h (capped at daily)</span><span style="font-weight: 600; white-space: nowrap">₫300,000</span></div>
+</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #DDE8F6; border: 1px solid #AFC6E6; color: #1C4A82; font-size: 13px; line-height: 1.45"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="8.5" r="1.5"></circle></svg><span>New prices apply to check-ins after you save. Current stays keep their price. Every change is logged.</span></div>
+<span style="flex-grow: 1"></span>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Save rates</span></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1260}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

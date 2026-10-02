@@ -232,3 +232,18 @@ Decisions made after the earlier planning document, recorded so nothing lives on
 | Demo in about 7 working days | About 4 weeks at roughly 6 focused hours a day | Scope grew (permissions, shift reconciliation, trial tenants, i18n) and review capacity, not typing speed, is the limit (docs/07 §2) |
 | `occupancies` table with `mode` | `stays` table plus a `BillingPolicy` port; boarding house adds its own tables later | Avoids a half-used generic table in the demo (docs/05 §4) |
 | `/demo` reset every night | Per-trial tenants that expire after 24 h | Works on scale-to-zero hosting and isolates prospects (ADR-013) |
+
+
+## 13. Production v1.1 additions (docs/15)
+
+| Area | Decision |
+| --- | --- |
+| Roles | `Role` adds MANAGER; staff without sign-in have app access NONE and no credentials. The Authorizer gains a role table per operation (docs/04 §8.1) |
+| Sign-in | Guesthouse code + user name + 6-digit PIN, slow hash, lockout after 5 failures for 15 minutes, one-time PINs with forced change. Demo sessions stay behind DEMO_MODE |
+| New modules | `app/staff`, `app/roster`, `app/payroll`, `app/maintenance`, `app/expenses`, `app/reports`, `app/stock`, `app/setup` (property, bank accounts, buildings, rooms, rates). Each owns its tables; cross-module effects (ticket DONE → expense, payroll paid → expense, stock IN → cost of goods) are in-process domain events handled in the same transaction |
+| Scheduled work | Monthly: copy recurring expense templates; nightly: mark expired leave as TAKEN, expire one-time PINs. Run inside the API process with a database advisory lock so only one instance runs them |
+| Money rules | Still whole VND; payroll rounding rule stated in SG-1104; deductions only by owner input; drawer payouts are not expenses |
+| Bank | `bank_accounts` with per-account `sepay_hook_id` and encrypted secret; webhook route per hookId; installer CLI is the only writer of secrets |
+| Frontend | One responsive page per route (docs/15 §1) under `src/app/[locale]` (vi, en). Components from shadcn/ui (Radix), motion from Motion, tables from TanStack Table, charts from Recharts, forms from react-hook-form + zod (docs/16). Wide tables scroll sideways with a sticky first column; drawers on tablet and desktop, full pages on phone |
+| Reports | Income and cost aggregates from paid invoices and expenses by tenant-local month; a monthly summary view keeps the report under the latency budget |
+| Guest ID | Number and photos are a separate module (`app/guestid`) with its own repository so front-desk queries cannot select them. Photos: metadata stripped, re-encoded, encrypted with the tenant data key, streamed through the API with no-store; daily retention job deletes past `id_retention_days`. All reads are audited |

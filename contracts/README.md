@@ -1,6 +1,6 @@
 # Contracts
 
-Normative interfaces. Change them only in `contract/<slice>-<slug>` PRs approved by the tech lead (docs/04 §7).
+Normative interfaces. SHIP MODE: change `openapi.yaml` on `main` with `make gen` in the same commit and keep `make contracts` green (Spectral, oasdiff, schemas, vectors).
 
 | Path | What |
 | --- | --- |

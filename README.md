@@ -2,7 +2,7 @@
 
 Anti-loss management for small guesthouses: automatic pricing by hour, night and day, QR payments that always reach the owner's account, per-building staff permissions, and shift cash reconciliation.
 
-Status: **FAST MODE** — the demo flow (room map, check-in, extras, check-out, QR payment, housekeeping, owner overview) is built; publishing the demo and production v1 are next. Plan: `docs/14-demo-and-production-plan.md`; live status: `docs/progress.md`.
+Status: **SHIP MODE** — the demo is live; the production sprint (sign-in, staff, SePay, shifts, owner monitoring, settings, then stock, guest ID, roster, payroll, expenses and reports) runs from `docs/14-production-sprint.md`. Product rules: `docs/15`; UI kit and motion: `docs/16`.
 
 > The demo is for trying the product. Do not enter real guest data.
 
@@ -10,7 +10,7 @@ Status: **FAST MODE** — the demo flow (room map, check-in, extras, check-out, 
 
 - People: `docs/README.md` (reading order per role)
 - Claude Code sessions: `CLAUDE.md`, then `api/CLAUDE.md` or `web/CLAUDE.md`
-- Live status: `docs/progress.md`; release history: `docs/release-notes.md`
+- Live status: the checkboxes in `docs/14-production-sprint.md`; history: `git log`
 
 ## Layout
 

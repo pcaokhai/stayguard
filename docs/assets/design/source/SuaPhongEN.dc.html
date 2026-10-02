@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit room</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F6F4EF;color:#1C1B19}
+a{color:#1F4E5F}a:hover{color:#163A47}
+</style>
+</helmet>
+<div style="width: 390px; height: 960px; box-sizing: border-box; background: #F6F4EF; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1C1B19; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px 12px">
+<a href="ToaPhongEN.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1C1B19; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 20px; font-weight: 700">Edit room A205</span>
+<span style="font-size: 13px; color: #5C5A55">Building A · Floor 2</span>
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 20px 20px; flex-grow: 1; min-height: 0">
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc" style="font-size: 13px; font-weight: 600">Room number</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="rc" type="text" value="A205" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 600">Room type</span><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #ECE9E2"><button type="button" aria-pressed="true" style="height: 40px; border-radius: 8px; border: none; background: #FFFFFF; color: #1C1B19; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Standard</button><button type="button" aria-pressed="false" style="height: 40px; border-radius: 8px; border: none; background: transparent; color: #5C5A55; font-family: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: none">VIP</button></div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5C5A55">Status</span></div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">Under maintenance</span><span style="font-size: 12px; color: #5C5A55">Hidden from check-in</span></div><button type="button" role="switch" aria-checked="true" aria-label="Under maintenance" style="width: 52px; height: 32px; flex-shrink: 0; border-radius: 999px; border: none; padding: 3px; background: #1F4E5F; display: flex; justify-content: flex-end"><span style="width: 26px; height: 26px; border-radius: 999px; background: #FFFFFF"></span></button></div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="mr" style="font-size: 13px; font-weight: 600">Maintenance reason</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="mr" type="text" value="A/C broken" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div><div style="display: flex; flex-direction: column; gap: 6px">
+<label for="me" style="font-size: 13px; font-weight: 600">Expected back</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #CFCBC3; background: #FFFFFF">
+<input id="me" type="text" value="02/10" style="flex-grow: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; color: #1C1B19">
+
+</div>
+
+</div>
+</div>
+<div style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #5C5A55; line-height: 1.45"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path></svg><span>If housekeeping reports a maintenance room as used, the owner gets an alert.</span></div>
+<span style="flex-grow: 1"></span>
+<a href="ToaPhongEN.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #1F4E5F; color: #FFFFFF; border: none; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Save</span></a>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; width: 100%; box-sizing: border-box; border-radius: 12px; background: #FFFFFF; color: #8E2320; border: 1px solid #E8B4AE; font-family: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; text-decoration: none"><span>Retire this room</span></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

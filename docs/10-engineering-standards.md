@@ -4,6 +4,8 @@ Version 1.0 · 2026-09-30 · Owner: Tech lead
 
 Rules an experienced engineer applies on a production system that handles money and personal data. Reviewers (human, or the `requesting-code-review` skill) check against this document. "MUST" items block merge.
 
+> **SHIP MODE:** §0 (domain non-negotiables), §2–§9 and the style rules in §4 apply. §10 coverage gates, §11 pull requests and §13 documentation duties are suspended during the sprint (docs/14 §2); tests required are in docs/14 §6. UI components come from docs/16, not hand-built.
+
 ## 0. Domain non-negotiables
 
 1. **Money is a whole number of VND** (`int64` in Go, `number` limited to safe integers in TypeScript, `BIGINT` in SQL). No floats, no `NUMERIC` decimals. A `Vnd` value type carries arithmetic with overflow checks.
@@ -14,7 +16,7 @@ Rules an experienced engineer applies on a production system that handles money 
 6. **Authorization on every request** by role and by building (docs/04 §2.3), checked in the application layer against the target resource's building.
 7. **Idempotent writes** where the contract declares `Idempotency-Key`; events deduplicated by `(provider, external_id)`.
 8. **Audit sensitive actions** (permission changes, shift close, cash payouts, alerts) in the same transaction as the change.
-9. **Personal data minimisation:** ID numbers and bank account numbers are encrypted at rest, masked on read, never logged, never in fixtures or screenshots.
+9. **Personal data minimisation:** guest ID numbers, ID photos and bank account numbers are encrypted at rest, never logged, never in fixtures or screenshots. Guest ID data is write-only for front desk and housekeeping and readable only by OWNER and MANAGER through audited endpoints, then deleted after the retention period (docs/15 rules 21 to 25).
 10. **Public repository hygiene** (docs/11 §6): no secrets, no real data, no customer names.
 
 ## 1. Principles
