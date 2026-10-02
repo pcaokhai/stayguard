@@ -244,6 +244,15 @@ func (p *Payments) Simulate(ctx context.Context, c Caller, id string) (PaymentVi
 	return out, err
 }
 
+// RecordIgnored stores a bank event that must not settle anything (an outgoing transfer, or money to an account that
+// is not the tenant's). The row says UNMATCHED, deduplicated like every event; no alert is raised.
+func (p *Payments) RecordIgnored(ctx context.Context, ev PaymentEvent) error {
+	return p.uow.Do(ctx, ev.TenantID, func(ctx context.Context, tx Tx) error {
+		_, err := p.repo.InsertEvent(ctx, tx, p.ids.New(eventIDPrefix), ev)
+		return err
+	})
+}
+
 // Settle is the one settlement handler. Every transfer becomes PAID here and nowhere else.
 func (p *Payments) Settle(ctx context.Context, ev PaymentEvent) (SettleResult, error) {
 	var out SettleResult

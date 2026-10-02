@@ -29,7 +29,7 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 
 - `TRUST_PROXY=1` and `TRUSTED_PROXY_HOPS=1` in `deploy/.env.prod`: one Caddy in front, the app port closed to the internet (see `deploy/README.md`). Without them every sign-in shares the proxy's address and the per-IP limit locks everyone out together.
 
-- Guest ID retention (docs/15 rule 25): a daily timer runs `stayguard guest-id retention` with `DATABASE_URL` and `MAINTENANCE_DATABASE_URL` (the `stayguard_maint` login, read-only) in its environment. It prints counts only. Check its first run in the journal.
+- Guest ID retention (docs/15 rule 25): a daily timer runs `stayguard guest-id retention` with only `DATABASE_URL` in its environment. It prints counts only. Check its first run in the journal.
 
 ## Rules
 

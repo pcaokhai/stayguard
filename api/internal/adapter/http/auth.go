@@ -39,7 +39,7 @@ func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Han
 	respond := problemResponder(log)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !isAPIPath(r.URL.Path) || publicRoutes[r.Method+" "+r.URL.Path] {
+			if !isAPIPath(r.URL.Path) || publicRoutes[r.Method+" "+r.URL.Path] || isWebhook(r.Method, r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}

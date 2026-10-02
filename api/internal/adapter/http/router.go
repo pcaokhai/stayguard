@@ -80,7 +80,9 @@ type Options struct {
 	// Setup serves buildings, rooms, rate plans and items.
 	Setup SetupService
 	// GuestIDs serves the guest ID number and photos.
-	GuestIDs   GuestIDService
+	GuestIDs GuestIDService
+	// Webhook receives SePay events at /v1/webhooks/bank/{hookId}.
+	Webhook    WebhookService
 	TrustProxy bool
 	ProxyHops  int
 	// StayOps serves stay history, timeline, receipt and the check-in time and move corrections (no flag).
@@ -107,6 +109,9 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})
 	gen.HandlerWithOptions(strict, gen.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: badRequestResponse})
+	if o.Webhook != nil { // registered after the generated routes so this raw-body handler serves the path
+		r.Post(webhookPrefix+"{hookId}", receiveWebhook(log, o.Webhook))
+	}
 	r.Get("/healthz", healthz) // keeps the SG-001 body; replaced by Server.GetHealth when ops are implemented
 	r.Get("/readyz", readyz(log, o.Probe))
 	r.NotFound(staticHandler(o.StaticDir).ServeHTTP)

@@ -124,6 +124,17 @@ func (q *Queries) GetProperty(ctx context.Context, tenantID string) (GetProperty
 	return i, err
 }
 
+const getSepaySecretEnc = `-- name: GetSepaySecretEnc :one
+SELECT sepay_secret_enc FROM app.tenants WHERE id = $1
+`
+
+func (q *Queries) GetSepaySecretEnc(ctx context.Context, tenantID string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSepaySecretEnc, tenantID)
+	var sepay_secret_enc []byte
+	err := row.Scan(&sepay_secret_enc)
+	return sepay_secret_enc, err
+}
+
 const getSepayState = `-- name: GetSepayState :one
 SELECT t.sepay_signature_ok, (t.sepay_secret_enc IS NOT NULL)::boolean AS has_secret, t.hook_id,
        EXISTS (SELECT 1 FROM app.bank_accounts b WHERE b.tenant_id = t.id AND b.is_default AND b.sepay_status = 'CONNECTED') AS default_connected,
@@ -216,6 +227,35 @@ func (q *Queries) InsertTenant(ctx context.Context, arg InsertTenantParams) erro
 	return err
 }
 
+const listBankAccountBlobs = `-- name: ListBankAccountBlobs :many
+SELECT id, account_enc FROM app.bank_accounts WHERE tenant_id = $1 ORDER BY id
+`
+
+type ListBankAccountBlobsRow struct {
+	ID         string
+	AccountEnc []byte
+}
+
+func (q *Queries) ListBankAccountBlobs(ctx context.Context, tenantID string) ([]ListBankAccountBlobsRow, error) {
+	rows, err := q.db.Query(ctx, listBankAccountBlobs, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBankAccountBlobsRow
+	for rows.Next() {
+		var i ListBankAccountBlobsRow
+		if err := rows.Scan(&i.ID, &i.AccountEnc); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBankAccounts = `-- name: ListBankAccounts :many
 SELECT id, bank_bin, bank_name, account_no_masked, account_name, is_default, sepay_status, make_default_when_connected, last_webhook_at
 FROM app.bank_accounts WHERE tenant_id = $1 ORDER BY is_default DESC, created_at, id
@@ -295,6 +335,20 @@ func (q *Queries) SetSepaySecret(ctx context.Context, arg SetSepaySecretParams) 
 	return err
 }
 
+const setSepaySignatureOK = `-- name: SetSepaySignatureOK :exec
+UPDATE app.tenants SET sepay_signature_ok = $1 WHERE id = $2 AND sepay_signature_ok IS DISTINCT FROM $1
+`
+
+type SetSepaySignatureOKParams struct {
+	Ok       pgtype.Bool
+	TenantID string
+}
+
+func (q *Queries) SetSepaySignatureOK(ctx context.Context, arg SetSepaySignatureOKParams) error {
+	_, err := q.db.Exec(ctx, setSepaySignatureOK, arg.Ok, arg.TenantID)
+	return err
+}
+
 const setTenantHook = `-- name: SetTenantHook :exec
 UPDATE app.tenants SET hook_id = $1 WHERE id = $2 AND hook_id IS NULL
 `
@@ -306,6 +360,21 @@ type SetTenantHookParams struct {
 
 func (q *Queries) SetTenantHook(ctx context.Context, arg SetTenantHookParams) error {
 	_, err := q.db.Exec(ctx, setTenantHook, arg.HookID, arg.TenantID)
+	return err
+}
+
+const touchBankAccountWebhook = `-- name: TouchBankAccountWebhook :exec
+UPDATE app.bank_accounts SET last_webhook_at = $1 WHERE tenant_id = $2 AND id = $3
+`
+
+type TouchBankAccountWebhookParams struct {
+	At       pgtype.Timestamptz
+	TenantID string
+	ID       string
+}
+
+func (q *Queries) TouchBankAccountWebhook(ctx context.Context, arg TouchBankAccountWebhookParams) error {
+	_, err := q.db.Exec(ctx, touchBankAccountWebhook, arg.At, arg.TenantID, arg.ID)
 	return err
 }
 

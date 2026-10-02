@@ -392,13 +392,37 @@ export interface Payment {
   qr?: PaymentQr | null;
 }
 
+export type BankWebhookPayloadTransferType = typeof BankWebhookPayloadTransferType[keyof typeof BankWebhookPayloadTransferType];
+
+
+export const BankWebhookPayloadTransferType = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+/**
+ * The SePay webhook body (https://developer.sepay.vn/vi/sepay-webhooks/tich-hop-webhook); unknown fields are ignored.
+ */
 export interface BankWebhookPayload {
-  /** Provider transaction id; deduplication key */
-  externalId: string;
-  amount: Vnd;
+  /** SePay transaction id, the same on every retry; deduplication key */
+  id?: number;
+  gateway?: string;
+  /** YYYY-MM-DD HH:mm:ss, Vietnam time */
+  transactionDate?: string;
+  accountNumber?: string;
+  subAccount?: string;
+  /**
+     * Ignored; the bill code is found inside content
+     * @nullable
+     */
+  code?: string | null;
   /** Transfer note as typed by the payer */
-  content: string;
-  receivedAt: string;
+  content?: string;
+  transferType?: BankWebhookPayloadTransferType;
+  description?: string;
+  transferAmount?: Vnd;
+  accumulated?: number;
+  referenceCode?: string;
 }
 
 export type HousekeepingTaskStatus = typeof HousekeepingTaskStatus[keyof typeof HousekeepingTaskStatus];
@@ -1876,6 +1900,10 @@ export type ListClosedShifts200 = {
   items: ClosedShift[];
   /** @nullable */
   nextCursor?: string | null;
+};
+
+export type ReceiveBankWebhook200 = {
+  success?: boolean;
 };
 
 export type SetGuestIdNumberBody = {
@@ -8181,6 +8209,11 @@ export const listClosedShifts = async (params?: ListClosedShiftsParams, options?
 
 
 
+export type receiveBankWebhookResponse200 = {
+  data: ReceiveBankWebhook200
+  status: 200
+}
+
 export type receiveBankWebhookResponse202 = {
   data: void
   status: 202
@@ -8196,7 +8229,7 @@ export type receiveBankWebhookResponse422 = {
   status: 422
 }
 
-export type receiveBankWebhookResponseSuccess = (receiveBankWebhookResponse202) & {
+export type receiveBankWebhookResponseSuccess = (receiveBankWebhookResponse200 | receiveBankWebhookResponse202) & {
   headers: Headers;
 };
 export type receiveBankWebhookResponseError = (receiveBankWebhookResponse401 | receiveBankWebhookResponse422) & {
@@ -8214,7 +8247,7 @@ export const getReceiveBankWebhookUrl = (hookId: string,) => {
 }
 
 /**
- * Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns 404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
+ * SePay webhook, one path per tenant. Looks up the tenant by hookId, checks X-SePay-Timestamp (within 300 s) and X-SePay-Signature (sha256= and the hex HMAC-SHA256 of "{timestamp}.{raw body}" keyed by the secret) with a constant-time compare, then runs the same settlement handler as the demo simulator. Only incoming transfers settle; outgoing ones are stored and ignored. Deduplicated on SePay's transaction id: a duplicate gets the same 200 {"success": true}. Unknown hookId returns 404, a bad signature 401 with no detail. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
  * @summary Bank or reconciliation-provider webhook (full product)
  */
 export const receiveBankWebhook = async (hookId: string,
@@ -8246,7 +8279,7 @@ const res = await fetch(getReceiveBankWebhookUrl(hookId),
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: receiveBankWebhookResponse['data'] = body ? JSON.parse(body) : undefined
+  const data: receiveBankWebhookResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as receiveBankWebhookResponse
 }
 

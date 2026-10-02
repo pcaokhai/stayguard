@@ -54,3 +54,15 @@ UPDATE app.tenants SET sepay_secret_enc = @sepay_secret_enc, sepay_signature_ok 
 -- name: InsertTenant :exec
 INSERT INTO app.tenants (id, name, guesthouse_code, hook_id, default_locale, time_zone)
 VALUES (@id, @name, @guesthouse_code, @hook_id, @default_locale, @time_zone);
+
+-- name: GetSepaySecretEnc :one
+SELECT sepay_secret_enc FROM app.tenants WHERE id = @tenant_id;
+
+-- name: ListBankAccountBlobs :many
+SELECT id, account_enc FROM app.bank_accounts WHERE tenant_id = @tenant_id ORDER BY id;
+
+-- name: TouchBankAccountWebhook :exec
+UPDATE app.bank_accounts SET last_webhook_at = @at WHERE tenant_id = @tenant_id AND id = @id;
+
+-- name: SetSepaySignatureOK :exec
+UPDATE app.tenants SET sepay_signature_ok = @ok WHERE id = @tenant_id AND sepay_signature_ok IS DISTINCT FROM @ok;

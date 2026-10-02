@@ -36,13 +36,27 @@ BEGIN
         EXECUTE format('ALTER TABLE app.%I FORCE ROW LEVEL SECURITY', t);
         EXECUTE format('CREATE POLICY %I ON app.%I USING (tenant_id = app.current_tenant()) WITH CHECK (tenant_id = app.current_tenant())', t || '_tenant', t);
         EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON app.%I TO stayguard_app', t);
-        -- Retention reads which tenants have expired data; deleting and auditing happen through the application role.
-        EXECUTE format('GRANT SELECT ON app.%I TO stayguard_maint', t);
     END LOOP;
 END
 $$;
 -- +goose StatementEnd
-GRANT SELECT ON app.stays, app.properties TO stayguard_maint;
+
+-- Retention needs the tenant ids with expired data, across tenants. The application role gets only this function
+-- (ids, no rows); it is owned by the BYPASSRLS role and the job then deletes tenant by tenant under RLS.
+CREATE FUNCTION app.tenants_with_expired_guest_ids(p_now timestamptz) RETURNS SETOF text
+    LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, app
+    AS $$
+    SELECT DISTINCT g.tenant_id
+    FROM app.guest_ids g
+    JOIN app.stays s ON s.tenant_id = g.tenant_id AND s.id = g.stay_id
+    JOIN app.properties pr ON pr.tenant_id = g.tenant_id
+    WHERE s.check_out_at IS NOT NULL AND s.check_out_at + pr.id_retention_days * interval '1 day' < p_now
+    ORDER BY 1
+$$;
+REVOKE ALL ON FUNCTION app.tenants_with_expired_guest_ids(timestamptz) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.tenants_with_expired_guest_ids(timestamptz) TO stayguard_app;
+GRANT SELECT ON app.guest_ids, app.guest_id_photos, app.stays, app.properties TO stayguard_maint;
+ALTER FUNCTION app.tenants_with_expired_guest_ids(timestamptz) OWNER TO stayguard_maint;
 
 -- Numbers entered at check-in so far keep their ciphertext (same tenant and field binding) and count as consented then.
 INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, consent_at)

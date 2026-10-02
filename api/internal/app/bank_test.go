@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
 )
@@ -103,6 +104,14 @@ func (r *fakeBankRepo) SepayState(context.Context, Tx) (SepayState, error) {
 }
 
 func (r *fakeBankRepo) SetHook(_ context.Context, _ Tx, h string) error { r.hook = h; return nil }
+
+func (r *fakeBankRepo) SecretEnc(context.Context, Tx) ([]byte, error) { return r.secret, nil }
+
+func (r *fakeBankRepo) AccountBlobs(context.Context, Tx) ([]AccountBlob, error) { return nil, nil }
+
+func (r *fakeBankRepo) TouchWebhook(context.Context, Tx, string, time.Time) error { return nil }
+
+func (r *fakeBankRepo) SetSignatureOK(context.Context, Tx, bool) error { return nil }
 
 func (r *fakeBankRepo) SetSecret(_ context.Context, _ Tx, enc []byte) error {
 	r.secret = enc

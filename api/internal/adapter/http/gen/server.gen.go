@@ -178,6 +178,24 @@ func (e BankAccountSepayStatus) Valid() bool {
 	}
 }
 
+// Defines values for BankWebhookPayloadTransferType.
+const (
+	In  BankWebhookPayloadTransferType = "in"
+	Out BankWebhookPayloadTransferType = "out"
+)
+
+// Valid indicates whether the value is a known member of the BankWebhookPayloadTransferType enum.
+func (e BankWebhookPayloadTransferType) Valid() bool {
+	switch e {
+	case In:
+		return true
+	case Out:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CashCountDenomination.
 const (
 	N10000  CashCountDenomination = 10000
@@ -1147,18 +1165,34 @@ type BankAccount struct {
 // BankAccountSepayStatus defines model for BankAccount.SepayStatus.
 type BankAccountSepayStatus string
 
-// BankWebhookPayload defines model for BankWebhookPayload.
+// BankWebhookPayload The SePay webhook body (https://developer.sepay.vn/vi/sepay-webhooks/tich-hop-webhook); unknown fields are ignored.
 type BankWebhookPayload struct {
-	// Amount Whole Vietnamese dong
-	Amount Vnd `json:"amount"`
+	AccountNumber *string `json:"accountNumber,omitempty"`
+	Accumulated   *int    `json:"accumulated,omitempty"`
+
+	// Code Ignored; the bill code is found inside content
+	Code *string `json:"code,omitempty"`
 
 	// Content Transfer note as typed by the payer
-	Content string `json:"content"`
+	Content     *string `json:"content,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Gateway     *string `json:"gateway,omitempty"`
 
-	// ExternalId Provider transaction id; deduplication key
-	ExternalId string    `json:"externalId"`
-	ReceivedAt time.Time `json:"receivedAt"`
+	// Id SePay transaction id, the same on every retry; deduplication key
+	Id            *int    `json:"id,omitempty"`
+	ReferenceCode *string `json:"referenceCode,omitempty"`
+	SubAccount    *string `json:"subAccount,omitempty"`
+
+	// TransactionDate YYYY-MM-DD HH:mm:ss, Vietnam time
+	TransactionDate *string `json:"transactionDate,omitempty"`
+
+	// TransferAmount Whole Vietnamese dong
+	TransferAmount *Vnd                            `json:"transferAmount,omitempty"`
+	TransferType   *BankWebhookPayloadTransferType `json:"transferType,omitempty"`
 }
+
+// BankWebhookPayloadTransferType defines model for BankWebhookPayload.TransferType.
+type BankWebhookPayloadTransferType string
 
 // BillLine defines model for BillLine.
 type BillLine struct {
@@ -15225,6 +15259,22 @@ type ReceiveBankWebhookRequestObject struct {
 
 type ReceiveBankWebhookResponseObject interface {
 	VisitReceiveBankWebhookResponse(w http.ResponseWriter) error
+}
+
+type ReceiveBankWebhook200JSONResponse struct {
+	Success *bool `json:"success,omitempty"`
+}
+
+func (response ReceiveBankWebhook200JSONResponse) VisitReceiveBankWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type ReceiveBankWebhook202Response struct {

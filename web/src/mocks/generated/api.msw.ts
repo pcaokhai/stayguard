@@ -91,6 +91,7 @@ import type {
   Property,
   Quote,
   Receipt,
+  ReceiveBankWebhook200,
   RemoveServiceResult,
   RevealGuestIdNumber200,
   Room,
@@ -301,6 +302,8 @@ export const getListAuditLogsResponseMock = (overrideResponse: Partial<Extract<L
       }, undefined])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 export const getListClosedShiftsResponseMock = (overrideResponse: Partial<Extract<ListClosedShifts200, object>> = {}): ListClosedShifts200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), openedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', closedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', difference: faker.number.int()})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getReceiveBankWebhookResponseMock = (overrideResponse: Partial<Extract<ReceiveBankWebhook200, object>> = {}): ReceiveBankWebhook200 => ({success: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), ...overrideResponse})
 
 export const getSetGuestIdNumberResponseMock = (overrideResponse: Partial<Extract<GuestIdIndicators, object>> = {}): GuestIdIndicators => ({hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean(), ...overrideResponse})
 
@@ -1390,13 +1393,15 @@ export const getListClosedShiftsMockHandler = (overrideResponse?: ListClosedShif
   }, options)
 }
 
-export const getReceiveBankWebhookMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+export const getReceiveBankWebhookMockHandler = (overrideResponse?: ReceiveBankWebhook200 | void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ReceiveBankWebhook200 | void> | ReceiveBankWebhook200 | void), options?: RequestHandlerOptions) => {
   return http.post('*/v1/webhooks/bank/:hookId', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
-  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
-    return new HttpResponse(null,
-      { status: 202
-      })
+  const resolvedBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getReceiveBankWebhookResponseMock();
+    return resolvedBody === undefined
+      ? new HttpResponse(null, { status: 202 })
+      : HttpResponse.json(resolvedBody, { status: 200 })
   }, options)
 }
 

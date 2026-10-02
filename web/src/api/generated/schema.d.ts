@@ -1506,7 +1506,7 @@ export interface paths {
         put?: never;
         /**
          * Bank or reconciliation-provider webhook (full product)
-         * @description Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns 404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
+         * @description SePay webhook, one path per tenant. Looks up the tenant by hookId, checks X-SePay-Timestamp (within 300 s) and X-SePay-Signature (sha256= and the hex HMAC-SHA256 of "{timestamp}.{raw body}" keyed by the secret) with a constant-time compare, then runs the same settlement handler as the demo simulator. Only incoming transfers settle; outgoing ones are stored and ignored. Deduplicated on SePay's transaction id: a duplicate gets the same 200 {"success": true}. Unknown hookId returns 404, a bad signature 401 with no detail. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
          */
         post: operations["receiveBankWebhook"];
         delete?: never;
@@ -1872,14 +1872,25 @@ export interface components {
             transactionId?: string | null;
             qr?: components["schemas"]["PaymentQr"] | null;
         };
+        /** @description The SePay webhook body (https://developer.sepay.vn/vi/sepay-webhooks/tich-hop-webhook); unknown fields are ignored. */
         BankWebhookPayload: {
-            /** @description Provider transaction id; deduplication key */
-            externalId: string;
-            amount: components["schemas"]["Vnd"];
+            /** @description SePay transaction id, the same on every retry; deduplication key */
+            id?: number;
+            gateway?: string;
+            /** @description YYYY-MM-DD HH:mm:ss, Vietnam time */
+            transactionDate?: string;
+            accountNumber?: string;
+            subAccount?: string;
+            /** @description Ignored; the bill code is found inside content */
+            code?: string | null;
             /** @description Transfer note as typed by the payer */
-            content: string;
-            /** Format: date-time */
-            receivedAt: string;
+            content?: string;
+            /** @enum {string} */
+            transferType?: "in" | "out";
+            description?: string;
+            transferAmount?: components["schemas"]["Vnd"];
+            accumulated?: number;
+            referenceCode?: string;
         };
         HousekeepingTask: {
             id: string;
@@ -5252,6 +5263,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Accepted; SePay needs exactly {"success": true} (also returned for duplicates) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                    };
+                };
+            };
             /** @description Accepted (also returned for duplicates) */
             202: {
                 headers: {

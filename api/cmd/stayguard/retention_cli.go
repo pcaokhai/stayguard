@@ -8,26 +8,20 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-
 	"github.com/pcaokhai/stayguard/api/internal/adapter/clock"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
-const retentionUsage = "usage: stayguard guest-id retention   (daily; needs DATABASE_URL and MAINTENANCE_DATABASE_URL)"
+const retentionUsage = "usage: stayguard guest-id retention   (daily; needs DATABASE_URL)"
 
 // runRetentionCLI is the daily guest ID retention job (docs/15 rule 25), run by cron or a systemd timer on the server.
-// The maintenance role only reads which tenants have data past retention; the deletion and its audit entry go
-// through the application role, tenant by tenant. It prints counts, never data.
+// One database function lists the tenants with data past retention; the deletion and its audit entry go
+// through the application role, tenant by tenant, under RLS. It prints counts, never data.
 func runRetentionCLI(ctx context.Context, args []string) error {
 	if len(args) != 2 || args[0] != "guest-id" || args[1] != "retention" {
 		return errors.New(retentionUsage)
-	}
-	maintURL := os.Getenv("MAINTENANCE_DATABASE_URL")
-	if maintURL == "" {
-		return errors.New("MAINTENANCE_DATABASE_URL is required: the maintenance role lists the tenants due")
 	}
 	cfg, err := config.Load(os.Getenv)
 	if err != nil {
@@ -43,12 +37,7 @@ func runRetentionCLI(ctx context.Context, args []string) error {
 		return err
 	}
 	now := time.Now().UTC()
-	conn, err := pgx.Connect(ctx, maintURL)
-	if err != nil {
-		return errors.New("cannot connect as the maintenance role") // the URL holds a password: never echo it
-	}
-	due, err := postgres.TenantsDue(ctx, conn, now)
-	_ = conn.Close(ctx)
+	due, err := postgres.TenantsDue(ctx, pool, now)
 	if err != nil {
 		return err
 	}

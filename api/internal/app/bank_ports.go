@@ -65,4 +65,20 @@ type BankRepo interface {
 	SepayState(ctx context.Context, tx Tx) (SepayState, error)
 	SetHook(ctx context.Context, tx Tx, hookID string) error
 	SetSecret(ctx context.Context, tx Tx, enc []byte) error
+	// SecretEnc is the encrypted webhook secret (nil when none is set); only the webhook check reads it.
+	SecretEnc(ctx context.Context, tx Tx) ([]byte, error)
+	AccountBlobs(ctx context.Context, tx Tx) ([]AccountBlob, error)
+	TouchWebhook(ctx context.Context, tx Tx, accountID string, at time.Time) error
+	SetSignatureOK(ctx context.Context, tx Tx, ok bool) error
+}
+
+// AccountBlob is a receiving account as stored: the encrypted JSON of bank, number and name.
+type AccountBlob struct {
+	ID  string
+	Enc []byte
+}
+
+// TenantByHook finds a tenant from its webhook id before any tenant is known (policy tenants_hook_lookup).
+type TenantByHook interface {
+	TenantByHook(ctx context.Context, hookID string) (tenantID string, found bool, err error)
 }

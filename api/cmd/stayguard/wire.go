@@ -32,6 +32,7 @@ type deps struct {
 	bank         *app.Bank
 	setup        *app.Setup
 	guestIDs     *app.GuestIDs
+	webhook      *app.Webhook
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -111,6 +112,11 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	webhook, err := newWebhook(cfg, pool, uow, payments, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	bank, err := newBank(cfg, uow, auth, idem, audit, clock.System{})
 	if err != nil {
 		pool.Close()
@@ -123,6 +129,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		bank:         bank,
 		guestIDs:     guestIDs,
+		webhook:      webhook,
 		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}).WithAlerts(postgres.AlertWriter{}).WithExpenses(postgres.FinanceRepo{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
@@ -285,4 +292,13 @@ func newGuestIDs(cfg config.Config, uow app.UnitOfWork, audit app.AuditWriter, c
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
 	return app.NewGuestIDs(uow, postgres.GuestIDRepo{}, permissions.Stored{}, enc, images.Sanitizer{}, audit, ids.New(clk.Now), clk), nil
+}
+
+// newWebhook builds the SePay webhook receiver on the same settlement handler as the demo simulator.
+func newWebhook(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, payments *app.Payments, clk app.Clock) (*app.Webhook, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewWebhook(postgres.NewTenantResolver(pool), uow, postgres.BankRepo{}, payments, enc, clk), nil
 }

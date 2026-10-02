@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// The retention job finds tenants through the maintenance role, which can read guest ID rows across tenants and
-// nothing more: it cannot change or delete them (the deletion goes through the application role with an audit entry).
-func TestTenantsDue_MaintenanceRoleReadsOnly_SG805_AC5(t *testing.T) {
+// The retention job finds tenants through one database function the application role can run: it returns tenant
+// ids across tenants, while a plain query as that role (no tenant set) still sees no guest ID rows.
+func TestTenantsDue_AppRoleGetsIdsOnly_SG805_AC5(t *testing.T) {
 	ctx := context.Background()
 	db := migratedDB(t)
 	const due, young = "tnt_gid_due", "tnt_gid_young"
@@ -27,20 +27,20 @@ func TestTenantsDue_MaintenanceRoleReadsOnly_SG805_AC5(t *testing.T) {
 	}
 	set(due, 31*24*time.Hour)
 	set(young, 5*24*time.Hour)
-	maint := connAs(t, db, maintRole)
-	got, err := TenantsDue(ctx, maint, now)
+	appConn := connAs(t, db, appRole)
+	var rows int
+	if err := appConn.QueryRow(ctx, `SELECT count(*) FROM app.guest_ids`).Scan(&rows); err != nil || rows != 0 {
+		t.Fatalf("app role sees %d guest id rows without a tenant (err=%v)", rows, err)
+	}
+	got, err := TenantsDue(ctx, appConn, now)
 	if err != nil || !slices.Contains(got, due) || slices.Contains(got, young) {
 		t.Fatalf("due = %v err=%v", got, err)
-	}
-	for _, q := range []string{`DELETE FROM app.guest_ids`, `UPDATE app.guest_ids SET number_enc = NULL`, `DELETE FROM app.guest_id_photos`, `INSERT INTO app.guest_ids (tenant_id, stay_id, consent_at) VALUES ('x', 'y', now())`} {
-		_, err := maint.Exec(ctx, q)
-		wantSQLState(t, "maint: "+q, err, insufficientPrivilege)
 	}
 	// A shorter property setting brings the young tenant due.
 	if _, err = owner.Exec(ctx, `UPDATE app.properties SET id_retention_days = 3 WHERE tenant_id = $1`, young); err != nil {
 		t.Fatal(err)
 	}
-	if got, err = TenantsDue(ctx, maint, now); err != nil || !slices.Contains(got, young) {
+	if got, err = TenantsDue(ctx, appConn, now); err != nil || !slices.Contains(got, young) {
 		t.Fatalf("after shortening: %v %v", got, err)
 	}
 }

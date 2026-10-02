@@ -2953,10 +2953,12 @@ paths:
       - Payments
       operationId: receiveBankWebhook
       summary: Bank or reconciliation-provider webhook (full product)
-      description: Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body
-        with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns
-        404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md);
-        no endpoint reads or writes it.
+      description: 'SePay webhook, one path per tenant. Looks up the tenant by hookId, checks X-SePay-Timestamp (within 300 s)
+        and X-SePay-Signature (sha256= and the hex HMAC-SHA256 of "{timestamp}.{raw body}" keyed by the secret) with a
+        constant-time compare, then runs the same settlement handler as the demo simulator. Only incoming transfers settle;
+        outgoing ones are stored and ignored. Deduplicated on SePay''s transaction id: a duplicate gets the same 200
+        {"success": true}. Unknown hookId returns 404, a bad signature 401 with no detail. The secret is written only by the
+        installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.'
       security:
       - webhookSignature: []
       x-release: full
@@ -2967,6 +2969,15 @@ paths:
             schema:
               $ref: '#/components/schemas/BankWebhookPayload'
       responses:
+        '200':
+          description: 'Accepted; SePay needs exactly {"success": true} (also returned for duplicates)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
         '202':
           description: Accepted (also returned for duplicates)
         '401':
@@ -3973,24 +3984,41 @@ components:
           - type: 'null'
     BankWebhookPayload:
       type: object
-      additionalProperties: false
-      required:
-      - externalId
-      - amount
-      - content
-      - receivedAt
+      description: The SePay webhook body (https://developer.sepay.vn/vi/sepay-webhooks/tich-hop-webhook); unknown fields are ignored.
       properties:
-        externalId:
+        id:
+          type: integer
+          description: SePay transaction id, the same on every retry; deduplication key
+        gateway:
           type: string
-          description: Provider transaction id; deduplication key
-        amount:
-          $ref: '#/components/schemas/Vnd'
+        transactionDate:
+          type: string
+          description: YYYY-MM-DD HH:mm:ss, Vietnam time
+        accountNumber:
+          type: string
+        subAccount:
+          type: string
+        code:
+          type:
+          - string
+          - 'null'
+          description: Ignored; the bill code is found inside content
         content:
           type: string
           description: Transfer note as typed by the payer
-        receivedAt:
+        transferType:
           type: string
-          format: date-time
+          enum:
+          - in
+          - out
+        description:
+          type: string
+        transferAmount:
+          $ref: '#/components/schemas/Vnd'
+        accumulated:
+          type: integer
+        referenceCode:
+          type: string
     HousekeepingTask:
       type: object
       required:

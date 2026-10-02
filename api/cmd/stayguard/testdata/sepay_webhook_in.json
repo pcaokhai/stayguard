@@ -1,0 +1,14 @@
+{
+  "id": 92704,
+  "gateway": "Vietcombank",
+  "transactionDate": "2024-07-02 11:08:33",
+  "accountNumber": "1017588888",
+  "subAccount": "",
+  "code": "SEVN63DC8E5C",
+  "content": "SEVN63DC8E5C chuyen tien",
+  "transferType": "in",
+  "description": "NGUYEN VAN A chuyen tien",
+  "transferAmount": 5000000,
+  "accumulated": 105000000,
+  "referenceCode": "FT24012345678"
+}

@@ -89,10 +89,9 @@ Tests (required): SG-701 AC1–AC5, tenant A user cannot sign in to tenant B.
 `listStaff`, `createStaff`, `updateStaff`, `resetStaffPin`, `lockStaff`, `unlockStaff`, `removeStaff` (owner PIN, 409 SHIFT_OPEN once L-B2 exists), `listStaffPermissions`, `setBuildingPermission`; `staff_profiles` with position and contract; building access table replaces `permissions.Derived`; MANAGER exclusions from docs/15 §2.
 Tests (required): one table test over every operation × role (OWNER, MANAGER, RECEPTIONIST, HOUSEKEEPING) asserting allow or 403; building VIEW vs EDIT on a write.
 
-#### [ ] L-A3 Tenant import, SePay and bank accounts (API-1) — migration 0011
+#### [x] L-A3 Tenant import, SePay and bank accounts (API-1) — migration 0011
 `stayguard tenant import --file`, `stayguard sepay webhook|set-secret|status` (docs/runbooks/sepay-handover.md); `bank_accounts` (one default, others PENDING), `getProperty`, `updateProperty`, `listBankAccounts`, `createBankAccount`, `makeDefaultBankAccount`, `removeBankAccount`, `getSepayStatus`; `receiveBankWebhook` at `/v1/webhooks/bank/{hookId}` with HMAC per SePay's current docs (Khai pastes the link), mapped to the existing settlement handler; QR uses the default account.
 Tests (required): docs/archive/14-demo-plan.md P3 test list; QR account comes only from the default account; secret never in logs.
-*Status: everything except `receiveBankWebhook` is merged (CLI, bank accounts, property, status, 410 for the old path). The webhook handler waits for the SePay webhook documentation link from Khai; box stays unticked until then.*
 
 #### [x] L-A4 Setup: rooms, rates, extras basics (API-1) — migration 0012
 `createBuilding`, `updateBuilding`, `createFloor`, `createRooms`, `updateRoom`, `listRatePlans`, `updateRatePlan`, `previewPrice`, `createService`, `updateService`, `restockService` (OPENING and IN movements; stock never edited directly).
