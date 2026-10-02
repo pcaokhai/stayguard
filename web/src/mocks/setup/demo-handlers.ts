@@ -130,6 +130,7 @@ const stay = () => ({
 let paid = false;
 const payment = (method: "CASH" | "TRANSFER") => ({
   id: `pay-${method}`,
+  remaining: method === "CASH" || paid ? 0 : 40000,
   invoiceId: "inv-1",
   method,
   amount: 40000,
@@ -758,6 +759,7 @@ export const demoHandlers = [
         ...base,
         status: "MISMATCH",
         receivedAmount: 30000,
+        remaining: 10000,
         paidAt: ago(2),
         transactionId: "FT26274…8812",
       });

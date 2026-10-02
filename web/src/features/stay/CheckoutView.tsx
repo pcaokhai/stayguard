@@ -125,22 +125,24 @@ export function CheckoutView() {
             </Card>
             <h2 className="mt-2 font-semibold">{t("checkout.payWith")}</h2>
             <div className="grid gap-3 lg:grid-cols-2">
-              <Button
-                type="button"
-                variant="outline"
-                loading={pay.isPending}
-                disabled={q.balanceDue === 0}
-                onClick={() => choose("TRANSFER")}
-                className={`${option} border-2 border-primary`}
-              >
-                <span className="flex items-center gap-2 text-base font-bold">
-                  <QrCode aria-hidden="true" />
-                  {t("checkout.qr")}
-                </span>
-                <span className="text-[13px] font-normal text-muted-foreground">
-                  {t("checkout.qrSub")}
-                </span>
-              </Button>
+              {q.refundDue === 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  loading={pay.isPending}
+                  disabled={q.balanceDue === 0}
+                  onClick={() => choose("TRANSFER")}
+                  className={`${option} border-2 border-primary`}
+                >
+                  <span className="flex items-center gap-2 text-base font-bold">
+                    <QrCode aria-hidden="true" />
+                    {t("checkout.qr")}
+                  </span>
+                  <span className="text-[13px] font-normal text-muted-foreground">
+                    {t("checkout.qrSub")}
+                  </span>
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -150,7 +152,9 @@ export function CheckoutView() {
               >
                 <span className="flex items-center gap-2 text-base font-bold">
                   <Banknote aria-hidden="true" />
-                  {t("checkout.cash")}
+                  {q.refundDue > 0
+                    ? tf("checkout.refund", { amount: formatVnd(q.refundDue) })
+                    : t("checkout.cash")}
                 </span>
                 <span className="text-[13px] font-normal text-muted-foreground">
                   {t("checkout.cashSub")}

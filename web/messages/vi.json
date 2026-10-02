@@ -100,7 +100,8 @@
     "cashSub": "Được cộng vào tiền mặt cuối ca",
     "failed": "Không tạo được thanh toán. Vui lòng thử lại.",
     "preparing": "Đang chốt hóa đơn…",
-    "in": "Vào"
+    "in": "Vào",
+    "refund": "Hoàn lại khách {amount} (tiền mặt)"
   },
   "bill": {
     "FIRST_HOUR": "Giờ đầu",
@@ -149,7 +150,10 @@
     "expiredNote": "Nếu khách vẫn chuyển vào mã cũ, tiền vẫn được ghi nhận tự động khi ngân hàng báo về.",
     "roomLine": "Phòng",
     "frontDesk": "Lễ tân",
-    "actionFailed": "Không tạo được thanh toán mới. Thử lại."
+    "actionFailed": "Không tạo được thanh toán mới. Thử lại.",
+    "qrRemaining": "Tạo QR cho {amount} còn thiếu",
+    "cashRemaining": "Thu {amount} tiền mặt",
+    "remaining": "Còn thiếu"
   },
   "hk": {
     "title": "Buồng phòng",

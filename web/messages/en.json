@@ -100,7 +100,8 @@
     "cashSub": "Added to end-of-shift cash count",
     "failed": "Could not create the payment. Please try again.",
     "preparing": "Finalising the invoice…",
-    "in": "In"
+    "in": "In",
+    "refund": "Refund to guest {amount} (cash)"
   },
   "bill": {
     "FIRST_HOUR": "First hour",
@@ -149,7 +150,10 @@
     "expiredNote": "If the guest still pays the old code, the money is recorded automatically when the bank reports it.",
     "roomLine": "Room",
     "frontDesk": "Front desk",
-    "actionFailed": "Could not start the new payment. Try again."
+    "actionFailed": "Could not start the new payment. Try again.",
+    "qrRemaining": "QR for the remaining {amount}",
+    "cashRemaining": "Take {amount} in cash",
+    "remaining": "Still to pay"
   },
   "hk": {
     "title": "Housekeeping",
