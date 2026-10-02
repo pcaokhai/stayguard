@@ -133,7 +133,7 @@ Boards: PhongCanDon, PhongCanDonPC, BuongPhongP, PhongCanDonBP, BaoHuHong, BaoPh
 #### [x] L-W6 Owner shell, overview, alerts, activity log (WEB-2)
 Boards: TongQuan (phone), TongQuanTab, TongQuanPC, CanhBao, CanhBaoPC, NhatKy, NhatKyChonNgay, NhatKyPC. The old demo layout TongQuanChu is retired. Building status bars animate width on load; rolling KPI numbers; new-alert badge bounce.
 
-#### [ ] L-W7 Money and shifts for the owner (WEB-2)
+#### [x] L-W7 Money and shifts for the owner (WEB-2)
 Boards: GiaoDichPC, LichSuGiaoDich, GanPhieu, GanPhieuPC, LichSuLuotOPC, ChiTietLuotO, ChiTietLuotOPC (ID block hidden until F-W1), DanhSachCa, DoiSoatCa, DoiSoatCaPC. Tables with TanStack Table, sticky first column, cards on phone.
 
 #### [ ] L-W8 People (WEB-2)

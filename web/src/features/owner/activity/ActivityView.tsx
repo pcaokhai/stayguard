@@ -23,36 +23,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { lp } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { formatDayMonth, localDay, parseDay } from "../format";
+import { activePreset, addDays, DAY, presets, PRESETS, rangeLabel, type Preset } from "../range";
 import { downloadCsv } from "./csv";
 import { useAuditLog, useStaffNames, type LogFilter } from "./hooks";
 import { Rows } from "./Rows";
 import { CATEGORIES } from "./text";
 
 const RangePicker = dynamic(() => import("./RangePicker"), { ssr: false });
-const DAY = 86_400_000;
-const addDays = (d: Date, n: number) => new Date(d.getTime() + n * DAY);
-
-// ponytail: "today" is the browser's calendar day; the log itself and its times come from the server.
-function presets() {
-  const now = new Date();
-  const today = localDay(now);
-  return {
-    today: [today, today],
-    yesterday: [localDay(addDays(now, -1)), localDay(addDays(now, -1))],
-    last7: [localDay(addDays(now, -6)), today],
-    month: [localDay(new Date(now.getFullYear(), now.getMonth(), 1)), today],
-  } as const;
-}
-type Preset = keyof ReturnType<typeof presets>;
-const PRESETS: { key: Preset; label: MessageKey; short: MessageKey }[] = [
-  { key: "today", label: "activity.today", short: "activity.today" },
-  { key: "yesterday", label: "activity.yesterday", short: "activity.yesterday" },
-  { key: "last7", label: "activity.last7", short: "activity.last7Short" },
-  { key: "month", label: "activity.month", short: "activity.month" },
-];
-const rangeLabel = (from: string, to: string) =>
-  from === to ? formatDayMonth(from) : `${formatDayMonth(from)} – ${formatDayMonth(to)}`;
-
 export function ActivityView() {
   const router = useRouter();
   const params = useSearchParams();
@@ -84,9 +61,7 @@ export function ActivityView() {
   const staff = useStaffNames();
   const entries = log.data?.pages.flatMap((p) => p.items) ?? [];
   const pageRows = log.data?.pages[page]?.items ?? [];
-  const active = (Object.entries(presets()) as [Preset, readonly string[]][]).find(
-    ([, [a, b]]) => a === f.from && b === f.to,
-  )?.[0];
+  const active = activePreset(f.from, f.to);
 
   const shift = (dir: -1 | 1) => {
     const days = Math.round((parseDay(f.to).getTime() - parseDay(f.from).getTime()) / DAY) + 1;

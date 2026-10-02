@@ -47,7 +47,7 @@ export const roomOrShift = (a: Alert) => a.roomCode || a.details?.shiftName || "
 // Where "Open" goes. The money and shift pages arrive with L-W7.
 export function alertHref(a: Alert): string {
   if (a.stayId) return `/stay?id=${encodeURIComponent(a.stayId)}`;
-  if (a.shiftId) return `/owner/shifts?shift=${encodeURIComponent(a.shiftId)}`;
+  if (a.shiftId) return `/owner/shift?id=${encodeURIComponent(a.shiftId)}`;
   if (a.kind === "PAYMENT_MISMATCH" || a.kind === "UNMATCHED_TRANSFER") return "/owner/payments";
   if (a.roomCode) return `/owner/rooms?room=${encodeURIComponent(a.roomCode)}`;
   return "/owner/rooms";
