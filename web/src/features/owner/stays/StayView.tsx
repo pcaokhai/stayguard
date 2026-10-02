@@ -14,6 +14,7 @@ import { lp } from "@/lib/locale";
 import { formatVnd } from "@/lib/money";
 import { localized } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
+import { GuestIdPanel } from "../../guestid/GuestIdPanel";
 import { useStay } from "../../stay/hooks";
 import { clockOf, formatDayMonth } from "../format";
 import { useTimeline } from "./hooks";
@@ -143,7 +144,10 @@ export function StayView() {
             <div className="max-lg:order-2">{timelineCard}</div>
           </div>
           <div className="flex flex-col gap-3 max-lg:contents">
-            <div className="max-lg:order-1">{guestCard}</div>
+            <div className="flex flex-col gap-3 max-lg:order-1">
+              {guestCard}
+              <GuestIdPanel stayId={s.id} guestName={s.guestName} />
+            </div>
             <div className="max-lg:order-3">{billCard}</div>
           </div>
         </FadeIn>

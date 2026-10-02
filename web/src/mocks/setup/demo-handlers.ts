@@ -488,6 +488,36 @@ export const demoHandlers = [
     );
     return json({ items, nextCursor: null });
   }),
+  // Guest ID (F-W1): the number and photos are fixtures; real data never appears in mocks.
+  http.get("*/v1/owner/stays/:id/guest-id", () =>
+    json({
+      indicators: { hasIdNumber: true, hasFrontPhoto: true, hasBackPhoto: true },
+      idNumberMasked: "079 ••• ••• 123",
+      front: { side: "FRONT", uploadedAt: ago(150), uploadedBy: "Lễ tân demo", bytes: 120000 },
+      back: { side: "BACK", uploadedAt: ago(150), uploadedBy: "Lễ tân demo", bytes: 110000 },
+      consentAt: ago(150),
+      deleteAfter: "2026-10-30",
+    }),
+  ),
+  http.post("*/v1/owner/stays/:id/guest-id/reveal", () => json({ idNumber: "079123456123" })),
+  http.get(
+    "*/v1/owner/stays/:id/guest-id/photos/:side",
+    () =>
+      new HttpResponse(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="#dde8f6"/><circle cx="320" cy="200" r="60" fill="#8a97a8"/><rect x="220" y="280" width="200" height="120" rx="60" fill="#8a97a8"/></svg>',
+        { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" } },
+      ),
+  ),
+  http.delete(
+    "*/v1/owner/stays/:id/guest-id/photos/:side",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(
+    "*/v1/owner/stays/:id/guest-id/number",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put("*/v1/stays/:id/guest-id/photos/:side", () => json(id(true, true, false))),
+  http.put("*/v1/stays/:id/guest-id/number", () => json(id(true, false, false))),
   http.post("*/v1/auth/sign-out", () => new HttpResponse(null, { status: 204 })),
   http.put("*/v1/me/pin", async ({ request }) => {
     const b = (await request.json()) as { currentPin: string };

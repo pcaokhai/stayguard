@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Shake } from "@/components/motion";
 import { AppFrame } from "@/components/shell/AppFrame";
@@ -24,7 +24,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { newIdempotencyKey } from "../../lib/api";
 import { localized, lp } from "../../lib/locale";
 import { parseVnd, vndNumber } from "../../lib/money";
+import { toast } from "sonner";
 import { t, tf } from "../../lib/t";
+import { IdBlock, photoProblem, type IdPhotos } from "../guestid/IdBlock";
+import { uploadIdPhoto } from "../guestid/hooks";
 import { FlowSplit } from "../rooms/FlowSplit";
 import { STATUS } from "../rooms/status";
 import { useBuildings } from "../rooms/hooks";
@@ -40,6 +43,11 @@ const schema = z.object({
   guestName: z.string().trim().min(1, "stay.guestNameRequired").max(120),
   guestPhone: z.string().trim().min(6, "stay.guestPhoneInvalid").max(20, "stay.guestPhoneInvalid"),
   deposit: z.string(),
+  // Optional national ID: 9 to 12 digits, encrypted by the server and never shown to the front desk again.
+  idNumber: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[0-9]{9,12}$/.test(v), "guestId.idNumberInvalid"),
 });
 type Values = z.infer<typeof schema>;
 
@@ -54,6 +62,9 @@ export function CheckinForm() {
   // One key per user action: a retry after a failure reuses it.
   const [key] = useState(newIdempotencyKey);
   const [tries, setTries] = useState(0);
+  const [photos, setPhotos] = useState<IdPhotos>({ FRONT: null, BACK: null });
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState("");
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -64,8 +75,16 @@ export function CheckinForm() {
     },
   });
 
+  const idNumber = useWatch({ control: form.control, name: "idNumber" });
+  const hasId = idNumber !== "" || !!photos.FRONT || !!photos.BACK;
+  const badPhoto = [photos.FRONT, photos.BACK].some((f) => f && photoProblem(f));
+
   const submit = form.handleSubmit(
-    (v) =>
+    (v) => {
+      // Consent comes first: no number or photo is sent without it.
+      if (hasId && !consent)
+        return (setConsentError(t("guestId.consentRequired")), setTries((n) => n + 1));
+      if (badPhoto) return setTries((n) => n + 1);
       create.mutate(
         {
           key,
@@ -74,10 +93,30 @@ export function CheckinForm() {
             guestName: v.guestName,
             guestPhone: v.guestPhone,
             deposit: parseVnd(v.deposit),
+            ...(v.idNumber ? { idNumber: v.idNumber, idConsent: true } : {}),
           },
         },
-        { onSuccess: (stay) => router.replace(lp(`/stay?id=${stay.id}`)) },
-      ),
+        {
+          onSuccess: async (stay) => {
+            // Photos go up after the stay exists; a failed one is reported, the stay is kept.
+            for (const side of ["FRONT", "BACK"] as const) {
+              const file = photos[side];
+              if (!file) continue;
+              try {
+                await uploadIdPhoto(stay.id, side, file);
+              } catch {
+                toast.error(
+                  tf("guestId.uploadFailed", {
+                    side: t(side === "FRONT" ? "guestId.photoFront" : "guestId.photoBack"),
+                  }),
+                );
+              }
+            }
+            router.replace(lp(`/stay?id=${stay.id}`));
+          },
+        },
+      );
+    },
     () => setTries((n) => n + 1),
   );
   const status = STATUS[room.data?.status ?? "VACANT"];
@@ -155,6 +194,26 @@ export function CheckinForm() {
               tries={tries}
               inputMode="numeric"
             />
+            <TextField
+              methods={form}
+              name="idNumber"
+              label={t("guestId.idNumberOptional")}
+              tries={tries}
+              inputMode="numeric"
+              maxLength={12}
+              autoComplete="off"
+              hint={t("guestId.idNumberHint")}
+            />
+            <IdBlock
+              photos={photos}
+              onPhoto={(side, file) => setPhotos((p) => ({ ...p, [side]: file }))}
+              consent={consent}
+              onConsent={(v) => {
+                setConsent(v);
+                setConsentError("");
+              }}
+              error={consentError}
+            />
             <p className="flex items-start gap-2.5 rounded-xl bg-secondary p-3 text-[13px] text-ink-2">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {t("stay.serverClock")}
@@ -185,12 +244,14 @@ function TextField({
   name,
   label,
   tries,
+  hint,
   ...input
 }: {
   methods: ReturnType<typeof useForm<Values>>;
-  name: "guestName" | "guestPhone" | "deposit";
+  name: "guestName" | "guestPhone" | "deposit" | "idNumber";
   label: string;
   tries: number;
+  hint?: string;
 } & Omit<React.ComponentProps<"input">, "form" | "name">) {
   return (
     <FormField
@@ -204,6 +265,7 @@ function TextField({
               <Input className="h-12 rounded-[10px] bg-card px-4 text-base" {...input} {...field} />
             </FormControl>
           </Shake>
+          {hint && !fieldState.error && <p className="text-[13px] text-muted-foreground">{hint}</p>}
           <FormMessage>
             {fieldState.error && t(fieldState.error.message as "stay.guestNameRequired")}
           </FormMessage>

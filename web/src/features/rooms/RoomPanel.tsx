@@ -17,6 +17,8 @@ import { ExtrasSheet } from "../stay/ExtrasSheet";
 import { useStay } from "../stay/hooks";
 import { rentalLabel } from "../stay/labels";
 import { IdChips } from "../stay/IdChips";
+import { isOwnerRole } from "@/components/shell/nav";
+import { useMe } from "../session/useMe";
 import { STATUS } from "./status";
 
 type Room = components["schemas"]["Room"];
@@ -48,6 +50,7 @@ export function RoomPanel({ room, readOnly }: { room?: Room; readOnly: boolean }
 }
 
 function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; readOnly: boolean }) {
+  const owner = isOwnerRole(useMe().data?.user.role);
   const stay = useStay(stayId);
   const [extras, setExtras] = useState(false);
   const s = stay.data;
@@ -61,7 +64,8 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
           " · ",
         )}
       </p>
-      {s.guestId && <IdChips ids={s.guestId} />}
+      {s.guestId &&
+        (owner ? <OwnerIdRow stayId={s.id} ids={s.guestId} /> : <IdChips ids={s.guestId} />)}
       <div className="border-b border-border pb-3">
         <p className="text-[13px] text-muted-foreground">
           {tf("panel.stayedSince", { time: formatClock(s.checkInAt) })}
@@ -147,5 +151,28 @@ function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
         </>
       )}
     </>
+  );
+}
+
+// Owner and manager: a link to the audited ID panel; the number and photos are never shown here.
+function OwnerIdRow({
+  stayId,
+  ids,
+}: {
+  stayId: string;
+  ids: components["schemas"]["GuestIdIndicators"];
+}) {
+  const photos = Number(ids.hasFrontPhoto) + Number(ids.hasBackPhoto);
+  return (
+    <p className={row}>
+      <span className="text-muted-foreground">{t("guestId.panelTitle")}</span>
+      {ids.hasIdNumber || photos ? (
+        <Link href={lp(`/owner/stay?id=${stayId}`)} className="font-bold text-primary underline">
+          {tf("guestId.link", { n: photos })}
+        </Link>
+      ) : (
+        <span className="text-muted-foreground">{t("guestId.linkNone")}</span>
+      )}
+    </p>
   );
 }
