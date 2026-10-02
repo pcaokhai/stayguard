@@ -7,9 +7,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ENV_FILE="${ENV_FILE:-deploy/.env.prod}"
-COMPOSE=(docker compose -f deploy/compose.prod.yaml --env-file "$ENV_FILE")
 # shellcheck disable=SC1090
-set -a; . "$ENV_FILE"; set +a
+if [ -f "$ENV_FILE" ]; then set -a; . "$ENV_FILE"; set +a; fi
+# shellcheck disable=SC1091
+. deploy/lib-backup.sh
 
 SCRATCH=stayguard_rehearsal
 psql_admin() { "${COMPOSE[@]}" exec -T db psql -U stayguard -d postgres -v ON_ERROR_STOP=1 "$@"; }
@@ -19,12 +20,12 @@ tmp=""
 if [ "${1:-}" != "" ]; then
 	dump="$1"
 else
-	: "${BACKUP_REMOTE:?set BACKUP_REMOTE in $ENV_FILE}"
-	latest="$(rclone lsf "$BACKUP_REMOTE" --include 'stayguard-*.dump' | sort | tail -n 1)"
+	latest="$(rc lsf "$BACKUP_REMOTE" --include 'stayguard-*.dump' | sort | tail -n 1)"
 	[ -n "$latest" ] || { echo "no dump on $BACKUP_REMOTE" >&2; exit 1; }
 	tmp="$(mktemp -d)"
 	dump="$tmp/$latest"
-	rclone copyto "$BACKUP_REMOTE/$latest" "$dump"
+	RCLONE_MOUNTS=("$tmp")
+	rc copyto "$BACKUP_REMOTE/$latest" "$dump"
 fi
 cleanup() {
 	psql_admin -c "DROP DATABASE IF EXISTS $SCRATCH" > /dev/null 2>&1 || true
@@ -45,6 +46,23 @@ audit="$(psql_scratch -c "SELECT count(*) FROM app.audit_logs")"
 # The restored schema must be the one the code expects: tables exist and the migration history is there.
 [ "$tables" -ge 20 ] || { echo "restore looks wrong: only $tables tables in schema app" >&2; exit 1; }
 [ "$migrations" -ge 10 ] || { echo "restore looks wrong: only $migrations migrations recorded" >&2; exit 1; }
+
+# COMPARE_LIVE=1 (the local backup test, where nothing changes between the dump and now): every table must hold as many rows
+# in the restored copy as in the live database.
+if [ "${COMPARE_LIVE:-0}" = 1 ]; then
+	read -r -d '' counts <<'SQL' || true
+SELECT table_name || '|' || (xpath('/row/c/text()', query_to_xml(format('select count(*) c from app.%I', table_name), false, true, '')))[1]::text
+FROM information_schema.tables WHERE table_schema = 'app' AND table_type = 'BASE TABLE' ORDER BY 1
+SQL
+	live="$("${COMPOSE[@]}" exec -T db psql -U stayguard -d stayguard -v ON_ERROR_STOP=1 -At -c "$counts")"
+	restored="$(psql_scratch -c "$counts")"
+	if [ "$live" != "$restored" ]; then
+		echo "row counts differ between the live database and the restored copy:" >&2
+		diff <(echo "$live") <(echo "$restored") >&2 || true
+		exit 1
+	fi
+	echo "row counts match in all $(echo "$live" | wc -l | tr -d ' ') tables"
+fi
 
 echo "restore rehearsal ok: $tables tables, $migrations migrations, $tenants tenants, $invoices invoices, $audit audit rows"
 echo "(the scratch database is dropped now; the live database was not touched)"

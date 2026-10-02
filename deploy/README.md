@@ -2,7 +2,7 @@
 
 Production runs on one VPS with Docker: PostgreSQL, the API (which also serves the web app) and Caddy for automatic HTTPS.
 The files: `compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`. (`compose.yaml` and
-`compose.demo.override.yaml` are for local use only.)
+`compose.demo.override.yaml` are for local use only; `compose.yaml` also has the MinIO test target under profile `backup`.)
 
 What the production stack guarantees: `DEMO_MODE=0`; the API connects as `stayguard_app`, a non-superuser role that owns
 nothing and cannot bypass row-level security (`ALLOW_PRIVILEGED_DB` is never set for it); the database port is not
@@ -54,8 +54,8 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
     15 3 * * * cd /srv/stayguard && docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod exec -T api /app/stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
     ```
     Make the log writable once: `sudo touch /var/log/stayguard-jobs.log && sudo chown stayguard: /var/log/stayguard-jobs.log`.
-11. **Backups**: set up an rclone remote on a different provider than the server (`rclone config`; make it a `crypt` remote so the
-    dumps are encrypted), put its name in `BACKUP_REMOTE` in `deploy/.env.prod`, then:
+11. **Backups**: the dumps go to S3-compatible storage at a different provider than the server (see "Backup storage" below). Put the
+    `BACKUP_S3_*` settings in `deploy/.env.prod`, then:
     ```
     sudo mkdir -p /var/backups/stayguard && sudo chown stayguard: /var/backups/stayguard
     deploy/backup.sh                       # run it once by hand and read the last line: "backup ok"
@@ -66,6 +66,32 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
     your notes; no rehearsal, no backup.
 13. **Test the money path** before the first real guest: SePay Test-mode transfer, then one real 2,000 d transfer; the QR must turn
     Paid by itself (see the runbook).
+
+## Backup storage (S3-compatible)
+
+`backup.sh` and `restore-rehearsal.sh` need an S3-compatible bucket: AWS S3, Cloudflare R2, Backblaze B2, Wasabi, MinIO. Create a
+bucket and an access key limited to it, and set in `deploy/.env.prod` (placeholders are in `deploy/.env.example`):
+
+```
+BACKUP_S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com   # the provider's S3 endpoint
+BACKUP_S3_BUCKET=stayguard-backups
+BACKUP_S3_ACCESS_KEY=...
+BACKUP_S3_SECRET_KEY=...
+BACKUP_S3_PROVIDER=Other        # AWS for AWS S3, Cloudflare for R2, Other for B2, Wasabi, MinIO
+BACKUP_S3_REGION=               # AWS only, e.g. eu-central-1
+BACKUP_S3_PREFIX=               # optional folder inside the bucket
+```
+
+The scripts turn these into an rclone remote named `s3backup` through rclone's environment configuration, so there is no config
+file to keep. rclone does not need to be installed: when it is missing the scripts run the official `rclone/rclone` Docker image
+with the same settings. Prefer a bucket with versioning or object lock so a mistake or an intruder cannot delete old backups.
+The dump holds guest names and phones in the clear, so keep the bucket private. To encrypt it as well, configure an rclone
+`crypt` remote yourself (`rclone config`) and set `BACKUP_REMOTE=thatremote:folder` instead of the `BACKUP_S3_*` settings.
+
+**Try it locally first:** `make backup-test` starts a throwaway database and a MinIO bucket (compose profile `backup`), imports a test
+guesthouse, takes a backup, lists it, restores it into a scratch database and checks that every table has the same row count.
+If your network cannot pull the MinIO images (`quay.io/minio/...`), set `MINIO_IMAGE` and `MINIO_MC_IMAGE`, or point at any S3
+server with `EXTERNAL_S3=1 BACKUP_S3_ENDPOINT=http://localhost:PORT make backup-test` (the bucket `stayguard-backups` must exist).
 
 ## Update and roll back
 
