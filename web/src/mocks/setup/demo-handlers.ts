@@ -557,7 +557,7 @@ export const demoHandlers = [
       idNumberMasked: "079 ••• ••• 123",
       front: { side: "FRONT", uploadedAt: ago(150), uploadedBy: "Lễ tân demo", bytes: 120000 },
       back: { side: "BACK", uploadedAt: ago(150), uploadedBy: "Lễ tân demo", bytes: 110000 },
-      consentAt: ago(150),
+      consentAt: null,
       deleteAfter: "2026-10-30",
     }),
   ),

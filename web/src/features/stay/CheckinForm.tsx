@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Shake } from "@/components/motion";
 import { AppFrame } from "@/components/shell/AppFrame";
@@ -51,7 +51,7 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
-// The guest ID block (number, photos, consent) arrives with F-W1; rates per rental type are not
+// The guest ID block (number, photos) arrives with F-W1; rates per rental type are not
 // readable by the front desk, so the type cards carry names only.
 export function CheckinForm() {
   const roomId = useSearchParams().get("room");
@@ -63,8 +63,6 @@ export function CheckinForm() {
   const [key] = useState(newIdempotencyKey);
   const [tries, setTries] = useState(0);
   const [photos, setPhotos] = useState<IdPhotos>({ FRONT: null, BACK: null });
-  const [consent, setConsent] = useState(false);
-  const [consentError, setConsentError] = useState("");
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -76,15 +74,10 @@ export function CheckinForm() {
     },
   });
 
-  const idNumber = useWatch({ control: form.control, name: "idNumber" });
-  const hasId = idNumber !== "" || !!photos.FRONT || !!photos.BACK;
   const badPhoto = [photos.FRONT, photos.BACK].some((f) => f && photoProblem(f));
 
   const submit = form.handleSubmit(
     (v) => {
-      // Consent comes first: no number or photo is sent without it.
-      if (hasId && !consent)
-        return (setConsentError(t("guestId.consentRequired")), setTries((n) => n + 1));
       if (badPhoto) return setTries((n) => n + 1);
       create.mutate(
         {
@@ -94,7 +87,7 @@ export function CheckinForm() {
             guestName: v.guestName,
             guestPhone: v.guestPhone,
             deposit: parseVnd(v.deposit),
-            ...(v.idNumber ? { idNumber: v.idNumber, idConsent: true } : {}),
+            ...(v.idNumber ? { idNumber: v.idNumber } : {}),
           },
         },
         {
@@ -208,12 +201,6 @@ export function CheckinForm() {
             <IdBlock
               photos={photos}
               onPhoto={(side, file) => setPhotos((p) => ({ ...p, [side]: file }))}
-              consent={consent}
-              onConsent={(v) => {
-                setConsent(v);
-                setConsentError("");
-              }}
-              error={consentError}
             />
             <p className="flex items-start gap-2.5 rounded-xl bg-secondary p-3 text-[13px] text-ink-2">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

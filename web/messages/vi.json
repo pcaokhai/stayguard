@@ -976,9 +976,6 @@
     "back": "Mặt sau CCCD",
     "captured": "Đã chụp · chạm để chụp lại",
     "take": "Chụp hoặc chọn ảnh",
-    "consent": "Khách đồng ý cho lưu giấy tờ",
-    "consentRequired": "Cần khách đồng ý để lưu giấy tờ",
-    "after": "Sau khi lưu, lễ tân không xem lại được số và ảnh; chỉ chủ hoặc quản lý xem.",
     "uploadFailed": "Không lưu được ảnh {side}. Thêm lại sau ở chi tiết lượt ở.",
     "tooLarge": "Ảnh quá lớn (tối đa 5 MB).",
     "unsupported": "Chỉ nhận ảnh JPEG hoặc PNG.",
@@ -998,8 +995,8 @@
     "logged": "Mỗi lần hiện số, xem, tải hay xóa đều được ghi nhật ký. Tự xóa sau {days} ngày kể từ lúc trả phòng.",
     "loggedDate": "Mỗi lần hiện số, xem, tải hay xóa đều được ghi nhật ký. Tự xóa ngày {date}.",
     "viewerTitle": "{side} · {name}",
-    "meta": "Chụp {time}, {date} bởi {by} · khách đồng ý · tự xóa {deleteDate}",
-    "metaShort": "Chụp {time}, {date} bởi {by} · khách đồng ý",
+    "meta": "Chụp {time}, {date} bởi {by} · khai báo lưu trú · tự xóa {deleteDate}",
+    "metaShort": "Chụp {time}, {date} bởi {by} · khai báo lưu trú",
     "close": "Đóng",
     "viewLogged": "Ảnh không được lưu trên máy này; lần xem này đã được ghi vào nhật ký.",
     "confirmPhoto": "Xóa ảnh này?",
@@ -1013,7 +1010,8 @@
     "deleteFailed": "Không xóa được. Thử lại.",
     "sections": "Giấy tờ",
     "link": "CCCD, {n} ảnh · Xem",
-    "linkNone": "Chưa có giấy tờ"
+    "linkNone": "Chưa có giấy tờ",
+    "notice": "Thu theo quy định khai báo lưu trú. Chỉ chủ và quản lý xem được."
   },
   "settings": {
     "title": "Cài đặt",

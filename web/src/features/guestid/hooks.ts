@@ -71,11 +71,10 @@ export function useDeleteGuestId(stayId: string) {
 export async function uploadIdPhoto(stayId: string, side: Side, file: File): Promise<Indicators> {
   const { data, error, response } = await api.PUT("/v1/stays/{stayId}/guest-id/photos/{side}", {
     params: { path: { stayId, side }, header: idempotencyHeader(newIdempotencyKey()) },
-    body: { file: file as unknown as string, consent: true },
+    body: { file: file as unknown as string },
     bodySerializer: (b) => {
       const fd = new FormData();
       fd.set("file", b.file as unknown as Blob);
-      fd.set("consent", "true");
       return fd;
     },
   });

@@ -4,7 +4,6 @@ import { Check, Plus } from "lucide-react";
 import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { t } from "../../lib/t";
 import type { Side } from "./hooks";
@@ -18,20 +17,14 @@ export const photoProblem = (f: File) =>
       ? "guestId.tooLarge"
       : null;
 
-// Check-in side of the guest ID (docs/15 rules 21-25): optional, needs consent, write-only.
+// Check-in side of the guest ID (docs/15 rules 21-25): optional, collected for the stay declaration, write-only.
 // The photos stay in memory until the stay exists; nothing is previewed or stored on this device.
 export function IdBlock({
   photos,
   onPhoto,
-  consent,
-  onConsent,
-  error,
 }: {
   photos: IdPhotos;
   onPhoto: (side: Side, file: File | null) => void;
-  consent: boolean;
-  onConsent: (v: boolean) => void;
-  error?: string;
 }) {
   return (
     <Card className="gap-3 p-4 shadow-none">
@@ -45,20 +38,7 @@ export function IdBlock({
         <Tile side="FRONT" label={t("guestId.front")} file={photos.FRONT} onPhoto={onPhoto} />
         <Tile side="BACK" label={t("guestId.back")} file={photos.BACK} onPhoto={onPhoto} />
       </div>
-      <label className="flex cursor-pointer items-center gap-3 text-sm">
-        <Checkbox
-          checked={consent}
-          onCheckedChange={(v) => onConsent(v === true)}
-          className="size-6"
-        />
-        {t("guestId.consent")}
-      </label>
-      {error && (
-        <p role="alert" className="text-sm font-semibold text-destructive">
-          {error}
-        </p>
-      )}
-      <p className="text-[13px] text-muted-foreground">{t("guestId.after")}</p>
+      <p className="text-[13px] text-muted-foreground">{t("guestId.notice")}</p>
     </Card>
   );
 }

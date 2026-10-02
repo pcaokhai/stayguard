@@ -976,9 +976,6 @@
     "back": "ID back",
     "captured": "Captured · tap to retake",
     "take": "Take or choose a photo",
-    "consent": "Guest agrees to the ID being stored",
-    "consentRequired": "The guest must agree before an ID is stored",
-    "after": "After saving, the front desk cannot see the number or photos again; only the owner or a manager can.",
     "uploadFailed": "Could not save the {side} photo. Add it again later from the stay details.",
     "tooLarge": "The photo is too large (max 5 MB).",
     "unsupported": "Only JPEG or PNG photos are accepted.",
@@ -998,8 +995,8 @@
     "logged": "Every reveal, view, download or delete is logged. Deleted automatically {days} days after check-out.",
     "loggedDate": "Every reveal, view, download or delete is logged. Deleted automatically on {date}.",
     "viewerTitle": "{side} · {name}",
-    "meta": "Taken {time}, {date} by {by} · guest consent · auto-delete {deleteDate}",
-    "metaShort": "Taken {time}, {date} by {by} · guest consent",
+    "meta": "Taken {time}, {date} by {by} · stay declaration · auto-delete {deleteDate}",
+    "metaShort": "Taken {time}, {date} by {by} · stay declaration",
     "close": "Close",
     "viewLogged": "The photo is not cached on this device; this view has been recorded in the activity log.",
     "confirmPhoto": "Delete this photo?",
@@ -1013,7 +1010,8 @@
     "deleteFailed": "Could not delete. Try again.",
     "sections": "ID",
     "link": "ID, {n} photos · View",
-    "linkNone": "No ID on file"
+    "linkNone": "No ID on file",
+    "notice": "Collected for the legally required stay declaration. Only the owner and managers can see it."
   },
   "settings": {
     "title": "Settings",
