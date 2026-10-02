@@ -101,6 +101,10 @@ func hasDrawer(c Caller) bool { return c.Role == access.RoleReceptionist }
 
 // Record puts a cash movement on the drawer of the caller's open shift, opening the shift first when this is the
 // caller's first cash action. It runs in the transaction of the command that moved the cash.
+//
+// Cash taken by the owner or a manager has no drawer, so it opens no shift and has no ledger line. It is not lost: the
+// payment is stored, the transactions list shows it as CASH with no shift id, and revenue by method counts it
+// (TestOwnerCash_NoShiftButNeverDropped_FU1).
 func (s *Shifts) Record(ctx context.Context, tx Tx, c Caller, e CashRecord) error {
 	if !hasDrawer(c) || e.Amount <= 0 {
 		return nil

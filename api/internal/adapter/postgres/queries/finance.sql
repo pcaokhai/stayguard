@@ -9,6 +9,15 @@ INSERT INTO app.expenses (id, tenant_id, month, category, amount, paid_on, note,
 VALUES (@id, @tenant_id, @month, @category, @amount, sqlc.narg(paid_on), sqlc.narg(note), false, @source, @ref_id, sqlc.narg(created_by))
 ON CONFLICT (tenant_id, source, ref_id) WHERE ref_id IS NOT NULL DO NOTHING;
 
+-- name: UpsertAutoExpense :exec
+-- The amount and note follow the source (a ticket whose cost was corrected); month and day stay where the line was first posted.
+INSERT INTO app.expenses (id, tenant_id, month, category, amount, paid_on, note, recurring, source, ref_id, created_by)
+VALUES (@id, @tenant_id, @month, @category, @amount, sqlc.narg(paid_on), sqlc.narg(note), false, @source, @ref_id, sqlc.narg(created_by))
+ON CONFLICT (tenant_id, source, ref_id) WHERE ref_id IS NOT NULL DO UPDATE SET amount = excluded.amount, note = excluded.note;
+
+-- name: DeleteAutoExpense :exec
+DELETE FROM app.expenses WHERE tenant_id = @tenant_id AND source = @source AND ref_id = @ref_id AND source IN ('PAYROLL', 'MAINTENANCE', 'STOCK');
+
 -- name: GetExpense :one
 SELECT id, month, category, amount, paid_on, note, recurring, source, attachment_asset_id
 FROM app.expenses WHERE tenant_id = @tenant_id AND id = @expense_id;
@@ -55,7 +64,7 @@ SELECT 'ex_' || replace(gen_random_uuid()::text, '-', ''), e.tenant_id, @to_mont
        coalesce(e.root_id, e.id) || '@' || @to_month::text, coalesce(e.root_id, e.id), e.attachment_asset_id, e.created_by
 FROM app.expenses e
 WHERE e.tenant_id = @tenant_id AND e.month = @from_month AND e.recurring AND e.source IN ('MANUAL', 'RECURRING')
-ON CONFLICT (tenant_id, source, ref_id) WHERE ref_id IS NOT NULL DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- name: PaidInvoiceTotals :one
 -- Revenue is what paid invoices were for (the frozen quote total), by the day they were paid.

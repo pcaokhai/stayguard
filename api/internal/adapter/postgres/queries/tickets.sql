@@ -29,7 +29,7 @@ ORDER BY t.reported_at DESC, t.id DESC;
 -- name: UpdateTicket :exec
 UPDATE app.maintenance_tickets SET status = @status, room_locked = @room_locked, expected_done_on = sqlc.narg(expected_done_on),
        parts_cost = sqlc.narg(parts_cost), labour_cost = sqlc.narg(labour_cost), repairer = sqlc.narg(repairer), note = sqlc.narg(note),
-       completed_at = sqlc.narg(completed_at), completed_by = sqlc.narg(completed_by)
+       completed_at = sqlc.narg(completed_at), completed_by = coalesce(sqlc.narg(completed_by), completed_by)
 WHERE tenant_id = @tenant_id AND id = @ticket_id;
 
 -- name: LockRoomForMaintenance :one

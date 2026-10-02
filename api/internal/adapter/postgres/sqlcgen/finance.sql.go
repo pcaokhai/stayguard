@@ -17,7 +17,7 @@ SELECT 'ex_' || replace(gen_random_uuid()::text, '-', ''), e.tenant_id, $1::text
        coalesce(e.root_id, e.id) || '@' || $1::text, coalesce(e.root_id, e.id), e.attachment_asset_id, e.created_by
 FROM app.expenses e
 WHERE e.tenant_id = $2 AND e.month = $3 AND e.recurring AND e.source IN ('MANUAL', 'RECURRING')
-ON CONFLICT (tenant_id, source, ref_id) WHERE ref_id IS NOT NULL DO NOTHING
+ON CONFLICT DO NOTHING
 `
 
 type CopyRecurringExpensesParams struct {
@@ -44,6 +44,21 @@ func (q *Queries) CountRooms(ctx context.Context, tenantID string) (int64, error
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const deleteAutoExpense = `-- name: DeleteAutoExpense :exec
+DELETE FROM app.expenses WHERE tenant_id = $1 AND source = $2 AND ref_id = $3 AND source IN ('PAYROLL', 'MAINTENANCE', 'STOCK')
+`
+
+type DeleteAutoExpenseParams struct {
+	TenantID string
+	Source   string
+	RefID    pgtype.Text
+}
+
+func (q *Queries) DeleteAutoExpense(ctx context.Context, arg DeleteAutoExpenseParams) error {
+	_, err := q.db.Exec(ctx, deleteAutoExpense, arg.TenantID, arg.Source, arg.RefID)
+	return err
 }
 
 const deleteExpense = `-- name: DeleteExpense :execrows
@@ -803,6 +818,42 @@ func (q *Queries) UpdateExpense(ctx context.Context, arg UpdateExpenseParams) (i
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const upsertAutoExpense = `-- name: UpsertAutoExpense :exec
+INSERT INTO app.expenses (id, tenant_id, month, category, amount, paid_on, note, recurring, source, ref_id, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, $9, $10)
+ON CONFLICT (tenant_id, source, ref_id) WHERE ref_id IS NOT NULL DO UPDATE SET amount = excluded.amount, note = excluded.note
+`
+
+type UpsertAutoExpenseParams struct {
+	ID        string
+	TenantID  string
+	Month     string
+	Category  string
+	Amount    int64
+	PaidOn    pgtype.Date
+	Note      pgtype.Text
+	Source    string
+	RefID     pgtype.Text
+	CreatedBy pgtype.Text
+}
+
+// The amount and note follow the source (a ticket whose cost was corrected); month and day stay where the line was first posted.
+func (q *Queries) UpsertAutoExpense(ctx context.Context, arg UpsertAutoExpenseParams) error {
+	_, err := q.db.Exec(ctx, upsertAutoExpense,
+		arg.ID,
+		arg.TenantID,
+		arg.Month,
+		arg.Category,
+		arg.Amount,
+		arg.PaidOn,
+		arg.Note,
+		arg.Source,
+		arg.RefID,
+		arg.CreatedBy,
+	)
+	return err
 }
 
 const upsertPayrollLine = `-- name: UpsertPayrollLine :exec

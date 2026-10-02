@@ -229,3 +229,81 @@ func TestUpdateTicket_LockAndUnlockByHand_SG1201(t *testing.T) {
 		t.Fatalf("unlock: %+v %v", v, err)
 	}
 }
+
+type fakeLedger struct{ lines map[string]AutoExpense }
+
+func (l *fakeLedger) PostAuto(_ context.Context, _ Tx, e AutoExpense) error {
+	if _, ok := l.lines[e.Source+"/"+e.RefID]; !ok {
+		l.lines[e.Source+"/"+e.RefID] = e
+	}
+	return nil
+}
+func (l *fakeLedger) UpsertAuto(_ context.Context, _ Tx, e AutoExpense) error {
+	l.lines[e.Source+"/"+e.RefID] = e
+	return nil
+}
+func (l *fakeLedger) RemoveAuto(_ context.Context, _ Tx, source, ref string) error {
+	delete(l.lines, source+"/"+ref)
+	return nil
+}
+
+// Follow-up 4: the owner can enter or change the cost of a DONE ticket; the MAINTENANCE expense follows and each change is audited.
+func TestUpdateTicket_CostOnDoneTicketUpdatesExpense_FU4(t *testing.T) {
+	e := newTicketEnv()
+	ledger := &fakeLedger{lines: map[string]AutoExpense{}}
+	audit := &fakeAudit{}
+	idem := &fakeIdem{m: map[string]idemState{}}
+	e.m = NewMaintenance(&rollbackUoW{idem: idem}, e.repo, e.levels, idem, audit, e.alerts, &seqIDs{}, fixedClock{t0}).WithExpenses(ledger)
+	ctx := context.Background()
+	owner := Caller{TenantID: tenantA, UserID: "u_o", Role: access.RoleOwner}
+	manager := Caller{TenantID: tenantA, UserID: "u_m", Role: access.RoleManager}
+	n := func(v int64) *int64 { return &v }
+	st := func(s string) *string { return &s }
+
+	v := e.report(t, "r_vac", "k1", "STILL_RENTABLE")
+	if _, err := e.m.UpdateTicket(ctx, owner, v.ID, UpdateTicketInput{Status: st("DONE")}); err != nil || len(ledger.lines) != 0 {
+		t.Fatalf("done without a cost: %v lines=%v", err, ledger.lines)
+	}
+	if _, err := e.m.UpdateTicket(ctx, manager, v.ID, UpdateTicketInput{PartsCost: n(100_000)}); !errors.Is(err, access.ErrRoleForbidden) {
+		t.Fatalf("manager prices a done ticket: %v", err)
+	}
+	if _, err := e.m.UpdateTicket(ctx, owner, v.ID, UpdateTicketInput{Note: st("late")}); !errors.Is(err, ErrTicketDone) {
+		t.Fatalf("other edits stay locked: %v", err)
+	}
+	got, err := e.m.UpdateTicket(ctx, owner, v.ID, UpdateTicketInput{PartsCost: n(300_000), LabourCost: n(100_000)})
+	line := ledger.lines["MAINTENANCE/"+v.ID]
+	if err != nil || got.TotalCost == nil || *got.TotalCost != 400_000 || line.Amount != 400_000 || line.Month != "2026-01" {
+		t.Fatalf("priced after done: %+v %v line=%+v", got, err, line)
+	}
+	if _, err := e.m.UpdateTicket(ctx, owner, v.ID, UpdateTicketInput{LabourCost: n(250_000)}); err != nil || ledger.lines["MAINTENANCE/"+v.ID].Amount != 550_000 {
+		t.Fatalf("changed: %v line=%+v", err, ledger.lines["MAINTENANCE/"+v.ID])
+	}
+	if _, err := e.m.UpdateTicket(ctx, owner, v.ID, UpdateTicketInput{PartsCost: n(0), LabourCost: n(0)}); err != nil || len(ledger.lines) != 0 {
+		t.Fatalf("cleared: %v lines=%v", err, ledger.lines)
+	}
+	var costAudits int
+	for _, a := range audit.entries {
+		if a.Action == auditTicketCost && a.EntityID == v.ID {
+			costAudits++
+		}
+	}
+	if costAudits != 3 {
+		t.Fatalf("cost audits: %d, want 3", costAudits)
+	}
+}
+
+// Follow-up 5: photos are not supported yet, so a damage report that names some is refused, not quietly stored without them.
+func TestReportDamage_RejectsPhotoAssetIDs_FU5(t *testing.T) {
+	e := newTicketEnv()
+	in := damage("STILL_RENTABLE")
+	in.PhotoAssetIDs = []string{"as_1"}
+	_, err := e.m.ReportDamage(context.Background(), e.lan, "r_vac", "k1", in)
+	var ve *stay.ValidationError
+	if !errors.As(err, &ve) || ve.Errors[0].Path != "photoAssetIds" || len(e.repo.tickets) != 0 || len(e.alerts.raised) != 0 {
+		t.Fatalf("photos: %v tickets=%d alerts=%d", err, len(e.repo.tickets), len(e.alerts.raised))
+	}
+	in.PhotoAssetIDs = []string{}
+	if _, err := e.m.ReportDamage(context.Background(), e.lan, "r_vac", "k2", in); err != nil {
+		t.Fatalf("an empty list is no photos: %v", err)
+	}
+}

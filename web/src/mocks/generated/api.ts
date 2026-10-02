@@ -967,6 +967,7 @@ export interface DamageReportRequest {
      */
   description: string;
   severity: DamageReportRequestSeverity;
+  /** Not supported yet. A non-empty list is refused with 422 (photoAssetIds NOT_SUPPORTED); send none. */
   photoAssetIds?: string[];
 }
 

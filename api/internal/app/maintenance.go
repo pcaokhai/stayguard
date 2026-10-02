@@ -19,6 +19,7 @@ const (
 	auditTicketNew    = "ticket.created"
 	auditTicketUpdate = "ticket.updated"
 	auditTicketDone   = "ticket.done"
+	auditTicketCost   = "ticket.cost_updated"
 	entityTicket      = "ticket"
 	// maxTicketCost guards the cost fields against a typo and keeps their sum far from overflow.
 	maxTicketCost    = 100_000_000_000
@@ -28,7 +29,11 @@ const (
 )
 
 // DamageInput is the raw damage report.
-type DamageInput struct{ Category, Description, Severity string }
+// DamageInput is the raw damage report. PhotoAssetIDs must be empty: photos are not supported yet.
+type DamageInput struct {
+	Category, Description, Severity string
+	PhotoAssetIDs                   []string
+}
 
 // UpdateTicketInput holds the fields a request sets; nil means "not in the request".
 type UpdateTicketInput struct {
@@ -97,7 +102,11 @@ func (m *Maintenance) ReportDamage(ctx context.Context, c Caller, roomID, retryI
 	if err := checkKey(retryID); err != nil {
 		return TicketView{}, err
 	}
-	if errs := ticket.CheckReport(in.Category, in.Description, in.Severity); len(errs) > 0 {
+	errs := ticket.CheckReport(in.Category, in.Description, in.Severity)
+	if len(in.PhotoAssetIDs) > 0 { // refused, not dropped: there is no asset store yet
+		errs = append(errs, ticket.FieldError{Path: "photoAssetIds", Code: "NOT_SUPPORTED"})
+	}
+	if len(errs) > 0 {
 		return TicketView{}, ticketErrors(errs)
 	}
 	desc := strings.TrimSpace(in.Description)
@@ -271,15 +280,21 @@ func (m *Maintenance) UpdateTicket(ctx context.Context, c Caller, id string, in 
 			return fmt.Errorf("update ticket: %w", err)
 		}
 		if ch.Status == ticket.Done {
-			if err := m.postCost(ctx, tx, c, rec, ch); err != nil {
+			if err := m.syncCost(ctx, tx, c, rec, ch); err != nil {
 				return err
 			}
 		}
 		action := auditTicketUpdate
-		if ch.Status == ticket.Done {
+		switch {
+		case rec.Status == ticket.Done:
+			action = auditTicketCost
+		case ch.Status == ticket.Done:
 			action = auditTicketDone
 		}
 		after := map[string]any{"ticketId": id, "status": ch.Status, "roomLocked": ch.RoomLocked}
+		if action == auditTicketCost {
+			after["total"] = ticket.Total(ch.PartsCost, ch.LabourCost)
+		}
 		if err := m.auditTicket(ctx, tx, c, action, id, after); err != nil {
 			return err
 		}
@@ -289,11 +304,17 @@ func (m *Maintenance) UpdateTicket(ctx context.Context, c Caller, id string, in 
 	return out, err
 }
 
-// postCost posts the finished ticket's cost as a MAINTENANCE expense of the month it was completed in. A ticket with no
-// cost posts nothing; posting twice is harmless because the ticket is the reference.
-func (m *Maintenance) postCost(ctx context.Context, tx Tx, c Caller, rec TicketRecord, ch TicketChange) error {
+// syncCost keeps the MAINTENANCE expense of a finished ticket equal to its cost, in the month it was completed in: it is
+// posted when the ticket is finished with a cost, changed when the owner corrects the cost, and removed when the cost is cleared.
+func (m *Maintenance) syncCost(ctx context.Context, tx Tx, c Caller, rec TicketRecord, ch TicketChange) error {
+	if m.expenses == nil || ch.CompletedAt == nil {
+		return nil
+	}
 	total := ticket.Total(ch.PartsCost, ch.LabourCost)
-	if m.expenses == nil || total == nil || *total == 0 || ch.CompletedAt == nil {
+	if total == nil || *total == 0 {
+		if err := m.expenses.RemoveAuto(ctx, tx, "MAINTENANCE", rec.ID); err != nil {
+			return fmt.Errorf("remove maintenance cost: %w", err)
+		}
 		return nil
 	}
 	loc, err := loadZone(ctx, tx, m.repo)
@@ -304,7 +325,7 @@ func (m *Maintenance) postCost(ctx context.Context, tx Tx, c Caller, rec TicketR
 	day := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
 	e := AutoExpense{ID: m.ids.New(expenseIDPrefix), Source: "MAINTENANCE", RefID: rec.ID, Category: "MAINTENANCE", Month: at.Format("2006-01"),
 		Amount: *total, PaidOn: &day, Note: rec.Code, CreatedBy: c.UserID}
-	if err := m.expenses.PostAuto(ctx, tx, e); err != nil {
+	if err := m.expenses.UpsertAuto(ctx, tx, e); err != nil {
 		return fmt.Errorf("post maintenance cost: %w", err)
 	}
 	return nil
@@ -335,7 +356,7 @@ func checkTicketUpdate(in UpdateTicketInput) error {
 // change applies a request to a ticket and moves the room as needed; it returns the columns to store.
 func (m *Maintenance) change(ctx context.Context, tx Tx, c Caller, rec TicketRecord, in UpdateTicketInput) (TicketChange, error) {
 	if rec.Status == ticket.Done {
-		return TicketChange{}, ErrTicketDone
+		return doneCostChange(rec, in)
 	}
 	status := rec.Status
 	if in.Status != nil {
@@ -391,6 +412,15 @@ func (m *Maintenance) moveRoom(ctx context.Context, tx Tx, rec TicketRecord, wan
 		return fmt.Errorf("reopen room: %w", err)
 	}
 	return nil
+}
+
+// doneCostChange is what a finished ticket still allows: its costs (the owner may price it late or correct it) and nothing else.
+func doneCostChange(rec TicketRecord, in UpdateTicketInput) (TicketChange, error) {
+	if in.Status != nil || in.RoomLocked != nil || in.ExpectedDoneOn != nil || in.Repairer != nil || in.Note != nil {
+		return TicketChange{}, ErrTicketDone
+	}
+	return TicketChange{ID: rec.ID, Status: ticket.Done, RoomLocked: false, ExpectedDoneOn: rec.ExpectedDoneOn, Repairer: rec.Repairer, Note: rec.Note,
+		CompletedAt: rec.CompletedAt, PartsCost: pick(in.PartsCost, rec.PartsCost), LabourCost: pick(in.LabourCost, rec.LabourCost)}, nil
 }
 
 func pick(in, cur *int64) *int64 {

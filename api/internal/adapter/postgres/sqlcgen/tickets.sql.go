@@ -322,7 +322,7 @@ func (q *Queries) SetRoomMaintenance(ctx context.Context, arg SetRoomMaintenance
 const updateTicket = `-- name: UpdateTicket :exec
 UPDATE app.maintenance_tickets SET status = $1, room_locked = $2, expected_done_on = $3,
        parts_cost = $4, labour_cost = $5, repairer = $6, note = $7,
-       completed_at = $8, completed_by = $9
+       completed_at = $8, completed_by = coalesce($9, completed_by)
 WHERE tenant_id = $10 AND id = $11
 `
 

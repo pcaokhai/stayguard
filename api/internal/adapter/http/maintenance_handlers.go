@@ -28,7 +28,7 @@ func (s Server) ReportDamage(ctx context.Context, req gen.ReportDamageRequestObj
 	}
 	b := req.Body
 	t, err := s.maintenance.ReportDamage(ctx, c, req.RoomId, req.Params.IdempotencyKey.String(),
-		app.DamageInput{Category: string(b.Category), Description: b.Description, Severity: string(b.Severity)})
+		app.DamageInput{Category: string(b.Category), Description: b.Description, Severity: string(b.Severity), PhotoAssetIDs: photoIDs(b.PhotoAssetIds)})
 	if err != nil {
 		return nil, err
 	}
@@ -109,4 +109,11 @@ func toTicket(t app.TicketView) gen.MaintenanceTicket {
 		out.ExpectedDoneOn = &openapi_types.Date{Time: *t.ExpectedDoneOn}
 	}
 	return out
+}
+
+func photoIDs(p *[]string) []string {
+	if p == nil {
+		return nil
+	}
+	return *p
 }

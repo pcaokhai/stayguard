@@ -62,6 +62,23 @@ func (FinanceRepo) PostAuto(ctx context.Context, tx app.Tx, e app.AutoExpense) e
 	return writeFailure("post expense", err)
 }
 
+func (FinanceRepo) UpsertAuto(ctx context.Context, tx app.Tx, e app.AutoExpense) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return writeFailure("upsert expense", sqlcgen.New(t).UpsertAutoExpense(ctx, sqlcgen.UpsertAutoExpenseParams{ID: e.ID, TenantID: t.tenant, Month: e.Month,
+		Category: e.Category, Amount: e.Amount, PaidOn: optDate(e.PaidOn), Note: optText(e.Note), Source: e.Source, RefID: optText(e.RefID), CreatedBy: optText(e.CreatedBy)}))
+}
+
+func (FinanceRepo) RemoveAuto(ctx context.Context, tx app.Tx, source, refID string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("remove expense", sqlcgen.New(t).DeleteAutoExpense(ctx, sqlcgen.DeleteAutoExpenseParams{TenantID: t.tenant, Source: source, RefID: optText(refID)}))
+}
+
 func (FinanceRepo) ByID(ctx context.Context, tx app.Tx, id string) (app.ExpenseRow, bool, error) {
 	t, err := pgTx(tx)
 	if err != nil {

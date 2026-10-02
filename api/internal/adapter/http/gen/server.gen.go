@@ -1431,8 +1431,10 @@ type DamageCategory string
 
 // DamageReportRequest defines model for DamageReportRequest.
 type DamageReportRequest struct {
-	Category      DamageCategory              `json:"category"`
-	Description   string                      `json:"description"`
+	Category    DamageCategory `json:"category"`
+	Description string         `json:"description"`
+
+	// PhotoAssetIds Not supported yet. A non-empty list is refused with 422 (photoAssetIds NOT_SUPPORTED); send none.
 	PhotoAssetIds *[]string                   `json:"photoAssetIds,omitempty"`
 	Severity      DamageReportRequestSeverity `json:"severity"`
 }

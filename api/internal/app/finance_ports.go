@@ -42,6 +42,10 @@ type AutoExpense struct {
 // paid, a maintenance ticket when it is DONE, stock when it is bought in. Posting twice is harmless.
 type ExpenseLedger interface {
 	PostAuto(ctx context.Context, tx Tx, e AutoExpense) error
+	// UpsertAuto sets the amount and note of the line of a source and reference, posting it when it is not there yet.
+	UpsertAuto(ctx context.Context, tx Tx, e AutoExpense) error
+	// RemoveAuto deletes the line of a source and reference; it is harmless when there is none.
+	RemoveAuto(ctx context.Context, tx Tx, source, refID string) error
 }
 
 // Share is an amount under a key (a category, a rental type, a building, a payment method or a month).

@@ -30,6 +30,10 @@ func TestMaintenanceE2E_SG1201(t *testing.T) {
 	}
 	report := map[string]any{"category": "AIR_CONDITIONER", "description": "does not cool", "severity": "LOCK_ROOM"}
 
+	withPhoto := map[string]any{"category": "TV", "description": "cracked", "severity": "STILL_RENTABLE", "photoAssetIds": []string{"as_1"}}
+	if st, raw := e.send("POST", "/v1/rooms/"+roomID(1)+"/damage-reports", desk, newKey(), withPhoto); st != 422 {
+		t.Fatalf("photos are not supported yet: %d %s", st, raw)
+	}
 	st, raw := e.send("POST", "/v1/rooms/"+roomID(1)+"/damage-reports", desk, newKey(), report)
 	ticket := parse(raw)
 	if st != 201 || ticket["code"] != "BT-001" || ticket["roomLocked"] != true || ticket["status"] != "NEW" || roomStatus(1) != "MAINTENANCE" {

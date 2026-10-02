@@ -2192,6 +2192,7 @@ export interface components {
             description: string;
             /** @enum {string} */
             severity: "STILL_RENTABLE" | "LOCK_ROOM";
+            /** @description Not supported yet. A non-empty list is refused with 422 (photoAssetIds NOT_SUPPORTED); send none. */
             photoAssetIds?: string[];
         };
         MaintenanceTicket: {
