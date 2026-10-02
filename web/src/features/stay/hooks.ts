@@ -99,3 +99,54 @@ export function useCreatePayment(invoiceId: string) {
     },
   });
 }
+
+// Both actions return the updated Stay (new quote); the stay and room lists are refetched.
+function useRefreshAfter(stayId: string) {
+  const qc = useQueryClient();
+  return (stay: Schemas["Stay"]) => {
+    qc.setQueryData(["stay", stayId], stay);
+    void qc.invalidateQueries({ queryKey: ["rooms"] });
+    void qc.invalidateQueries({ queryKey: ["buildings"] });
+  };
+}
+
+export function useEditCheckIn(stayId: string) {
+  const refresh = useRefreshAfter(stayId);
+  return useMutation({
+    mutationFn: async ({ body, key }: { body: Schemas["EditCheckInRequest"]; key: string }) => {
+      const { data, error } = await api.POST("/v1/stays/{stayId}/check-in-time", {
+        params: { path: { stayId }, header: idempotencyHeader(key) },
+        body,
+      });
+      return must(data, error, "editCheckInTime");
+    },
+    onSuccess: refresh,
+  });
+}
+
+export function useMoveStay(stayId: string) {
+  const refresh = useRefreshAfter(stayId);
+  return useMutation({
+    mutationFn: async ({ body, key }: { body: Schemas["MoveStayRequest"]; key: string }) => {
+      const { data, error } = await api.POST("/v1/stays/{stayId}/move", {
+        params: { path: { stayId }, header: idempotencyHeader(key) },
+        body,
+      });
+      return must(data, error, "moveStay");
+    },
+    onSuccess: refresh,
+  });
+}
+
+export function useReceipt(invoiceId: string | null) {
+  return useQuery({
+    queryKey: ["receipt", invoiceId],
+    enabled: !!invoiceId,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/invoices/{invoiceId}/receipt", {
+        params: { path: { invoiceId: invoiceId! } },
+      });
+      return must(data, error, "getReceipt");
+    },
+  });
+}

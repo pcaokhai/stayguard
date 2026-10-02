@@ -23,7 +23,7 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label={t("nav.main")}
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 flex print:hidden border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {tabs.map((i) => {
         const on = active(i.href);

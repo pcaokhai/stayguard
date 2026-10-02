@@ -99,6 +99,7 @@ const quote = () => ({
     { code: "EXTRA_HOUR", quantity: 2, unitAmount: 20000, amount: 40000 },
   ],
 });
+let checkedOut = false;
 const stay = () => ({
   id: "stay-1",
   roomId: "A101",
@@ -106,7 +107,7 @@ const stay = () => ({
   rentalType: "HOURLY",
   status: "ACTIVE",
   checkInAt: ago(155),
-  checkOutAt: null,
+  checkOutAt: checkedOut ? ago(0) : null,
   guestName: "Anh Tuấn",
   guestPhone: "0901 234 567",
   idNumberMasked: null,
@@ -117,7 +118,7 @@ const stay = () => ({
   extras: [
     {
       serviceCode: "WATER",
-      name: { vi: "Nước suối", en: "Water" },
+      name: { vi: "Nước suối", en: "Still water" },
       quantity: 2,
       unitAmount: 10000,
       amount: 20000,
@@ -445,17 +446,51 @@ export const demoHandlers = [
   http.get("*/v1/services", () =>
     json({
       items: [
-        { code: "WATER", name: { vi: "Nước suối", en: "Water" }, price: 10000, stock: 46 },
-        { code: "SODA", name: { vi: "Nước ngọt", en: "Soda" }, price: 15000, stock: 30 },
-        { code: "BEER", name: { vi: "Bia lon", en: "Beer" }, price: 20000, stock: 24 },
+        { code: "WATER", name: { vi: "Nước suối", en: "Still water" }, price: 10000, stock: 46 },
+        { code: "SODA", name: { vi: "Nước ngọt", en: "Soft drink" }, price: 15000, stock: 30 },
+        { code: "BEER", name: { vi: "Bia lon", en: "Canned beer" }, price: 20000, stock: 24 },
+        { code: "NOODLE", name: { vi: "Mì ly", en: "Cup noodles" }, price: 15000, stock: 18 },
+        {
+          code: "TOWEL",
+          name: { vi: "Khăn tắm thêm", en: "Extra bath towel" },
+          price: 10000,
+          stock: 12,
+        },
       ],
     }),
   ),
   http.post("*/v1/rooms/:id/stays", () => json(stay(), 201)),
   http.get("*/v1/stays/:id", () => json(stay())),
   http.post("*/v1/stays/:id/extras", () => json(stay())),
-  http.post("*/v1/stays/:id/checkout", () =>
-    json(
+  http.post("*/v1/stays/:id/check-in-time", () => json(stay())),
+  http.post("*/v1/stays/:id/move", () => json(stay())),
+  http.get("*/v1/invoices/:id/receipt", () =>
+    json({
+      propertyName: "Nhà nghỉ Demo",
+      propertyAddress: null,
+      propertyPhone: null,
+      billCode: "PH0930A101",
+      roomCode: "A101",
+      checkInAt: ago(155),
+      checkOutAt: ago(0),
+      lines: quote().lines,
+      extras: stay().extras,
+      total: 140000,
+      deposit: 100000,
+      payments: [
+        {
+          paymentId: "pay-TRANSFER",
+          roomCode: "A101",
+          method: "TRANSFER",
+          amount: 40000,
+          at: ago(0),
+        },
+      ],
+    }),
+  ),
+  http.post("*/v1/stays/:id/checkout", () => {
+    checkedOut = true;
+    return json(
       {
         id: "inv-1",
         stayId: "stay-1",
@@ -466,14 +501,25 @@ export const demoHandlers = [
         quote: quote(),
       },
       201,
-    ),
-  ),
+    );
+  }),
   http.post("*/v1/invoices/:id/payments", async ({ request }) =>
     json(payment(((await request.json()) as { method: "CASH" | "TRANSFER" }).method), 201),
   ),
-  http.get("*/v1/payments/:id", ({ params }) =>
-    json(payment(params.id === "pay-CASH" ? "CASH" : "TRANSFER")),
-  ),
+  // pay-EXPIRED and pay-MISMATCH open the QR-expired and transfer-mismatch screens on mocks.
+  http.get("*/v1/payments/:id", ({ params }) => {
+    const base = payment(params.id === "pay-CASH" ? "CASH" : "TRANSFER");
+    if (params.id === "pay-EXPIRED") return json({ ...base, status: "EXPIRED" });
+    if (params.id === "pay-MISMATCH")
+      return json({
+        ...base,
+        status: "MISMATCH",
+        receivedAmount: 30000,
+        paidAt: ago(2),
+        transactionId: "FT26274…8812",
+      });
+    return json(base);
+  }),
   http.post("*/v1/demo/payments/:id/simulate", () => {
     paid = true;
     return json({});

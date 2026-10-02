@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -8,6 +9,7 @@ import { z } from "zod";
 import { Shake } from "@/components/motion";
 import { AppFrame } from "@/components/shell/AppFrame";
 import { TopBar } from "@/components/shell/TopBar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,17 +20,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { newIdempotencyKey } from "../../lib/api";
 import { localized, lp } from "../../lib/locale";
-import { parseVnd } from "../../lib/money";
-import { t } from "../../lib/t";
+import { parseVnd, vndNumber } from "../../lib/money";
+import { t, tf } from "../../lib/t";
+import { FlowSplit } from "../rooms/FlowSplit";
+import { STATUS } from "../rooms/status";
 import { useBuildings } from "../rooms/hooks";
 import { useCreateStay, useRoom } from "./hooks";
 import { rentalLabel, type RentalType } from "./labels";
 
 const RENTAL_TYPES: RentalType[] = ["HOURLY", "OVERNIGHT", "DAILY"];
-const DEFAULT_DEPOSIT = "100000";
+const DEFAULT_DEPOSIT = 100000;
 
 // Zod messages are keys; the form renders them through t() so they follow the route language.
 const schema = z.object({
@@ -39,6 +43,8 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
+// The guest ID block (number, photos, consent) arrives with F-W1; rates per rental type are not
+// readable by the front desk, so the type cards carry names only.
 export function CheckinForm() {
   const roomId = useSearchParams().get("room");
   const router = useRouter();
@@ -54,7 +60,7 @@ export function CheckinForm() {
       rentalType: "HOURLY",
       guestName: "",
       guestPhone: "",
-      deposit: DEFAULT_DEPOSIT,
+      deposit: vndNumber(DEFAULT_DEPOSIT),
     },
   });
 
@@ -74,42 +80,54 @@ export function CheckinForm() {
       ),
     () => setTries((n) => n + 1),
   );
+  const status = STATUS[room.data?.status ?? "VACANT"];
 
   return (
     <AppFrame tabs={false}>
-      <main className="mx-auto flex w-full max-w-[480px] flex-col">
+      <FlowSplit roomId={roomId}>
         <TopBar
           title={`${t("stay.checkinTitle")} ${room.data?.code ?? ""}`}
-          subtitle={[building?.name, room.data && localized(room.data.unitType.name)]
-            .filter(Boolean)
-            .join(" · ")}
+          subtitle={
+            room.data
+              ? tf("stay.checkinPlace", {
+                  building: building?.name ?? "",
+                  type: localized(room.data.unitType.name),
+                })
+              : undefined
+          }
           back="/rooms"
+          right={
+            <Badge
+              variant={status.variant}
+              className="mr-3 hidden h-7 px-3 text-sm font-bold lg:inline-flex"
+            >
+              {t(status.label)}
+            </Badge>
+          }
         />
         <Form {...form}>
-          <form onSubmit={submit} noValidate className="flex flex-1 flex-col gap-4 px-5 pb-8">
+          <form onSubmit={submit} noValidate className="flex flex-col gap-4 px-5 pb-8 lg:pb-0">
             <FormField
               control={form.control}
               name="rentalType"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-base font-semibold">{t("stay.rentalType")}</FormLabel>
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
+                  <RadioGroup
                     value={field.value}
-                    onValueChange={(v) => v && field.onChange(v)}
-                    className="grid w-full grid-cols-3 gap-2"
+                    onValueChange={field.onChange}
+                    className="grid gap-2 lg:grid-cols-3"
                   >
                     {RENTAL_TYPES.map((r) => (
-                      <ToggleGroupItem
+                      <label
                         key={r}
-                        value={r}
-                        className="h-14 rounded-[10px] text-[15px] font-semibold data-[state=on]:border-2 data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+                        className="flex h-14 cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 font-bold transition-colors has-data-[state=checked]:border-2 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-info-bg/60"
                       >
+                        <RadioGroupItem value={r} className="sr-only" />
                         {rentalLabel(r)}
-                      </ToggleGroupItem>
+                      </label>
                     ))}
-                  </ToggleGroup>
+                  </RadioGroup>
                 </FormItem>
               )}
             />
@@ -119,6 +137,7 @@ export function CheckinForm() {
               label={t("stay.guestName")}
               tries={tries}
               maxLength={120}
+              autoComplete="off"
             />
             <TextField
               methods={form}
@@ -127,6 +146,7 @@ export function CheckinForm() {
               tries={tries}
               maxLength={20}
               inputMode="tel"
+              autoComplete="off"
             />
             <TextField
               methods={form}
@@ -135,7 +155,8 @@ export function CheckinForm() {
               tries={tries}
               inputMode="numeric"
             />
-            <p className="rounded-[10px] bg-secondary p-3 text-[13px] text-ink-2">
+            <p className="flex items-start gap-2.5 rounded-xl bg-secondary p-3 text-[13px] text-ink-2">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {t("stay.serverClock")}
             </p>
             {create.isError && (
@@ -146,7 +167,7 @@ export function CheckinForm() {
             <Button
               type="submit"
               size="lg"
-              className="mt-auto"
+              className="mt-6"
               loading={create.isPending}
               disabled={!room.data}
             >
@@ -154,7 +175,7 @@ export function CheckinForm() {
             </Button>
           </form>
         </Form>
-      </main>
+      </FlowSplit>
     </AppFrame>
   );
 }
@@ -180,7 +201,7 @@ function TextField({
           <FormLabel className="font-semibold">{label}</FormLabel>
           <Shake trigger={fieldState.error ? tries : 0}>
             <FormControl>
-              <Input className="h-11 rounded-[10px] bg-card px-4 text-base" {...input} {...field} />
+              <Input className="h-12 rounded-[10px] bg-card px-4 text-base" {...input} {...field} />
             </FormControl>
           </Shake>
           <FormMessage>

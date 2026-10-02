@@ -1,6 +1,5 @@
 "use client";
 
-import { Check, Clock } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { components } from "../../api/generated/schema";
@@ -17,10 +16,10 @@ import { useCompleteTask, useTasks } from "../housekeeping/hooks";
 import { ExtrasSheet } from "../stay/ExtrasSheet";
 import { useStay } from "../stay/hooks";
 import { rentalLabel } from "../stay/labels";
+import { IdChips } from "../stay/IdChips";
 import { STATUS } from "./status";
 
 type Room = components["schemas"]["Room"];
-type GuestId = components["schemas"]["GuestIdIndicators"];
 
 const row = "flex justify-between gap-3 text-sm";
 
@@ -146,26 +145,5 @@ function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
         </>
       )}
     </>
-  );
-}
-
-// ID on file as chips only: never the number or the photos (rules 21-25).
-function IdChips({ ids }: { ids: GuestId }) {
-  const items = [
-    [ids.hasIdNumber, t("panel.idNumber"), t("panel.noIdNumber")],
-    [ids.hasFrontPhoto, t("panel.frontPhoto"), t("panel.noFrontPhoto")],
-    [ids.hasBackPhoto, t("panel.backPhoto"), t("panel.noBackPhoto")],
-  ] as const;
-  return (
-    <ul className="flex flex-wrap gap-1.5">
-      {items.map(([has, yes, no]) => (
-        <li key={yes}>
-          <Badge variant={has ? "ok" : "maintenance"} className="px-2.5 py-1 font-semibold">
-            {has ? <Check aria-hidden="true" /> : <Clock aria-hidden="true" />}
-            {has ? yes : no}
-          </Badge>
-        </li>
-      ))}
-    </ul>
   );
 }

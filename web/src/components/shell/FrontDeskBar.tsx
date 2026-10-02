@@ -15,7 +15,7 @@ export function FrontDeskBar() {
   const items = tabsFor(me?.user.role);
   if (!me || isOwnerRole(me.user.role)) return null;
   return (
-    <header className="sticky top-0 z-20 hidden h-14 items-center gap-6 border-b border-border bg-card px-6 lg:flex">
+    <header className="sticky top-0 z-20 hidden h-14 print:hidden items-center gap-6 border-b border-border bg-card px-6 lg:flex">
       <b className="text-[15px]">{me.tenant.name}</b>
       <nav aria-label={t("nav.main")} className="flex gap-1">
         {items.map((i) => (

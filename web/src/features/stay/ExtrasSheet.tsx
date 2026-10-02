@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import type { components } from "../../api/generated/schema";
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,13 +12,17 @@ import { formatVnd } from "../../lib/money";
 import { t, tf } from "../../lib/t";
 import { useAddExtras, useServices } from "./hooks";
 
+type ExtraLine = components["schemas"]["ExtraLine"];
+
 export function ExtrasSheet({
   stayId,
   roomCode,
+  extras = [],
   onClose,
 }: {
   stayId: string;
   roomCode: string;
+  extras?: ExtraLine[];
   onClose: () => void;
 }) {
   const services = useServices();
@@ -27,24 +32,29 @@ export function ExtrasSheet({
   const items = Object.entries(qty)
     .filter(([, n]) => n > 0)
     .map(([serviceCode, quantity]) => ({ serviceCode, quantity }));
+  // List price x quantity of what is picked, shown on the button; the server prices the stay.
+  const picked = (services.data ?? []).reduce((sum, s) => sum + s.price * (qty[s.code] ?? 0), 0);
   const step = (code: string, d: number, stock: number) =>
     setQty((q) => ({ ...q, [code]: Math.min(stock, Math.max(0, (q[code] ?? 0) + d)) }));
+  const has = extras.map((x) => `${localized(x.name)} × ${x.quantity}`).join(", ");
 
   return (
     <ResponsiveDialog
       open
       onOpenChange={(o) => !o && onClose()}
       title={t("extras.title")}
-      description={`${t("stay.roomTitle")} ${roomCode}`}
+      description={`${t("stay.roomTitle")} ${roomCode}${has ? ` · ${t("extras.alreadyHas")} ${has}` : ""}`}
     >
       <ul className="flex flex-col gap-2">
         {services.data?.map((s) => (
           <li key={s.code}>
-            <Card className="flex-row items-center justify-between gap-3 p-3.5 shadow-none">
+            <Card
+              className={`flex-row items-center justify-between gap-3 p-3.5 shadow-none ${(qty[s.code] ?? 0) > 0 ? "border-info-line" : ""}`}
+            >
               <div>
                 <p className="font-semibold">{localized(s.name)}</p>
                 <p className="text-[13px] text-muted-foreground">
-                  {formatVnd(s.price)} · {tf("extras.stock", { n: s.stock })}
+                  {tf("extras.stock", { price: formatVnd(s.price), n: s.stock })}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -57,7 +67,7 @@ export function ExtrasSheet({
                 >
                   <Minus />
                 </Button>
-                {/* Quantities update without animation (money-adjacent, docs/16 §5). */}
+                {/* Quantities update without animation (docs/16 §5). */}
                 <span className="w-5 text-center text-lg font-bold">{qty[s.code] ?? 0}</span>
                 <Button
                   type="button"
@@ -86,7 +96,7 @@ export function ExtrasSheet({
         disabled={!items.length}
         onClick={() => add.mutate({ key, body: { items } }, { onSuccess: onClose })}
       >
-        {t("extras.add")}
+        {items.length ? tf("extras.addTo", { amount: formatVnd(picked) }) : t("extras.add")}
       </Button>
     </ResponsiveDialog>
   );

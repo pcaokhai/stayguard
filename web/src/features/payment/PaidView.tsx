@@ -1,22 +1,36 @@
 "use client";
 
-import { AppFrame } from "@/components/shell/AppFrame";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { clockLocale } from "../../lib/time";
+import { useEffect } from "react";
+import { SuccessTick } from "@/components/motion";
+import { AppFrame } from "@/components/shell/AppFrame";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { localized, lp } from "../../lib/locale";
 import { formatVnd } from "../../lib/money";
-import { t, type MessageKey } from "../../lib/t";
+import { t, tf, type MessageKey } from "../../lib/t";
+import { clockLocale } from "../../lib/time";
+import { useBuildings } from "../rooms/hooks";
+import { useRoom } from "../stay/hooks";
 import { useMe } from "../session/useMe";
 import { usePayment } from "./hooks";
-import { lp } from "../../lib/locale";
-import { Button } from "@/components/ui/button";
 
-const row = "flex justify-between gap-4";
+const row = "flex justify-between gap-4 text-[15px]";
 
+// The one celebratory moment: the tick draws, the phone buzzes once. The amount never animates.
 export function PaidView() {
-  const id = useSearchParams().get("payment");
+  const params = useSearchParams();
+  const id = params.get("payment");
+  const roomId = params.get("room");
   const p = usePayment(id).data;
   const me = useMe().data;
+  const room = useRoom(roomId).data;
+  const building = useBuildings().data?.find((b) => b.id === room?.buildingId);
+  useEffect(() => {
+    if (p?.method === "CASH") navigator.vibrate?.(15); // transfers already buzzed on the QR screen
+  }, [p?.method]);
   if (!p) return null;
   const paidAt = p.paidAt
     ? new Date(p.paidAt).toLocaleTimeString(clockLocale(), {
@@ -25,63 +39,69 @@ export function PaidView() {
         second: "2-digit",
       })
     : "";
+  const roomCode = room?.code;
 
   return (
     <AppFrame tabs={false}>
-      <main className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-3 px-5 pb-8 pt-24">
-        <div className="flex size-24 items-center justify-center rounded-full border-[3px] border-ok bg-ok-bg text-ok">
-          <svg
-            width="44"
-            height="44"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M5 12l5 5 9-10" />
-          </svg>
-        </div>
-        <h1 className="text-xl font-bold text-ok">{t("pay.paid")}</h1>
+      <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center gap-3 px-5 pb-8 pt-20">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="flex size-[92px] items-center justify-center rounded-full border-[3px] border-ok bg-ok-bg text-ok"
+        >
+          <SuccessTick className="size-12" />
+        </motion.div>
+        <h1 className="text-base font-bold text-ok">{t("pay.paid")}</h1>
         <p className="text-[44px] font-bold leading-none">{formatVnd(p.amount)}</p>
-        <p className="text-ink-2">
+        <p className="text-center text-sm text-ink-2">
           {p.method === "CASH" ? t("pay.cashAt") : t("pay.receivedAt")} {paidAt}
         </p>
-        <dl className="mt-3 flex w-full flex-col gap-1.5 rounded-card border border-line-soft bg-surface p-4 text-muted-foreground">
-          <div className={row}>
-            <dt>{t("pay.method")}</dt>
-            <dd className="text-ink">{t(`pay.method${p.method}` as MessageKey)}</dd>
-          </div>
+        <Card className="mt-2 w-full gap-1.5 p-4 text-muted-foreground shadow-none">
           {p.qr && (
-            <div className={row}>
-              <dt>{t("pay.slip")}</dt>
-              <dd className="text-ink">{p.qr.transferNote}</dd>
-            </div>
+            <p className={row}>
+              <span>{t("pay.slip")}</span>
+              <span className="text-foreground">{p.qr.transferNote}</span>
+            </p>
           )}
+          {roomCode && (
+            <p className={row}>
+              <span>{t("pay.roomLine")}</span>
+              <span className="text-foreground">
+                {[roomCode, building?.name].filter(Boolean).join(" · ")}
+              </span>
+            </p>
+          )}
+          <p className={row}>
+            <span>{t("pay.method")}</span>
+            <span className="text-foreground">{t(`pay.method${p.method}` as MessageKey)}</span>
+          </p>
           {p.transactionId && (
-            <div className={row}>
-              <dt>{t("pay.txn")}</dt>
-              <dd className="min-w-0 break-all text-right text-ink">{p.transactionId}</dd>
-            </div>
+            <p className={row}>
+              <span>{t("pay.txn")}</span>
+              <span className="min-w-0 break-all text-right text-foreground">
+                {p.transactionId}
+              </span>
+            </p>
           )}
           {me && (
-            <div className={row}>
-              <dt>{t("pay.staff")}</dt>
-              <dd className="text-ink">{me.user.name}</dd>
-            </div>
+            <p className={row}>
+              <span>{t("pay.staff")}</span>
+              <span className="text-foreground">{me.user.name}</span>
+            </p>
           )}
-        </dl>
-        <p className="w-full rounded-[10px] bg-dirty-bg p-3.5 text-dirty">
-          {t("pay.roomToClean")} <b>{t("pay.toClean")}</b>.
-        </p>
+        </Card>
+        {roomCode && (
+          <p className="w-full rounded-[10px] bg-dirty-bg p-3.5 text-sm text-dirty">
+            {tf("pay.roomToClean", { room: roomCode })} <b>{t("pay.toClean")}</b>.
+          </p>
+        )}
         <div className="mt-auto flex w-full flex-col gap-3 pt-8 print:hidden">
           <Button asChild size="lg">
             <Link href={lp("/rooms")}>{t("pay.toRooms")}</Link>
           </Button>
-          <Button type="button" variant="outline" size="lg" onClick={() => window.print()}>
-            {t("pay.print")}
+          <Button asChild variant="outline" size="lg">
+            <Link href={lp(`/receipt?invoice=${p.invoiceId}`)}>{t("pay.print")}</Link>
           </Button>
         </div>
       </main>

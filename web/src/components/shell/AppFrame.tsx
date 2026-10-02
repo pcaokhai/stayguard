@@ -26,7 +26,7 @@ export function AppFrame({
         <FrontDeskBar />
         <div
           className={cn(
-            "flex-1",
+            "flex flex-1 flex-col",
             tabs && "pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0",
             className,
           )}

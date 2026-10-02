@@ -104,3 +104,9 @@ body {
     border-color: var(--border);
   }
 }
+
+/* Receipts print on an 80 mm roll (board BienLai). */
+@page {
+  size: 80mm auto;
+  margin: 4mm;
+}

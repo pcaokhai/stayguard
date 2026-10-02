@@ -121,7 +121,7 @@ Verify UI; wrong PIN five times on mocks shows the locked screen.
 #### [x] L-W2 Room maps (WEB-1)
 Boards: Main, SoDoMayTinh, SoDoPhongTab, SoDoPhongChu, SoDoPhongChuPC. Building chips with sliding selection, status counters with rolling numbers, tile status cross-fade and pulse, desktop and tablet side panel, ID indicator chips in the panel, tapping TO_CLEAN opens cleaning. Owner variant has no End shift or Payout.
 
-#### [ ] L-W3 Stay flows (WEB-1)
+#### [x] L-W3 Stay flows (WEB-1)
 Boards: NhanPhong, NhanPhongPC, ChiTiet, ThemDichVu, ThemDichVuPC, SuaGio, ChuyenPhong, TraPhong, TraPhongPC, ThanhToanQR, ThanhToanPC, ChuyenKhoanLech, QRHetHan, DaThanhToan, BienLai. The guest ID block in check-in stays hidden until F-W1. Paid moment: QR shrinks, tick draws, `navigator.vibrate(15)` where supported. Receipt prints at 80 mm. Amounts never animate.
 
 #### [ ] L-W4 Shift and history (WEB-1)

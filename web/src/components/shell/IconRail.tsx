@@ -18,7 +18,7 @@ export function IconRail() {
   return (
     <nav
       aria-label={t("nav.main")}
-      className="sticky top-0 hidden h-dvh w-[88px] shrink-0 border-r border-border bg-card md:block lg:hidden"
+      className="sticky top-0 hidden h-dvh w-[88px] print:hidden shrink-0 border-r border-border bg-card md:block lg:hidden"
     >
       <ScrollArea className="h-full">
         <ul className="flex flex-col items-center gap-1 py-3">

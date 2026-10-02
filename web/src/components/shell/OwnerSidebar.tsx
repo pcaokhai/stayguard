@@ -23,7 +23,7 @@ export function OwnerSidebar() {
   return (
     <nav
       aria-label={t("nav.main")}
-      className="sticky top-0 hidden h-dvh w-[248px] shrink-0 border-r border-border bg-card lg:block"
+      className="sticky top-0 hidden h-dvh w-[248px] print:hidden shrink-0 border-r border-border bg-card lg:block"
     >
       <ScrollArea className="h-full">
         <div className="flex min-h-dvh flex-col gap-1 p-3">
