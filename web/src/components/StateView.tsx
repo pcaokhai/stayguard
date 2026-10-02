@@ -13,6 +13,7 @@ const TONE = {
   neutral: "bg-secondary text-ink-2",
   info: "bg-info-bg text-info",
   ok: "bg-ok-bg text-ok",
+  warn: "bg-warn-bg text-warn-ink",
 } as const;
 
 // Shared full-height state: icon tile, title, text, actions pinned to the bottom (boards P29-P32).
@@ -21,12 +22,15 @@ export function StateView({
   tone = "neutral",
   title,
   body,
+  extra,
   children,
 }: {
   icon: LucideIcon;
   tone?: keyof typeof TONE;
   title: string;
   body: string;
+  // Sits under the text, inside the centred block (e.g. a details card).
+  extra?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -39,6 +43,7 @@ export function StateView({
         </span>
         <h2 className="max-w-[300px] text-[22px] font-bold leading-tight">{title}</h2>
         <p className="max-w-[300px] text-sm leading-normal text-muted-foreground">{body}</p>
+        {extra}
       </FadeIn>
       <div className="mx-auto flex w-full max-w-[480px] flex-col gap-2.5">{children}</div>
     </section>

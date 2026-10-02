@@ -3,6 +3,7 @@
 import { AppFrame } from "@/components/shell/AppFrame";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { clockLocale } from "../../lib/time";
 import { formatVnd } from "../../lib/money";
 import { t, type MessageKey } from "../../lib/t";
 import { useMe } from "../session/useMe";
@@ -18,7 +19,7 @@ export function PaidView() {
   const me = useMe().data;
   if (!p) return null;
   const paidAt = p.paidAt
-    ? new Date(p.paidAt).toLocaleTimeString("vi-VN", {
+    ? new Date(p.paidAt).toLocaleTimeString(clockLocale(), {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",

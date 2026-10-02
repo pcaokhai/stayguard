@@ -33,16 +33,16 @@ const ROLES: { role: Role; href: string; title: MessageKey; sub: MessageKey; ico
   },
 ];
 
-export function RolePicker() {
+// Demo mode only: the build sets NEXT_PUBLIC_DEMO_MODE=0 for production (docs/14 W0/L-W1).
+const DEMO_ON = process.env.NEXT_PUBLIC_DEMO_MODE !== "0";
+
+export function DemoPicker() {
   const router = useRouter();
   const start = useCreateDemoSession();
 
+  if (!DEMO_ON) return null;
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[480px] flex-col gap-7 px-6 pb-8 pt-12">
-      <header className="flex flex-col gap-3 pt-6">
-        <h1 className="text-[30px] font-bold leading-tight">{t("login.title")}</h1>
-        <p className="text-[15px] leading-normal text-ink-2">{t("login.lead")}</p>
-      </header>
+    <div className="mt-2 border-t border-border pt-4">
       <section className="flex flex-col gap-3" aria-labelledby="try-as">
         <h2 id="try-as" className="text-sm font-semibold">
           {t("login.tryAs")}
@@ -67,7 +67,7 @@ export function RolePicker() {
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="shrink-0"
+              className="size-7 shrink-0"
               aria-hidden="true"
             >
               <path d={icon} />
@@ -84,6 +84,6 @@ export function RolePicker() {
           </p>
         )}
       </section>
-    </main>
+    </div>
   );
 }

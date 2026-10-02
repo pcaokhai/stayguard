@@ -1,5 +1,5 @@
-import { RolePicker } from "../../features/session/RolePicker";
+import { HomeRedirect } from "@/features/auth/HomeRedirect";
 
-export default function LoginPage() {
-  return <RolePicker />;
+export default function HomePage() {
+  return <HomeRedirect />;
 }

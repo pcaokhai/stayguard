@@ -4,8 +4,6 @@
     "tagline": "Guesthouse management that prevents loss."
   },
   "login": {
-    "title": "Run your guesthouse without losing money",
-    "lead": "Transfers always reach the owner's account, rental time is recorded by the system, every edit leaves a trace.",
     "tryAs": "Try it as",
     "desk": "Front desk",
     "deskSub": "Check in, check out, collect by QR",
@@ -194,5 +192,63 @@
     "signOut": "Sign out",
     "menu": "Menu",
     "close": "Close"
+  },
+  "auth": {
+    "title": "Sign in",
+    "lead": "Use the guesthouse code and the PIN your owner gave you.",
+    "code": "Guesthouse code",
+    "username": "User name",
+    "pin": "6-digit PIN",
+    "submit": "Sign in",
+    "forgot": "Forgot your PIN? Ask the owner to reset it under Staff. After 5 wrong tries the account locks for 15 minutes.",
+    "shared": "Shared counter computer: sign out when the shift changes.",
+    "heroTitle": "Money reaches the owner. Times are recorded by the system.",
+    "heroLead": "Front desk on the counter PC or a phone. The owner sees everything from anywhere.",
+    "codeRequired": "Enter the guesthouse code (3-16 characters)",
+    "usernameRequired": "Enter your user name",
+    "pinRequired": "Enter all 6 digits of the PIN",
+    "wrong": "The guesthouse code, user name or PIN is not right.",
+    "failed": "Could not sign in. Check your connection and try again.",
+    "language": "Language"
+  },
+  "locked": {
+    "title": "Account temporarily locked",
+    "body": "5 wrong PIN attempts. Try again at {time}, or ask the owner to reset your PIN.",
+    "account": "Account",
+    "unlocksAt": "Unlocks at",
+    "back": "Back to sign in",
+    "notified": "The owner has been notified about this lock."
+  },
+  "setPin": {
+    "title": "Set a new PIN",
+    "first": "First sign-in · {name}",
+    "notice": "The PIN from the owner works once. Choose a PIN only you know.",
+    "current": "Current PIN",
+    "new": "New PIN",
+    "repeat": "Repeat new PIN",
+    "ruleDigits": "Exactly 6 digits",
+    "ruleRun": "Not a run like 123456 or 111111",
+    "ruleOwn": "Not your birthday or phone number",
+    "save": "Save PIN and continue",
+    "mismatch": "The two PINs do not match.",
+    "failed": "Could not change the PIN. Check the current PIN and try again.",
+    "changed": "PIN changed"
+  },
+  "account": {
+    "title": "Account",
+    "currentShift": "Current shift",
+    "since": "since {time}",
+    "access": "Access",
+    "levelNONE": "None",
+    "levelVIEW": "View",
+    "levelEDIT": "Edit",
+    "schedule": "My schedule",
+    "scheduleSub": "See shifts, request leave",
+    "changePin": "Change PIN",
+    "changePinSub": "Change it if someone else may know it",
+    "endShift": "End shift",
+    "endShiftSub": "Count cash and hand over",
+    "signOut": "Sign out",
+    "signOutNote": "Signing out does not end your shift. Close the shift before leaving."
   }
 }

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test, vi } from "vitest";
 import en from "../../messages/en.json";
 import viMsg from "../../messages/vi.json";
-import { RolePicker } from "../features/session/RolePicker";
+import { DemoPicker } from "../features/session/RolePicker";
 
 // The router needs the app context; stub it for the static render.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
@@ -10,8 +10,8 @@ vi.mock("../features/session/useCreateDemoSession", () => ({
   useCreateDemoSession: () => ({ isPending: false, isError: false, mutate: () => {} }),
 }));
 
-test("role_picker_shows_three_roles_W1", () => {
-  const html = renderToStaticMarkup(<RolePicker />);
+test("demo_picker_shows_three_roles_W1", () => {
+  const html = renderToStaticMarkup(<DemoPicker />);
   for (const k of ["desk", "owner", "housekeeping"] as const)
     expect(html).toContain(viMsg.login[k]);
 });

@@ -1,5 +1,7 @@
 # Build context is the repository root (see deploy/compose.yaml).
 FROM node:24.15.0-alpine AS web
+# Production builds pass --build-arg NEXT_PUBLIC_DEMO_MODE=0 to hide the demo role picker on sign-in.
+ARG NEXT_PUBLIC_DEMO_MODE=1
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci

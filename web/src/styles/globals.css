@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* No dark theme: shadcn dark: variants must not follow the OS setting. */
+@custom-variant dark (&:is(.dark *));
+
 /* Tokens from docs/assets/design/source (one place, reused everywhere). */
 @theme {
   --font-sans: var(--font-be-vietnam-pro), system-ui, sans-serif;

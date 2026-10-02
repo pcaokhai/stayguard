@@ -4,8 +4,6 @@
     "tagline": "Quản lý nhà nghỉ, chống thất thoát."
   },
   "login": {
-    "title": "Quản lý nhà nghỉ, không còn thất thoát tiền",
-    "lead": "Tiền chuyển khoản luôn vào tài khoản chủ, giờ thuê do hệ thống ghi, mọi chỉnh sửa đều có dấu vết.",
     "tryAs": "Dùng thử với vai trò",
     "desk": "Lễ tân",
     "deskSub": "Nhận phòng, trả phòng, thu tiền bằng QR",
@@ -194,5 +192,63 @@
     "signOut": "Đăng xuất",
     "menu": "Menu",
     "close": "Đóng"
+  },
+  "auth": {
+    "title": "Đăng nhập",
+    "lead": "Dùng mã nhà nghỉ và PIN chủ nhà nghỉ cấp cho bạn.",
+    "code": "Mã nhà nghỉ",
+    "username": "Tên đăng nhập",
+    "pin": "PIN 6 số",
+    "submit": "Đăng nhập",
+    "forgot": "Quên PIN? Nhờ chủ nhà nghỉ đặt lại trong mục Nhân viên. Nhập sai 5 lần, tài khoản tạm khóa 15 phút.",
+    "shared": "Máy tính dùng chung ở quầy: nhớ đăng xuất khi đổi ca.",
+    "heroTitle": "Tiền về đúng chủ, giờ ở do hệ thống ghi.",
+    "heroLead": "Lễ tân dùng máy quầy hoặc điện thoại. Chủ xem mọi thứ từ bất kỳ đâu.",
+    "codeRequired": "Nhập mã nhà nghỉ (3-16 ký tự)",
+    "usernameRequired": "Nhập tên đăng nhập",
+    "pinRequired": "Nhập đủ 6 số PIN",
+    "wrong": "Mã nhà nghỉ, tên đăng nhập hoặc PIN chưa đúng.",
+    "failed": "Không đăng nhập được. Kiểm tra mạng rồi thử lại.",
+    "language": "Ngôn ngữ"
+  },
+  "locked": {
+    "title": "Tài khoản tạm khóa",
+    "body": "Nhập sai PIN 5 lần. Bạn có thể thử lại lúc {time}, hoặc nhờ chủ nhà nghỉ đặt lại PIN.",
+    "account": "Tài khoản",
+    "unlocksAt": "Mở khóa lúc",
+    "back": "Về màn đăng nhập",
+    "notified": "Chủ nhà nghỉ đã nhận thông báo về lần khóa này."
+  },
+  "setPin": {
+    "title": "Đặt PIN mới",
+    "first": "Lần đầu đăng nhập · {name}",
+    "notice": "PIN do chủ cấp chỉ dùng một lần. Hãy đặt PIN riêng mà chỉ bạn biết.",
+    "current": "PIN hiện tại",
+    "new": "PIN mới",
+    "repeat": "Nhập lại PIN mới",
+    "ruleDigits": "Đúng 6 chữ số",
+    "ruleRun": "Không phải dãy liền như 123456 hay 111111",
+    "ruleOwn": "Không trùng ngày sinh hay số điện thoại",
+    "save": "Lưu PIN và vào làm",
+    "mismatch": "Hai PIN chưa giống nhau.",
+    "failed": "Không đổi được PIN. Kiểm tra PIN hiện tại rồi thử lại.",
+    "changed": "Đã đổi PIN"
+  },
+  "account": {
+    "title": "Tài khoản",
+    "currentShift": "Ca hiện tại",
+    "since": "từ {time}",
+    "access": "Quyền",
+    "levelNONE": "Không",
+    "levelVIEW": "Xem",
+    "levelEDIT": "Sửa",
+    "schedule": "Lịch của tôi",
+    "scheduleSub": "Xem ca làm, xin nghỉ",
+    "changePin": "Đổi PIN",
+    "changePinSub": "Nên đổi nếu nghi người khác biết",
+    "endShift": "Kết ca",
+    "endShiftSub": "Đếm tiền và bàn giao",
+    "signOut": "Đăng xuất",
+    "signOutNote": "Đăng xuất không kết thúc ca. Nhớ kết ca trước khi về."
   }
 }

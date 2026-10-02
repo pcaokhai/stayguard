@@ -113,7 +113,7 @@ Tests (required): link only by OWNER, only for bank events, once (409), settles 
 `completeHousekeepingTask` for OWNER, MANAGER, RECEPTIONIST, HOUSEKEEPING with EDIT; `reportDamage` (LOCK_ROOM sets MAINTENANCE, 409 if occupied); `listTickets`, `getTicket`, `updateTicket` (costs by OWNER; DONE unlocks the room; expense posting comes in F-A4).
 Tests: role and building checks; lock refused with a guest.
 
-#### [ ] L-W1 Sign-in and account (WEB-1)
+#### [x] L-W1 Sign-in and account (WEB-1)
 Boards: DangNhap, DangNhapPC, DoiPin, KhoaTaiKhoan, TaiKhoan. PIN with InputOTP; lockout countdown; must-change flow; the demo role picker shows only when demo mode is on. Motion: field error shake, button press.
 Verify UI; wrong PIN five times on mocks shows the locked screen.
 

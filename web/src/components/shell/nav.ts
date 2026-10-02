@@ -26,7 +26,8 @@ type Role = components["schemas"]["Role"];
 export type NavItem = { label: MessageKey; href: string; icon: LucideIcon };
 
 // Navigation shows only pages that exist (docs/14 W0): add a path here when its task is merged.
-const READY = new Set<string>(["/owner", "/rooms", "/housekeeping"]);
+const READY = new Set<string>(["/owner", "/rooms", "/housekeeping", "/account"]);
+export const isReady = (href: string) => READY.has(href);
 export const visible = (items: NavItem[]) => items.filter((i) => READY.has(i.href));
 
 const OWNER_TABS: NavItem[] = [

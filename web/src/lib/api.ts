@@ -15,9 +15,11 @@ const auth: Middleware = {
     return request;
   },
   onResponse({ response }) {
-    if (response.status === 401 && typeof window !== "undefined") {
+    // A wrong PIN is a 401 from sign-in or change-PIN itself; the form shows it, no redirect.
+    const ownError = /\/v1\/(auth\/sign-in|me\/pin)$/.test(response.url);
+    if (response.status === 401 && typeof window !== "undefined" && !ownError) {
       clearSession();
-      window.location.assign(lp("/") + "/");
+      window.location.assign(lp("/sign-in"));
     }
     return response;
   },

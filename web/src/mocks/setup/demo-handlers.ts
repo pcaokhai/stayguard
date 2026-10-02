@@ -122,7 +122,90 @@ const payment = (method: "CASH" | "TRANSFER") => ({
 const json = (body: unknown, status = 200) =>
   HttpResponse.json(body as Record<string, unknown>, { status });
 
+// Sign-in on mocks: guesthouse NNDEMO, users hoa (front desk), chu (owner), bep (housekeeping), all with
+// PIN 482915; user moi has the one-time PIN 739104 and must set a new one. Five wrong PINs lock it.
+const GOOD_PIN = "482915";
+const ONE_TIME_PIN = "739104";
+const USERS: Record<string, { name: string; role: string }> = {
+  hoa: { name: "Chị Hoa", role: "RECEPTIONIST" },
+  chu: { name: "Chủ nhà", role: "OWNER" },
+  bep: { name: "Bác Lan", role: "HOUSEKEEPING" },
+  moi: { name: "Anh Minh", role: "RECEPTIONIST" },
+};
+let wrongPins = 0;
+
 export const demoHandlers = [
+  http.post("*/v1/auth/sign-in", async ({ request }) => {
+    const b = (await request.json()) as { guesthouseCode: string; username: string; pin: string };
+    if (wrongPins >= 5)
+      return HttpResponse.json(
+        { type: "about:blank", title: "Locked", status: 429, code: "ACCOUNT_LOCKED" },
+        {
+          status: 429,
+          headers: { "Retry-After": "900", "Content-Type": "application/problem+json" },
+        },
+      );
+    const user = USERS[b.username.toLowerCase()];
+    const ok =
+      user &&
+      b.guesthouseCode.toUpperCase() === "NNDEMO" &&
+      b.pin === (b.username === "moi" ? ONE_TIME_PIN : GOOD_PIN);
+    if (!ok) {
+      wrongPins += 1;
+      return HttpResponse.json(
+        {
+          type: "about:blank",
+          title: "Unauthorized",
+          status: wrongPins >= 5 ? 429 : 401,
+          code: wrongPins >= 5 ? "ACCOUNT_LOCKED" : "INVALID_CREDENTIALS",
+        },
+        {
+          status: wrongPins >= 5 ? 429 : 401,
+          headers: { "Retry-After": "900", "Content-Type": "application/problem+json" },
+        },
+      );
+    }
+    wrongPins = 0;
+    return json(
+      {
+        accessToken: "demo-token",
+        expiresAt: ago(-480),
+        tenantId: "t1",
+        user: { id: "u1", ...user, locale: "vi" },
+        mustChangePin: b.username === "moi",
+      },
+      200,
+    );
+  }),
+  http.post("*/v1/auth/sign-out", () => new HttpResponse(null, { status: 204 })),
+  http.put("*/v1/me/pin", async ({ request }) => {
+    const b = (await request.json()) as { currentPin: string };
+    return b.currentPin === GOOD_PIN || b.currentPin === ONE_TIME_PIN
+      ? new HttpResponse(null, { status: 204 })
+      : HttpResponse.json(
+          { type: "about:blank", title: "Unauthorized", status: 422, code: "INVALID_CURRENT_PIN" },
+          { status: 422, headers: { "Content-Type": "application/problem+json" } },
+        );
+  }),
+  http.put("*/v1/me/locale", () => new HttpResponse(null, { status: 204 })),
+  http.get("*/v1/shifts/current", () =>
+    json(
+      {
+        id: "sh1",
+        userId: "u1",
+        userName: "Chị Hoa",
+        status: "OPEN",
+        openedAt: ago(70),
+        openingFloat: 500000,
+        cashIn: 180000,
+        cashOut: 0,
+        expectedCash: 680000,
+        transfersReceived: 220000,
+        buildingIds: ["A"],
+      },
+      200,
+    ),
+  ),
   http.post("*/v1/demo/sessions", async ({ request }) => {
     const { role } = (await request.json()) as { role: string };
     return json(
@@ -145,7 +228,10 @@ export const demoHandlers = [
         locale: "vi",
       },
       tenant: { id: "t1", name: "Nhà nghỉ Demo", timezone: "Asia/Ho_Chi_Minh", currency: "VND" },
-      buildingAccess: [],
+      buildingAccess: [
+        { buildingId: "A", level: "NONE" },
+        { buildingId: "B", level: "EDIT" },
+      ],
     }),
   ),
   http.get("*/v1/buildings", () =>

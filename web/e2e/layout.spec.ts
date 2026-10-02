@@ -11,6 +11,9 @@ const ROUTES = [
   "/paid?payment=pay-CASH",
   "/housekeeping",
   "/owner",
+  "/sign-in",
+  "/set-pin",
+  "/account",
   "/states?kind=forbidden",
 ];
 const WIDTHS = [390, 834, 1280];

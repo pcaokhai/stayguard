@@ -1,12 +1,13 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import { getLocale } from "../../lib/locale";
 import { clearSession, loadSession, markDemo, saveSession } from "../../lib/session";
 import type { components } from "../../api/generated/schema";
 
 type Role = components["schemas"]["Role"];
 
 const start = (role: Role, tenantId?: string) =>
-  api.POST("/v1/demo/sessions", { body: { role, locale: "vi", tenantId } });
+  api.POST("/v1/demo/sessions", { body: { role, locale: getLocale(), tenantId } });
 
 export function useCreateDemoSession() {
   return useMutation({
