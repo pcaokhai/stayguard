@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "fmt": "prettier --write .",
     "gen:api": "openapi-typescript ../contracts/openapi.yaml -o src/api/generated/schema.d.ts",
-    "gen:mocks": "orval --config orval.config.mjs",
+    "gen:mocks": "orval --config orval.config.mjs && node scripts/fix-blob-mocks.mjs",
     "gen": "npm run gen:api && npm run gen:mocks"
   },
   "dependencies": {

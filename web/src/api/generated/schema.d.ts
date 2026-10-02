@@ -286,27 +286,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/webhooks/bank": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Bank or reconciliation-provider webhook (full product)
-         * @description Authenticated by an HMAC signature header, not a bearer token. The handler checks the
-         *     signature, deduplicates on externalId, matches referenceCode and amount, then settles.
-         */
-        post: operations["receiveBankWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/housekeeping/tasks": {
         parameters: {
             query?: never;
@@ -333,7 +312,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a room clean; the room becomes VACANT */
+        /**
+         * Mark a room clean; the room becomes VACANT
+         * @description Allowed for OWNER, MANAGER, RECEPTIONIST and HOUSEKEEPING with EDIT on the building; records who and when.
+         */
         post: operations["completeHousekeepingTask"];
         delete?: never;
         options?: never;
@@ -520,6 +502,1152 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with guesthouse code, user name and PIN
+         * @description Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists.
+         */
+        post: operations["signIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End the current session */
+        post: operations["signOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change my PIN (required after a one-time PIN) */
+        put: operations["changeMyPin"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff with position, app access, contract and building access */
+        get: operations["listStaff"];
+        put?: never;
+        /** Add a staff member; returns a one-time PIN when appAccess is not NONE */
+        post: operations["createStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/staff/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change position, app access or contract */
+        patch: operations["updateStaff"];
+        trace?: never;
+    };
+    "/v1/owner/staff/{userId}/pin-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a one-time PIN (24 h) */
+        post: operations["resetStaffPin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/staff/{userId}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lock sign-in */
+        post: operations["lockStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/staff/{userId}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unlock sign-in */
+        post: operations["unlockStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/staff/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a staff member (deactivate; history kept)
+         * @description 409 SHIFT_OPEN when the person has an open shift. Never deletes rows.
+         */
+        post: operations["removeStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Roster for a date range with leave and uncovered shifts */
+        get: operations["getRoster"];
+        /** Set and remove assignments in one change */
+        put: operations["putRoster"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/roster/copy-week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy the previous week into a week */
+        post: operations["copyRosterWeek"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Leave requests to decide */
+        get: operations["listLeaveRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/leave-requests/{leaveId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a request (or a cancel request) */
+        post: operations["approveLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/leave-requests/{leaveId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline with a reason */
+        post: operations["declineLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My shifts for a date range */
+        get: operations["getMyRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My leave requests and balance */
+        get: operations["listMyLeaveRequests"];
+        put?: never;
+        /** Request leave */
+        post: operations["createLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/leave-requests/{leaveId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a pending request, or ask to cancel an approved one
+         * @description PENDING becomes CANCELLED at once; APPROVED becomes CANCEL_REQUESTED until the owner approves.
+         */
+        post: operations["cancelMyLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/payroll/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payroll for a month from contracts and the roster */
+        get: operations["getPayroll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/payroll/{month}/lines/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set bonus, deduction or note */
+        patch: operations["updatePayrollLine"];
+        trace?: never;
+    };
+    "/v1/owner/payroll/{month}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark lines paid; posts STAFF_PAY expense */
+        post: operations["markPayrollPaid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rooms/{roomId}/damage-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report damage or missing items; creates a ticket
+         * @description LOCK_ROOM sets the room to MAINTENANCE at once (409 ROOM_OCCUPIED if a guest is in it).
+         */
+        post: operations["reportDamage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/maintenance-tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tickets with totals */
+        get: operations["listTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/maintenance-tickets/{ticketId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One ticket */
+        get: operations["getTicket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set status, lock, expected date and costs
+         * @description DONE posts a MAINTENANCE expense for the completion month and unlocks the room. Costs are editable only by OWNER.
+         */
+        patch: operations["updateTicket"];
+        trace?: never;
+    };
+    "/v1/owner/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Expenses of a month by category with manual items */
+        get: operations["getExpenseMonth"];
+        put?: never;
+        /** Add a manual or recurring expense */
+        post: operations["createExpense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/expenses/{expenseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a manual expense */
+        delete: operations["deleteExpense"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a manual or recurring expense
+         * @description Automatic lines (PAYROLL, MAINTENANCE, STOCK) return 409 EXPENSE_AUTOMATIC.
+         */
+        patch: operations["updateExpense"];
+        trace?: never;
+    };
+    "/v1/owner/reports/income-costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revenue, expenses and profit for a month range */
+        get: operations["getIncomeCostReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/property": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Property details and QR expiry */
+        get: operations["getProperty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update property details */
+        patch: operations["updateProperty"];
+        trace?: never;
+    };
+    "/v1/owner/bank-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receiving accounts */
+        get: operations["listBankAccounts"];
+        put?: never;
+        /** Add a receiving account (pending SePay) */
+        post: operations["createBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bank-accounts/{accountId}/make-default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make an account the QR default (must be CONNECTED) */
+        post: operations["makeDefaultBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/bank-accounts/{accountId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove a non-default account */
+        post: operations["removeBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/sepay-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Connection status of the default account */
+        get: operations["getSepayStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/buildings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a building with generated floors and rooms */
+        post: operations["createBuilding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/buildings/{buildingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a building */
+        patch: operations["updateBuilding"];
+        trace?: never;
+    };
+    "/v1/owner/buildings/{buildingId}/floors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a floor, optionally with rooms */
+        post: operations["createFloor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create one room or a range of rooms */
+        post: operations["createRooms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/rooms/{roomId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a room, set maintenance or retire it
+         * @description 409 ROOM_OCCUPIED for type change or retire while a guest is in the room.
+         */
+        patch: operations["updateRoom"];
+        trace?: never;
+    };
+    "/v1/owner/rate-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rate plans per unit type */
+        get: operations["listRatePlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/unit-types/{unitTypeCode}/rate-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save a new rate plan version (applies to later check-ins) */
+        put: operations["updateRatePlan"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/rate-plans/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Price a sample stay with a draft rate plan */
+        post: operations["previewPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an item with price, cost and opening quantity */
+        post: operations["createService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/services/{serviceCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit details (never the stock count) */
+        patch: operations["updateService"];
+        trace?: never;
+    };
+    "/v1/owner/services/{serviceCode}/restock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record stock in with unit cost */
+        post: operations["restockService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/services/{serviceCode}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock history */
+        get: operations["listStockMovements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/services/{serviceCode}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove an item (stops selling if it has sales) */
+        post: operations["removeService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stocktakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a stocktake; differences alert the owner */
+        post: operations["createStocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stays/{stayId}/check-in-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct the check-in time with a reason
+         * @description At most 60 minutes later than recorded and not in the future; creates a STAY_TIME_EDITED alert. Check-out time can never be edited.
+         */
+        post: operations["editCheckInTime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stays/{stayId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move the guest to another vacant room
+         * @description Keeps check-in time and extras; the whole stay is priced with the new room type. Old room becomes TO_CLEAN.
+         */
+        post: operations["moveStay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stay history
+         * @description Receptionists can query any day within the last `frontDeskHistoryDays` (property setting, default 7) in buildings with VIEW or EDIT; owners and managers any range. Each item carries guestId indicators only; numbers and photos are never returned here.
+         */
+        get: operations["listStays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/stays/{stayId}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything that happened to a stay */
+        get: operations["getStayTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoiceId}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt data for printing */
+        get: operations["getReceipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cash and bank transactions with reconciliation state */
+        get: operations["listTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/payment-events/{eventId}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link an unmatched bank transfer to an unpaid invoice
+         * @description OWNER only; only events reported by the bank provider; irreversible; audited. 409 when the event is already linked or the invoice is paid.
+         */
+        post: operations["linkTransferToInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alerts */
+        get: operations["listAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/alerts/{alertId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an alert read */
+        post: operations["markAlertRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity log (append-only) */
+        get: operations["listAuditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Closed shifts with differences */
+        get: operations["listClosedShifts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/bank/{hookId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bank or reconciliation-provider webhook (full product)
+         * @description Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns 404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
+         */
+        post: operations["receiveBankWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/bank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deprecated: single bank webhook (replaced by /v1/webhooks/bank/{hookId})
+         * @deprecated
+         * @description Kept only so existing configurations fail loudly: answers 410 GONE. Use receiveBankWebhook at /v1/webhooks/bank/{hookId}.
+         */
+        post: operations["receiveBankWebhookLegacy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stays/{stayId}/guest-id/number": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Add or replace the guest ID number (write-only for front desk) */
+        put: operations["setGuestIdNumber"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stays/{stayId}/guest-id/photos/{side}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload or replace an ID photo (front desk cannot read it back)
+         * @description JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+         */
+        put: operations["uploadGuestIdPhoto"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/stays/{stayId}/guest-id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Masked ID number and photo metadata */
+        get: operations["getGuestIdRecord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/stays/{stayId}/guest-id/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Show the full ID number (audited)
+         * @description Writes a GUEST_ID audit entry. Response has Cache-Control: no-store.
+         */
+        post: operations["revealGuestIdNumber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/stays/{stayId}/guest-id/photos/{side}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream an ID photo to view or download (audited)
+         * @description Streams through the API only (no public or pre-signed URL). Cache-Control: no-store. download=true sets Content-Disposition attachment and is audited as a download.
+         */
+        get: operations["getGuestIdPhoto"];
+        put?: never;
+        post?: never;
+        /** Delete an ID photo (audited) */
+        delete: operations["deleteGuestIdPhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/owner/stays/{stayId}/guest-id/number": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete the stored ID number (audited) */
+        delete: operations["deleteGuestIdNumber"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -551,7 +1679,7 @@ export interface components {
             en: string;
         };
         /** @enum {string} */
-        Role: "OWNER" | "RECEPTIONIST" | "HOUSEKEEPING";
+        Role: "OWNER" | "MANAGER" | "RECEPTIONIST" | "HOUSEKEEPING";
         /** @enum {string} */
         PermissionLevel: "NONE" | "VIEW" | "EDIT";
         /** @enum {string} */
@@ -565,7 +1693,7 @@ export interface components {
         /** @enum {string} */
         PaymentStatus: "PENDING" | "PAID" | "EXPIRED" | "MISMATCH";
         /** @enum {string} */
-        AlertKind: "UNUSED_ROOM_REPORT" | "STAY_TIME_EDITED" | "CASH_SHORT" | "CASH_OVER";
+        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "PAYMENT_MISMATCH" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
         CreateDemoSessionRequest: {
             role: components["schemas"]["Role"];
             locale: components["schemas"]["Locale"];
@@ -642,14 +1770,21 @@ export interface components {
             name: components["schemas"]["LocalizedText"];
             price: components["schemas"]["Vnd"];
             stock: number;
+            unit?: string;
+            lowStockAt?: number;
+            onSale?: boolean;
+            latestUnitCost?: components["schemas"]["Vnd"] | null;
+            soldLast7Days?: number;
         };
         CreateStayRequest: {
             rentalType: components["schemas"]["RentalType"];
             guestName: string;
             guestPhone: string;
-            /** @description Optional national ID; encrypted at rest */
+            /** @description Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING */
             idNumber?: string | null;
             deposit: components["schemas"]["Vnd"];
+            /** @description Required true when idNumber is given */
+            idConsent?: boolean;
         };
         BillLine: {
             /** @description Pricing line code, e.g. FIRST_HOUR, EXTRA_HOUR, OVERNIGHT, DAILY */
@@ -689,12 +1824,12 @@ export interface components {
             checkOutAt?: string | null;
             guestName: string;
             guestPhone: string;
-            idNumberMasked?: string | null;
             deposit: components["schemas"]["Vnd"];
             extras: components["schemas"]["ExtraLine"][];
             quote: components["schemas"]["Quote"];
             /** @description Rate plan version snapshotted at check-in */
             pricingVersion: number;
+            guestId?: components["schemas"]["GuestIdIndicators"];
         };
         AddExtrasRequest: {
             items: {
@@ -760,6 +1895,7 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             completedAt?: string | null;
+            waitingMinutes?: number;
         };
         Alert: {
             id: string;
@@ -802,6 +1938,8 @@ export interface components {
             };
             alerts: components["schemas"]["Alert"][];
             latestPayments: components["schemas"]["PaymentSummary"][];
+            buildings?: components["schemas"]["BuildingStatus"][];
+            attention?: components["schemas"]["AttentionItem"][];
         };
         StaffPermission: {
             userId: string;
@@ -861,6 +1999,600 @@ export interface components {
                 shiftsWithDifference: number;
                 totalShort: components["schemas"]["Vnd"];
             };
+        };
+        /**
+         * @description NONE = no sign-in (roster and payroll only, e.g. security). MANAGER = owner rights except bank accounts, removing staff and pay.
+         * @enum {string}
+         */
+        AppAccess: "NONE" | "MANAGER" | "RECEPTIONIST" | "HOUSEKEEPING";
+        /** @enum {string} */
+        Position: "FRONT_DESK" | "HOUSEKEEPING" | "SECURITY" | "MANAGER" | "MAINTENANCE" | "OTHER";
+        /** @enum {string} */
+        PayType: "MONTHLY" | "PER_SHIFT" | "HOURLY";
+        /** @enum {string} */
+        ShiftCode: "MORNING" | "AFTERNOON" | "NIGHT";
+        /** @description Re-entered owner PIN for sensitive changes (bank accounts, removing staff). */
+        OwnerPin: {
+            ownerPin: string;
+        };
+        OneTimePin: {
+            /** @description Shown once; never retrievable again */
+            pin: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        SignInRequest: {
+            guesthouseCode: string;
+            username: string;
+            pin: string;
+        };
+        SignInResponse: components["schemas"]["Session"] & {
+            mustChangePin: boolean;
+        };
+        ChangePinRequest: {
+            currentPin: string;
+            /** @description Not a run (123456) or repeated digit (111111) */
+            newPin: string;
+        };
+        Contract: {
+            payType: components["schemas"]["PayType"];
+            rate: components["schemas"]["Vnd"];
+            fixedAllowance: components["schemas"]["Vnd"];
+            standardShifts: number;
+            /** Format: date */
+            startDate: string;
+            annualLeaveDays: number;
+        };
+        /** @enum {string} */
+        StaffStatus: "ACTIVE" | "LOCKED" | "REMOVED";
+        Staff: {
+            id: string;
+            name: string;
+            phone?: string | null;
+            position: components["schemas"]["Position"];
+            appAccess: components["schemas"]["AppAccess"];
+            username?: string | null;
+            status: components["schemas"]["StaffStatus"];
+            /** Format: date-time */
+            lockedUntil?: string | null;
+            /** Format: date-time */
+            lastActivityAt?: string | null;
+            contract: components["schemas"]["Contract"];
+            buildingAccess: components["schemas"]["BuildingAccess"][];
+        };
+        CreateStaffRequest: {
+            name: string;
+            phone?: string | null;
+            position: components["schemas"]["Position"];
+            appAccess: components["schemas"]["AppAccess"];
+            /** @description Required unless appAccess is NONE */
+            username?: string | null;
+            contract: components["schemas"]["Contract"];
+            buildingAccess?: components["schemas"]["BuildingAccess"][];
+        };
+        UpdateStaffRequest: {
+            name?: string;
+            phone?: string | null;
+            position?: components["schemas"]["Position"];
+            appAccess?: components["schemas"]["AppAccess"];
+            contract?: components["schemas"]["Contract"];
+        };
+        CreateStaffResponse: {
+            staff: components["schemas"]["Staff"];
+            oneTimePin?: components["schemas"]["OneTimePin"] | null;
+        };
+        RosterAssignment: {
+            userId: string;
+            /** Format: date */
+            date: string;
+            shift: components["schemas"]["ShiftCode"];
+        };
+        /** @enum {string} */
+        LeaveKind: "PAID" | "SICK" | "UNPAID";
+        /** @enum {string} */
+        LeaveStatus: "PENDING" | "APPROVED" | "DECLINED" | "CANCELLED" | "CANCEL_REQUESTED" | "TAKEN";
+        LeaveRequest: {
+            id: string;
+            userId: string;
+            userName: string;
+            /** Format: date */
+            fromDate: string;
+            /** Format: date */
+            toDate: string;
+            shift?: components["schemas"]["ShiftCode"] | null;
+            kind: components["schemas"]["LeaveKind"];
+            reason?: string | null;
+            coverUserId?: string | null;
+            status: components["schemas"]["LeaveStatus"];
+            declineReason?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        CreateLeaveRequest: {
+            /** Format: date */
+            fromDate: string;
+            /** Format: date */
+            toDate: string;
+            shift?: components["schemas"]["ShiftCode"] | null;
+            kind: components["schemas"]["LeaveKind"];
+            reason?: string | null;
+            coverUserId?: string | null;
+        };
+        LeaveBalance: {
+            year: number;
+            annual: number;
+            used: number;
+            left: number;
+        };
+        Roster: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            assignments: components["schemas"]["RosterAssignment"][];
+            leave: components["schemas"]["LeaveRequest"][];
+            gaps?: {
+                /** Format: date */
+                date: string;
+                shift: components["schemas"]["ShiftCode"];
+            }[];
+        };
+        PutRosterRequest: {
+            set: components["schemas"]["RosterAssignment"][];
+            remove: components["schemas"]["RosterAssignment"][];
+        };
+        PayrollLine: {
+            userId: string;
+            name: string;
+            position: components["schemas"]["Position"];
+            payType: components["schemas"]["PayType"];
+            rate: components["schemas"]["Vnd"];
+            shiftsWorked: number;
+            standardShifts?: number;
+            leaveDays: number;
+            earnedPay: components["schemas"]["Vnd"];
+            allowance: components["schemas"]["Vnd"];
+            bonus: components["schemas"]["Vnd"];
+            deduction: components["schemas"]["Vnd"];
+            net: components["schemas"]["Vnd"];
+            note?: string | null;
+            /** @enum {string} */
+            status: "UNPAID" | "PAID";
+        };
+        Payroll: {
+            /** @description YYYY-MM */
+            month: string;
+            lines: components["schemas"]["PayrollLine"][];
+            totalNet: components["schemas"]["Vnd"];
+        };
+        UpdatePayrollLineRequest: {
+            bonus?: components["schemas"]["Vnd"];
+            deduction?: components["schemas"]["Vnd"];
+            note?: string | null;
+        };
+        /** @enum {string} */
+        DamageCategory: "AIR_CONDITIONER" | "HOT_WATER" | "PLUMBING" | "POWER_LIGHTS" | "TV" | "DOOR_LOCK" | "MISSING_ITEMS" | "OTHER";
+        /** @enum {string} */
+        TicketStatus: "NEW" | "IN_REPAIR" | "DONE";
+        DamageReportRequest: {
+            category: components["schemas"]["DamageCategory"];
+            description: string;
+            /** @enum {string} */
+            severity: "STILL_RENTABLE" | "LOCK_ROOM";
+            photoAssetIds?: string[];
+        };
+        MaintenanceTicket: {
+            id: string;
+            /** @description Human code such as BT-031 */
+            code: string;
+            roomId: string;
+            roomCode: string;
+            category: components["schemas"]["DamageCategory"];
+            description: string;
+            status: components["schemas"]["TicketStatus"];
+            roomLocked: boolean;
+            reportedBy: string;
+            /** Format: date-time */
+            reportedAt: string;
+            /** Format: date */
+            expectedDoneOn?: string | null;
+            partsCost?: components["schemas"]["Vnd"] | null;
+            labourCost?: components["schemas"]["Vnd"] | null;
+            totalCost: components["schemas"]["Vnd"] | null;
+            repairer?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+        };
+        UpdateTicketRequest: {
+            status?: components["schemas"]["TicketStatus"];
+            roomLocked?: boolean;
+            /** Format: date */
+            expectedDoneOn?: string | null;
+            partsCost?: components["schemas"]["Vnd"] | null;
+            labourCost?: components["schemas"]["Vnd"] | null;
+            repairer?: string | null;
+            note?: string | null;
+        };
+        /** @enum {string} */
+        ExpenseCategory: "STAFF_PAY" | "RENT" | "ELECTRICITY" | "WATER" | "LAUNDRY" | "MAINTENANCE" | "SUPPLIES" | "COST_OF_GOODS" | "TAX_FEES" | "INTERNET_TV" | "PAYMENT_FEES" | "OTHER";
+        /** @enum {string} */
+        ExpenseSource: "MANUAL" | "RECURRING" | "PAYROLL" | "MAINTENANCE" | "STOCK";
+        Expense: {
+            id: string;
+            category: components["schemas"]["ExpenseCategory"];
+            amount: components["schemas"]["Vnd"];
+            /** @description YYYY-MM */
+            month: string;
+            /** Format: date */
+            paidOn?: string | null;
+            note?: string | null;
+            recurring?: boolean;
+            source: components["schemas"]["ExpenseSource"];
+            attachmentAssetId?: string | null;
+        };
+        CreateExpenseRequest: {
+            category: components["schemas"]["ExpenseCategory"];
+            amount: components["schemas"]["Vnd"];
+            /** @description YYYY-MM */
+            month: string;
+            /** Format: date */
+            paidOn?: string | null;
+            note?: string | null;
+            recurring?: boolean;
+            attachmentAssetId?: string | null;
+        };
+        ExpenseMonth: {
+            /** @description YYYY-MM */
+            month: string;
+            categories: {
+                category: components["schemas"]["ExpenseCategory"];
+                amount: components["schemas"]["Vnd"];
+                source: components["schemas"]["ExpenseSource"];
+            }[];
+            items: components["schemas"]["Expense"][];
+            total: components["schemas"]["Vnd"];
+            revenue: components["schemas"]["Vnd"];
+        };
+        AmountShare: {
+            key: string;
+            amount: components["schemas"]["Vnd"];
+        };
+        IncomeCostReport: {
+            /** @description YYYY-MM */
+            from: string;
+            /** @description YYYY-MM */
+            to: string;
+            revenue: components["schemas"]["Vnd"];
+            expenses: components["schemas"]["Vnd"];
+            profit: number;
+            marginPct: number;
+            occupancyPct: number;
+            months: {
+                /** @description YYYY-MM */
+                month: string;
+                revenue: components["schemas"]["Vnd"];
+                expenses: components["schemas"]["Vnd"];
+            }[];
+            expensesByCategory: components["schemas"]["AmountShare"][];
+            revenueByRentalType: components["schemas"]["AmountShare"][];
+            revenueByBuilding: components["schemas"]["AmountShare"][];
+            revenueByMethod: components["schemas"]["AmountShare"][];
+        };
+        Property: {
+            guesthouseCode: string;
+            name: string;
+            address?: string | null;
+            phone?: string | null;
+            qrExpiryMinutes: number;
+            /** @description Guest ID number and photos are deleted this many days after check-out (default 30) */
+            idRetentionDays?: number;
+            /** @description How many recent days of stay history receptionists can see (default 7) */
+            frontDeskHistoryDays?: number;
+        };
+        UpdatePropertyRequest: {
+            name?: string;
+            address?: string | null;
+            phone?: string | null;
+            qrExpiryMinutes?: number;
+            idRetentionDays?: number;
+            /** @description How many recent days of stay history receptionists can see (default 7) */
+            frontDeskHistoryDays?: number;
+        };
+        BankAccount: {
+            id: string;
+            bankBin: string;
+            bankName: string;
+            accountNoMasked: string;
+            accountName: string;
+            isDefault: boolean;
+            /** @enum {string} */
+            sepayStatus: "CONNECTED" | "PENDING";
+            /** Format: date-time */
+            lastWebhookAt?: string | null;
+        };
+        CreateBankAccountRequest: components["schemas"]["OwnerPin"] & {
+            bankBin: string;
+            accountNo: string;
+            accountName: string;
+            makeDefaultWhenConnected?: boolean;
+        };
+        SepayStatus: {
+            /** @enum {string} */
+            status: "CONNECTED" | "NOT_CONNECTED";
+            /** Format: date-time */
+            lastWebhookAt?: string | null;
+            signatureValid?: boolean | null;
+        };
+        CreateBuildingRequest: {
+            code: string;
+            name: string;
+            floors: number;
+            roomsPerFloor: number;
+            unitTypeCode: string;
+        };
+        UpdateBuildingRequest: {
+            name?: string;
+        };
+        CreateFloorRequest: {
+            name: string;
+            rooms?: {
+                count: number;
+                startCode: string;
+                unitTypeCode: string;
+            } | null;
+        };
+        CreateRoomsRequest: {
+            buildingId: string;
+            floorId: string;
+            fromCode: string;
+            /** @description Equal to fromCode for a single room */
+            toCode: string;
+            unitTypeCode: string;
+            features?: components["schemas"]["RoomFeature"][];
+            availableNow?: boolean;
+        };
+        /** @enum {string} */
+        RoomFeature: "DOUBLE_BED" | "TWIN_BEDS" | "WINDOW" | "BATHTUB";
+        UpdateRoomRequest: {
+            code?: string;
+            unitTypeCode?: string;
+            features?: components["schemas"]["RoomFeature"][];
+            maintenance?: {
+                on: boolean;
+                reason?: string | null;
+                /** Format: date */
+                expectedBackOn?: string | null;
+            } | null;
+            retired?: boolean;
+        };
+        /** @description Mirrors contracts/pricing/rate-plan.schema.json */
+        RatePlan: {
+            readonly version?: number;
+            graceMinutes: number;
+            hourly: {
+                firstHour: components["schemas"]["Vnd"];
+                extraHour: components["schemas"]["Vnd"];
+            };
+            overnight: {
+                price: components["schemas"]["Vnd"];
+                windowStart: string;
+                windowEnd: string;
+            };
+            daily: {
+                price: components["schemas"]["Vnd"];
+                windowStart: string;
+                windowEnd: string;
+            };
+        };
+        UnitTypeRates: {
+            code: string;
+            name: components["schemas"]["LocalizedText"];
+            ratePlan: components["schemas"]["RatePlan"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PricePreviewRequest: {
+            rentalType: components["schemas"]["RentalType"];
+            /** Format: date-time */
+            checkIn: string;
+            /** Format: date-time */
+            checkOut: string;
+            ratePlan: components["schemas"]["RatePlan"];
+        };
+        CreateServiceRequest: {
+            name: components["schemas"]["LocalizedText"];
+            price: components["schemas"]["Vnd"];
+            unitCost: components["schemas"]["Vnd"];
+            openingQuantity: number;
+            unit: string;
+            lowStockAt: number;
+            onSale?: boolean;
+        };
+        UpdateServiceRequest: {
+            name?: components["schemas"]["LocalizedText"];
+            price?: components["schemas"]["Vnd"];
+            unit?: string;
+            lowStockAt?: number;
+            onSale?: boolean;
+        };
+        RestockRequest: {
+            quantity: number;
+            unitCost: components["schemas"]["Vnd"];
+        };
+        StockMovement: {
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            kind: "OPENING" | "IN" | "SALE" | "COUNT" | "ADJUST";
+            quantity: number;
+            unitCost?: components["schemas"]["Vnd"] | null;
+            /** @description Room code or stocktake id */
+            ref?: string | null;
+            actorName: string;
+        };
+        RemoveServiceResult: {
+            /**
+             * @description Items with sales history are never deleted
+             * @enum {string}
+             */
+            result: "DELETED" | "STOPPED_SELLING";
+        };
+        StocktakeRequest: {
+            lines: {
+                serviceCode: string;
+                counted: number;
+            }[];
+            note?: string | null;
+        };
+        StocktakeResult: {
+            id: string;
+            differences: {
+                serviceCode: string;
+                system: number;
+                counted: number;
+            }[];
+            valueDifference: number;
+        };
+        EditCheckInRequest: {
+            /** Format: date-time */
+            newCheckInAt: string;
+            /** @enum {string} */
+            reasonCode: "WRONG_TIME" | "LATE_ARRIVAL" | "OTHER";
+            note: string;
+        };
+        MoveStayRequest: {
+            toRoomId: string;
+            rentalType: components["schemas"]["RentalType"];
+        };
+        StayListItem: {
+            id: string;
+            roomCode: string;
+            guestName: string;
+            rentalType: components["schemas"]["RentalType"];
+            /** Format: date-time */
+            checkInAt: string;
+            /** Format: date-time */
+            checkOutAt?: string | null;
+            total?: components["schemas"]["Vnd"] | null;
+            paymentMethod?: components["schemas"]["PaymentMethod"] | null;
+            /** @enum {string} */
+            state?: "IN_STAY" | "PAID" | "UNPAID" | "MISMATCH" | "TIME_EDITED";
+            status: components["schemas"]["StayStatus"];
+            frontDeskName?: string;
+            guestId: components["schemas"]["GuestIdIndicators"];
+        };
+        StayTimelineEvent: {
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            kind: "CHECKED_IN" | "CHECK_IN_EDITED" | "EXTRAS_ADDED" | "MOVED" | "CHECKED_OUT" | "PAYMENT_RECEIVED" | "PAYMENT_MISMATCH" | "LINKED_BY_OWNER" | "CLEANED";
+            actorName: string;
+            details?: {
+                [key: string]: string;
+            };
+        };
+        Receipt: {
+            propertyName: string;
+            propertyAddress?: string | null;
+            propertyPhone?: string | null;
+            billCode: string;
+            roomCode: string;
+            /** Format: date-time */
+            checkInAt: string;
+            /** Format: date-time */
+            checkOutAt: string;
+            lines: components["schemas"]["BillLine"][];
+            extras?: components["schemas"]["ExtraLine"][];
+            total: components["schemas"]["Vnd"];
+            deposit?: components["schemas"]["Vnd"];
+            payments: components["schemas"]["PaymentSummary"][];
+        };
+        Transaction: {
+            id: string;
+            /** Format: date-time */
+            at: string;
+            amount: components["schemas"]["Vnd"];
+            method: components["schemas"]["PaymentMethod"];
+            roomCode?: string | null;
+            billCode?: string | null;
+            /** @enum {string} */
+            reconciliation: "MATCHED" | "MISMATCH" | "UNMATCHED" | "CASH";
+            transferNote?: string | null;
+            paymentEventId?: string | null;
+            shiftId?: string | null;
+        };
+        LinkTransferRequest: {
+            invoiceId: string;
+        };
+        BuildingStatus: {
+            buildingId: string;
+            code: string;
+            totalRooms: number;
+            occupied: number;
+            vacant: number;
+            toClean: number;
+            overdue: number;
+            maintenance: number;
+            occupancyPct: number;
+            revenueToday: components["schemas"]["Vnd"];
+        };
+        AttentionItem: {
+            /** @enum {string} */
+            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "PAYMENT_MISMATCH" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
+            ref: string;
+            roomCode?: string | null;
+            minutes?: number | null;
+            amount?: components["schemas"]["Vnd"] | null;
+        };
+        AuditEntry: {
+            id: string;
+            /** Format: date-time */
+            at: string;
+            actorName: string;
+            actorRole?: components["schemas"]["Role"];
+            /** @enum {string} */
+            category: "MONEY" | "STAY_TIME" | "ACCESS_STAFF" | "RATES_SETTINGS" | "SHIFT" | "STOCK" | "MAINTENANCE" | "INSTALLER" | "GUEST_ID";
+            /** @description Stable code; the web app renders text from it and details */
+            action: string;
+            details?: {
+                [key: string]: string;
+            };
+        };
+        ClosedShift: {
+            id: string;
+            userName: string;
+            shift?: components["schemas"]["ShiftCode"] | null;
+            /** Format: date-time */
+            openedAt: string;
+            /** Format: date-time */
+            closedAt: string;
+            difference: number;
+        };
+        GuestIdIndicators: {
+            hasIdNumber: boolean;
+            hasFrontPhoto: boolean;
+            hasBackPhoto: boolean;
+        };
+        IdPhotoMeta: {
+            /** @enum {string} */
+            side: "FRONT" | "BACK";
+            /** Format: date-time */
+            uploadedAt: string;
+            uploadedBy: string;
+            bytes?: number;
+        };
+        GuestIdRecord: {
+            indicators: components["schemas"]["GuestIdIndicators"];
+            /** @description First 3 and last 3 digits only */
+            idNumberMasked: string | null;
+            front: components["schemas"]["IdPhotoMeta"] | null;
+            back: components["schemas"]["IdPhotoMeta"] | null;
+            /** Format: date-time */
+            consentAt?: string | null;
+            /** Format: date */
+            deleteAfter: string | null;
         };
     };
     responses: {
@@ -1345,30 +3077,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    receiveBankWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BankWebhookPayload"];
-            };
-        };
-        responses: {
-            /** @description Accepted (also returned for duplicates) */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            422: components["responses"]["Unprocessable"];
-        };
-    };
     listHousekeepingTasks: {
         parameters: {
             query?: never;
@@ -1687,6 +3395,2126 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    signIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    signOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    changeMyPin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePinRequest"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listStaff: {
+        parameters: {
+            query?: {
+                position?: components["schemas"]["Position"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Staff"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createStaff: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStaffRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateStaffResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    updateStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStaffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Staff"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    resetStaffPin: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneTimePin"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    lockStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Staff"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unlockStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Staff"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerPin"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getRoster: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roster"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    putRoster: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutRosterRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roster"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    copyRosterWeek: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: date */
+                    weekStart: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roster"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listLeaveRequests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LeaveStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["LeaveRequest"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    approveLeave: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                leaveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    declineLeave: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                leaveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getMyRoster: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roster"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listMyLeaveRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["LeaveRequest"][];
+                        balance: components["schemas"]["LeaveBalance"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLeaveRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLeaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    cancelMyLeave: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                leaveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getPayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payroll"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updatePayrollLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePayrollLineRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollLine"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    markPayrollPaid: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userIds?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payroll"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reportDamage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DamageReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceTicket"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listTickets: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["TicketStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["MaintenanceTicket"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceTicket"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceTicket"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getExpenseMonth: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseMonth"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createExpense: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExpenseRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expense"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    deleteExpense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expenseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateExpense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                expenseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExpenseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expense"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getIncomeCostReport: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCostReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getProperty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Property"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateProperty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePropertyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Property"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listBankAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["BankAccount"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createBankAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBankAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccount"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    makeDefaultBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerPin"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccount"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    removeBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerPin"];
+            };
+        };
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getSepayStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SepayStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createBuilding: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBuildingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Building"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    updateBuilding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                buildingId: components["parameters"]["BuildingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBuildingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Building"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    createFloor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                buildingId: components["parameters"]["BuildingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFloorRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Room"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    createRooms: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoomsRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Room"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    updateRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: components["parameters"]["RoomId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoomRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listRatePlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["UnitTypeRates"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateRatePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unitTypeCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatePlan"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitTypeRates"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    previewPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    createService: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Service"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    updateService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Service"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    restockService: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                serviceCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestockRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Service"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listStockMovements: {
+        parameters: {
+            query?: {
+                kind?: string;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                serviceCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["StockMovement"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    removeService: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                serviceCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveServiceResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createStocktake: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StocktakeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    editCheckInTime: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stay"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    moveStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveStayRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stay"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listStays: {
+        parameters: {
+            query?: {
+                /** @description Single day; alternative to from and to */
+                date?: string;
+                from?: string;
+                to?: string;
+                /** @description Room, guest name or phone */
+                q?: string;
+                buildingId?: string;
+                state?: string;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["StayListItem"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getStayTimeline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["StayTimelineEvent"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTransactions: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                filter?: "ALL" | "TRANSFER" | "CASH" | "NEEDS_ACTION";
+                q?: string;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Transaction"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    linkTransferToInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    listAlerts: {
+        parameters: {
+            query?: {
+                unread?: boolean;
+                kind?: components["schemas"]["AlertKind"];
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Alert"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    markAlertRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alertId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAuditLogs: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                actorId?: string;
+                category?: string;
+                q?: string;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AuditEntry"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listClosedShifts: {
+        parameters: {
+            query?: {
+                month?: string;
+                userId?: string;
+                onlyDifferences?: boolean;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ClosedShift"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    receiveBankWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hookId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Accepted (also returned for duplicates) */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    receiveBankWebhookLegacy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Accepted (also returned for duplicates) */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description GONE */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    setGuestIdNumber: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    idNumber: string;
+                    /** @constant */
+                    consent: true;
+                };
+            };
+        };
+        responses: {
+            /** @description Indicators only */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestIdIndicators"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    uploadGuestIdPhoto: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+                side: "FRONT" | "BACK";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: string;
+                    consent?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Indicators only */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestIdIndicators"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description PHOTO_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNSUPPORTED_MEDIA */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    getGuestIdRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestIdRecord"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revealGuestIdNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        idNumber: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getGuestIdPhoto: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+                side: "FRONT" | "BACK";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteGuestIdPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+                side: "FRONT" | "BACK";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteGuestIdNumber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

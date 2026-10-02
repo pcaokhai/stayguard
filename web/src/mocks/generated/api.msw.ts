@@ -7,8 +7,9 @@
  * structured values, never display text; the web app translates.
  * Extensions: `x-story` (owning story), `x-access` (minimum building access on the target
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
+ *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
 import {
   faker
@@ -24,35 +25,88 @@ import type {
 
 import {
   AlertKind,
+  AppAccess,
+  DamageCategory,
+  ExpenseCategory,
+  ExpenseSource,
+  LeaveKind,
+  LeaveStatus,
   Locale,
+  PayType,
   PaymentMethod,
   PaymentStatus,
   PermissionLevel,
+  Position,
   RentalType,
   Role,
   RoomStatus,
-  StayStatus
+  ShiftCode,
+  StaffStatus,
+  StayStatus,
+  TicketStatus
 } from './api';
 import type {
   Alert,
+  BankAccount,
+  Building,
   BuildingAccess,
+  CreateFloor201,
+  CreateRooms201,
+  CreateStaffResponse,
+  Expense,
+  ExpenseMonth,
+  GetStayTimeline200,
+  GuestIdIndicators,
+  GuestIdRecord,
   HousekeepingTask,
+  IdPhotoMeta,
+  IncomeCostReport,
   Invoice,
+  LeaveRequest,
+  ListAlerts200,
+  ListAuditLogs200,
+  ListBankAccounts200,
   ListBuildings200,
+  ListClosedShifts200,
   ListHousekeepingTasks200,
+  ListLeaveRequests200,
+  ListMyLeaveRequests200,
+  ListRatePlans200,
   ListRooms200,
   ListServices200,
+  ListStaff200,
   ListStaffPermissions200,
+  ListStays200,
+  ListStockMovements200,
+  ListTickets200,
+  ListTransactions200,
+  MaintenanceTicket,
   Me,
+  OneTimePin,
   OwnerOverview,
   Payment,
   PaymentQr,
+  Payroll,
+  PayrollLine,
+  Property,
+  Quote,
+  Receipt,
+  RemoveServiceResult,
+  RevealGuestIdNumber200,
   Room,
+  Roster,
+  SepayStatus,
+  Service,
   Session,
   Shift,
   ShiftReview,
+  SignInResponse,
+  Staff,
   Stay,
-  StaySummary
+  StaySummary,
+  StocktakeResult,
+  Transaction,
+  UnitTypeRates
 } from './api';
 
 
@@ -70,13 +124,13 @@ export const getGetRoomResponseStaySummaryMock = (overrideResponse: Partial<Stay
 
 export const getGetRoomResponseMock = (overrideResponse: Partial<Extract<Room, object>> = {}): Room => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), floor: faker.number.int(), unitType: {code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}}, status: faker.helpers.arrayElement(Object.values(RoomStatus)), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), activeStay: faker.helpers.arrayElement([{...getGetRoomResponseStaySummaryMock()},null,]), ...overrideResponse})
 
-export const getListServicesResponseMock = (overrideResponse: Partial<Extract<ListServices200, object>> = {}): ListServices200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, price: faker.number.int(), stock: faker.number.int({min: 0})})), ...overrideResponse})
+export const getListServicesResponseMock = (overrideResponse: Partial<Extract<ListServices200, object>> = {}): ListServices200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, price: faker.number.int(), stock: faker.number.int({min: 0}), unit: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), lowStockAt: faker.helpers.arrayElement([faker.number.int({min: 0}), undefined]), onSale: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), latestUnitCost: faker.helpers.arrayElement([faker.number.int(),null,]), soldLast7Days: faker.helpers.arrayElement([faker.number.int(), undefined])})), ...overrideResponse})
 
-export const getCreateStayResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), idNumberMasked: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), ...overrideResponse})
+export const getCreateStayResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), guestId: faker.helpers.arrayElement([{hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, undefined]), ...overrideResponse})
 
-export const getGetStayResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), idNumberMasked: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), ...overrideResponse})
+export const getGetStayResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), guestId: faker.helpers.arrayElement([{hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, undefined]), ...overrideResponse})
 
-export const getAddStayExtrasResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), idNumberMasked: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), ...overrideResponse})
+export const getAddStayExtrasResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), guestId: faker.helpers.arrayElement([{hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, undefined]), ...overrideResponse})
 
 export const getCheckoutStayResponseMock = (overrideResponse: Partial<Extract<Invoice, object>> = {}): Invoice => ({id: faker.string.alpha({length: {min: 10, max: 20}}), stayId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), billCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), status: faker.helpers.arrayElement(['OPEN','PAID'] as const), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, ...overrideResponse})
 
@@ -94,9 +148,9 @@ export const getSimulatePaymentReceivedResponsePaymentQrMock = (overrideResponse
 
 export const getSimulatePaymentReceivedResponseMock = (overrideResponse: Partial<Extract<Payment, object>> = {}): Payment => ({id: faker.string.alpha({length: {min: 10, max: 20}}), invoiceId: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), status: faker.helpers.arrayElement(Object.values(PaymentStatus)), amount: faker.number.int(), receivedAmount: faker.helpers.arrayElement([faker.number.int(),null,]), paidAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), transactionId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), qr: faker.helpers.arrayElement([{...getSimulatePaymentReceivedResponsePaymentQrMock()},null,]), ...overrideResponse})
 
-export const getListHousekeepingTasksResponseMock = (overrideResponse: Partial<Extract<ListHousekeepingTasks200, object>> = {}): ListHousekeepingTasks200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','DONE'] as const), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
+export const getListHousekeepingTasksResponseMock = (overrideResponse: Partial<Extract<ListHousekeepingTasks200, object>> = {}): ListHousekeepingTasks200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','DONE'] as const), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), waitingMinutes: faker.helpers.arrayElement([faker.number.int(), undefined])})), ...overrideResponse})
 
-export const getCompleteHousekeepingTaskResponseMock = (overrideResponse: Partial<Extract<HousekeepingTask, object>> = {}): HousekeepingTask => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','DONE'] as const), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+export const getCompleteHousekeepingTaskResponseMock = (overrideResponse: Partial<Extract<HousekeepingTask, object>> = {}): HousekeepingTask => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','DONE'] as const), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), waitingMinutes: faker.helpers.arrayElement([faker.number.int(), undefined]), ...overrideResponse})
 
 export const getReportRoomUsageResponseMock = (overrideResponse: Partial<Extract<Alert, object>> = {}): Alert => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
@@ -104,7 +158,7 @@ export const getReportRoomUsageResponseMock = (overrideResponse: Partial<Extract
 
 export const getGetOwnerOverviewResponseMock = (overrideResponse: Partial<Extract<OwnerOverview, object>> = {}): OwnerOverview => ({date: faker.date.past().toISOString().slice(0, 10), revenueTotal: faker.number.int(), transfersReceived: faker.number.int(), cashExpected: faker.number.int(), byBuilding: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), revenue: faker.number.int()})), occupancy: {occupiedRooms: faker.number.int(), totalRooms: faker.number.int(), overdueRooms: faker.number.int()}, alerts: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
-      }, undefined])})), latestPayments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({paymentId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), amount: faker.number.int(), at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), ...overrideResponse})
+      }, undefined])})), latestPayments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({paymentId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), amount: faker.number.int(), at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), buildings: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), totalRooms: faker.number.int(), occupied: faker.number.int(), vacant: faker.number.int(), toClean: faker.number.int(), overdue: faker.number.int(), maintenance: faker.number.int(), occupancyPct: faker.number.float({fractionDigits: 2}), revenueToday: faker.number.int()})), undefined]), attention: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({kind: faker.helpers.arrayElement(['OVERDUE_ROOM','LONG_TO_CLEAN','PAYMENT_MISMATCH','UNMATCHED_TRANSFER','CASH_SHORT','LEAVE_PENDING','TICKET_OPEN'] as const), ref: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), minutes: faker.helpers.arrayElement([faker.number.int(), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,])})), undefined]), ...overrideResponse})
 
 export const getListStaffPermissionsResponseMock = (overrideResponse: Partial<Extract<ListStaffPermissions200, object>> = {}): ListStaffPermissions200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.helpers.arrayElement(Object.values(Role)), access: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))}))})), ...overrideResponse})
 
@@ -117,6 +171,148 @@ export const getCloseShiftResponseMock = (overrideResponse: Partial<Extract<Shif
 export const getRecordCashPayoutResponseMock = (overrideResponse: Partial<Extract<Shift, object>> = {}): Shift => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','CLOSED'] as const), openedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', closedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), openingFloat: faker.number.int(), cashIn: faker.number.int(), cashOut: faker.number.int(), expectedCash: faker.number.int(), transfersReceived: faker.number.int(), buildingIds: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
 
 export const getGetShiftReviewResponseMock = (overrideResponse: Partial<Extract<ShiftReview, object>> = {}): ShiftReview => ({shift: {id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['OPEN','CLOSED'] as const), openedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', closedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), openingFloat: faker.number.int(), cashIn: faker.number.int(), cashOut: faker.number.int(), expectedCash: faker.number.int(), transfersReceived: faker.number.int(), buildingIds: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}})))}, countedCash: faker.number.int(), difference: faker.number.int(), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), reasonRecordedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), cashPayments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), at: faker.date.past().toISOString().slice(0, 19) + 'Z', amount: faker.number.int()})), staffHistory: {shiftsWithDifference: faker.number.int(), totalShort: faker.number.int()}, ...overrideResponse})
+
+export const getSignInResponseMock = (): SignInResponse => ({...{accessToken: faker.string.alpha({length: {min: 10, max: 20}}), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', tenantId: faker.string.alpha({length: {min: 10, max: 20}}), user: {id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.helpers.arrayElement(Object.values(Role)), locale: faker.helpers.arrayElement(Object.values(Locale))}},...{mustChangePin: faker.datatype.boolean()},})
+
+export const getListStaffResponseMock = (overrideResponse: Partial<Extract<ListStaff200, object>> = {}): ListStaff200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), position: faker.helpers.arrayElement(Object.values(Position)), appAccess: faker.helpers.arrayElement(Object.values(AppAccess)), username: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(StaffStatus)), lockedUntil: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActivityAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), contract: {payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), fixedAllowance: faker.number.int(), standardShifts: faker.number.int({min: 0}), startDate: faker.date.past().toISOString().slice(0, 10), annualLeaveDays: faker.number.int({min: 0})}, buildingAccess: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))}))})), ...overrideResponse})
+
+export const getCreateStaffResponseOneTimePinMock = (overrideResponse: Partial<OneTimePin> = {}): OneTimePin => ({...{pin: faker.helpers.fromRegExp("^[0-9]{6}$"), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse});
+
+export const getCreateStaffResponseMock = (overrideResponse: Partial<Extract<CreateStaffResponse, object>> = {}): CreateStaffResponse => ({staff: {id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), position: faker.helpers.arrayElement(Object.values(Position)), appAccess: faker.helpers.arrayElement(Object.values(AppAccess)), username: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(StaffStatus)), lockedUntil: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActivityAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), contract: {payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), fixedAllowance: faker.number.int(), standardShifts: faker.number.int({min: 0}), startDate: faker.date.past().toISOString().slice(0, 10), annualLeaveDays: faker.number.int({min: 0})}, buildingAccess: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))}))}, oneTimePin: faker.helpers.arrayElement([{...getCreateStaffResponseOneTimePinMock()},null,]), ...overrideResponse})
+
+export const getUpdateStaffResponseMock = (overrideResponse: Partial<Extract<Staff, object>> = {}): Staff => ({id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), position: faker.helpers.arrayElement(Object.values(Position)), appAccess: faker.helpers.arrayElement(Object.values(AppAccess)), username: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(StaffStatus)), lockedUntil: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActivityAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), contract: {payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), fixedAllowance: faker.number.int(), standardShifts: faker.number.int({min: 0}), startDate: faker.date.past().toISOString().slice(0, 10), annualLeaveDays: faker.number.int({min: 0})}, buildingAccess: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))})), ...overrideResponse})
+
+export const getResetStaffPinResponseMock = (overrideResponse: Partial<Extract<OneTimePin, object>> = {}): OneTimePin => ({pin: faker.helpers.fromRegExp("^[0-9]{6}$"), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getLockStaffResponseMock = (overrideResponse: Partial<Extract<Staff, object>> = {}): Staff => ({id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), position: faker.helpers.arrayElement(Object.values(Position)), appAccess: faker.helpers.arrayElement(Object.values(AppAccess)), username: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(StaffStatus)), lockedUntil: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActivityAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), contract: {payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), fixedAllowance: faker.number.int(), standardShifts: faker.number.int({min: 0}), startDate: faker.date.past().toISOString().slice(0, 10), annualLeaveDays: faker.number.int({min: 0})}, buildingAccess: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))})), ...overrideResponse})
+
+export const getUnlockStaffResponseMock = (overrideResponse: Partial<Extract<Staff, object>> = {}): Staff => ({id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), position: faker.helpers.arrayElement(Object.values(Position)), appAccess: faker.helpers.arrayElement(Object.values(AppAccess)), username: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(StaffStatus)), lockedUntil: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActivityAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), contract: {payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), fixedAllowance: faker.number.int(), standardShifts: faker.number.int({min: 0}), startDate: faker.date.past().toISOString().slice(0, 10), annualLeaveDays: faker.number.int({min: 0})}, buildingAccess: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))})), ...overrideResponse})
+
+export const getGetRosterResponseMock = (overrideResponse: Partial<Extract<Roster, object>> = {}): Roster => ({from: faker.date.past().toISOString().slice(0, 10), to: faker.date.past().toISOString().slice(0, 10), assignments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), leave: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), gaps: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), undefined]), ...overrideResponse})
+
+export const getPutRosterResponseMock = (overrideResponse: Partial<Extract<Roster, object>> = {}): Roster => ({from: faker.date.past().toISOString().slice(0, 10), to: faker.date.past().toISOString().slice(0, 10), assignments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), leave: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), gaps: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), undefined]), ...overrideResponse})
+
+export const getCopyRosterWeekResponseMock = (overrideResponse: Partial<Extract<Roster, object>> = {}): Roster => ({from: faker.date.past().toISOString().slice(0, 10), to: faker.date.past().toISOString().slice(0, 10), assignments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), leave: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), gaps: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), undefined]), ...overrideResponse})
+
+export const getListLeaveRequestsResponseMock = (overrideResponse: Partial<Extract<ListLeaveRequests200, object>> = {}): ListLeaveRequests200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
+
+export const getApproveLeaveResponseMock = (overrideResponse: Partial<Extract<LeaveRequest, object>> = {}): LeaveRequest => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getDeclineLeaveResponseMock = (overrideResponse: Partial<Extract<LeaveRequest, object>> = {}): LeaveRequest => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getGetMyRosterResponseMock = (overrideResponse: Partial<Extract<Roster, object>> = {}): Roster => ({from: faker.date.past().toISOString().slice(0, 10), to: faker.date.past().toISOString().slice(0, 10), assignments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), leave: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), gaps: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({date: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement(Object.values(ShiftCode))})), undefined]), ...overrideResponse})
+
+export const getListMyLeaveRequestsResponseMock = (overrideResponse: Partial<Extract<ListMyLeaveRequests200, object>> = {}): ListMyLeaveRequests200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), balance: {year: faker.number.int(), annual: faker.number.int(), used: faker.number.int(), left: faker.number.int()}, ...overrideResponse})
+
+export const getCreateLeaveRequestResponseMock = (overrideResponse: Partial<Extract<LeaveRequest, object>> = {}): LeaveRequest => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getCancelMyLeaveResponseMock = (overrideResponse: Partial<Extract<LeaveRequest, object>> = {}): LeaveRequest => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userId: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), fromDate: faker.date.past().toISOString().slice(0, 10), toDate: faker.date.past().toISOString().slice(0, 10), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), kind: faker.helpers.arrayElement(Object.values(LeaveKind)), reason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), coverUserId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(LeaveStatus)), declineReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getGetPayrollResponseMock = (overrideResponse: Partial<Extract<Payroll, object>> = {}): Payroll => ({month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), position: faker.helpers.arrayElement(Object.values(Position)), payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), shiftsWorked: faker.number.int(), standardShifts: faker.helpers.arrayElement([faker.number.int(), undefined]), leaveDays: faker.number.int(), earnedPay: faker.number.int(), allowance: faker.number.int(), bonus: faker.number.int(), deduction: faker.number.int(), net: faker.number.int(), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['UNPAID','PAID'] as const)})), totalNet: faker.number.int(), ...overrideResponse})
+
+export const getUpdatePayrollLineResponseMock = (overrideResponse: Partial<Extract<PayrollLine, object>> = {}): PayrollLine => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), position: faker.helpers.arrayElement(Object.values(Position)), payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), shiftsWorked: faker.number.int(), standardShifts: faker.helpers.arrayElement([faker.number.int(), undefined]), leaveDays: faker.number.int(), earnedPay: faker.number.int(), allowance: faker.number.int(), bonus: faker.number.int(), deduction: faker.number.int(), net: faker.number.int(), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['UNPAID','PAID'] as const), ...overrideResponse})
+
+export const getMarkPayrollPaidResponseMock = (overrideResponse: Partial<Extract<Payroll, object>> = {}): Payroll => ({month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), position: faker.helpers.arrayElement(Object.values(Position)), payType: faker.helpers.arrayElement(Object.values(PayType)), rate: faker.number.int(), shiftsWorked: faker.number.int(), standardShifts: faker.helpers.arrayElement([faker.number.int(), undefined]), leaveDays: faker.number.int(), earnedPay: faker.number.int(), allowance: faker.number.int(), bonus: faker.number.int(), deduction: faker.number.int(), net: faker.number.int(), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(['UNPAID','PAID'] as const)})), totalNet: faker.number.int(), ...overrideResponse})
+
+export const getReportDamageResponseMock = (overrideResponse: Partial<Extract<MaintenanceTicket, object>> = {}): MaintenanceTicket => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(DamageCategory)), description: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(TicketStatus)), roomLocked: faker.datatype.boolean(), reportedBy: faker.string.alpha({length: {min: 10, max: 20}}), reportedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expectedDoneOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), partsCost: faker.helpers.arrayElement([faker.number.int(),null,]), labourCost: faker.helpers.arrayElement([faker.number.int(),null,]), totalCost: faker.helpers.arrayElement([faker.number.int(),null,]), repairer: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getListTicketsResponseMock = (overrideResponse: Partial<Extract<ListTickets200, object>> = {}): ListTickets200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(DamageCategory)), description: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(TicketStatus)), roomLocked: faker.datatype.boolean(), reportedBy: faker.string.alpha({length: {min: 10, max: 20}}), reportedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expectedDoneOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), partsCost: faker.helpers.arrayElement([faker.number.int(),null,]), labourCost: faker.helpers.arrayElement([faker.number.int(),null,]), totalCost: faker.helpers.arrayElement([faker.number.int(),null,]), repairer: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
+
+export const getGetTicketResponseMock = (overrideResponse: Partial<Extract<MaintenanceTicket, object>> = {}): MaintenanceTicket => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(DamageCategory)), description: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(TicketStatus)), roomLocked: faker.datatype.boolean(), reportedBy: faker.string.alpha({length: {min: 10, max: 20}}), reportedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expectedDoneOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), partsCost: faker.helpers.arrayElement([faker.number.int(),null,]), labourCost: faker.helpers.arrayElement([faker.number.int(),null,]), totalCost: faker.helpers.arrayElement([faker.number.int(),null,]), repairer: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getUpdateTicketResponseMock = (overrideResponse: Partial<Extract<MaintenanceTicket, object>> = {}): MaintenanceTicket => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(DamageCategory)), description: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(TicketStatus)), roomLocked: faker.datatype.boolean(), reportedBy: faker.string.alpha({length: {min: 10, max: 20}}), reportedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expectedDoneOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), partsCost: faker.helpers.arrayElement([faker.number.int(),null,]), labourCost: faker.helpers.arrayElement([faker.number.int(),null,]), totalCost: faker.helpers.arrayElement([faker.number.int(),null,]), repairer: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), completedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getGetExpenseMonthResponseMock = (overrideResponse: Partial<Extract<ExpenseMonth, object>> = {}): ExpenseMonth => ({month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), categories: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({category: faker.helpers.arrayElement(Object.values(ExpenseCategory)), amount: faker.number.int(), source: faker.helpers.arrayElement(Object.values(ExpenseSource))})), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(ExpenseCategory)), amount: faker.number.int(), month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), paidOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), recurring: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), source: faker.helpers.arrayElement(Object.values(ExpenseSource)), attachmentAssetId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), total: faker.number.int(), revenue: faker.number.int(), ...overrideResponse})
+
+export const getCreateExpenseResponseMock = (overrideResponse: Partial<Extract<Expense, object>> = {}): Expense => ({id: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(ExpenseCategory)), amount: faker.number.int(), month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), paidOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), recurring: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), source: faker.helpers.arrayElement(Object.values(ExpenseSource)), attachmentAssetId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getUpdateExpenseResponseMock = (overrideResponse: Partial<Extract<Expense, object>> = {}): Expense => ({id: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.helpers.arrayElement(Object.values(ExpenseCategory)), amount: faker.number.int(), month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), paidOn: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), recurring: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), source: faker.helpers.arrayElement(Object.values(ExpenseSource)), attachmentAssetId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getGetIncomeCostReportResponseMock = (overrideResponse: Partial<Extract<IncomeCostReport, object>> = {}): IncomeCostReport => ({from: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), to: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), revenue: faker.number.int(), expenses: faker.number.int(), profit: faker.number.int(), marginPct: faker.number.float({fractionDigits: 2}), occupancyPct: faker.number.float({fractionDigits: 2}), months: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({month: faker.helpers.fromRegExp("^[0-9]{4}-(0[1-9]|1[0-2])$"), revenue: faker.number.int(), expenses: faker.number.int()})), expensesByCategory: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int()})), revenueByRentalType: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int()})), revenueByBuilding: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int()})), revenueByMethod: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int()})), ...overrideResponse})
+
+export const getGetPropertyResponseMock = (overrideResponse: Partial<Extract<Property, object>> = {}): Property => ({guesthouseCode: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), address: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), qrExpiryMinutes: faker.number.int({min: 5, max: 240}), idRetentionDays: faker.helpers.arrayElement([faker.number.int({min: 1, max: 365}), undefined]), frontDeskHistoryDays: faker.helpers.arrayElement([faker.number.int({min: 1, max: 90}), undefined]), ...overrideResponse})
+
+export const getUpdatePropertyResponseMock = (overrideResponse: Partial<Extract<Property, object>> = {}): Property => ({guesthouseCode: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), address: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), qrExpiryMinutes: faker.number.int({min: 5, max: 240}), idRetentionDays: faker.helpers.arrayElement([faker.number.int({min: 1, max: 365}), undefined]), frontDeskHistoryDays: faker.helpers.arrayElement([faker.number.int({min: 1, max: 90}), undefined]), ...overrideResponse})
+
+export const getListBankAccountsResponseMock = (overrideResponse: Partial<Extract<ListBankAccounts200, object>> = {}): ListBankAccounts200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), bankBin: faker.string.alpha({length: {min: 10, max: 20}}), bankName: faker.string.alpha({length: {min: 10, max: 20}}), accountNoMasked: faker.string.alpha({length: {min: 10, max: 20}}), accountName: faker.string.alpha({length: {min: 10, max: 20}}), isDefault: faker.datatype.boolean(), sepayStatus: faker.helpers.arrayElement(['CONNECTED','PENDING'] as const), lastWebhookAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
+
+export const getCreateBankAccountResponseMock = (overrideResponse: Partial<Extract<BankAccount, object>> = {}): BankAccount => ({id: faker.string.alpha({length: {min: 10, max: 20}}), bankBin: faker.string.alpha({length: {min: 10, max: 20}}), bankName: faker.string.alpha({length: {min: 10, max: 20}}), accountNoMasked: faker.string.alpha({length: {min: 10, max: 20}}), accountName: faker.string.alpha({length: {min: 10, max: 20}}), isDefault: faker.datatype.boolean(), sepayStatus: faker.helpers.arrayElement(['CONNECTED','PENDING'] as const), lastWebhookAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getMakeDefaultBankAccountResponseMock = (overrideResponse: Partial<Extract<BankAccount, object>> = {}): BankAccount => ({id: faker.string.alpha({length: {min: 10, max: 20}}), bankBin: faker.string.alpha({length: {min: 10, max: 20}}), bankName: faker.string.alpha({length: {min: 10, max: 20}}), accountNoMasked: faker.string.alpha({length: {min: 10, max: 20}}), accountName: faker.string.alpha({length: {min: 10, max: 20}}), isDefault: faker.datatype.boolean(), sepayStatus: faker.helpers.arrayElement(['CONNECTED','PENDING'] as const), lastWebhookAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getGetSepayStatusResponseMock = (overrideResponse: Partial<Extract<SepayStatus, object>> = {}): SepayStatus => ({status: faker.helpers.arrayElement(['CONNECTED','NOT_CONNECTED'] as const), lastWebhookAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), signatureValid: faker.helpers.arrayElement([faker.datatype.boolean(), null]), ...overrideResponse})
+
+export const getCreateBuildingResponseMock = (overrideResponse: Partial<Extract<Building, object>> = {}): Building => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel)), counts: {vacant: faker.number.int(), occupied: faker.number.int(), overdue: faker.number.int(), toClean: faker.number.int(), maintenance: faker.number.int()}, ...overrideResponse})
+
+export const getUpdateBuildingResponseMock = (overrideResponse: Partial<Extract<Building, object>> = {}): Building => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel)), counts: {vacant: faker.number.int(), occupied: faker.number.int(), overdue: faker.number.int(), toClean: faker.number.int(), maintenance: faker.number.int()}, ...overrideResponse})
+
+export const getCreateFloorResponseStaySummaryMock = (overrideResponse: Partial<StaySummary> = {}): StaySummary => ({...{id: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', guestName: faker.string.alpha({length: {min: 10, max: 20}}), elapsedMinutes: faker.number.int(), runningTotal: faker.number.int()}, ...overrideResponse});
+
+export const getCreateFloorResponseMock = (overrideResponse: Partial<Extract<CreateFloor201, object>> = {}): CreateFloor201 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), floor: faker.number.int(), unitType: {code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}}, status: faker.helpers.arrayElement(Object.values(RoomStatus)), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), activeStay: faker.helpers.arrayElement([{...getCreateFloorResponseStaySummaryMock()},null,])})), ...overrideResponse})
+
+export const getCreateRoomsResponseStaySummaryMock = (overrideResponse: Partial<StaySummary> = {}): StaySummary => ({...{id: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', guestName: faker.string.alpha({length: {min: 10, max: 20}}), elapsedMinutes: faker.number.int(), runningTotal: faker.number.int()}, ...overrideResponse});
+
+export const getCreateRoomsResponseMock = (overrideResponse: Partial<Extract<CreateRooms201, object>> = {}): CreateRooms201 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), floor: faker.number.int(), unitType: {code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}}, status: faker.helpers.arrayElement(Object.values(RoomStatus)), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), activeStay: faker.helpers.arrayElement([{...getCreateRoomsResponseStaySummaryMock()},null,])})), ...overrideResponse})
+
+export const getUpdateRoomResponseStaySummaryMock = (overrideResponse: Partial<StaySummary> = {}): StaySummary => ({...{id: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', guestName: faker.string.alpha({length: {min: 10, max: 20}}), elapsedMinutes: faker.number.int(), runningTotal: faker.number.int()}, ...overrideResponse});
+
+export const getUpdateRoomResponseMock = (overrideResponse: Partial<Extract<Room, object>> = {}): Room => ({id: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), buildingId: faker.string.alpha({length: {min: 10, max: 20}}), floor: faker.number.int(), unitType: {code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}}, status: faker.helpers.arrayElement(Object.values(RoomStatus)), note: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), activeStay: faker.helpers.arrayElement([{...getUpdateRoomResponseStaySummaryMock()},null,]), ...overrideResponse})
+
+export const getListRatePlansResponseMock = (overrideResponse: Partial<Extract<ListRatePlans200, object>> = {}): ListRatePlans200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, ratePlan: {version: faker.helpers.arrayElement([faker.number.int(), undefined]), graceMinutes: faker.number.int({min: 0, max: 60}), hourly: {firstHour: faker.number.int(), extraHour: faker.number.int()}, overnight: {price: faker.number.int(), windowStart: faker.string.alpha({length: {min: 10, max: 20}}), windowEnd: faker.string.alpha({length: {min: 10, max: 20}})}, daily: {price: faker.number.int(), windowStart: faker.string.alpha({length: {min: 10, max: 20}}), windowEnd: faker.string.alpha({length: {min: 10, max: 20}})}}, updatedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), ...overrideResponse})
+
+export const getUpdateRatePlanResponseMock = (overrideResponse: Partial<Extract<UnitTypeRates, object>> = {}): UnitTypeRates => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, ratePlan: {version: faker.helpers.arrayElement([faker.number.int(), undefined]), graceMinutes: faker.number.int({min: 0, max: 60}), hourly: {firstHour: faker.number.int(), extraHour: faker.number.int()}, overnight: {price: faker.number.int(), windowStart: faker.string.alpha({length: {min: 10, max: 20}}), windowEnd: faker.string.alpha({length: {min: 10, max: 20}})}, daily: {price: faker.number.int(), windowStart: faker.string.alpha({length: {min: 10, max: 20}}), windowEnd: faker.string.alpha({length: {min: 10, max: 20}})}}, updatedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getPreviewPriceResponseMock = (overrideResponse: Partial<Extract<Quote, object>> = {}): Quote => ({asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), ...overrideResponse})
+
+export const getCreateServiceResponseMock = (overrideResponse: Partial<Extract<Service, object>> = {}): Service => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, price: faker.number.int(), stock: faker.number.int({min: 0}), unit: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), lowStockAt: faker.helpers.arrayElement([faker.number.int({min: 0}), undefined]), onSale: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), latestUnitCost: faker.helpers.arrayElement([faker.number.int(),null,]), soldLast7Days: faker.helpers.arrayElement([faker.number.int(), undefined]), ...overrideResponse})
+
+export const getUpdateServiceResponseMock = (overrideResponse: Partial<Extract<Service, object>> = {}): Service => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, price: faker.number.int(), stock: faker.number.int({min: 0}), unit: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), lowStockAt: faker.helpers.arrayElement([faker.number.int({min: 0}), undefined]), onSale: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), latestUnitCost: faker.helpers.arrayElement([faker.number.int(),null,]), soldLast7Days: faker.helpers.arrayElement([faker.number.int(), undefined]), ...overrideResponse})
+
+export const getRestockServiceResponseMock = (overrideResponse: Partial<Extract<Service, object>> = {}): Service => ({code: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, price: faker.number.int(), stock: faker.number.int({min: 0}), unit: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), lowStockAt: faker.helpers.arrayElement([faker.number.int({min: 0}), undefined]), onSale: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), latestUnitCost: faker.helpers.arrayElement([faker.number.int(),null,]), soldLast7Days: faker.helpers.arrayElement([faker.number.int(), undefined]), ...overrideResponse})
+
+export const getListStockMovementsResponseMock = (overrideResponse: Partial<Extract<ListStockMovements200, object>> = {}): ListStockMovements200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({at: faker.date.past().toISOString().slice(0, 19) + 'Z', kind: faker.helpers.arrayElement(['OPENING','IN','SALE','COUNT','ADJUST'] as const), quantity: faker.number.int(), unitCost: faker.helpers.arrayElement([faker.number.int(),null,]), ref: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.string.alpha({length: {min: 10, max: 20}})})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getRemoveServiceResponseMock = (overrideResponse: Partial<Extract<RemoveServiceResult, object>> = {}): RemoveServiceResult => ({result: faker.helpers.arrayElement(['DELETED','STOPPED_SELLING'] as const), ...overrideResponse})
+
+export const getCreateStocktakeResponseMock = (overrideResponse: Partial<Extract<StocktakeResult, object>> = {}): StocktakeResult => ({id: faker.string.alpha({length: {min: 10, max: 20}}), differences: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), system: faker.number.int(), counted: faker.number.int()})), valueDifference: faker.number.int(), ...overrideResponse})
+
+export const getEditCheckInTimeResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), guestId: faker.helpers.arrayElement([{hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, undefined]), ...overrideResponse})
+
+export const getMoveStayResponseMock = (overrideResponse: Partial<Extract<Stay, object>> = {}): Stay => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), status: faker.helpers.arrayElement(Object.values(StayStatus)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), guestName: faker.string.alpha({length: {min: 10, max: 20}}), guestPhone: faker.string.alpha({length: {min: 10, max: 20}}), deposit: faker.number.int(), extras: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), quote: {asOf: faker.date.past().toISOString().slice(0, 19) + 'Z', stayAmount: faker.number.int(), extrasAmount: faker.number.int(), total: faker.number.int(), depositPaid: faker.number.int(), balanceDue: faker.number.int(), refundDue: faker.number.int(), capped: faker.datatype.boolean(), lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()}))}, pricingVersion: faker.number.int(), guestId: faker.helpers.arrayElement([{hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, undefined]), ...overrideResponse})
+
+export const getListStaysResponseMock = (overrideResponse: Partial<Extract<ListStays200, object>> = {}): ListStays200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), guestName: faker.string.alpha({length: {min: 10, max: 20}}), rentalType: faker.helpers.arrayElement(Object.values(RentalType)), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), total: faker.helpers.arrayElement([faker.number.int(),null,]), paymentMethod: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(PaymentMethod)),null,]), state: faker.helpers.arrayElement([faker.helpers.arrayElement(['IN_STAY','PAID','UNPAID','MISMATCH','TIME_EDITED'] as const), undefined]), status: faker.helpers.arrayElement(Object.values(StayStatus)), frontDeskName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), guestId: {hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getGetStayTimelineResponseMock = (overrideResponse: Partial<Extract<GetStayTimeline200, object>> = {}): GetStayTimeline200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({at: faker.date.past().toISOString().slice(0, 19) + 'Z', kind: faker.helpers.arrayElement(['CHECKED_IN','CHECK_IN_EDITED','EXTRAS_ADDED','MOVED','CHECKED_OUT','PAYMENT_RECEIVED','PAYMENT_MISMATCH','LINKED_BY_OWNER','CLEANED'] as const), actorName: faker.string.alpha({length: {min: 10, max: 20}}), details: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
+      }, undefined])})), ...overrideResponse})
+
+export const getGetReceiptResponseMock = (overrideResponse: Partial<Extract<Receipt, object>> = {}): Receipt => ({propertyName: faker.string.alpha({length: {min: 10, max: 20}}), propertyAddress: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), propertyPhone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), billCode: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), checkInAt: faker.date.past().toISOString().slice(0, 19) + 'Z', checkOutAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lines: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({code: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), extras: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({serviceCode: faker.string.alpha({length: {min: 10, max: 20}}), name: {vi: faker.string.alpha({length: {min: 10, max: 20}}), en: faker.string.alpha({length: {min: 10, max: 20}})}, quantity: faker.number.int({min: 1}), unitAmount: faker.number.int(), amount: faker.number.int()})), undefined]), total: faker.number.int(), deposit: faker.helpers.arrayElement([faker.number.int(), undefined]), payments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({paymentId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), amount: faker.number.int(), at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), ...overrideResponse})
+
+export const getListTransactionsResponseMock = (overrideResponse: Partial<Extract<ListTransactions200, object>> = {}): ListTransactions200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), at: faker.date.past().toISOString().slice(0, 19) + 'Z', amount: faker.number.int(), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), billCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), reconciliation: faker.helpers.arrayElement(['MATCHED','MISMATCH','UNMATCHED','CASH'] as const), transferNote: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), paymentEventId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getLinkTransferToInvoiceResponseMock = (overrideResponse: Partial<Extract<Transaction, object>> = {}): Transaction => ({id: faker.string.alpha({length: {min: 10, max: 20}}), at: faker.date.past().toISOString().slice(0, 19) + 'Z', amount: faker.number.int(), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), billCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), reconciliation: faker.helpers.arrayElement(['MATCHED','MISMATCH','UNMATCHED','CASH'] as const), transferNote: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), paymentEventId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getListAlertsResponseMock = (overrideResponse: Partial<Extract<ListAlerts200, object>> = {}): ListAlerts200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
+      }, undefined])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getListAuditLogsResponseMock = (overrideResponse: Partial<Extract<ListAuditLogs200, object>> = {}): ListAuditLogs200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), at: faker.date.past().toISOString().slice(0, 19) + 'Z', actorName: faker.string.alpha({length: {min: 10, max: 20}}), actorRole: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(Role)), undefined]), category: faker.helpers.arrayElement(['MONEY','STAY_TIME','ACCESS_STAFF','RATES_SETTINGS','SHIFT','STOCK','MAINTENANCE','INSTALLER','GUEST_ID'] as const), action: faker.string.alpha({length: {min: 10, max: 20}}), details: faker.helpers.arrayElement([{
+        [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
+      }, undefined])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getListClosedShiftsResponseMock = (overrideResponse: Partial<Extract<ListClosedShifts200, object>> = {}): ListClosedShifts200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), userName: faker.string.alpha({length: {min: 10, max: 20}}), shift: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(ShiftCode)),null,]), openedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', closedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', difference: faker.number.int()})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getSetGuestIdNumberResponseMock = (overrideResponse: Partial<Extract<GuestIdIndicators, object>> = {}): GuestIdIndicators => ({hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean(), ...overrideResponse})
+
+export const getUploadGuestIdPhotoResponseMock = (overrideResponse: Partial<Extract<GuestIdIndicators, object>> = {}): GuestIdIndicators => ({hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean(), ...overrideResponse})
+
+export const getGetGuestIdRecordResponseIdPhotoMetaMock = (overrideResponse: Partial<IdPhotoMeta> = {}): IdPhotoMeta => ({...{side: faker.helpers.arrayElement(['FRONT','BACK'] as const), uploadedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', uploadedBy: faker.string.alpha({length: {min: 10, max: 20}}), bytes: faker.helpers.arrayElement([faker.number.int(), undefined])}, ...overrideResponse});
+
+export const getGetGuestIdRecordResponseMock = (overrideResponse: Partial<Extract<GuestIdRecord, object>> = {}): GuestIdRecord => ({indicators: {hasIdNumber: faker.datatype.boolean(), hasFrontPhoto: faker.datatype.boolean(), hasBackPhoto: faker.datatype.boolean()}, idNumberMasked: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), front: faker.helpers.arrayElement([{...getGetGuestIdRecordResponseIdPhotoMetaMock()},null,]), back: faker.helpers.arrayElement([{...getGetGuestIdRecordResponseIdPhotoMetaMock()},null,]), consentAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), deleteAfter: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), ...overrideResponse})
+
+export const getRevealGuestIdNumberResponseMock = (overrideResponse: Partial<Extract<RevealGuestIdNumber200, object>> = {}): RevealGuestIdNumber200 => ({idNumber: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
+
+export const getGetGuestIdPhotoResponseMock = (): Blob => new Blob(["mock"], { type: "image/jpeg" })
 
 
 export const getCreateDemoSessionMockHandler = (overrideResponse?: Session | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Session> | Session), options?: RequestHandlerOptions) => {
@@ -298,16 +494,6 @@ export const getSimulatePaymentReceivedMockHandler = (overrideResponse?: Payment
   }, options)
 }
 
-export const getReceiveBankWebhookMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/webhooks/bank', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
-  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
-
-    return new HttpResponse(null,
-      { status: 202
-      })
-  }, options)
-}
-
 export const getListHousekeepingTasksMockHandler = (overrideResponse?: ListHousekeepingTasks200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListHousekeepingTasks200> | ListHousekeepingTasks200), options?: RequestHandlerOptions) => {
   return http.get('*/v1/housekeeping/tasks', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -447,6 +633,863 @@ export const getGetReadinessMockHandler = (overrideResponse?: void | ((info: Par
       })
   }, options)
 }
+
+export const getSignInMockHandler = (overrideResponse?: SignInResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<SignInResponse> | SignInResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/auth/sign-in', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSignInResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getSignOutMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/auth/sign-out', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getChangeMyPinMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.put('*/v1/me/pin', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getListStaffMockHandler = (overrideResponse?: ListStaff200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListStaff200> | ListStaff200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/staff', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStaffResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateStaffMockHandler = (overrideResponse?: CreateStaffResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CreateStaffResponse> | CreateStaffResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/staff', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateStaffResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateStaffMockHandler = (overrideResponse?: Staff | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Staff> | Staff), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/staff/:userId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateStaffResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getResetStaffPinMockHandler = (overrideResponse?: OneTimePin | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OneTimePin> | OneTimePin), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/staff/:userId/pin-reset', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getResetStaffPinResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getLockStaffMockHandler = (overrideResponse?: Staff | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Staff> | Staff), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/staff/:userId/lock', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getLockStaffResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUnlockStaffMockHandler = (overrideResponse?: Staff | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Staff> | Staff), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/staff/:userId/unlock', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUnlockStaffResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRemoveStaffMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/staff/:userId/remove', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getGetRosterMockHandler = (overrideResponse?: Roster | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Roster> | Roster), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/roster', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetRosterResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPutRosterMockHandler = (overrideResponse?: Roster | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<Roster> | Roster), options?: RequestHandlerOptions) => {
+  return http.put('*/v1/owner/roster', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPutRosterResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCopyRosterWeekMockHandler = (overrideResponse?: Roster | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Roster> | Roster), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/roster/copy-week', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCopyRosterWeekResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListLeaveRequestsMockHandler = (overrideResponse?: ListLeaveRequests200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListLeaveRequests200> | ListLeaveRequests200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/leave-requests', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListLeaveRequestsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getApproveLeaveMockHandler = (overrideResponse?: LeaveRequest | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<LeaveRequest> | LeaveRequest), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/leave-requests/:leaveId/approve', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getApproveLeaveResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeclineLeaveMockHandler = (overrideResponse?: LeaveRequest | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<LeaveRequest> | LeaveRequest), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/leave-requests/:leaveId/decline', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getDeclineLeaveResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetMyRosterMockHandler = (overrideResponse?: Roster | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Roster> | Roster), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/roster', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetMyRosterResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListMyLeaveRequestsMockHandler = (overrideResponse?: ListMyLeaveRequests200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListMyLeaveRequests200> | ListMyLeaveRequests200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/leave-requests', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListMyLeaveRequestsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateLeaveRequestMockHandler = (overrideResponse?: LeaveRequest | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<LeaveRequest> | LeaveRequest), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/leave-requests', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateLeaveRequestResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getCancelMyLeaveMockHandler = (overrideResponse?: LeaveRequest | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<LeaveRequest> | LeaveRequest), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/leave-requests/:leaveId/cancel', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCancelMyLeaveResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetPayrollMockHandler = (overrideResponse?: Payroll | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Payroll> | Payroll), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/payroll/:month', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetPayrollResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdatePayrollLineMockHandler = (overrideResponse?: PayrollLine | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<PayrollLine> | PayrollLine), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/payroll/:month/lines/:userId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdatePayrollLineResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMarkPayrollPaidMockHandler = (overrideResponse?: Payroll | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Payroll> | Payroll), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/payroll/:month/mark-paid', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMarkPayrollPaidResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getReportDamageMockHandler = (overrideResponse?: MaintenanceTicket | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<MaintenanceTicket> | MaintenanceTicket), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/rooms/:roomId/damage-reports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getReportDamageResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getListTicketsMockHandler = (overrideResponse?: ListTickets200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListTickets200> | ListTickets200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/maintenance-tickets', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListTicketsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetTicketMockHandler = (overrideResponse?: MaintenanceTicket | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<MaintenanceTicket> | MaintenanceTicket), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/maintenance-tickets/:ticketId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetTicketResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateTicketMockHandler = (overrideResponse?: MaintenanceTicket | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<MaintenanceTicket> | MaintenanceTicket), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/maintenance-tickets/:ticketId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateTicketResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetExpenseMonthMockHandler = (overrideResponse?: ExpenseMonth | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ExpenseMonth> | ExpenseMonth), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/expenses', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetExpenseMonthResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateExpenseMockHandler = (overrideResponse?: Expense | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Expense> | Expense), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/expenses', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateExpenseResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateExpenseMockHandler = (overrideResponse?: Expense | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Expense> | Expense), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/expenses/:expenseId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateExpenseResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeleteExpenseMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('*/v1/owner/expenses/:expenseId', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getGetIncomeCostReportMockHandler = (overrideResponse?: IncomeCostReport | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<IncomeCostReport> | IncomeCostReport), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/reports/income-costs', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetIncomeCostReportResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetPropertyMockHandler = (overrideResponse?: Property | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Property> | Property), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/property', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetPropertyResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdatePropertyMockHandler = (overrideResponse?: Property | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Property> | Property), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/property', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdatePropertyResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListBankAccountsMockHandler = (overrideResponse?: ListBankAccounts200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListBankAccounts200> | ListBankAccounts200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/bank-accounts', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListBankAccountsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateBankAccountMockHandler = (overrideResponse?: BankAccount | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<BankAccount> | BankAccount), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/bank-accounts', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateBankAccountResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getMakeDefaultBankAccountMockHandler = (overrideResponse?: BankAccount | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<BankAccount> | BankAccount), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/bank-accounts/:accountId/make-default', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMakeDefaultBankAccountResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRemoveBankAccountMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/bank-accounts/:accountId/remove', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getGetSepayStatusMockHandler = (overrideResponse?: SepayStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<SepayStatus> | SepayStatus), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/sepay-status', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetSepayStatusResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateBuildingMockHandler = (overrideResponse?: Building | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Building> | Building), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/buildings', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateBuildingResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateBuildingMockHandler = (overrideResponse?: Building | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Building> | Building), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/buildings/:buildingId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateBuildingResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateFloorMockHandler = (overrideResponse?: CreateFloor201 | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CreateFloor201> | CreateFloor201), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/buildings/:buildingId/floors', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateFloorResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getCreateRoomsMockHandler = (overrideResponse?: CreateRooms201 | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CreateRooms201> | CreateRooms201), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/rooms', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateRoomsResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateRoomMockHandler = (overrideResponse?: Room | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Room> | Room), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/rooms/:roomId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateRoomResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListRatePlansMockHandler = (overrideResponse?: ListRatePlans200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListRatePlans200> | ListRatePlans200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/rate-plans', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListRatePlansResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateRatePlanMockHandler = (overrideResponse?: UnitTypeRates | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<UnitTypeRates> | UnitTypeRates), options?: RequestHandlerOptions) => {
+  return http.put('*/v1/owner/unit-types/:unitTypeCode/rate-plan', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateRatePlanResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPreviewPriceMockHandler = (overrideResponse?: Quote | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Quote> | Quote), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/rate-plans/preview', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPreviewPriceResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateServiceMockHandler = (overrideResponse?: Service | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Service> | Service), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/services', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateServiceResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateServiceMockHandler = (overrideResponse?: Service | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Service> | Service), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/owner/services/:serviceCode', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateServiceResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRestockServiceMockHandler = (overrideResponse?: Service | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Service> | Service), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/services/:serviceCode/restock', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRestockServiceResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListStockMovementsMockHandler = (overrideResponse?: ListStockMovements200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListStockMovements200> | ListStockMovements200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/services/:serviceCode/movements', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStockMovementsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRemoveServiceMockHandler = (overrideResponse?: RemoveServiceResult | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<RemoveServiceResult> | RemoveServiceResult), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/services/:serviceCode/remove', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRemoveServiceResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateStocktakeMockHandler = (overrideResponse?: StocktakeResult | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<StocktakeResult> | StocktakeResult), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/stocktakes', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateStocktakeResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getEditCheckInTimeMockHandler = (overrideResponse?: Stay | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Stay> | Stay), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/stays/:stayId/check-in-time', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getEditCheckInTimeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMoveStayMockHandler = (overrideResponse?: Stay | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Stay> | Stay), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/stays/:stayId/move', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMoveStayResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListStaysMockHandler = (overrideResponse?: ListStays200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListStays200> | ListStays200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/stays', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStaysResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetStayTimelineMockHandler = (overrideResponse?: GetStayTimeline200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<GetStayTimeline200> | GetStayTimeline200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/stays/:stayId/timeline', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetStayTimelineResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetReceiptMockHandler = (overrideResponse?: Receipt | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Receipt> | Receipt), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/invoices/:invoiceId/receipt', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetReceiptResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListTransactionsMockHandler = (overrideResponse?: ListTransactions200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListTransactions200> | ListTransactions200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/transactions', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListTransactionsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getLinkTransferToInvoiceMockHandler = (overrideResponse?: Transaction | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Transaction> | Transaction), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/payment-events/:eventId/link', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getLinkTransferToInvoiceResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListAlertsMockHandler = (overrideResponse?: ListAlerts200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListAlerts200> | ListAlerts200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/alerts', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListAlertsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMarkAlertReadMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/alerts/:alertId/read', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getListAuditLogsMockHandler = (overrideResponse?: ListAuditLogs200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListAuditLogs200> | ListAuditLogs200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/audit-logs', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListAuditLogsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListClosedShiftsMockHandler = (overrideResponse?: ListClosedShifts200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListClosedShifts200> | ListClosedShifts200), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/shifts', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListClosedShiftsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getReceiveBankWebhookMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/webhooks/bank/:hookId', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 202
+      })
+  }, options)
+}
+
+export const getReceiveBankWebhookLegacyMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/webhooks/bank', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 202
+      })
+  }, options)
+}
+
+export const getSetGuestIdNumberMockHandler = (overrideResponse?: GuestIdIndicators | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<GuestIdIndicators> | GuestIdIndicators), options?: RequestHandlerOptions) => {
+  return http.put('*/v1/stays/:stayId/guest-id/number', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSetGuestIdNumberResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUploadGuestIdPhotoMockHandler = (overrideResponse?: GuestIdIndicators | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<GuestIdIndicators> | GuestIdIndicators), options?: RequestHandlerOptions) => {
+  return http.put('*/v1/stays/:stayId/guest-id/photos/:side', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUploadGuestIdPhotoResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetGuestIdRecordMockHandler = (overrideResponse?: GuestIdRecord | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<GuestIdRecord> | GuestIdRecord), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/stays/:stayId/guest-id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetGuestIdRecordResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRevealGuestIdNumberMockHandler = (overrideResponse?: RevealGuestIdNumber200 | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<RevealGuestIdNumber200> | RevealGuestIdNumber200), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/stays/:stayId/guest-id/reveal', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRevealGuestIdNumberResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetGuestIdPhotoMockHandler = (overrideResponse?: Blob | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Blob> | Blob), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/owner/stays/:stayId/guest-id/photos/:side', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const binaryBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetGuestIdPhotoResponseMock();
+    return new HttpResponse(binaryBody,
+      { status: 200,
+        headers: { 'Content-Type': 'image/jpeg' }
+      })
+  }, options)
+}
+
+export const getDeleteGuestIdPhotoMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('*/v1/owner/stays/:stayId/guest-id/photos/:side', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getDeleteGuestIdNumberMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('*/v1/owner/stays/:stayId/guest-id/number', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getStayGuardAPIMock = () => [
   getCreateDemoSessionMockHandler(),
   getGetMeMockHandler(),
@@ -463,7 +1506,6 @@ export const getStayGuardAPIMock = () => [
   getGetPaymentMockHandler(),
   getStreamPaymentEventsMockHandler(),
   getSimulatePaymentReceivedMockHandler(),
-  getReceiveBankWebhookMockHandler(),
   getListHousekeepingTasksMockHandler(),
   getCompleteHousekeepingTaskMockHandler(),
   getReportRoomUsageMockHandler(),
@@ -475,5 +1517,78 @@ export const getStayGuardAPIMock = () => [
   getRecordCashPayoutMockHandler(),
   getGetShiftReviewMockHandler(),
   getGetHealthMockHandler(),
-  getGetReadinessMockHandler()
+  getGetReadinessMockHandler(),
+  getSignInMockHandler(),
+  getSignOutMockHandler(),
+  getChangeMyPinMockHandler(),
+  getListStaffMockHandler(),
+  getCreateStaffMockHandler(),
+  getUpdateStaffMockHandler(),
+  getResetStaffPinMockHandler(),
+  getLockStaffMockHandler(),
+  getUnlockStaffMockHandler(),
+  getRemoveStaffMockHandler(),
+  getGetRosterMockHandler(),
+  getPutRosterMockHandler(),
+  getCopyRosterWeekMockHandler(),
+  getListLeaveRequestsMockHandler(),
+  getApproveLeaveMockHandler(),
+  getDeclineLeaveMockHandler(),
+  getGetMyRosterMockHandler(),
+  getListMyLeaveRequestsMockHandler(),
+  getCreateLeaveRequestMockHandler(),
+  getCancelMyLeaveMockHandler(),
+  getGetPayrollMockHandler(),
+  getUpdatePayrollLineMockHandler(),
+  getMarkPayrollPaidMockHandler(),
+  getReportDamageMockHandler(),
+  getListTicketsMockHandler(),
+  getGetTicketMockHandler(),
+  getUpdateTicketMockHandler(),
+  getGetExpenseMonthMockHandler(),
+  getCreateExpenseMockHandler(),
+  getUpdateExpenseMockHandler(),
+  getDeleteExpenseMockHandler(),
+  getGetIncomeCostReportMockHandler(),
+  getGetPropertyMockHandler(),
+  getUpdatePropertyMockHandler(),
+  getListBankAccountsMockHandler(),
+  getCreateBankAccountMockHandler(),
+  getMakeDefaultBankAccountMockHandler(),
+  getRemoveBankAccountMockHandler(),
+  getGetSepayStatusMockHandler(),
+  getCreateBuildingMockHandler(),
+  getUpdateBuildingMockHandler(),
+  getCreateFloorMockHandler(),
+  getCreateRoomsMockHandler(),
+  getUpdateRoomMockHandler(),
+  getListRatePlansMockHandler(),
+  getUpdateRatePlanMockHandler(),
+  getPreviewPriceMockHandler(),
+  getCreateServiceMockHandler(),
+  getUpdateServiceMockHandler(),
+  getRestockServiceMockHandler(),
+  getListStockMovementsMockHandler(),
+  getRemoveServiceMockHandler(),
+  getCreateStocktakeMockHandler(),
+  getEditCheckInTimeMockHandler(),
+  getMoveStayMockHandler(),
+  getListStaysMockHandler(),
+  getGetStayTimelineMockHandler(),
+  getGetReceiptMockHandler(),
+  getListTransactionsMockHandler(),
+  getLinkTransferToInvoiceMockHandler(),
+  getListAlertsMockHandler(),
+  getMarkAlertReadMockHandler(),
+  getListAuditLogsMockHandler(),
+  getListClosedShiftsMockHandler(),
+  getReceiveBankWebhookMockHandler(),
+  getReceiveBankWebhookLegacyMockHandler(),
+  getSetGuestIdNumberMockHandler(),
+  getUploadGuestIdPhotoMockHandler(),
+  getGetGuestIdRecordMockHandler(),
+  getRevealGuestIdNumberMockHandler(),
+  getGetGuestIdPhotoMockHandler(),
+  getDeleteGuestIdPhotoMockHandler(),
+  getDeleteGuestIdNumberMockHandler()
 ]

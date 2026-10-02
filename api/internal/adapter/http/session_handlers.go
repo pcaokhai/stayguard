@@ -83,9 +83,9 @@ func toBuildingAccess(m map[string]access.Level) []gen.BuildingAccess {
 func permissionLevel(l access.Level) gen.PermissionLevel {
 	switch l {
 	case access.EDIT:
-		return gen.EDIT
+		return gen.PermissionLevelEDIT
 	case access.VIEW:
-		return gen.VIEW
+		return gen.PermissionLevelVIEW
 	}
-	return gen.NONE // unknown levels fail closed
+	return gen.PermissionLevelNONE // unknown levels fail closed
 }

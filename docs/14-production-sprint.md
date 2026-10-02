@@ -72,7 +72,7 @@ Each task: what to build (operations and design boards), migration number if any
 #### [ ] S0 Accounts and server (Khai, start immediately)
 SePay account for the first guesthouse owner (Test mode first, bank linking can take time); VPS with Docker and a domain (Caddy for HTTPS); `deploy/.env.prod` outside git with `DATA_ENCRYPTION_KEY`, database password, `DEMO_MODE=0`; daily `pg_dump` to off-server storage.
 
-#### [ ] A0 Contract 1.1.0 wired (API-1) — no migration
+#### [x] A0 Contract 1.1.0 wired (API-1) — no migration
 `make gen` with the 1.1.0 contract; new operations return 501 through the existing stub path; `Role` gains MANAGER in domain and authorizer (no new permissions yet); goose migrate allows out-of-order in development (`goose.WithAllowOutofOrder`) but production `migrate` still applies in order. Verify: `make test-api`, `make lint`, `make up` boots, a new operation answers 501.
 
 #### [ ] W0 UI kit, shells and motion foundation (WEB-1)

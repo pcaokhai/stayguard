@@ -41,7 +41,7 @@ func TestReadyz_SG003_AC6(t *testing.T) {
 func TestReadyzPending_SG003_AC6(t *testing.T) {
 	ctx := context.Background()
 	db := newEmptyDB(t)
-	if err := Migrate(ctx, urlFor(db, "owner", testSecret)); err != nil {
+	if err := Migrate(ctx, urlFor(db, "owner", testSecret), false); err != nil {
 		t.Fatal(err)
 	}
 	if err := enableLogins(ctx); err != nil {
@@ -61,10 +61,10 @@ func TestMigrateCommand_SG003_AC6(t *testing.T) {
 	ctx := context.Background()
 	db := newEmptyDB(t)
 	url := urlFor(db, "owner", testSecret)
-	if err := Migrate(ctx, url); err != nil {
+	if err := Migrate(ctx, url, false); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-	if err := Migrate(ctx, url); err != nil {
+	if err := Migrate(ctx, url, false); err != nil {
 		t.Fatalf("second migrate must be a no-op: %v", err)
 	}
 	if err := enableLogins(ctx); err != nil {

@@ -7,9 +7,37 @@
  * structured values, never display text; the web app translates.
  * Extensions: `x-story` (owning story), `x-access` (minimum building access on the target
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
+ *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
+
+// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
+type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <
+T,
+>() => T extends Y ? 1 : 2
+? A
+: B;
+
+type WritableKeys<T> = {
+[P in keyof T]-?: IfEquals<
+  { [Q in P]: T[P] },
+  { -readonly [Q in P]: T[P] },
+  P
+>;
+}[keyof T];
+
+type UnionToIntersection<U> =
+  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
+type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never;
+
+type Writable<T> = Pick<T, WritableKeys<T>>;
+type NonReadonly<T> = [T] extends [UnionToIntersection<T>] ? {
+  [P in keyof Writable<T>]: T[P] extends object
+    ? NonReadonly<NonNullable<T[P]>>
+    : T[P];
+} : DistributeReadOnlyOverUnions<T>;
+
 export type ProblemErrorsItem = {
   field: string;
   code: string;
@@ -51,6 +79,7 @@ export type Role = typeof Role[keyof typeof Role];
 
 export const Role = {
   OWNER: 'OWNER',
+  MANAGER: 'MANAGER',
   RECEPTIONIST: 'RECEPTIONIST',
   HOUSEKEEPING: 'HOUSEKEEPING',
 } as const;
@@ -114,10 +143,17 @@ export type AlertKind = typeof AlertKind[keyof typeof AlertKind];
 
 
 export const AlertKind = {
-  UNUSED_ROOM_REPORT: 'UNUSED_ROOM_REPORT',
-  STAY_TIME_EDITED: 'STAY_TIME_EDITED',
-  CASH_SHORT: 'CASH_SHORT',
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   CASH_OVER: 'CASH_OVER',
+  CASH_SHORT: 'CASH_SHORT',
+  DAMAGE_REPORTED: 'DAMAGE_REPORTED',
+  LEAVE_REQUESTED: 'LEAVE_REQUESTED',
+  PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
+  SEPAY_UPDATED: 'SEPAY_UPDATED',
+  STAY_TIME_EDITED: 'STAY_TIME_EDITED',
+  STOCKTAKE_DIFFERENCE: 'STOCKTAKE_DIFFERENCE',
+  UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
+  UNUSED_ROOM_REPORT: 'UNUSED_ROOM_REPORT',
 } as const;
 
 export interface CreateDemoSessionRequest {
@@ -210,6 +246,12 @@ export interface Service {
   price: Vnd;
   /** @minimum 0 */
   stock: number;
+  unit?: string;
+  /** @minimum 0 */
+  lowStockAt?: number;
+  onSale?: boolean;
+  latestUnitCost?: Vnd | null;
+  soldLast7Days?: number;
 }
 
 export interface CreateStayRequest {
@@ -225,12 +267,14 @@ export interface CreateStayRequest {
      */
   guestPhone: string;
   /**
-     * Optional national ID; encrypted at rest
+     * Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING
      * @maxLength 20
      * @nullable
      */
   idNumber?: string | null;
   deposit: Vnd;
+  /** Required true when idNumber is given */
+  idConsent?: boolean;
 }
 
 export interface BillLine {
@@ -263,6 +307,12 @@ export interface Quote {
   lines: BillLine[];
 }
 
+export interface GuestIdIndicators {
+  hasIdNumber: boolean;
+  hasFrontPhoto: boolean;
+  hasBackPhoto: boolean;
+}
+
 export interface Stay {
   id: string;
   roomId: string;
@@ -274,13 +324,12 @@ export interface Stay {
   checkOutAt?: string | null;
   guestName: string;
   guestPhone: string;
-  /** @nullable */
-  idNumberMasked?: string | null;
   deposit: Vnd;
   extras: ExtraLine[];
   quote: Quote;
   /** Rate plan version snapshotted at check-in */
   pricingVersion: number;
+  guestId?: GuestIdIndicators;
 }
 
 export type AddExtrasRequestItemsItem = {
@@ -370,6 +419,7 @@ export interface HousekeepingTask {
   createdAt: string;
   /** @nullable */
   completedAt?: string | null;
+  waitingMinutes?: number;
 }
 
 /**
@@ -414,6 +464,42 @@ export type OwnerOverviewOccupancy = {
   overdueRooms: number;
 };
 
+export interface BuildingStatus {
+  buildingId: string;
+  code: string;
+  totalRooms: number;
+  occupied: number;
+  vacant: number;
+  toClean: number;
+  overdue: number;
+  maintenance: number;
+  occupancyPct: number;
+  revenueToday: Vnd;
+}
+
+export type AttentionItemKind = typeof AttentionItemKind[keyof typeof AttentionItemKind];
+
+
+export const AttentionItemKind = {
+  OVERDUE_ROOM: 'OVERDUE_ROOM',
+  LONG_TO_CLEAN: 'LONG_TO_CLEAN',
+  PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
+  UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
+  CASH_SHORT: 'CASH_SHORT',
+  LEAVE_PENDING: 'LEAVE_PENDING',
+  TICKET_OPEN: 'TICKET_OPEN',
+} as const;
+
+export interface AttentionItem {
+  kind: AttentionItemKind;
+  ref: string;
+  /** @nullable */
+  roomCode?: string | null;
+  /** @nullable */
+  minutes?: number | null;
+  amount?: Vnd | null;
+}
+
 export interface OwnerOverview {
   date: string;
   revenueTotal: Vnd;
@@ -423,6 +509,8 @@ export interface OwnerOverview {
   occupancy: OwnerOverviewOccupancy;
   alerts: Alert[];
   latestPayments: PaymentSummary[];
+  buildings?: BuildingStatus[];
+  attention?: AttentionItem[];
 }
 
 export interface StaffPermission {
@@ -523,6 +611,998 @@ export interface ShiftReview {
 }
 
 /**
+ * NONE = no sign-in (roster and payroll only, e.g. security). MANAGER = owner rights except bank accounts, removing staff and pay.
+ */
+export type AppAccess = typeof AppAccess[keyof typeof AppAccess];
+
+
+export const AppAccess = {
+  NONE: 'NONE',
+  MANAGER: 'MANAGER',
+  RECEPTIONIST: 'RECEPTIONIST',
+  HOUSEKEEPING: 'HOUSEKEEPING',
+} as const;
+
+export type Position = typeof Position[keyof typeof Position];
+
+
+export const Position = {
+  FRONT_DESK: 'FRONT_DESK',
+  HOUSEKEEPING: 'HOUSEKEEPING',
+  SECURITY: 'SECURITY',
+  MANAGER: 'MANAGER',
+  MAINTENANCE: 'MAINTENANCE',
+  OTHER: 'OTHER',
+} as const;
+
+export type PayType = typeof PayType[keyof typeof PayType];
+
+
+export const PayType = {
+  MONTHLY: 'MONTHLY',
+  PER_SHIFT: 'PER_SHIFT',
+  HOURLY: 'HOURLY',
+} as const;
+
+export type ShiftCode = typeof ShiftCode[keyof typeof ShiftCode];
+
+
+export const ShiftCode = {
+  MORNING: 'MORNING',
+  AFTERNOON: 'AFTERNOON',
+  NIGHT: 'NIGHT',
+} as const;
+
+/**
+ * Re-entered owner PIN for sensitive changes (bank accounts, removing staff).
+ */
+export interface OwnerPin {
+  /** @pattern ^[0-9]{6}$ */
+  ownerPin: string;
+}
+
+export interface OneTimePin {
+  /**
+     * Shown once; never retrievable again
+     * @pattern ^[0-9]{6}$
+     */
+  pin: string;
+  expiresAt: string;
+}
+
+export interface SignInRequest {
+  /**
+     * @minLength 3
+     * @maxLength 16
+     */
+  guesthouseCode: string;
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  username: string;
+  /** @pattern ^[0-9]{6}$ */
+  pin: string;
+}
+
+export type SignInResponse = Session & {
+  mustChangePin: boolean;
+};
+
+export interface ChangePinRequest {
+  /** @pattern ^[0-9]{6}$ */
+  currentPin: string;
+  /**
+     * Not a run (123456) or repeated digit (111111)
+     * @pattern ^[0-9]{6}$
+     */
+  newPin: string;
+}
+
+export interface Contract {
+  payType: PayType;
+  rate: Vnd;
+  fixedAllowance: Vnd;
+  /** @minimum 0 */
+  standardShifts: number;
+  startDate: string;
+  /** @minimum 0 */
+  annualLeaveDays: number;
+}
+
+export type StaffStatus = typeof StaffStatus[keyof typeof StaffStatus];
+
+
+export const StaffStatus = {
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED',
+  REMOVED: 'REMOVED',
+} as const;
+
+export interface Staff {
+  id: string;
+  name: string;
+  /** @nullable */
+  phone?: string | null;
+  position: Position;
+  appAccess: AppAccess;
+  /** @nullable */
+  username?: string | null;
+  status: StaffStatus;
+  /** @nullable */
+  lockedUntil?: string | null;
+  /** @nullable */
+  lastActivityAt?: string | null;
+  contract: Contract;
+  buildingAccess: BuildingAccess[];
+}
+
+export interface CreateStaffRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @nullable */
+  phone?: string | null;
+  position: Position;
+  appAccess: AppAccess;
+  /**
+     * Required unless appAccess is NONE
+     * @nullable
+     * @pattern ^[a-z0-9_.]{2,32}$
+     */
+  username?: string | null;
+  contract: Contract;
+  buildingAccess?: BuildingAccess[];
+}
+
+export interface UpdateStaffRequest {
+  name?: string;
+  /** @nullable */
+  phone?: string | null;
+  position?: Position;
+  appAccess?: AppAccess;
+  contract?: Contract;
+}
+
+export interface CreateStaffResponse {
+  staff: Staff;
+  oneTimePin?: OneTimePin | null;
+}
+
+export interface RosterAssignment {
+  userId: string;
+  date: string;
+  shift: ShiftCode;
+}
+
+export type LeaveKind = typeof LeaveKind[keyof typeof LeaveKind];
+
+
+export const LeaveKind = {
+  PAID: 'PAID',
+  SICK: 'SICK',
+  UNPAID: 'UNPAID',
+} as const;
+
+export type LeaveStatus = typeof LeaveStatus[keyof typeof LeaveStatus];
+
+
+export const LeaveStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED',
+  CANCELLED: 'CANCELLED',
+  CANCEL_REQUESTED: 'CANCEL_REQUESTED',
+  TAKEN: 'TAKEN',
+} as const;
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  fromDate: string;
+  toDate: string;
+  shift?: ShiftCode | null;
+  kind: LeaveKind;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  coverUserId?: string | null;
+  status: LeaveStatus;
+  /** @nullable */
+  declineReason?: string | null;
+  createdAt: string;
+  /** @nullable */
+  decidedAt?: string | null;
+}
+
+export interface CreateLeaveRequest {
+  fromDate: string;
+  toDate: string;
+  shift?: ShiftCode | null;
+  kind: LeaveKind;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  reason?: string | null;
+  /** @nullable */
+  coverUserId?: string | null;
+}
+
+export interface LeaveBalance {
+  year: number;
+  annual: number;
+  used: number;
+  left: number;
+}
+
+export type RosterGapsItem = {
+  date: string;
+  shift: ShiftCode;
+};
+
+export interface Roster {
+  from: string;
+  to: string;
+  assignments: RosterAssignment[];
+  leave: LeaveRequest[];
+  gaps?: RosterGapsItem[];
+}
+
+export interface PutRosterRequest {
+  set: RosterAssignment[];
+  remove: RosterAssignment[];
+}
+
+export type PayrollLineStatus = typeof PayrollLineStatus[keyof typeof PayrollLineStatus];
+
+
+export const PayrollLineStatus = {
+  UNPAID: 'UNPAID',
+  PAID: 'PAID',
+} as const;
+
+export interface PayrollLine {
+  userId: string;
+  name: string;
+  position: Position;
+  payType: PayType;
+  rate: Vnd;
+  shiftsWorked: number;
+  standardShifts?: number;
+  leaveDays: number;
+  earnedPay: Vnd;
+  allowance: Vnd;
+  bonus: Vnd;
+  deduction: Vnd;
+  net: Vnd;
+  /** @nullable */
+  note?: string | null;
+  status: PayrollLineStatus;
+}
+
+export interface Payroll {
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  month: string;
+  lines: PayrollLine[];
+  totalNet: Vnd;
+}
+
+export interface UpdatePayrollLineRequest {
+  bonus?: Vnd;
+  deduction?: Vnd;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export type DamageCategory = typeof DamageCategory[keyof typeof DamageCategory];
+
+
+export const DamageCategory = {
+  AIR_CONDITIONER: 'AIR_CONDITIONER',
+  HOT_WATER: 'HOT_WATER',
+  PLUMBING: 'PLUMBING',
+  POWER_LIGHTS: 'POWER_LIGHTS',
+  TV: 'TV',
+  DOOR_LOCK: 'DOOR_LOCK',
+  MISSING_ITEMS: 'MISSING_ITEMS',
+  OTHER: 'OTHER',
+} as const;
+
+export type TicketStatus = typeof TicketStatus[keyof typeof TicketStatus];
+
+
+export const TicketStatus = {
+  NEW: 'NEW',
+  IN_REPAIR: 'IN_REPAIR',
+  DONE: 'DONE',
+} as const;
+
+export type DamageReportRequestSeverity = typeof DamageReportRequestSeverity[keyof typeof DamageReportRequestSeverity];
+
+
+export const DamageReportRequestSeverity = {
+  STILL_RENTABLE: 'STILL_RENTABLE',
+  LOCK_ROOM: 'LOCK_ROOM',
+} as const;
+
+export interface DamageReportRequest {
+  category: DamageCategory;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  description: string;
+  severity: DamageReportRequestSeverity;
+  photoAssetIds?: string[];
+}
+
+export interface MaintenanceTicket {
+  id: string;
+  /** Human code such as BT-031 */
+  code: string;
+  roomId: string;
+  roomCode: string;
+  category: DamageCategory;
+  description: string;
+  status: TicketStatus;
+  roomLocked: boolean;
+  reportedBy: string;
+  reportedAt: string;
+  /** @nullable */
+  expectedDoneOn?: string | null;
+  partsCost?: Vnd | null;
+  labourCost?: Vnd | null;
+  totalCost: Vnd | null;
+  /** @nullable */
+  repairer?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+}
+
+export interface UpdateTicketRequest {
+  status?: TicketStatus;
+  roomLocked?: boolean;
+  /** @nullable */
+  expectedDoneOn?: string | null;
+  partsCost?: Vnd | null;
+  labourCost?: Vnd | null;
+  /** @nullable */
+  repairer?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export type ExpenseCategory = typeof ExpenseCategory[keyof typeof ExpenseCategory];
+
+
+export const ExpenseCategory = {
+  STAFF_PAY: 'STAFF_PAY',
+  RENT: 'RENT',
+  ELECTRICITY: 'ELECTRICITY',
+  WATER: 'WATER',
+  LAUNDRY: 'LAUNDRY',
+  MAINTENANCE: 'MAINTENANCE',
+  SUPPLIES: 'SUPPLIES',
+  COST_OF_GOODS: 'COST_OF_GOODS',
+  TAX_FEES: 'TAX_FEES',
+  INTERNET_TV: 'INTERNET_TV',
+  PAYMENT_FEES: 'PAYMENT_FEES',
+  OTHER: 'OTHER',
+} as const;
+
+export type ExpenseSource = typeof ExpenseSource[keyof typeof ExpenseSource];
+
+
+export const ExpenseSource = {
+  MANUAL: 'MANUAL',
+  RECURRING: 'RECURRING',
+  PAYROLL: 'PAYROLL',
+  MAINTENANCE: 'MAINTENANCE',
+  STOCK: 'STOCK',
+} as const;
+
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  amount: Vnd;
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  month: string;
+  /** @nullable */
+  paidOn?: string | null;
+  /** @nullable */
+  note?: string | null;
+  recurring?: boolean;
+  source: ExpenseSource;
+  /** @nullable */
+  attachmentAssetId?: string | null;
+}
+
+export interface CreateExpenseRequest {
+  category: ExpenseCategory;
+  amount: Vnd;
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  month: string;
+  /** @nullable */
+  paidOn?: string | null;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+  recurring?: boolean;
+  /** @nullable */
+  attachmentAssetId?: string | null;
+}
+
+export type ExpenseMonthCategoriesItem = {
+  category: ExpenseCategory;
+  amount: Vnd;
+  source: ExpenseSource;
+};
+
+export interface ExpenseMonth {
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  month: string;
+  categories: ExpenseMonthCategoriesItem[];
+  items: Expense[];
+  total: Vnd;
+  revenue: Vnd;
+}
+
+export interface AmountShare {
+  key: string;
+  amount: Vnd;
+}
+
+export type IncomeCostReportMonthsItem = {
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  month: string;
+  revenue: Vnd;
+  expenses: Vnd;
+};
+
+export interface IncomeCostReport {
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  from: string;
+  /**
+     * YYYY-MM
+     * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+     */
+  to: string;
+  revenue: Vnd;
+  expenses: Vnd;
+  profit: number;
+  marginPct: number;
+  occupancyPct: number;
+  months: IncomeCostReportMonthsItem[];
+  expensesByCategory: AmountShare[];
+  revenueByRentalType: AmountShare[];
+  revenueByBuilding: AmountShare[];
+  revenueByMethod: AmountShare[];
+}
+
+export interface Property {
+  guesthouseCode: string;
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /**
+     * @minimum 5
+     * @maximum 240
+     */
+  qrExpiryMinutes: number;
+  /**
+     * Guest ID number and photos are deleted this many days after check-out (default 30)
+     * @minimum 1
+     * @maximum 365
+     */
+  idRetentionDays?: number;
+  /**
+     * How many recent days of stay history receptionists can see (default 7)
+     * @minimum 1
+     * @maximum 90
+     */
+  frontDeskHistoryDays?: number;
+}
+
+export interface UpdatePropertyRequest {
+  name?: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /**
+     * @minimum 5
+     * @maximum 240
+     */
+  qrExpiryMinutes?: number;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  idRetentionDays?: number;
+  /**
+     * How many recent days of stay history receptionists can see (default 7)
+     * @minimum 1
+     * @maximum 90
+     */
+  frontDeskHistoryDays?: number;
+}
+
+export type BankAccountSepayStatus = typeof BankAccountSepayStatus[keyof typeof BankAccountSepayStatus];
+
+
+export const BankAccountSepayStatus = {
+  CONNECTED: 'CONNECTED',
+  PENDING: 'PENDING',
+} as const;
+
+export interface BankAccount {
+  id: string;
+  bankBin: string;
+  bankName: string;
+  accountNoMasked: string;
+  accountName: string;
+  isDefault: boolean;
+  sepayStatus: BankAccountSepayStatus;
+  /** @nullable */
+  lastWebhookAt?: string | null;
+}
+
+export type CreateBankAccountRequest = OwnerPin & {
+  bankBin: string;
+  /** @pattern ^[0-9]{6,20}$ */
+  accountNo: string;
+  /** @maxLength 60 */
+  accountName: string;
+  makeDefaultWhenConnected?: boolean;
+};
+
+export type SepayStatusStatus = typeof SepayStatusStatus[keyof typeof SepayStatusStatus];
+
+
+export const SepayStatusStatus = {
+  CONNECTED: 'CONNECTED',
+  NOT_CONNECTED: 'NOT_CONNECTED',
+} as const;
+
+export interface SepayStatus {
+  status: SepayStatusStatus;
+  /** @nullable */
+  lastWebhookAt?: string | null;
+  /** @nullable */
+  signatureValid?: boolean | null;
+}
+
+export interface CreateBuildingRequest {
+  /** @pattern ^[A-Z]{1,3}$ */
+  code: string;
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  floors: number;
+  /**
+     * @minimum 0
+     * @maximum 50
+     */
+  roomsPerFloor: number;
+  unitTypeCode: string;
+}
+
+export interface UpdateBuildingRequest {
+  name?: string;
+}
+
+export type CreateFloorRequestRooms = {
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  count: number;
+  startCode: string;
+  unitTypeCode: string;
+} | null;
+
+export interface CreateFloorRequest {
+  name: string;
+  rooms?: CreateFloorRequestRooms;
+}
+
+export type RoomFeature = typeof RoomFeature[keyof typeof RoomFeature];
+
+
+export const RoomFeature = {
+  DOUBLE_BED: 'DOUBLE_BED',
+  TWIN_BEDS: 'TWIN_BEDS',
+  WINDOW: 'WINDOW',
+  BATHTUB: 'BATHTUB',
+} as const;
+
+export interface CreateRoomsRequest {
+  buildingId: string;
+  floorId: string;
+  fromCode: string;
+  /** Equal to fromCode for a single room */
+  toCode: string;
+  unitTypeCode: string;
+  features?: RoomFeature[];
+  availableNow?: boolean;
+}
+
+export type UpdateRoomRequestMaintenance = {
+  on: boolean;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  expectedBackOn?: string | null;
+} | null;
+
+export interface UpdateRoomRequest {
+  code?: string;
+  unitTypeCode?: string;
+  features?: RoomFeature[];
+  maintenance?: UpdateRoomRequestMaintenance;
+  retired?: boolean;
+}
+
+export type RatePlanHourly = {
+  firstHour: Vnd;
+  extraHour: Vnd;
+};
+
+export type RatePlanOvernight = {
+  price: Vnd;
+  windowStart: string;
+  windowEnd: string;
+};
+
+export type RatePlanDaily = {
+  price: Vnd;
+  windowStart: string;
+  windowEnd: string;
+};
+
+/**
+ * Mirrors contracts/pricing/rate-plan.schema.json
+ */
+export interface RatePlan {
+  readonly version?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  graceMinutes: number;
+  hourly: RatePlanHourly;
+  overnight: RatePlanOvernight;
+  daily: RatePlanDaily;
+}
+
+export interface UnitTypeRates {
+  code: string;
+  name: LocalizedText;
+  ratePlan: RatePlan;
+  updatedAt: string;
+}
+
+export interface PricePreviewRequest {
+  rentalType: RentalType;
+  checkIn: string;
+  checkOut: string;
+  ratePlan: RatePlan;
+}
+
+export interface CreateServiceRequest {
+  name: LocalizedText;
+  price: Vnd;
+  unitCost: Vnd;
+  /** @minimum 0 */
+  openingQuantity: number;
+  unit: string;
+  /** @minimum 0 */
+  lowStockAt: number;
+  onSale?: boolean;
+}
+
+export interface UpdateServiceRequest {
+  name?: LocalizedText;
+  price?: Vnd;
+  unit?: string;
+  /** @minimum 0 */
+  lowStockAt?: number;
+  onSale?: boolean;
+}
+
+export interface RestockRequest {
+  /** @minimum 1 */
+  quantity: number;
+  unitCost: Vnd;
+}
+
+export type StockMovementKind = typeof StockMovementKind[keyof typeof StockMovementKind];
+
+
+export const StockMovementKind = {
+  OPENING: 'OPENING',
+  IN: 'IN',
+  SALE: 'SALE',
+  COUNT: 'COUNT',
+  ADJUST: 'ADJUST',
+} as const;
+
+export interface StockMovement {
+  at: string;
+  kind: StockMovementKind;
+  quantity: number;
+  unitCost?: Vnd | null;
+  /**
+     * Room code or stocktake id
+     * @nullable
+     */
+  ref?: string | null;
+  actorName: string;
+}
+
+/**
+ * Items with sales history are never deleted
+ */
+export type RemoveServiceResultResult = typeof RemoveServiceResultResult[keyof typeof RemoveServiceResultResult];
+
+
+export const RemoveServiceResultResult = {
+  DELETED: 'DELETED',
+  STOPPED_SELLING: 'STOPPED_SELLING',
+} as const;
+
+export interface RemoveServiceResult {
+  /** Items with sales history are never deleted */
+  result: RemoveServiceResultResult;
+}
+
+export type StocktakeRequestLinesItem = {
+  serviceCode: string;
+  /** @minimum 0 */
+  counted: number;
+};
+
+export interface StocktakeRequest {
+  lines: StocktakeRequestLinesItem[];
+  /** @nullable */
+  note?: string | null;
+}
+
+export type StocktakeResultDifferencesItem = {
+  serviceCode: string;
+  system: number;
+  counted: number;
+};
+
+export interface StocktakeResult {
+  id: string;
+  differences: StocktakeResultDifferencesItem[];
+  valueDifference: number;
+}
+
+export type EditCheckInRequestReasonCode = typeof EditCheckInRequestReasonCode[keyof typeof EditCheckInRequestReasonCode];
+
+
+export const EditCheckInRequestReasonCode = {
+  WRONG_TIME: 'WRONG_TIME',
+  LATE_ARRIVAL: 'LATE_ARRIVAL',
+  OTHER: 'OTHER',
+} as const;
+
+export interface EditCheckInRequest {
+  newCheckInAt: string;
+  reasonCode: EditCheckInRequestReasonCode;
+  /**
+     * @minLength 3
+     * @maxLength 300
+     */
+  note: string;
+}
+
+export interface MoveStayRequest {
+  toRoomId: string;
+  rentalType: RentalType;
+}
+
+export type StayListItemState = typeof StayListItemState[keyof typeof StayListItemState];
+
+
+export const StayListItemState = {
+  IN_STAY: 'IN_STAY',
+  PAID: 'PAID',
+  UNPAID: 'UNPAID',
+  MISMATCH: 'MISMATCH',
+  TIME_EDITED: 'TIME_EDITED',
+} as const;
+
+export interface StayListItem {
+  id: string;
+  roomCode: string;
+  guestName: string;
+  rentalType: RentalType;
+  checkInAt: string;
+  /** @nullable */
+  checkOutAt?: string | null;
+  total?: Vnd | null;
+  paymentMethod?: PaymentMethod | null;
+  state?: StayListItemState;
+  status: StayStatus;
+  frontDeskName?: string;
+  guestId: GuestIdIndicators;
+}
+
+export type StayTimelineEventKind = typeof StayTimelineEventKind[keyof typeof StayTimelineEventKind];
+
+
+export const StayTimelineEventKind = {
+  CHECKED_IN: 'CHECKED_IN',
+  CHECK_IN_EDITED: 'CHECK_IN_EDITED',
+  EXTRAS_ADDED: 'EXTRAS_ADDED',
+  MOVED: 'MOVED',
+  CHECKED_OUT: 'CHECKED_OUT',
+  PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',
+  PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
+  LINKED_BY_OWNER: 'LINKED_BY_OWNER',
+  CLEANED: 'CLEANED',
+} as const;
+
+export type StayTimelineEventDetails = {[key: string]: string};
+
+export interface StayTimelineEvent {
+  at: string;
+  kind: StayTimelineEventKind;
+  actorName: string;
+  details?: StayTimelineEventDetails;
+}
+
+export interface Receipt {
+  propertyName: string;
+  /** @nullable */
+  propertyAddress?: string | null;
+  /** @nullable */
+  propertyPhone?: string | null;
+  billCode: string;
+  roomCode: string;
+  checkInAt: string;
+  checkOutAt: string;
+  lines: BillLine[];
+  extras?: ExtraLine[];
+  total: Vnd;
+  deposit?: Vnd;
+  payments: PaymentSummary[];
+}
+
+export type TransactionReconciliation = typeof TransactionReconciliation[keyof typeof TransactionReconciliation];
+
+
+export const TransactionReconciliation = {
+  MATCHED: 'MATCHED',
+  MISMATCH: 'MISMATCH',
+  UNMATCHED: 'UNMATCHED',
+  CASH: 'CASH',
+} as const;
+
+export interface Transaction {
+  id: string;
+  at: string;
+  amount: Vnd;
+  method: PaymentMethod;
+  /** @nullable */
+  roomCode?: string | null;
+  /** @nullable */
+  billCode?: string | null;
+  reconciliation: TransactionReconciliation;
+  /** @nullable */
+  transferNote?: string | null;
+  /** @nullable */
+  paymentEventId?: string | null;
+  /** @nullable */
+  shiftId?: string | null;
+}
+
+export interface LinkTransferRequest {
+  invoiceId: string;
+}
+
+export type AuditEntryCategory = typeof AuditEntryCategory[keyof typeof AuditEntryCategory];
+
+
+export const AuditEntryCategory = {
+  MONEY: 'MONEY',
+  STAY_TIME: 'STAY_TIME',
+  ACCESS_STAFF: 'ACCESS_STAFF',
+  RATES_SETTINGS: 'RATES_SETTINGS',
+  SHIFT: 'SHIFT',
+  STOCK: 'STOCK',
+  MAINTENANCE: 'MAINTENANCE',
+  INSTALLER: 'INSTALLER',
+  GUEST_ID: 'GUEST_ID',
+} as const;
+
+export type AuditEntryDetails = {[key: string]: string};
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  actorName: string;
+  actorRole?: Role;
+  category: AuditEntryCategory;
+  /** Stable code; the web app renders text from it and details */
+  action: string;
+  details?: AuditEntryDetails;
+}
+
+export interface ClosedShift {
+  id: string;
+  userName: string;
+  shift?: ShiftCode | null;
+  openedAt: string;
+  closedAt: string;
+  difference: number;
+}
+
+export type IdPhotoMetaSide = typeof IdPhotoMetaSide[keyof typeof IdPhotoMetaSide];
+
+
+export const IdPhotoMetaSide = {
+  FRONT: 'FRONT',
+  BACK: 'BACK',
+} as const;
+
+export interface IdPhotoMeta {
+  side: IdPhotoMetaSide;
+  uploadedAt: string;
+  uploadedBy: string;
+  bytes?: number;
+}
+
+export interface GuestIdRecord {
+  indicators: GuestIdIndicators;
+  /**
+     * First 3 and last 3 digits only
+     * @nullable
+     */
+  idNumberMasked: string | null;
+  front: IdPhotoMeta | null;
+  back: IdPhotoMeta | null;
+  /** @nullable */
+  consentAt?: string | null;
+  /** @nullable */
+  deleteAfter: string | null;
+}
+
+/**
  * Missing or expired credentials
  */
 export type UnauthorizedResponse = Problem;
@@ -599,6 +1679,222 @@ export type ListStaffPermissions200 = {
 
 export type SetBuildingPermissionBody = {
   level: PermissionLevel;
+};
+
+export type ListStaffParams = {
+position?: Position;
+};
+
+export type ListStaff200 = {
+  items: Staff[];
+};
+
+export type GetRosterParams = {
+from: string;
+to: string;
+};
+
+export type CopyRosterWeekBody = {
+  weekStart: string;
+};
+
+export type ListLeaveRequestsParams = {
+status?: LeaveStatus;
+};
+
+export type ListLeaveRequests200 = {
+  items: LeaveRequest[];
+};
+
+export type DeclineLeaveBody = {
+  /**
+     * @minLength 2
+     * @maxLength 200
+     */
+  reason: string;
+};
+
+export type GetMyRosterParams = {
+from: string;
+to: string;
+};
+
+export type ListMyLeaveRequests200 = {
+  items: LeaveRequest[];
+  balance: LeaveBalance;
+};
+
+export type MarkPayrollPaidBody = {
+  userIds?: string[];
+};
+
+export type ListTicketsParams = {
+status?: TicketStatus;
+};
+
+export type ListTickets200 = {
+  items: MaintenanceTicket[];
+};
+
+export type GetExpenseMonthParams = {
+/**
+ * YYYY-MM
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+month: string;
+};
+
+export type GetIncomeCostReportParams = {
+/**
+ * YYYY-MM
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+from: string;
+/**
+ * YYYY-MM
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+to: string;
+};
+
+export type ListBankAccounts200 = {
+  items: BankAccount[];
+};
+
+export type CreateFloor201 = {
+  items: Room[];
+};
+
+export type CreateRooms201 = {
+  items: Room[];
+};
+
+export type ListRatePlans200 = {
+  items: UnitTypeRates[];
+};
+
+export type ListStockMovementsParams = {
+kind?: string;
+cursor?: string;
+};
+
+export type ListStockMovements200 = {
+  items: StockMovement[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type ListStaysParams = {
+/**
+ * Single day; alternative to from and to
+ */
+date?: string;
+from?: string;
+to?: string;
+/**
+ * Room, guest name or phone
+ */
+q?: string;
+buildingId?: string;
+state?: string;
+cursor?: string;
+};
+
+export type ListStays200 = {
+  items: StayListItem[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type GetStayTimeline200 = {
+  items: StayTimelineEvent[];
+};
+
+export type ListTransactionsParams = {
+from?: string;
+to?: string;
+filter?: ListTransactionsFilter;
+q?: string;
+cursor?: string;
+};
+
+export type ListTransactionsFilter = typeof ListTransactionsFilter[keyof typeof ListTransactionsFilter];
+
+
+export const ListTransactionsFilter = {
+  ALL: 'ALL',
+  TRANSFER: 'TRANSFER',
+  CASH: 'CASH',
+  NEEDS_ACTION: 'NEEDS_ACTION',
+} as const;
+
+export type ListTransactions200 = {
+  items: Transaction[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type ListAlertsParams = {
+unread?: boolean;
+kind?: AlertKind;
+cursor?: string;
+};
+
+export type ListAlerts200 = {
+  items: Alert[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type ListAuditLogsParams = {
+from: string;
+to: string;
+actorId?: string;
+category?: string;
+q?: string;
+cursor?: string;
+};
+
+export type ListAuditLogs200 = {
+  items: AuditEntry[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type ListClosedShiftsParams = {
+/**
+ * YYYY-MM
+ * @pattern ^[0-9]{4}-(0[1-9]|1[0-2])$
+ */
+month?: string;
+userId?: string;
+onlyDifferences?: boolean;
+cursor?: string;
+};
+
+export type ListClosedShifts200 = {
+  items: ClosedShift[];
+  /** @nullable */
+  nextCursor?: string | null;
+};
+
+export type SetGuestIdNumberBody = {
+  /** @pattern ^[0-9]{9,12}$ */
+  idNumber: string;
+  consent: true;
+};
+
+export type UploadGuestIdPhotoBody = {
+  file: Blob | File;
+  consent?: boolean;
+};
+
+export type RevealGuestIdNumber200 = {
+  idNumber: string;
+};
+
+export type GetGuestIdPhotoParams = {
+download?: boolean;
 };
 
 export type createDemoSessionResponse201 = {
@@ -1594,77 +2890,6 @@ export const simulatePaymentReceived = async (paymentId: string, options?: Reque
 
 
 
-export type receiveBankWebhookResponse202 = {
-  data: void
-  status: 202
-}
-
-export type receiveBankWebhookResponse401 = {
-  data: UnauthorizedResponse
-  status: 401
-}
-
-export type receiveBankWebhookResponse422 = {
-  data: UnprocessableResponse
-  status: 422
-}
-
-export type receiveBankWebhookResponseSuccess = (receiveBankWebhookResponse202) & {
-  headers: Headers;
-};
-export type receiveBankWebhookResponseError = (receiveBankWebhookResponse401 | receiveBankWebhookResponse422) & {
-  headers: Headers;
-};
-
-export type receiveBankWebhookResponse = (receiveBankWebhookResponseSuccess | receiveBankWebhookResponseError)
-
-export const getReceiveBankWebhookUrl = () => {
-
-
-
-
-  return `/v1/webhooks/bank`
-}
-
-/**
- * Authenticated by an HMAC signature header, not a bearer token. The handler checks the
- * signature, deduplicates on externalId, matches referenceCode and amount, then settles.
- * @summary Bank or reconciliation-provider webhook (full product)
- */
-export const receiveBankWebhook = async (bankWebhookPayload: BankWebhookPayload, options?: RequestInit): Promise<receiveBankWebhookResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getReceiveBankWebhookUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(bankWebhookPayload)
-  }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: receiveBankWebhookResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as receiveBankWebhookResponse
-}
-
-
-
 export type listHousekeepingTasksResponse200 = {
   data: ListHousekeepingTasks200
   status: 200
@@ -1758,6 +2983,7 @@ export const getCompleteHousekeepingTaskUrl = (taskId: string,) => {
 }
 
 /**
+ * Allowed for OWNER, MANAGER, RECEPTIONIST and HOUSEKEEPING with EDIT on the building; records who and when.
  * @summary Mark a room clean; the room becomes VACANT
  */
 export const completeHousekeepingTask = async (taskId: string, options?: RequestInit): Promise<completeHousekeepingTaskResponse> => {
@@ -2419,4 +3645,5171 @@ export const getReadiness = async ( options?: RequestInit): Promise<getReadiness
 
   const data: getReadinessResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as getReadinessResponse
+}
+
+
+
+export type signInResponse200 = {
+  data: SignInResponse
+  status: 200
+}
+
+export type signInResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type signInResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type signInResponse429 = {
+  data: TooManyRequestsResponse
+  status: 429
+}
+
+export type signInResponseSuccess = (signInResponse200) & {
+  headers: Headers;
+};
+export type signInResponseError = (signInResponse401 | signInResponse422 | signInResponse429) & {
+  headers: Headers;
+};
+
+export type signInResponse = (signInResponseSuccess | signInResponseError)
+
+export const getSignInUrl = () => {
+
+
+
+
+  return `/v1/auth/sign-in`
+}
+
+/**
+ * Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists.
+ * @summary Sign in with guesthouse code, user name and PIN
+ */
+export const signIn = async (signInRequest: SignInRequest, options?: RequestInit): Promise<signInResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getSignInUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signInRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signInResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as signInResponse
+}
+
+
+
+export type signOutResponse204 = {
+  data: void
+  status: 204
+}
+
+export type signOutResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type signOutResponseSuccess = (signOutResponse204) & {
+  headers: Headers;
+};
+export type signOutResponseError = (signOutResponse401) & {
+  headers: Headers;
+};
+
+export type signOutResponse = (signOutResponseSuccess | signOutResponseError)
+
+export const getSignOutUrl = () => {
+
+
+
+
+  return `/v1/auth/sign-out`
+}
+
+/**
+ * @summary End the current session
+ */
+export const signOut = async ( options?: RequestInit): Promise<signOutResponse> => {
+
+  const res = await fetch(getSignOutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signOutResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as signOutResponse
+}
+
+
+
+export type changeMyPinResponse204 = {
+  data: void
+  status: 204
+}
+
+export type changeMyPinResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type changeMyPinResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type changeMyPinResponseSuccess = (changeMyPinResponse204) & {
+  headers: Headers;
+};
+export type changeMyPinResponseError = (changeMyPinResponse401 | changeMyPinResponse422) & {
+  headers: Headers;
+};
+
+export type changeMyPinResponse = (changeMyPinResponseSuccess | changeMyPinResponseError)
+
+export const getChangeMyPinUrl = () => {
+
+
+
+
+  return `/v1/me/pin`
+}
+
+/**
+ * @summary Change my PIN (required after a one-time PIN)
+ */
+export const changeMyPin = async (changePinRequest: ChangePinRequest, options?: RequestInit): Promise<changeMyPinResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getChangeMyPinUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changePinRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: changeMyPinResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as changeMyPinResponse
+}
+
+
+
+export type listStaffResponse200 = {
+  data: ListStaff200
+  status: 200
+}
+
+export type listStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listStaffResponseSuccess = (listStaffResponse200) & {
+  headers: Headers;
+};
+export type listStaffResponseError = (listStaffResponse401 | listStaffResponse403) & {
+  headers: Headers;
+};
+
+export type listStaffResponse = (listStaffResponseSuccess | listStaffResponseError)
+
+export const getListStaffUrl = (params?: ListStaffParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/staff?${stringifiedParams}` : `/v1/owner/staff`
+}
+
+/**
+ * @summary Staff with position, app access, contract and building access
+ */
+export const listStaff = async (params?: ListStaffParams, options?: RequestInit): Promise<listStaffResponse> => {
+
+  const res = await fetch(getListStaffUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStaffResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listStaffResponse
+}
+
+
+
+export type createStaffResponse201 = {
+  data: CreateStaffResponse
+  status: 201
+}
+
+export type createStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createStaffResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createStaffResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createStaffResponseSuccess = (createStaffResponse201) & {
+  headers: Headers;
+};
+export type createStaffResponseError = (createStaffResponse401 | createStaffResponse403 | createStaffResponse409 | createStaffResponse422) & {
+  headers: Headers;
+};
+
+export type createStaffResponse = (createStaffResponseSuccess | createStaffResponseError)
+
+export const getCreateStaffUrl = () => {
+
+
+
+
+  return `/v1/owner/staff`
+}
+
+/**
+ * @summary Add a staff member; returns a one-time PIN when appAccess is not NONE
+ */
+export const createStaff = async (createStaffRequest: CreateStaffRequest, options?: RequestInit): Promise<createStaffResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateStaffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createStaffRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createStaffResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createStaffResponse
+}
+
+
+
+export type updateStaffResponse200 = {
+  data: Staff
+  status: 200
+}
+
+export type updateStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateStaffResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateStaffResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateStaffResponseSuccess = (updateStaffResponse200) & {
+  headers: Headers;
+};
+export type updateStaffResponseError = (updateStaffResponse401 | updateStaffResponse403 | updateStaffResponse404 | updateStaffResponse422) & {
+  headers: Headers;
+};
+
+export type updateStaffResponse = (updateStaffResponseSuccess | updateStaffResponseError)
+
+export const getUpdateStaffUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/owner/staff/${userId}`
+}
+
+/**
+ * @summary Change position, app access or contract
+ */
+export const updateStaff = async (userId: string,
+    updateStaffRequest: UpdateStaffRequest, options?: RequestInit): Promise<updateStaffResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateStaffUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateStaffRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateStaffResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateStaffResponse
+}
+
+
+
+export type resetStaffPinResponse200 = {
+  data: OneTimePin
+  status: 200
+}
+
+export type resetStaffPinResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type resetStaffPinResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type resetStaffPinResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type resetStaffPinResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type resetStaffPinResponseSuccess = (resetStaffPinResponse200) & {
+  headers: Headers;
+};
+export type resetStaffPinResponseError = (resetStaffPinResponse401 | resetStaffPinResponse403 | resetStaffPinResponse404 | resetStaffPinResponse409) & {
+  headers: Headers;
+};
+
+export type resetStaffPinResponse = (resetStaffPinResponseSuccess | resetStaffPinResponseError)
+
+export const getResetStaffPinUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/owner/staff/${userId}/pin-reset`
+}
+
+/**
+ * @summary Issue a one-time PIN (24 h)
+ */
+export const resetStaffPin = async (userId: string, options?: RequestInit): Promise<resetStaffPinResponse> => {
+
+  const res = await fetch(getResetStaffPinUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: resetStaffPinResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as resetStaffPinResponse
+}
+
+
+
+export type lockStaffResponse200 = {
+  data: Staff
+  status: 200
+}
+
+export type lockStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type lockStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type lockStaffResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type lockStaffResponseSuccess = (lockStaffResponse200) & {
+  headers: Headers;
+};
+export type lockStaffResponseError = (lockStaffResponse401 | lockStaffResponse403 | lockStaffResponse404) & {
+  headers: Headers;
+};
+
+export type lockStaffResponse = (lockStaffResponseSuccess | lockStaffResponseError)
+
+export const getLockStaffUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/owner/staff/${userId}/lock`
+}
+
+/**
+ * @summary Lock sign-in
+ */
+export const lockStaff = async (userId: string, options?: RequestInit): Promise<lockStaffResponse> => {
+
+  const res = await fetch(getLockStaffUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: lockStaffResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as lockStaffResponse
+}
+
+
+
+export type unlockStaffResponse200 = {
+  data: Staff
+  status: 200
+}
+
+export type unlockStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type unlockStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type unlockStaffResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type unlockStaffResponseSuccess = (unlockStaffResponse200) & {
+  headers: Headers;
+};
+export type unlockStaffResponseError = (unlockStaffResponse401 | unlockStaffResponse403 | unlockStaffResponse404) & {
+  headers: Headers;
+};
+
+export type unlockStaffResponse = (unlockStaffResponseSuccess | unlockStaffResponseError)
+
+export const getUnlockStaffUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/owner/staff/${userId}/unlock`
+}
+
+/**
+ * @summary Unlock sign-in
+ */
+export const unlockStaff = async (userId: string, options?: RequestInit): Promise<unlockStaffResponse> => {
+
+  const res = await fetch(getUnlockStaffUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: unlockStaffResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as unlockStaffResponse
+}
+
+
+
+export type removeStaffResponse204 = {
+  data: void
+  status: 204
+}
+
+export type removeStaffResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type removeStaffResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type removeStaffResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type removeStaffResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type removeStaffResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type removeStaffResponseSuccess = (removeStaffResponse204) & {
+  headers: Headers;
+};
+export type removeStaffResponseError = (removeStaffResponse401 | removeStaffResponse403 | removeStaffResponse404 | removeStaffResponse409 | removeStaffResponse422) & {
+  headers: Headers;
+};
+
+export type removeStaffResponse = (removeStaffResponseSuccess | removeStaffResponseError)
+
+export const getRemoveStaffUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/owner/staff/${userId}/remove`
+}
+
+/**
+ * 409 SHIFT_OPEN when the person has an open shift. Never deletes rows.
+ * @summary Remove a staff member (deactivate; history kept)
+ */
+export const removeStaff = async (userId: string,
+    ownerPin: OwnerPin, options?: RequestInit): Promise<removeStaffResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getRemoveStaffUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerPin)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeStaffResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as removeStaffResponse
+}
+
+
+
+export type getRosterResponse200 = {
+  data: Roster
+  status: 200
+}
+
+export type getRosterResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getRosterResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getRosterResponseSuccess = (getRosterResponse200) & {
+  headers: Headers;
+};
+export type getRosterResponseError = (getRosterResponse401 | getRosterResponse403) & {
+  headers: Headers;
+};
+
+export type getRosterResponse = (getRosterResponseSuccess | getRosterResponseError)
+
+export const getGetRosterUrl = (params: GetRosterParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/roster?${stringifiedParams}` : `/v1/owner/roster`
+}
+
+/**
+ * @summary Roster for a date range with leave and uncovered shifts
+ */
+export const getRoster = async (params: GetRosterParams, options?: RequestInit): Promise<getRosterResponse> => {
+
+  const res = await fetch(getGetRosterUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRosterResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getRosterResponse
+}
+
+
+
+export type putRosterResponse200 = {
+  data: Roster
+  status: 200
+}
+
+export type putRosterResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type putRosterResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type putRosterResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type putRosterResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type putRosterResponseSuccess = (putRosterResponse200) & {
+  headers: Headers;
+};
+export type putRosterResponseError = (putRosterResponse401 | putRosterResponse403 | putRosterResponse409 | putRosterResponse422) & {
+  headers: Headers;
+};
+
+export type putRosterResponse = (putRosterResponseSuccess | putRosterResponseError)
+
+export const getPutRosterUrl = () => {
+
+
+
+
+  return `/v1/owner/roster`
+}
+
+/**
+ * @summary Set and remove assignments in one change
+ */
+export const putRoster = async (putRosterRequest: PutRosterRequest, options?: RequestInit): Promise<putRosterResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getPutRosterUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(putRosterRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putRosterResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as putRosterResponse
+}
+
+
+
+export type copyRosterWeekResponse200 = {
+  data: Roster
+  status: 200
+}
+
+export type copyRosterWeekResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type copyRosterWeekResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type copyRosterWeekResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type copyRosterWeekResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type copyRosterWeekResponseSuccess = (copyRosterWeekResponse200) & {
+  headers: Headers;
+};
+export type copyRosterWeekResponseError = (copyRosterWeekResponse401 | copyRosterWeekResponse403 | copyRosterWeekResponse409 | copyRosterWeekResponse422) & {
+  headers: Headers;
+};
+
+export type copyRosterWeekResponse = (copyRosterWeekResponseSuccess | copyRosterWeekResponseError)
+
+export const getCopyRosterWeekUrl = () => {
+
+
+
+
+  return `/v1/owner/roster/copy-week`
+}
+
+/**
+ * @summary Copy the previous week into a week
+ */
+export const copyRosterWeek = async (copyRosterWeekBody: CopyRosterWeekBody, options?: RequestInit): Promise<copyRosterWeekResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCopyRosterWeekUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(copyRosterWeekBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyRosterWeekResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as copyRosterWeekResponse
+}
+
+
+
+export type listLeaveRequestsResponse200 = {
+  data: ListLeaveRequests200
+  status: 200
+}
+
+export type listLeaveRequestsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listLeaveRequestsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listLeaveRequestsResponseSuccess = (listLeaveRequestsResponse200) & {
+  headers: Headers;
+};
+export type listLeaveRequestsResponseError = (listLeaveRequestsResponse401 | listLeaveRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listLeaveRequestsResponse = (listLeaveRequestsResponseSuccess | listLeaveRequestsResponseError)
+
+export const getListLeaveRequestsUrl = (params?: ListLeaveRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/leave-requests?${stringifiedParams}` : `/v1/owner/leave-requests`
+}
+
+/**
+ * @summary Leave requests to decide
+ */
+export const listLeaveRequests = async (params?: ListLeaveRequestsParams, options?: RequestInit): Promise<listLeaveRequestsResponse> => {
+
+  const res = await fetch(getListLeaveRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLeaveRequestsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listLeaveRequestsResponse
+}
+
+
+
+export type approveLeaveResponse200 = {
+  data: LeaveRequest
+  status: 200
+}
+
+export type approveLeaveResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type approveLeaveResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type approveLeaveResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type approveLeaveResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type approveLeaveResponseSuccess = (approveLeaveResponse200) & {
+  headers: Headers;
+};
+export type approveLeaveResponseError = (approveLeaveResponse401 | approveLeaveResponse403 | approveLeaveResponse404 | approveLeaveResponse409) & {
+  headers: Headers;
+};
+
+export type approveLeaveResponse = (approveLeaveResponseSuccess | approveLeaveResponseError)
+
+export const getApproveLeaveUrl = (leaveId: string,) => {
+
+
+
+
+  return `/v1/owner/leave-requests/${leaveId}/approve`
+}
+
+/**
+ * @summary Approve a request (or a cancel request)
+ */
+export const approveLeave = async (leaveId: string, options?: RequestInit): Promise<approveLeaveResponse> => {
+
+  const res = await fetch(getApproveLeaveUrl(leaveId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveLeaveResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as approveLeaveResponse
+}
+
+
+
+export type declineLeaveResponse200 = {
+  data: LeaveRequest
+  status: 200
+}
+
+export type declineLeaveResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type declineLeaveResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type declineLeaveResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type declineLeaveResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type declineLeaveResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type declineLeaveResponseSuccess = (declineLeaveResponse200) & {
+  headers: Headers;
+};
+export type declineLeaveResponseError = (declineLeaveResponse401 | declineLeaveResponse403 | declineLeaveResponse404 | declineLeaveResponse409 | declineLeaveResponse422) & {
+  headers: Headers;
+};
+
+export type declineLeaveResponse = (declineLeaveResponseSuccess | declineLeaveResponseError)
+
+export const getDeclineLeaveUrl = (leaveId: string,) => {
+
+
+
+
+  return `/v1/owner/leave-requests/${leaveId}/decline`
+}
+
+/**
+ * @summary Decline with a reason
+ */
+export const declineLeave = async (leaveId: string,
+    declineLeaveBody: DeclineLeaveBody, options?: RequestInit): Promise<declineLeaveResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getDeclineLeaveUrl(leaveId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(declineLeaveBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: declineLeaveResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as declineLeaveResponse
+}
+
+
+
+export type getMyRosterResponse200 = {
+  data: Roster
+  status: 200
+}
+
+export type getMyRosterResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getMyRosterResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getMyRosterResponseSuccess = (getMyRosterResponse200) & {
+  headers: Headers;
+};
+export type getMyRosterResponseError = (getMyRosterResponse401 | getMyRosterResponse403) & {
+  headers: Headers;
+};
+
+export type getMyRosterResponse = (getMyRosterResponseSuccess | getMyRosterResponseError)
+
+export const getGetMyRosterUrl = (params: GetMyRosterParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/me/roster?${stringifiedParams}` : `/v1/me/roster`
+}
+
+/**
+ * @summary My shifts for a date range
+ */
+export const getMyRoster = async (params: GetMyRosterParams, options?: RequestInit): Promise<getMyRosterResponse> => {
+
+  const res = await fetch(getGetMyRosterUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMyRosterResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getMyRosterResponse
+}
+
+
+
+export type listMyLeaveRequestsResponse200 = {
+  data: ListMyLeaveRequests200
+  status: 200
+}
+
+export type listMyLeaveRequestsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyLeaveRequestsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listMyLeaveRequestsResponseSuccess = (listMyLeaveRequestsResponse200) & {
+  headers: Headers;
+};
+export type listMyLeaveRequestsResponseError = (listMyLeaveRequestsResponse401 | listMyLeaveRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listMyLeaveRequestsResponse = (listMyLeaveRequestsResponseSuccess | listMyLeaveRequestsResponseError)
+
+export const getListMyLeaveRequestsUrl = () => {
+
+
+
+
+  return `/v1/me/leave-requests`
+}
+
+/**
+ * @summary My leave requests and balance
+ */
+export const listMyLeaveRequests = async ( options?: RequestInit): Promise<listMyLeaveRequestsResponse> => {
+
+  const res = await fetch(getListMyLeaveRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMyLeaveRequestsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listMyLeaveRequestsResponse
+}
+
+
+
+export type createLeaveRequestResponse201 = {
+  data: LeaveRequest
+  status: 201
+}
+
+export type createLeaveRequestResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createLeaveRequestResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createLeaveRequestResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createLeaveRequestResponseSuccess = (createLeaveRequestResponse201) & {
+  headers: Headers;
+};
+export type createLeaveRequestResponseError = (createLeaveRequestResponse401 | createLeaveRequestResponse409 | createLeaveRequestResponse422) & {
+  headers: Headers;
+};
+
+export type createLeaveRequestResponse = (createLeaveRequestResponseSuccess | createLeaveRequestResponseError)
+
+export const getCreateLeaveRequestUrl = () => {
+
+
+
+
+  return `/v1/me/leave-requests`
+}
+
+/**
+ * @summary Request leave
+ */
+export const createLeaveRequest = async (createLeaveRequestBody: CreateLeaveRequest, options?: RequestInit): Promise<createLeaveRequestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateLeaveRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createLeaveRequestBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLeaveRequestResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createLeaveRequestResponse
+}
+
+
+
+export type cancelMyLeaveResponse200 = {
+  data: LeaveRequest
+  status: 200
+}
+
+export type cancelMyLeaveResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type cancelMyLeaveResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type cancelMyLeaveResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type cancelMyLeaveResponseSuccess = (cancelMyLeaveResponse200) & {
+  headers: Headers;
+};
+export type cancelMyLeaveResponseError = (cancelMyLeaveResponse401 | cancelMyLeaveResponse404 | cancelMyLeaveResponse409) & {
+  headers: Headers;
+};
+
+export type cancelMyLeaveResponse = (cancelMyLeaveResponseSuccess | cancelMyLeaveResponseError)
+
+export const getCancelMyLeaveUrl = (leaveId: string,) => {
+
+
+
+
+  return `/v1/me/leave-requests/${leaveId}/cancel`
+}
+
+/**
+ * PENDING becomes CANCELLED at once; APPROVED becomes CANCEL_REQUESTED until the owner approves.
+ * @summary Cancel a pending request, or ask to cancel an approved one
+ */
+export const cancelMyLeave = async (leaveId: string, options?: RequestInit): Promise<cancelMyLeaveResponse> => {
+
+  const res = await fetch(getCancelMyLeaveUrl(leaveId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: cancelMyLeaveResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as cancelMyLeaveResponse
+}
+
+
+
+export type getPayrollResponse200 = {
+  data: Payroll
+  status: 200
+}
+
+export type getPayrollResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getPayrollResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getPayrollResponseSuccess = (getPayrollResponse200) & {
+  headers: Headers;
+};
+export type getPayrollResponseError = (getPayrollResponse401 | getPayrollResponse403) & {
+  headers: Headers;
+};
+
+export type getPayrollResponse = (getPayrollResponseSuccess | getPayrollResponseError)
+
+export const getGetPayrollUrl = (month: string,) => {
+
+
+
+
+  return `/v1/owner/payroll/${month}`
+}
+
+/**
+ * @summary Payroll for a month from contracts and the roster
+ */
+export const getPayroll = async (month: string, options?: RequestInit): Promise<getPayrollResponse> => {
+
+  const res = await fetch(getGetPayrollUrl(month),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPayrollResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getPayrollResponse
+}
+
+
+
+export type updatePayrollLineResponse200 = {
+  data: PayrollLine
+  status: 200
+}
+
+export type updatePayrollLineResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updatePayrollLineResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updatePayrollLineResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updatePayrollLineResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type updatePayrollLineResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updatePayrollLineResponseSuccess = (updatePayrollLineResponse200) & {
+  headers: Headers;
+};
+export type updatePayrollLineResponseError = (updatePayrollLineResponse401 | updatePayrollLineResponse403 | updatePayrollLineResponse404 | updatePayrollLineResponse409 | updatePayrollLineResponse422) & {
+  headers: Headers;
+};
+
+export type updatePayrollLineResponse = (updatePayrollLineResponseSuccess | updatePayrollLineResponseError)
+
+export const getUpdatePayrollLineUrl = (month: string,
+    userId: string,) => {
+
+
+
+
+  return `/v1/owner/payroll/${month}/lines/${userId}`
+}
+
+/**
+ * @summary Set bonus, deduction or note
+ */
+export const updatePayrollLine = async (month: string,
+    userId: string,
+    updatePayrollLineRequest: UpdatePayrollLineRequest, options?: RequestInit): Promise<updatePayrollLineResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdatePayrollLineUrl(month,userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updatePayrollLineRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updatePayrollLineResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updatePayrollLineResponse
+}
+
+
+
+export type markPayrollPaidResponse200 = {
+  data: Payroll
+  status: 200
+}
+
+export type markPayrollPaidResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type markPayrollPaidResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type markPayrollPaidResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type markPayrollPaidResponseSuccess = (markPayrollPaidResponse200) & {
+  headers: Headers;
+};
+export type markPayrollPaidResponseError = (markPayrollPaidResponse401 | markPayrollPaidResponse403 | markPayrollPaidResponse409) & {
+  headers: Headers;
+};
+
+export type markPayrollPaidResponse = (markPayrollPaidResponseSuccess | markPayrollPaidResponseError)
+
+export const getMarkPayrollPaidUrl = (month: string,) => {
+
+
+
+
+  return `/v1/owner/payroll/${month}/mark-paid`
+}
+
+/**
+ * @summary Mark lines paid; posts STAFF_PAY expense
+ */
+export const markPayrollPaid = async (month: string,
+    markPayrollPaidBody: MarkPayrollPaidBody, options?: RequestInit): Promise<markPayrollPaidResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getMarkPayrollPaidUrl(month),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(markPayrollPaidBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: markPayrollPaidResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as markPayrollPaidResponse
+}
+
+
+
+export type reportDamageResponse201 = {
+  data: MaintenanceTicket
+  status: 201
+}
+
+export type reportDamageResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type reportDamageResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type reportDamageResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type reportDamageResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type reportDamageResponseSuccess = (reportDamageResponse201) & {
+  headers: Headers;
+};
+export type reportDamageResponseError = (reportDamageResponse401 | reportDamageResponse403 | reportDamageResponse404 | reportDamageResponse422) & {
+  headers: Headers;
+};
+
+export type reportDamageResponse = (reportDamageResponseSuccess | reportDamageResponseError)
+
+export const getReportDamageUrl = (roomId: string,) => {
+
+
+
+
+  return `/v1/rooms/${roomId}/damage-reports`
+}
+
+/**
+ * LOCK_ROOM sets the room to MAINTENANCE at once (409 ROOM_OCCUPIED if a guest is in it).
+ * @summary Report damage or missing items; creates a ticket
+ */
+export const reportDamage = async (roomId: string,
+    damageReportRequest: DamageReportRequest, options?: RequestInit): Promise<reportDamageResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getReportDamageUrl(roomId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(damageReportRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reportDamageResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as reportDamageResponse
+}
+
+
+
+export type listTicketsResponse200 = {
+  data: ListTickets200
+  status: 200
+}
+
+export type listTicketsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listTicketsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listTicketsResponseSuccess = (listTicketsResponse200) & {
+  headers: Headers;
+};
+export type listTicketsResponseError = (listTicketsResponse401 | listTicketsResponse403) & {
+  headers: Headers;
+};
+
+export type listTicketsResponse = (listTicketsResponseSuccess | listTicketsResponseError)
+
+export const getListTicketsUrl = (params?: ListTicketsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/maintenance-tickets?${stringifiedParams}` : `/v1/owner/maintenance-tickets`
+}
+
+/**
+ * @summary Tickets with totals
+ */
+export const listTickets = async (params?: ListTicketsParams, options?: RequestInit): Promise<listTicketsResponse> => {
+
+  const res = await fetch(getListTicketsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listTicketsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listTicketsResponse
+}
+
+
+
+export type getTicketResponse200 = {
+  data: MaintenanceTicket
+  status: 200
+}
+
+export type getTicketResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getTicketResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getTicketResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getTicketResponseSuccess = (getTicketResponse200) & {
+  headers: Headers;
+};
+export type getTicketResponseError = (getTicketResponse401 | getTicketResponse403 | getTicketResponse404) & {
+  headers: Headers;
+};
+
+export type getTicketResponse = (getTicketResponseSuccess | getTicketResponseError)
+
+export const getGetTicketUrl = (ticketId: string,) => {
+
+
+
+
+  return `/v1/owner/maintenance-tickets/${ticketId}`
+}
+
+/**
+ * @summary One ticket
+ */
+export const getTicket = async (ticketId: string, options?: RequestInit): Promise<getTicketResponse> => {
+
+  const res = await fetch(getGetTicketUrl(ticketId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTicketResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTicketResponse
+}
+
+
+
+export type updateTicketResponse200 = {
+  data: MaintenanceTicket
+  status: 200
+}
+
+export type updateTicketResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateTicketResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateTicketResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateTicketResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type updateTicketResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateTicketResponseSuccess = (updateTicketResponse200) & {
+  headers: Headers;
+};
+export type updateTicketResponseError = (updateTicketResponse401 | updateTicketResponse403 | updateTicketResponse404 | updateTicketResponse409 | updateTicketResponse422) & {
+  headers: Headers;
+};
+
+export type updateTicketResponse = (updateTicketResponseSuccess | updateTicketResponseError)
+
+export const getUpdateTicketUrl = (ticketId: string,) => {
+
+
+
+
+  return `/v1/owner/maintenance-tickets/${ticketId}`
+}
+
+/**
+ * DONE posts a MAINTENANCE expense for the completion month and unlocks the room. Costs are editable only by OWNER.
+ * @summary Set status, lock, expected date and costs
+ */
+export const updateTicket = async (ticketId: string,
+    updateTicketRequest: UpdateTicketRequest, options?: RequestInit): Promise<updateTicketResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateTicketUrl(ticketId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateTicketRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateTicketResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateTicketResponse
+}
+
+
+
+export type getExpenseMonthResponse200 = {
+  data: ExpenseMonth
+  status: 200
+}
+
+export type getExpenseMonthResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getExpenseMonthResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getExpenseMonthResponseSuccess = (getExpenseMonthResponse200) & {
+  headers: Headers;
+};
+export type getExpenseMonthResponseError = (getExpenseMonthResponse401 | getExpenseMonthResponse403) & {
+  headers: Headers;
+};
+
+export type getExpenseMonthResponse = (getExpenseMonthResponseSuccess | getExpenseMonthResponseError)
+
+export const getGetExpenseMonthUrl = (params: GetExpenseMonthParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/expenses?${stringifiedParams}` : `/v1/owner/expenses`
+}
+
+/**
+ * @summary Expenses of a month by category with manual items
+ */
+export const getExpenseMonth = async (params: GetExpenseMonthParams, options?: RequestInit): Promise<getExpenseMonthResponse> => {
+
+  const res = await fetch(getGetExpenseMonthUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getExpenseMonthResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getExpenseMonthResponse
+}
+
+
+
+export type createExpenseResponse201 = {
+  data: Expense
+  status: 201
+}
+
+export type createExpenseResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createExpenseResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createExpenseResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createExpenseResponseSuccess = (createExpenseResponse201) & {
+  headers: Headers;
+};
+export type createExpenseResponseError = (createExpenseResponse401 | createExpenseResponse403 | createExpenseResponse422) & {
+  headers: Headers;
+};
+
+export type createExpenseResponse = (createExpenseResponseSuccess | createExpenseResponseError)
+
+export const getCreateExpenseUrl = () => {
+
+
+
+
+  return `/v1/owner/expenses`
+}
+
+/**
+ * @summary Add a manual or recurring expense
+ */
+export const createExpense = async (createExpenseRequest: CreateExpenseRequest, options?: RequestInit): Promise<createExpenseResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateExpenseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createExpenseRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createExpenseResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createExpenseResponse
+}
+
+
+
+export type updateExpenseResponse200 = {
+  data: Expense
+  status: 200
+}
+
+export type updateExpenseResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateExpenseResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateExpenseResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateExpenseResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type updateExpenseResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateExpenseResponseSuccess = (updateExpenseResponse200) & {
+  headers: Headers;
+};
+export type updateExpenseResponseError = (updateExpenseResponse401 | updateExpenseResponse403 | updateExpenseResponse404 | updateExpenseResponse409 | updateExpenseResponse422) & {
+  headers: Headers;
+};
+
+export type updateExpenseResponse = (updateExpenseResponseSuccess | updateExpenseResponseError)
+
+export const getUpdateExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/v1/owner/expenses/${expenseId}`
+}
+
+/**
+ * Automatic lines (PAYROLL, MAINTENANCE, STOCK) return 409 EXPENSE_AUTOMATIC.
+ * @summary Edit a manual or recurring expense
+ */
+export const updateExpense = async (expenseId: string,
+    createExpenseRequest: CreateExpenseRequest, options?: RequestInit): Promise<updateExpenseResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createExpenseRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateExpenseResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateExpenseResponse
+}
+
+
+
+export type deleteExpenseResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteExpenseResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteExpenseResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteExpenseResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deleteExpenseResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type deleteExpenseResponseSuccess = (deleteExpenseResponse204) & {
+  headers: Headers;
+};
+export type deleteExpenseResponseError = (deleteExpenseResponse401 | deleteExpenseResponse403 | deleteExpenseResponse404 | deleteExpenseResponse409) & {
+  headers: Headers;
+};
+
+export type deleteExpenseResponse = (deleteExpenseResponseSuccess | deleteExpenseResponseError)
+
+export const getDeleteExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/v1/owner/expenses/${expenseId}`
+}
+
+/**
+ * @summary Delete a manual expense
+ */
+export const deleteExpense = async (expenseId: string, options?: RequestInit): Promise<deleteExpenseResponse> => {
+
+  const res = await fetch(getDeleteExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteExpenseResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteExpenseResponse
+}
+
+
+
+export type getIncomeCostReportResponse200 = {
+  data: IncomeCostReport
+  status: 200
+}
+
+export type getIncomeCostReportResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getIncomeCostReportResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getIncomeCostReportResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type getIncomeCostReportResponseSuccess = (getIncomeCostReportResponse200) & {
+  headers: Headers;
+};
+export type getIncomeCostReportResponseError = (getIncomeCostReportResponse401 | getIncomeCostReportResponse403 | getIncomeCostReportResponse422) & {
+  headers: Headers;
+};
+
+export type getIncomeCostReportResponse = (getIncomeCostReportResponseSuccess | getIncomeCostReportResponseError)
+
+export const getGetIncomeCostReportUrl = (params: GetIncomeCostReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/reports/income-costs?${stringifiedParams}` : `/v1/owner/reports/income-costs`
+}
+
+/**
+ * @summary Revenue, expenses and profit for a month range
+ */
+export const getIncomeCostReport = async (params: GetIncomeCostReportParams, options?: RequestInit): Promise<getIncomeCostReportResponse> => {
+
+  const res = await fetch(getGetIncomeCostReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getIncomeCostReportResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getIncomeCostReportResponse
+}
+
+
+
+export type getPropertyResponse200 = {
+  data: Property
+  status: 200
+}
+
+export type getPropertyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getPropertyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getPropertyResponseSuccess = (getPropertyResponse200) & {
+  headers: Headers;
+};
+export type getPropertyResponseError = (getPropertyResponse401 | getPropertyResponse403) & {
+  headers: Headers;
+};
+
+export type getPropertyResponse = (getPropertyResponseSuccess | getPropertyResponseError)
+
+export const getGetPropertyUrl = () => {
+
+
+
+
+  return `/v1/owner/property`
+}
+
+/**
+ * @summary Property details and QR expiry
+ */
+export const getProperty = async ( options?: RequestInit): Promise<getPropertyResponse> => {
+
+  const res = await fetch(getGetPropertyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPropertyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getPropertyResponse
+}
+
+
+
+export type updatePropertyResponse200 = {
+  data: Property
+  status: 200
+}
+
+export type updatePropertyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updatePropertyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updatePropertyResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updatePropertyResponseSuccess = (updatePropertyResponse200) & {
+  headers: Headers;
+};
+export type updatePropertyResponseError = (updatePropertyResponse401 | updatePropertyResponse403 | updatePropertyResponse422) & {
+  headers: Headers;
+};
+
+export type updatePropertyResponse = (updatePropertyResponseSuccess | updatePropertyResponseError)
+
+export const getUpdatePropertyUrl = () => {
+
+
+
+
+  return `/v1/owner/property`
+}
+
+/**
+ * @summary Update property details
+ */
+export const updateProperty = async (updatePropertyRequest: UpdatePropertyRequest, options?: RequestInit): Promise<updatePropertyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdatePropertyUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updatePropertyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updatePropertyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updatePropertyResponse
+}
+
+
+
+export type listBankAccountsResponse200 = {
+  data: ListBankAccounts200
+  status: 200
+}
+
+export type listBankAccountsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listBankAccountsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listBankAccountsResponseSuccess = (listBankAccountsResponse200) & {
+  headers: Headers;
+};
+export type listBankAccountsResponseError = (listBankAccountsResponse401 | listBankAccountsResponse403) & {
+  headers: Headers;
+};
+
+export type listBankAccountsResponse = (listBankAccountsResponseSuccess | listBankAccountsResponseError)
+
+export const getListBankAccountsUrl = () => {
+
+
+
+
+  return `/v1/owner/bank-accounts`
+}
+
+/**
+ * @summary Receiving accounts
+ */
+export const listBankAccounts = async ( options?: RequestInit): Promise<listBankAccountsResponse> => {
+
+  const res = await fetch(getListBankAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listBankAccountsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listBankAccountsResponse
+}
+
+
+
+export type createBankAccountResponse201 = {
+  data: BankAccount
+  status: 201
+}
+
+export type createBankAccountResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createBankAccountResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createBankAccountResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createBankAccountResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createBankAccountResponseSuccess = (createBankAccountResponse201) & {
+  headers: Headers;
+};
+export type createBankAccountResponseError = (createBankAccountResponse401 | createBankAccountResponse403 | createBankAccountResponse409 | createBankAccountResponse422) & {
+  headers: Headers;
+};
+
+export type createBankAccountResponse = (createBankAccountResponseSuccess | createBankAccountResponseError)
+
+export const getCreateBankAccountUrl = () => {
+
+
+
+
+  return `/v1/owner/bank-accounts`
+}
+
+/**
+ * @summary Add a receiving account (pending SePay)
+ */
+export const createBankAccount = async (createBankAccountRequest: CreateBankAccountRequest, options?: RequestInit): Promise<createBankAccountResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateBankAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createBankAccountRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createBankAccountResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createBankAccountResponse
+}
+
+
+
+export type makeDefaultBankAccountResponse200 = {
+  data: BankAccount
+  status: 200
+}
+
+export type makeDefaultBankAccountResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type makeDefaultBankAccountResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type makeDefaultBankAccountResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type makeDefaultBankAccountResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type makeDefaultBankAccountResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type makeDefaultBankAccountResponseSuccess = (makeDefaultBankAccountResponse200) & {
+  headers: Headers;
+};
+export type makeDefaultBankAccountResponseError = (makeDefaultBankAccountResponse401 | makeDefaultBankAccountResponse403 | makeDefaultBankAccountResponse404 | makeDefaultBankAccountResponse409 | makeDefaultBankAccountResponse422) & {
+  headers: Headers;
+};
+
+export type makeDefaultBankAccountResponse = (makeDefaultBankAccountResponseSuccess | makeDefaultBankAccountResponseError)
+
+export const getMakeDefaultBankAccountUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/owner/bank-accounts/${accountId}/make-default`
+}
+
+/**
+ * @summary Make an account the QR default (must be CONNECTED)
+ */
+export const makeDefaultBankAccount = async (accountId: string,
+    ownerPin: OwnerPin, options?: RequestInit): Promise<makeDefaultBankAccountResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getMakeDefaultBankAccountUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerPin)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: makeDefaultBankAccountResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as makeDefaultBankAccountResponse
+}
+
+
+
+export type removeBankAccountResponse204 = {
+  data: void
+  status: 204
+}
+
+export type removeBankAccountResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type removeBankAccountResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type removeBankAccountResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type removeBankAccountResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type removeBankAccountResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type removeBankAccountResponseSuccess = (removeBankAccountResponse204) & {
+  headers: Headers;
+};
+export type removeBankAccountResponseError = (removeBankAccountResponse401 | removeBankAccountResponse403 | removeBankAccountResponse404 | removeBankAccountResponse409 | removeBankAccountResponse422) & {
+  headers: Headers;
+};
+
+export type removeBankAccountResponse = (removeBankAccountResponseSuccess | removeBankAccountResponseError)
+
+export const getRemoveBankAccountUrl = (accountId: string,) => {
+
+
+
+
+  return `/v1/owner/bank-accounts/${accountId}/remove`
+}
+
+/**
+ * @summary Remove a non-default account
+ */
+export const removeBankAccount = async (accountId: string,
+    ownerPin: OwnerPin, options?: RequestInit): Promise<removeBankAccountResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getRemoveBankAccountUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerPin)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeBankAccountResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as removeBankAccountResponse
+}
+
+
+
+export type getSepayStatusResponse200 = {
+  data: SepayStatus
+  status: 200
+}
+
+export type getSepayStatusResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getSepayStatusResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getSepayStatusResponseSuccess = (getSepayStatusResponse200) & {
+  headers: Headers;
+};
+export type getSepayStatusResponseError = (getSepayStatusResponse401 | getSepayStatusResponse403) & {
+  headers: Headers;
+};
+
+export type getSepayStatusResponse = (getSepayStatusResponseSuccess | getSepayStatusResponseError)
+
+export const getGetSepayStatusUrl = () => {
+
+
+
+
+  return `/v1/owner/sepay-status`
+}
+
+/**
+ * @summary Connection status of the default account
+ */
+export const getSepayStatus = async ( options?: RequestInit): Promise<getSepayStatusResponse> => {
+
+  const res = await fetch(getGetSepayStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSepayStatusResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getSepayStatusResponse
+}
+
+
+
+export type createBuildingResponse201 = {
+  data: Building
+  status: 201
+}
+
+export type createBuildingResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createBuildingResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createBuildingResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createBuildingResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createBuildingResponseSuccess = (createBuildingResponse201) & {
+  headers: Headers;
+};
+export type createBuildingResponseError = (createBuildingResponse401 | createBuildingResponse403 | createBuildingResponse409 | createBuildingResponse422) & {
+  headers: Headers;
+};
+
+export type createBuildingResponse = (createBuildingResponseSuccess | createBuildingResponseError)
+
+export const getCreateBuildingUrl = () => {
+
+
+
+
+  return `/v1/owner/buildings`
+}
+
+/**
+ * @summary Create a building with generated floors and rooms
+ */
+export const createBuilding = async (createBuildingRequest: CreateBuildingRequest, options?: RequestInit): Promise<createBuildingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateBuildingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createBuildingRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createBuildingResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createBuildingResponse
+}
+
+
+
+export type updateBuildingResponse200 = {
+  data: Building
+  status: 200
+}
+
+export type updateBuildingResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateBuildingResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateBuildingResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateBuildingResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateBuildingResponseSuccess = (updateBuildingResponse200) & {
+  headers: Headers;
+};
+export type updateBuildingResponseError = (updateBuildingResponse401 | updateBuildingResponse403 | updateBuildingResponse404 | updateBuildingResponse422) & {
+  headers: Headers;
+};
+
+export type updateBuildingResponse = (updateBuildingResponseSuccess | updateBuildingResponseError)
+
+export const getUpdateBuildingUrl = (buildingId: string,) => {
+
+
+
+
+  return `/v1/owner/buildings/${buildingId}`
+}
+
+/**
+ * @summary Rename a building
+ */
+export const updateBuilding = async (buildingId: string,
+    updateBuildingRequest: UpdateBuildingRequest, options?: RequestInit): Promise<updateBuildingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateBuildingUrl(buildingId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateBuildingRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateBuildingResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateBuildingResponse
+}
+
+
+
+export type createFloorResponse201 = {
+  data: CreateFloor201
+  status: 201
+}
+
+export type createFloorResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createFloorResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createFloorResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type createFloorResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createFloorResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createFloorResponseSuccess = (createFloorResponse201) & {
+  headers: Headers;
+};
+export type createFloorResponseError = (createFloorResponse401 | createFloorResponse403 | createFloorResponse404 | createFloorResponse409 | createFloorResponse422) & {
+  headers: Headers;
+};
+
+export type createFloorResponse = (createFloorResponseSuccess | createFloorResponseError)
+
+export const getCreateFloorUrl = (buildingId: string,) => {
+
+
+
+
+  return `/v1/owner/buildings/${buildingId}/floors`
+}
+
+/**
+ * @summary Add a floor, optionally with rooms
+ */
+export const createFloor = async (buildingId: string,
+    createFloorRequest: CreateFloorRequest, options?: RequestInit): Promise<createFloorResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateFloorUrl(buildingId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createFloorRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createFloorResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createFloorResponse
+}
+
+
+
+export type createRoomsResponse201 = {
+  data: CreateRooms201
+  status: 201
+}
+
+export type createRoomsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createRoomsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createRoomsResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createRoomsResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createRoomsResponseSuccess = (createRoomsResponse201) & {
+  headers: Headers;
+};
+export type createRoomsResponseError = (createRoomsResponse401 | createRoomsResponse403 | createRoomsResponse409 | createRoomsResponse422) & {
+  headers: Headers;
+};
+
+export type createRoomsResponse = (createRoomsResponseSuccess | createRoomsResponseError)
+
+export const getCreateRoomsUrl = () => {
+
+
+
+
+  return `/v1/owner/rooms`
+}
+
+/**
+ * @summary Create one room or a range of rooms
+ */
+export const createRooms = async (createRoomsRequest: CreateRoomsRequest, options?: RequestInit): Promise<createRoomsResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateRoomsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createRoomsRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createRoomsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createRoomsResponse
+}
+
+
+
+export type updateRoomResponse200 = {
+  data: Room
+  status: 200
+}
+
+export type updateRoomResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateRoomResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateRoomResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateRoomResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type updateRoomResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateRoomResponseSuccess = (updateRoomResponse200) & {
+  headers: Headers;
+};
+export type updateRoomResponseError = (updateRoomResponse401 | updateRoomResponse403 | updateRoomResponse404 | updateRoomResponse409 | updateRoomResponse422) & {
+  headers: Headers;
+};
+
+export type updateRoomResponse = (updateRoomResponseSuccess | updateRoomResponseError)
+
+export const getUpdateRoomUrl = (roomId: string,) => {
+
+
+
+
+  return `/v1/owner/rooms/${roomId}`
+}
+
+/**
+ * 409 ROOM_OCCUPIED for type change or retire while a guest is in the room.
+ * @summary Edit a room, set maintenance or retire it
+ */
+export const updateRoom = async (roomId: string,
+    updateRoomRequest: UpdateRoomRequest, options?: RequestInit): Promise<updateRoomResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateRoomUrl(roomId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateRoomRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateRoomResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateRoomResponse
+}
+
+
+
+export type listRatePlansResponse200 = {
+  data: ListRatePlans200
+  status: 200
+}
+
+export type listRatePlansResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listRatePlansResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listRatePlansResponseSuccess = (listRatePlansResponse200) & {
+  headers: Headers;
+};
+export type listRatePlansResponseError = (listRatePlansResponse401 | listRatePlansResponse403) & {
+  headers: Headers;
+};
+
+export type listRatePlansResponse = (listRatePlansResponseSuccess | listRatePlansResponseError)
+
+export const getListRatePlansUrl = () => {
+
+
+
+
+  return `/v1/owner/rate-plans`
+}
+
+/**
+ * @summary Rate plans per unit type
+ */
+export const listRatePlans = async ( options?: RequestInit): Promise<listRatePlansResponse> => {
+
+  const res = await fetch(getListRatePlansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRatePlansResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listRatePlansResponse
+}
+
+
+
+export type updateRatePlanResponse200 = {
+  data: UnitTypeRates
+  status: 200
+}
+
+export type updateRatePlanResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateRatePlanResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateRatePlanResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateRatePlanResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateRatePlanResponseSuccess = (updateRatePlanResponse200) & {
+  headers: Headers;
+};
+export type updateRatePlanResponseError = (updateRatePlanResponse401 | updateRatePlanResponse403 | updateRatePlanResponse404 | updateRatePlanResponse422) & {
+  headers: Headers;
+};
+
+export type updateRatePlanResponse = (updateRatePlanResponseSuccess | updateRatePlanResponseError)
+
+export const getUpdateRatePlanUrl = (unitTypeCode: string,) => {
+
+
+
+
+  return `/v1/owner/unit-types/${unitTypeCode}/rate-plan`
+}
+
+/**
+ * @summary Save a new rate plan version (applies to later check-ins)
+ */
+export const updateRatePlan = async (unitTypeCode: string,
+    ratePlan: NonReadonly<RatePlan>, options?: RequestInit): Promise<updateRatePlanResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateRatePlanUrl(unitTypeCode),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ratePlan)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateRatePlanResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateRatePlanResponse
+}
+
+
+
+export type previewPriceResponse200 = {
+  data: Quote
+  status: 200
+}
+
+export type previewPriceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type previewPriceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type previewPriceResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type previewPriceResponseSuccess = (previewPriceResponse200) & {
+  headers: Headers;
+};
+export type previewPriceResponseError = (previewPriceResponse401 | previewPriceResponse403 | previewPriceResponse422) & {
+  headers: Headers;
+};
+
+export type previewPriceResponse = (previewPriceResponseSuccess | previewPriceResponseError)
+
+export const getPreviewPriceUrl = () => {
+
+
+
+
+  return `/v1/owner/rate-plans/preview`
+}
+
+/**
+ * @summary Price a sample stay with a draft rate plan
+ */
+export const previewPrice = async (pricePreviewRequest: NonReadonly<PricePreviewRequest>, options?: RequestInit): Promise<previewPriceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getPreviewPriceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(pricePreviewRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewPriceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as previewPriceResponse
+}
+
+
+
+export type createServiceResponse201 = {
+  data: Service
+  status: 201
+}
+
+export type createServiceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createServiceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createServiceResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type createServiceResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createServiceResponseSuccess = (createServiceResponse201) & {
+  headers: Headers;
+};
+export type createServiceResponseError = (createServiceResponse401 | createServiceResponse403 | createServiceResponse409 | createServiceResponse422) & {
+  headers: Headers;
+};
+
+export type createServiceResponse = (createServiceResponseSuccess | createServiceResponseError)
+
+export const getCreateServiceUrl = () => {
+
+
+
+
+  return `/v1/owner/services`
+}
+
+/**
+ * @summary Add an item with price, cost and opening quantity
+ */
+export const createService = async (createServiceRequest: CreateServiceRequest, options?: RequestInit): Promise<createServiceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateServiceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createServiceRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createServiceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createServiceResponse
+}
+
+
+
+export type updateServiceResponse200 = {
+  data: Service
+  status: 200
+}
+
+export type updateServiceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateServiceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateServiceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type updateServiceResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type updateServiceResponseSuccess = (updateServiceResponse200) & {
+  headers: Headers;
+};
+export type updateServiceResponseError = (updateServiceResponse401 | updateServiceResponse403 | updateServiceResponse404 | updateServiceResponse422) & {
+  headers: Headers;
+};
+
+export type updateServiceResponse = (updateServiceResponseSuccess | updateServiceResponseError)
+
+export const getUpdateServiceUrl = (serviceCode: string,) => {
+
+
+
+
+  return `/v1/owner/services/${serviceCode}`
+}
+
+/**
+ * @summary Edit details (never the stock count)
+ */
+export const updateService = async (serviceCode: string,
+    updateServiceRequest: UpdateServiceRequest, options?: RequestInit): Promise<updateServiceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateServiceUrl(serviceCode),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateServiceRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateServiceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateServiceResponse
+}
+
+
+
+export type restockServiceResponse200 = {
+  data: Service
+  status: 200
+}
+
+export type restockServiceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type restockServiceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type restockServiceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type restockServiceResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type restockServiceResponseSuccess = (restockServiceResponse200) & {
+  headers: Headers;
+};
+export type restockServiceResponseError = (restockServiceResponse401 | restockServiceResponse403 | restockServiceResponse404 | restockServiceResponse422) & {
+  headers: Headers;
+};
+
+export type restockServiceResponse = (restockServiceResponseSuccess | restockServiceResponseError)
+
+export const getRestockServiceUrl = (serviceCode: string,) => {
+
+
+
+
+  return `/v1/owner/services/${serviceCode}/restock`
+}
+
+/**
+ * @summary Record stock in with unit cost
+ */
+export const restockService = async (serviceCode: string,
+    restockRequest: RestockRequest, options?: RequestInit): Promise<restockServiceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getRestockServiceUrl(serviceCode),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(restockRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: restockServiceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as restockServiceResponse
+}
+
+
+
+export type listStockMovementsResponse200 = {
+  data: ListStockMovements200
+  status: 200
+}
+
+export type listStockMovementsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listStockMovementsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listStockMovementsResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type listStockMovementsResponseSuccess = (listStockMovementsResponse200) & {
+  headers: Headers;
+};
+export type listStockMovementsResponseError = (listStockMovementsResponse401 | listStockMovementsResponse403 | listStockMovementsResponse404) & {
+  headers: Headers;
+};
+
+export type listStockMovementsResponse = (listStockMovementsResponseSuccess | listStockMovementsResponseError)
+
+export const getListStockMovementsUrl = (serviceCode: string,
+    params?: ListStockMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/services/${serviceCode}/movements?${stringifiedParams}` : `/v1/owner/services/${serviceCode}/movements`
+}
+
+/**
+ * @summary Stock history
+ */
+export const listStockMovements = async (serviceCode: string,
+    params?: ListStockMovementsParams, options?: RequestInit): Promise<listStockMovementsResponse> => {
+
+  const res = await fetch(getListStockMovementsUrl(serviceCode,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStockMovementsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listStockMovementsResponse
+}
+
+
+
+export type removeServiceResponse200 = {
+  data: RemoveServiceResult
+  status: 200
+}
+
+export type removeServiceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type removeServiceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type removeServiceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type removeServiceResponseSuccess = (removeServiceResponse200) & {
+  headers: Headers;
+};
+export type removeServiceResponseError = (removeServiceResponse401 | removeServiceResponse403 | removeServiceResponse404) & {
+  headers: Headers;
+};
+
+export type removeServiceResponse = (removeServiceResponseSuccess | removeServiceResponseError)
+
+export const getRemoveServiceUrl = (serviceCode: string,) => {
+
+
+
+
+  return `/v1/owner/services/${serviceCode}/remove`
+}
+
+/**
+ * @summary Remove an item (stops selling if it has sales)
+ */
+export const removeService = async (serviceCode: string, options?: RequestInit): Promise<removeServiceResponse> => {
+
+  const res = await fetch(getRemoveServiceUrl(serviceCode),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeServiceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as removeServiceResponse
+}
+
+
+
+export type createStocktakeResponse201 = {
+  data: StocktakeResult
+  status: 201
+}
+
+export type createStocktakeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createStocktakeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createStocktakeResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type createStocktakeResponseSuccess = (createStocktakeResponse201) & {
+  headers: Headers;
+};
+export type createStocktakeResponseError = (createStocktakeResponse401 | createStocktakeResponse403 | createStocktakeResponse422) & {
+  headers: Headers;
+};
+
+export type createStocktakeResponse = (createStocktakeResponseSuccess | createStocktakeResponseError)
+
+export const getCreateStocktakeUrl = () => {
+
+
+
+
+  return `/v1/stocktakes`
+}
+
+/**
+ * @summary Record a stocktake; differences alert the owner
+ */
+export const createStocktake = async (stocktakeRequest: StocktakeRequest, options?: RequestInit): Promise<createStocktakeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateStocktakeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stocktakeRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createStocktakeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createStocktakeResponse
+}
+
+
+
+export type editCheckInTimeResponse200 = {
+  data: Stay
+  status: 200
+}
+
+export type editCheckInTimeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type editCheckInTimeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type editCheckInTimeResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type editCheckInTimeResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type editCheckInTimeResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type editCheckInTimeResponseSuccess = (editCheckInTimeResponse200) & {
+  headers: Headers;
+};
+export type editCheckInTimeResponseError = (editCheckInTimeResponse401 | editCheckInTimeResponse403 | editCheckInTimeResponse404 | editCheckInTimeResponse409 | editCheckInTimeResponse422) & {
+  headers: Headers;
+};
+
+export type editCheckInTimeResponse = (editCheckInTimeResponseSuccess | editCheckInTimeResponseError)
+
+export const getEditCheckInTimeUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/stays/${stayId}/check-in-time`
+}
+
+/**
+ * At most 60 minutes later than recorded and not in the future; creates a STAY_TIME_EDITED alert. Check-out time can never be edited.
+ * @summary Correct the check-in time with a reason
+ */
+export const editCheckInTime = async (stayId: string,
+    editCheckInRequest: EditCheckInRequest, options?: RequestInit): Promise<editCheckInTimeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getEditCheckInTimeUrl(stayId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(editCheckInRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: editCheckInTimeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as editCheckInTimeResponse
+}
+
+
+
+export type moveStayResponse200 = {
+  data: Stay
+  status: 200
+}
+
+export type moveStayResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type moveStayResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type moveStayResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type moveStayResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type moveStayResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type moveStayResponseSuccess = (moveStayResponse200) & {
+  headers: Headers;
+};
+export type moveStayResponseError = (moveStayResponse401 | moveStayResponse403 | moveStayResponse404 | moveStayResponse409 | moveStayResponse422) & {
+  headers: Headers;
+};
+
+export type moveStayResponse = (moveStayResponseSuccess | moveStayResponseError)
+
+export const getMoveStayUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/stays/${stayId}/move`
+}
+
+/**
+ * Keeps check-in time and extras; the whole stay is priced with the new room type. Old room becomes TO_CLEAN.
+ * @summary Move the guest to another vacant room
+ */
+export const moveStay = async (stayId: string,
+    moveStayRequest: MoveStayRequest, options?: RequestInit): Promise<moveStayResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getMoveStayUrl(stayId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(moveStayRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: moveStayResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as moveStayResponse
+}
+
+
+
+export type listStaysResponse200 = {
+  data: ListStays200
+  status: 200
+}
+
+export type listStaysResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listStaysResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listStaysResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type listStaysResponseSuccess = (listStaysResponse200) & {
+  headers: Headers;
+};
+export type listStaysResponseError = (listStaysResponse401 | listStaysResponse403 | listStaysResponse422) & {
+  headers: Headers;
+};
+
+export type listStaysResponse = (listStaysResponseSuccess | listStaysResponseError)
+
+export const getListStaysUrl = (params?: ListStaysParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/stays?${stringifiedParams}` : `/v1/stays`
+}
+
+/**
+ * Receptionists can query any day within the last `frontDeskHistoryDays` (property setting, default 7) in buildings with VIEW or EDIT; owners and managers any range. Each item carries guestId indicators only; numbers and photos are never returned here.
+ * @summary Stay history
+ */
+export const listStays = async (params?: ListStaysParams, options?: RequestInit): Promise<listStaysResponse> => {
+
+  const res = await fetch(getListStaysUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStaysResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listStaysResponse
+}
+
+
+
+export type getStayTimelineResponse200 = {
+  data: GetStayTimeline200
+  status: 200
+}
+
+export type getStayTimelineResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getStayTimelineResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getStayTimelineResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getStayTimelineResponseSuccess = (getStayTimelineResponse200) & {
+  headers: Headers;
+};
+export type getStayTimelineResponseError = (getStayTimelineResponse401 | getStayTimelineResponse403 | getStayTimelineResponse404) & {
+  headers: Headers;
+};
+
+export type getStayTimelineResponse = (getStayTimelineResponseSuccess | getStayTimelineResponseError)
+
+export const getGetStayTimelineUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/owner/stays/${stayId}/timeline`
+}
+
+/**
+ * @summary Everything that happened to a stay
+ */
+export const getStayTimeline = async (stayId: string, options?: RequestInit): Promise<getStayTimelineResponse> => {
+
+  const res = await fetch(getGetStayTimelineUrl(stayId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStayTimelineResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getStayTimelineResponse
+}
+
+
+
+export type getReceiptResponse200 = {
+  data: Receipt
+  status: 200
+}
+
+export type getReceiptResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getReceiptResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getReceiptResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getReceiptResponseSuccess = (getReceiptResponse200) & {
+  headers: Headers;
+};
+export type getReceiptResponseError = (getReceiptResponse401 | getReceiptResponse403 | getReceiptResponse404) & {
+  headers: Headers;
+};
+
+export type getReceiptResponse = (getReceiptResponseSuccess | getReceiptResponseError)
+
+export const getGetReceiptUrl = (invoiceId: string,) => {
+
+
+
+
+  return `/v1/invoices/${invoiceId}/receipt`
+}
+
+/**
+ * @summary Receipt data for printing
+ */
+export const getReceipt = async (invoiceId: string, options?: RequestInit): Promise<getReceiptResponse> => {
+
+  const res = await fetch(getGetReceiptUrl(invoiceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getReceiptResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getReceiptResponse
+}
+
+
+
+export type listTransactionsResponse200 = {
+  data: ListTransactions200
+  status: 200
+}
+
+export type listTransactionsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listTransactionsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listTransactionsResponseSuccess = (listTransactionsResponse200) & {
+  headers: Headers;
+};
+export type listTransactionsResponseError = (listTransactionsResponse401 | listTransactionsResponse403) & {
+  headers: Headers;
+};
+
+export type listTransactionsResponse = (listTransactionsResponseSuccess | listTransactionsResponseError)
+
+export const getListTransactionsUrl = (params?: ListTransactionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/transactions?${stringifiedParams}` : `/v1/owner/transactions`
+}
+
+/**
+ * @summary Cash and bank transactions with reconciliation state
+ */
+export const listTransactions = async (params?: ListTransactionsParams, options?: RequestInit): Promise<listTransactionsResponse> => {
+
+  const res = await fetch(getListTransactionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listTransactionsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listTransactionsResponse
+}
+
+
+
+export type linkTransferToInvoiceResponse200 = {
+  data: Transaction
+  status: 200
+}
+
+export type linkTransferToInvoiceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type linkTransferToInvoiceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type linkTransferToInvoiceResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type linkTransferToInvoiceResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type linkTransferToInvoiceResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type linkTransferToInvoiceResponseSuccess = (linkTransferToInvoiceResponse200) & {
+  headers: Headers;
+};
+export type linkTransferToInvoiceResponseError = (linkTransferToInvoiceResponse401 | linkTransferToInvoiceResponse403 | linkTransferToInvoiceResponse404 | linkTransferToInvoiceResponse409 | linkTransferToInvoiceResponse422) & {
+  headers: Headers;
+};
+
+export type linkTransferToInvoiceResponse = (linkTransferToInvoiceResponseSuccess | linkTransferToInvoiceResponseError)
+
+export const getLinkTransferToInvoiceUrl = (eventId: string,) => {
+
+
+
+
+  return `/v1/owner/payment-events/${eventId}/link`
+}
+
+/**
+ * OWNER only; only events reported by the bank provider; irreversible; audited. 409 when the event is already linked or the invoice is paid.
+ * @summary Link an unmatched bank transfer to an unpaid invoice
+ */
+export const linkTransferToInvoice = async (eventId: string,
+    linkTransferRequest: LinkTransferRequest, options?: RequestInit): Promise<linkTransferToInvoiceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getLinkTransferToInvoiceUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(linkTransferRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: linkTransferToInvoiceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as linkTransferToInvoiceResponse
+}
+
+
+
+export type listAlertsResponse200 = {
+  data: ListAlerts200
+  status: 200
+}
+
+export type listAlertsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listAlertsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listAlertsResponseSuccess = (listAlertsResponse200) & {
+  headers: Headers;
+};
+export type listAlertsResponseError = (listAlertsResponse401 | listAlertsResponse403) & {
+  headers: Headers;
+};
+
+export type listAlertsResponse = (listAlertsResponseSuccess | listAlertsResponseError)
+
+export const getListAlertsUrl = (params?: ListAlertsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/alerts?${stringifiedParams}` : `/v1/owner/alerts`
+}
+
+/**
+ * @summary Alerts
+ */
+export const listAlerts = async (params?: ListAlertsParams, options?: RequestInit): Promise<listAlertsResponse> => {
+
+  const res = await fetch(getListAlertsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAlertsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listAlertsResponse
+}
+
+
+
+export type markAlertReadResponse204 = {
+  data: void
+  status: 204
+}
+
+export type markAlertReadResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type markAlertReadResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type markAlertReadResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type markAlertReadResponseSuccess = (markAlertReadResponse204) & {
+  headers: Headers;
+};
+export type markAlertReadResponseError = (markAlertReadResponse401 | markAlertReadResponse403 | markAlertReadResponse404) & {
+  headers: Headers;
+};
+
+export type markAlertReadResponse = (markAlertReadResponseSuccess | markAlertReadResponseError)
+
+export const getMarkAlertReadUrl = (alertId: string,) => {
+
+
+
+
+  return `/v1/owner/alerts/${alertId}/read`
+}
+
+/**
+ * @summary Mark an alert read
+ */
+export const markAlertRead = async (alertId: string, options?: RequestInit): Promise<markAlertReadResponse> => {
+
+  const res = await fetch(getMarkAlertReadUrl(alertId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: markAlertReadResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as markAlertReadResponse
+}
+
+
+
+export type listAuditLogsResponse200 = {
+  data: ListAuditLogs200
+  status: 200
+}
+
+export type listAuditLogsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listAuditLogsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listAuditLogsResponseSuccess = (listAuditLogsResponse200) & {
+  headers: Headers;
+};
+export type listAuditLogsResponseError = (listAuditLogsResponse401 | listAuditLogsResponse403) & {
+  headers: Headers;
+};
+
+export type listAuditLogsResponse = (listAuditLogsResponseSuccess | listAuditLogsResponseError)
+
+export const getListAuditLogsUrl = (params: ListAuditLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/audit-logs?${stringifiedParams}` : `/v1/owner/audit-logs`
+}
+
+/**
+ * @summary Activity log (append-only)
+ */
+export const listAuditLogs = async (params: ListAuditLogsParams, options?: RequestInit): Promise<listAuditLogsResponse> => {
+
+  const res = await fetch(getListAuditLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAuditLogsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listAuditLogsResponse
+}
+
+
+
+export type listClosedShiftsResponse200 = {
+  data: ListClosedShifts200
+  status: 200
+}
+
+export type listClosedShiftsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listClosedShiftsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listClosedShiftsResponseSuccess = (listClosedShiftsResponse200) & {
+  headers: Headers;
+};
+export type listClosedShiftsResponseError = (listClosedShiftsResponse401 | listClosedShiftsResponse403) & {
+  headers: Headers;
+};
+
+export type listClosedShiftsResponse = (listClosedShiftsResponseSuccess | listClosedShiftsResponseError)
+
+export const getListClosedShiftsUrl = (params?: ListClosedShiftsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/shifts?${stringifiedParams}` : `/v1/owner/shifts`
+}
+
+/**
+ * @summary Closed shifts with differences
+ */
+export const listClosedShifts = async (params?: ListClosedShiftsParams, options?: RequestInit): Promise<listClosedShiftsResponse> => {
+
+  const res = await fetch(getListClosedShiftsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listClosedShiftsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listClosedShiftsResponse
+}
+
+
+
+export type receiveBankWebhookResponse202 = {
+  data: void
+  status: 202
+}
+
+export type receiveBankWebhookResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type receiveBankWebhookResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type receiveBankWebhookResponseSuccess = (receiveBankWebhookResponse202) & {
+  headers: Headers;
+};
+export type receiveBankWebhookResponseError = (receiveBankWebhookResponse401 | receiveBankWebhookResponse422) & {
+  headers: Headers;
+};
+
+export type receiveBankWebhookResponse = (receiveBankWebhookResponseSuccess | receiveBankWebhookResponseError)
+
+export const getReceiveBankWebhookUrl = (hookId: string,) => {
+
+
+
+
+  return `/v1/webhooks/bank/${hookId}`
+}
+
+/**
+ * Per-tenant path. Looks up the tenant by hookId, verifies the provider HMAC signature over the raw body with a constant-time compare, then runs the same settlement handler as the demo simulator. Unknown hookId returns 404; duplicates return the same 2xx. The secret is written only by the installer CLI (docs/runbooks/sepay-handover.md); no endpoint reads or writes it.
+ * @summary Bank or reconciliation-provider webhook (full product)
+ */
+export const receiveBankWebhook = async (hookId: string,
+    bankWebhookPayload: BankWebhookPayload, options?: RequestInit): Promise<receiveBankWebhookResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getReceiveBankWebhookUrl(hookId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(bankWebhookPayload)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveBankWebhookResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as receiveBankWebhookResponse
+}
+
+
+
+export type receiveBankWebhookLegacyResponse202 = {
+  data: void
+  status: 202
+}
+
+export type receiveBankWebhookLegacyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type receiveBankWebhookLegacyResponse410 = {
+  data: Problem
+  status: 410
+}
+
+export type receiveBankWebhookLegacyResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type receiveBankWebhookLegacyResponseSuccess = (receiveBankWebhookLegacyResponse202) & {
+  headers: Headers;
+};
+export type receiveBankWebhookLegacyResponseError = (receiveBankWebhookLegacyResponse401 | receiveBankWebhookLegacyResponse410 | receiveBankWebhookLegacyResponse422) & {
+  headers: Headers;
+};
+
+export type receiveBankWebhookLegacyResponse = (receiveBankWebhookLegacyResponseSuccess | receiveBankWebhookLegacyResponseError)
+
+export const getReceiveBankWebhookLegacyUrl = () => {
+
+
+
+
+  return `/v1/webhooks/bank`
+}
+
+/**
+ * Kept only so existing configurations fail loudly: answers 410 GONE. Use receiveBankWebhook at /v1/webhooks/bank/{hookId}.
+ * @deprecated
+ * @summary Deprecated: single bank webhook (replaced by /v1/webhooks/bank/{hookId})
+ */
+export const receiveBankWebhookLegacy = async (bankWebhookPayload: BankWebhookPayload, options?: RequestInit): Promise<receiveBankWebhookLegacyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getReceiveBankWebhookLegacyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(bankWebhookPayload)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveBankWebhookLegacyResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as receiveBankWebhookLegacyResponse
+}
+
+
+
+export type setGuestIdNumberResponse200 = {
+  data: GuestIdIndicators
+  status: 200
+}
+
+export type setGuestIdNumberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type setGuestIdNumberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type setGuestIdNumberResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type setGuestIdNumberResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type setGuestIdNumberResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type setGuestIdNumberResponseSuccess = (setGuestIdNumberResponse200) & {
+  headers: Headers;
+};
+export type setGuestIdNumberResponseError = (setGuestIdNumberResponse401 | setGuestIdNumberResponse403 | setGuestIdNumberResponse404 | setGuestIdNumberResponse409 | setGuestIdNumberResponse422) & {
+  headers: Headers;
+};
+
+export type setGuestIdNumberResponse = (setGuestIdNumberResponseSuccess | setGuestIdNumberResponseError)
+
+export const getSetGuestIdNumberUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/stays/${stayId}/guest-id/number`
+}
+
+/**
+ * @summary Add or replace the guest ID number (write-only for front desk)
+ */
+export const setGuestIdNumber = async (stayId: string,
+    setGuestIdNumberBody: SetGuestIdNumberBody, options?: RequestInit): Promise<setGuestIdNumberResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getSetGuestIdNumberUrl(stayId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setGuestIdNumberBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setGuestIdNumberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as setGuestIdNumberResponse
+}
+
+
+
+export type uploadGuestIdPhotoResponse200 = {
+  data: GuestIdIndicators
+  status: 200
+}
+
+export type uploadGuestIdPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type uploadGuestIdPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type uploadGuestIdPhotoResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type uploadGuestIdPhotoResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type uploadGuestIdPhotoResponse413 = {
+  data: Problem
+  status: 413
+}
+
+export type uploadGuestIdPhotoResponse415 = {
+  data: Problem
+  status: 415
+}
+
+export type uploadGuestIdPhotoResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type uploadGuestIdPhotoResponseSuccess = (uploadGuestIdPhotoResponse200) & {
+  headers: Headers;
+};
+export type uploadGuestIdPhotoResponseError = (uploadGuestIdPhotoResponse401 | uploadGuestIdPhotoResponse403 | uploadGuestIdPhotoResponse404 | uploadGuestIdPhotoResponse409 | uploadGuestIdPhotoResponse413 | uploadGuestIdPhotoResponse415 | uploadGuestIdPhotoResponse422) & {
+  headers: Headers;
+};
+
+export type uploadGuestIdPhotoResponse = (uploadGuestIdPhotoResponseSuccess | uploadGuestIdPhotoResponseError)
+
+export const getUploadGuestIdPhotoUrl = (stayId: string,
+    side: 'FRONT' | 'BACK',) => {
+
+
+
+
+  return `/v1/stays/${stayId}/guest-id/photos/${side}`
+}
+
+/**
+ * JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+ * @summary Upload or replace an ID photo (front desk cannot read it back)
+ */
+export const uploadGuestIdPhoto = async (stayId: string,
+    side: 'FRONT' | 'BACK',
+    uploadGuestIdPhotoBody: UploadGuestIdPhotoBody, options?: RequestInit): Promise<uploadGuestIdPhotoResponse> => {
+    const formData = new FormData();
+formData.append(`file`, uploadGuestIdPhotoBody.file);
+if(uploadGuestIdPhotoBody.consent !== undefined) {
+ formData.append(`consent`, uploadGuestIdPhotoBody.consent.toString())
+ }
+
+  const res = await fetch(getUploadGuestIdPhotoUrl(stayId,side),
+  {
+    ...options,
+    method: 'PUT'
+    ,
+    body: formData
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: uploadGuestIdPhotoResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as uploadGuestIdPhotoResponse
+}
+
+
+
+export type getGuestIdRecordResponse200 = {
+  data: GuestIdRecord
+  status: 200
+}
+
+export type getGuestIdRecordResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getGuestIdRecordResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getGuestIdRecordResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getGuestIdRecordResponseSuccess = (getGuestIdRecordResponse200) & {
+  headers: Headers;
+};
+export type getGuestIdRecordResponseError = (getGuestIdRecordResponse401 | getGuestIdRecordResponse403 | getGuestIdRecordResponse404) & {
+  headers: Headers;
+};
+
+export type getGuestIdRecordResponse = (getGuestIdRecordResponseSuccess | getGuestIdRecordResponseError)
+
+export const getGetGuestIdRecordUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/owner/stays/${stayId}/guest-id`
+}
+
+/**
+ * @summary Masked ID number and photo metadata
+ */
+export const getGuestIdRecord = async (stayId: string, options?: RequestInit): Promise<getGuestIdRecordResponse> => {
+
+  const res = await fetch(getGetGuestIdRecordUrl(stayId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGuestIdRecordResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getGuestIdRecordResponse
+}
+
+
+
+export type revealGuestIdNumberResponse200 = {
+  data: RevealGuestIdNumber200
+  status: 200
+}
+
+export type revealGuestIdNumberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type revealGuestIdNumberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type revealGuestIdNumberResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type revealGuestIdNumberResponseSuccess = (revealGuestIdNumberResponse200) & {
+  headers: Headers;
+};
+export type revealGuestIdNumberResponseError = (revealGuestIdNumberResponse401 | revealGuestIdNumberResponse403 | revealGuestIdNumberResponse404) & {
+  headers: Headers;
+};
+
+export type revealGuestIdNumberResponse = (revealGuestIdNumberResponseSuccess | revealGuestIdNumberResponseError)
+
+export const getRevealGuestIdNumberUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/owner/stays/${stayId}/guest-id/reveal`
+}
+
+/**
+ * Writes a GUEST_ID audit entry. Response has Cache-Control: no-store.
+ * @summary Show the full ID number (audited)
+ */
+export const revealGuestIdNumber = async (stayId: string, options?: RequestInit): Promise<revealGuestIdNumberResponse> => {
+
+  const res = await fetch(getRevealGuestIdNumberUrl(stayId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revealGuestIdNumberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as revealGuestIdNumberResponse
+}
+
+
+
+export type getGuestIdPhotoResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getGuestIdPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getGuestIdPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getGuestIdPhotoResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getGuestIdPhotoResponseSuccess = (getGuestIdPhotoResponse200) & {
+  headers: Headers;
+};
+export type getGuestIdPhotoResponseError = (getGuestIdPhotoResponse401 | getGuestIdPhotoResponse403 | getGuestIdPhotoResponse404) & {
+  headers: Headers;
+};
+
+export type getGuestIdPhotoResponse = (getGuestIdPhotoResponseSuccess | getGuestIdPhotoResponseError)
+
+export const getGetGuestIdPhotoUrl = (stayId: string,
+    side: 'FRONT' | 'BACK',
+    params?: GetGuestIdPhotoParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/stays/${stayId}/guest-id/photos/${side}?${stringifiedParams}` : `/v1/owner/stays/${stayId}/guest-id/photos/${side}`
+}
+
+/**
+ * Streams through the API only (no public or pre-signed URL). Cache-Control: no-store. download=true sets Content-Disposition attachment and is audited as a download.
+ * @summary Stream an ID photo to view or download (audited)
+ */
+export const getGuestIdPhoto = async (stayId: string,
+    side: 'FRONT' | 'BACK',
+    params?: GetGuestIdPhotoParams, options?: RequestInit): Promise<getGuestIdPhotoResponse> => {
+
+  const res = await fetch(getGetGuestIdPhotoUrl(stayId,side,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.blob();
+  const data: getGuestIdPhotoResponse['data'] = body as getGuestIdPhotoResponse['data']
+  return { data, status: res.status, headers: res.headers } as getGuestIdPhotoResponse
+}
+
+
+
+export type deleteGuestIdPhotoResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteGuestIdPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteGuestIdPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteGuestIdPhotoResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deleteGuestIdPhotoResponseSuccess = (deleteGuestIdPhotoResponse204) & {
+  headers: Headers;
+};
+export type deleteGuestIdPhotoResponseError = (deleteGuestIdPhotoResponse401 | deleteGuestIdPhotoResponse403 | deleteGuestIdPhotoResponse404) & {
+  headers: Headers;
+};
+
+export type deleteGuestIdPhotoResponse = (deleteGuestIdPhotoResponseSuccess | deleteGuestIdPhotoResponseError)
+
+export const getDeleteGuestIdPhotoUrl = (stayId: string,
+    side: 'FRONT' | 'BACK',) => {
+
+
+
+
+  return `/v1/owner/stays/${stayId}/guest-id/photos/${side}`
+}
+
+/**
+ * @summary Delete an ID photo (audited)
+ */
+export const deleteGuestIdPhoto = async (stayId: string,
+    side: 'FRONT' | 'BACK', options?: RequestInit): Promise<deleteGuestIdPhotoResponse> => {
+
+  const res = await fetch(getDeleteGuestIdPhotoUrl(stayId,side),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteGuestIdPhotoResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteGuestIdPhotoResponse
+}
+
+
+
+export type deleteGuestIdNumberResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteGuestIdNumberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteGuestIdNumberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteGuestIdNumberResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type deleteGuestIdNumberResponseSuccess = (deleteGuestIdNumberResponse204) & {
+  headers: Headers;
+};
+export type deleteGuestIdNumberResponseError = (deleteGuestIdNumberResponse401 | deleteGuestIdNumberResponse403 | deleteGuestIdNumberResponse404) & {
+  headers: Headers;
+};
+
+export type deleteGuestIdNumberResponse = (deleteGuestIdNumberResponseSuccess | deleteGuestIdNumberResponseError)
+
+export const getDeleteGuestIdNumberUrl = (stayId: string,) => {
+
+
+
+
+  return `/v1/owner/stays/${stayId}/guest-id/number`
+}
+
+/**
+ * @summary Delete the stored ID number (audited)
+ */
+export const deleteGuestIdNumber = async (stayId: string, options?: RequestInit): Promise<deleteGuestIdNumberResponse> => {
+
+  const res = await fetch(getDeleteGuestIdNumberUrl(stayId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteGuestIdNumberResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteGuestIdNumberResponse
 }

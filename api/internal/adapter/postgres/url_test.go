@@ -13,7 +13,7 @@ func TestMalformedURLHidesPassword_SG003_AC6(t *testing.T) {
 	if !errors.Is(err, ErrInvalidDatabaseURL) || strings.Contains(err.Error(), "hunter2pw") {
 		t.Fatalf("NewPool error %v", err)
 	}
-	err = Migrate(context.Background(), bad)
+	err = Migrate(context.Background(), bad, false)
 	if !errors.Is(err, ErrInvalidDatabaseURL) || strings.Contains(err.Error(), "hunter2pw") {
 		t.Fatalf("Migrate error %v", err)
 	}

@@ -30,7 +30,7 @@ func (r *ReadinessProbe) Check(ctx context.Context) error {
 	}
 	db := stdlib.OpenDBFromPool(r.pool) // a view on the pool: closing it does not close the pool's connections
 	defer func() { _ = db.Close() }()
-	p, err := newProvider(db)
+	p, err := newProvider(db, true)
 	if err != nil {
 		return err
 	}

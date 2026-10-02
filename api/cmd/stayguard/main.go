@@ -52,7 +52,7 @@ func run() error {
 
 	// Schema changes run only in this subcommand, as the owner role, never at request time.
 	if isMigrate {
-		if err := postgres.Migrate(ctx, cfg.MigrateDatabaseURL); err != nil {
+		if err := postgres.Migrate(ctx, cfg.MigrateDatabaseURL, cfg.AllowPrivilegedDB); err != nil {
 			return err
 		}
 		log.Info("migrations applied")
