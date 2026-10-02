@@ -33,6 +33,7 @@ var ErrInvalidIdempotencyKey = errors.New("invalid idempotency key")
 type CreateStayInput struct {
 	RentalType, GuestName, GuestPhone string
 	IDNumber                          *string
+	IDConsent                         *bool // the guest agrees to the ID number being stored
 	Deposit                           int64
 }
 
@@ -62,6 +63,9 @@ func validateCreate(in CreateStayInput) (checkInRequest, error) {
 	rental, err := pricing.ParseRentalType(in.RentalType)
 	if err != nil { // the parser echoes the value; keep it out of the error
 		return checkInRequest{}, fmt.Errorf("check-in input: %w", pricing.ErrUnknownRentalType)
+	}
+	if g.IDNumber != "" && (in.IDConsent == nil || !*in.IDConsent) {
+		return checkInRequest{}, fmt.Errorf("check-in input: %w", stay.NewValidationError([]stay.FieldError{{Path: "idConsent", Code: stay.CodeIDConsentRequired}}))
 	}
 	return checkInRequest{rental: rental, guest: g, deposit: d.Int64()}, nil
 }
@@ -141,8 +145,9 @@ func (s *Stays) requestHash(tenantID string, in CreateStayInput) string {
 		GuestName     string `json:"guestName"`
 		GuestPhone    string `json:"guestPhone"`
 		IDFingerprint string `json:"idNumberFingerprint"`
+		IDConsent     bool   `json:"idConsent"`
 		Deposit       int64  `json:"deposit"`
-	}{in.RentalType, in.GuestName, in.GuestPhone, fp, in.Deposit}) // plain fields only: cannot fail
+	}{in.RentalType, in.GuestName, in.GuestPhone, fp, in.IDConsent != nil && *in.IDConsent, in.Deposit}) // plain fields only: cannot fail
 	return RequestHash(body)
 }
 
@@ -182,7 +187,7 @@ func (s *Stays) insertStay(ctx context.Context, tx Tx, c Caller, roomID string, 
 	if err != nil {
 		return StayDetail{}, err
 	}
-	return detailFor(recordOf(ns, r), ns.CheckInAt, maskedID(req.guest.IDNumber), loc)
+	return detailFor(recordOf(ns, r), ns.CheckInAt, loc)
 }
 
 // newStay takes the time from the server clock (rule 3) and encrypts the ID number, bound to the new stay id.
@@ -225,7 +230,7 @@ func (s *Stays) persist(ctx context.Context, tx Tx, c Caller, ns NewStay, plan p
 func recordOf(ns NewStay, r CheckInRoom) StayRecord {
 	return StayRecord{ID: ns.ID, RoomID: ns.RoomID, RoomCode: r.Code, BuildingID: r.BuildingID,
 		RentalType: ns.RentalType, Status: string(stay.StatusActive), GuestName: ns.GuestName,
-		GuestPhone: ns.GuestPhone, IDNumberEnc: ns.IDNumberEnc, Deposit: ns.Deposit,
+		GuestPhone: ns.GuestPhone, GuestID: GuestIDIndicators{HasIDNumber: len(ns.IDNumberEnc) > 0}, Deposit: ns.Deposit,
 		CheckInAt: ns.CheckInAt, RatePlanSnapshot: ns.RatePlanSnapshot}
 }
 

@@ -14,7 +14,7 @@ func TestIdNumberE2E_SG203_AC4(t *testing.T) {
 	a := e.demo("OWNER", "vi", "")
 	tenant, token := a.str("tenantId"), a.str("accessToken")
 	e.seedStayTenant(tenant, 2)
-	body := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker})
+	body := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker, "idConsent": true})
 
 	var ids []string
 	for room := 1; room <= 2; room++ {
@@ -35,17 +35,17 @@ func TestIdNumberE2E_SG203_AC4(t *testing.T) {
 		}
 	}
 
-	for _, table := range []string{"stays", "idempotency_keys", "audit_logs"} {
+	for _, table := range []string{"stays", "guest_ids", "idempotency_keys", "audit_logs"} {
 		if dump := e.dumpTable(table); strings.Contains(dump, idMarker) {
 			t.Errorf("%s holds the plain id number", table)
 		}
 	}
-	if n := e.count(`SELECT count(*) FROM app.stays WHERE position($1::bytea in id_number_enc) > 0`, []byte(idMarker)); n != 0 {
+	if n := e.count(`SELECT count(*) FROM app.guest_ids WHERE position($1::bytea in number_enc) > 0`, []byte(idMarker)); n != 0 {
 		t.Errorf("%d stays hold the id number as raw bytes", n)
 	}
 	var c1, c2 []byte
-	_ = e.owner.QueryRow(context.Background(), `SELECT id_number_enc FROM app.stays WHERE id = $1`, ids[0]).Scan(&c1)
-	_ = e.owner.QueryRow(context.Background(), `SELECT id_number_enc FROM app.stays WHERE id = $1`, ids[1]).Scan(&c2)
+	_ = e.owner.QueryRow(context.Background(), `SELECT number_enc FROM app.guest_ids WHERE stay_id = $1`, ids[0]).Scan(&c1)
+	_ = e.owner.QueryRow(context.Background(), `SELECT number_enc FROM app.guest_ids WHERE stay_id = $1`, ids[1]).Scan(&c2)
 	if len(c1) == 0 || bytes.Equal(c1, c2) {
 		t.Errorf("ciphertext of the same id number must differ per stay (len %d)", len(c1))
 	}
@@ -66,12 +66,12 @@ func TestNoPersonalDataInLogs_SG203_AC4(t *testing.T) {
 	// A unit type whose stored plan is corrupt: check-in fails on the server side (500).
 	e.exec(`INSERT INTO app.unit_types (id, tenant_id, code, name, rate_plan, rate_plan_version) VALUES ('ut_bad', $1, 'BAD', '{"vi":"x","en":"x"}', '{}', 1)`, tenant)
 	e.exec(`UPDATE app.units SET unit_type_id = 'ut_bad' WHERE id = $1`, roomID(2))
-	personal := map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker}
+	personal := map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker, "idConsent": true}
 
 	if st, raw := e.checkIn(token, 1, newKey(), stayBody(personal)); st != 201 {
 		t.Fatalf("success path: %d %s", st, raw)
 	}
-	bad := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": "12", "idNumber": idMarker})
+	bad := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": "12", "idNumber": idMarker, "idConsent": true})
 	if st, _ := e.checkIn(token, 1, newKey(), bad); st != 422 {
 		t.Fatalf("validation path: %d", st)
 	}

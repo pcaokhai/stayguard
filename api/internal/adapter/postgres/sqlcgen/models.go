@@ -106,6 +106,25 @@ type AppFloor struct {
 	Name       pgtype.Text
 }
 
+type AppGuestID struct {
+	TenantID  string
+	StayID    string
+	NumberEnc []byte
+	ConsentAt pgtype.Timestamptz
+	ConsentBy pgtype.Text
+	CreatedAt pgtype.Timestamptz
+}
+
+type AppGuestIDPhoto struct {
+	TenantID   string
+	StayID     string
+	Side       string
+	ImageEnc   []byte
+	Bytes      int32
+	UploadedAt pgtype.Timestamptz
+	UploadedBy pgtype.Text
+}
+
 type AppIdempotencyKey struct {
 	TenantID     string
 	Route        string
@@ -308,7 +327,6 @@ type AppStay struct {
 	CheckInAt        pgtype.Timestamptz
 	CheckOutAt       pgtype.Timestamptz
 	RatePlanSnapshot []byte
-	IDNumberEnc      []byte
 	BillingMode      string
 	GuestName        string
 	GuestPhone       string

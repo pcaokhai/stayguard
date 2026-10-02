@@ -26,12 +26,11 @@ func keysOf(t *testing.T, raw json.RawMessage) []string {
 // JSON keys are pinned to the contract names, not to Go's field names.
 func TestFrozenQuoteJSONKeys_SG205_AC5(t *testing.T) {
 	at := time.Date(2026, 10, 1, 5, 0, 0, 0, time.UTC)
-	masked := "*****456"
 	q := QuoteView{AsOf: at, StayAmount: 1, ExtrasAmount: 2, Total: 3, DepositPaid: 4, BalanceDue: 5, RefundDue: 6, Capped: true,
 		Lines: []LineView{{Code: "OVERNIGHT", Quantity: 1, UnitAmount: 2, Amount: 3}}}
 	inv := InvoiceView{ID: "iv", StayID: "st", RoomCode: "A1", BillCode: "PH1", Status: "OPEN", CreatedAt: at, Quote: q}
 	d := StayDetail{ID: "st", RoomID: "r", RoomCode: "A1", RentalType: "OVERNIGHT", Status: "ACTIVE", CheckInAt: at, CheckOutAt: &at,
-		GuestName: "g", GuestPhone: "p", IDNumberMasked: &masked, Deposit: 1, PricingVersion: 1, Quote: q,
+		GuestName: "g", GuestPhone: "p", GuestID: GuestIDIndicators{HasIDNumber: true}, Deposit: 1, PricingVersion: 1, Quote: q,
 		Extras: []ExtraView{{ServiceCode: "WATER", Name: LocalizedName{VI: "Nuoc", EN: "Water"}, Quantity: 1, UnitAmount: 2, Amount: 2}}}
 
 	rawInv, _ := json.Marshal(inv)
@@ -44,7 +43,7 @@ func TestFrozenQuoteJSONKeys_SG205_AC5(t *testing.T) {
 		"invoice": {"billCode", "createdAt", "id", "quote", "roomCode", "status", "stayId"},
 		"quote":   {"asOf", "balanceDue", "capped", "depositPaid", "extrasAmount", "lines", "refundDue", "stayAmount", "total"},
 		"line":    {"amount", "code", "quantity", "unitAmount"},
-		"stay": {"checkInAt", "checkOutAt", "deposit", "extras", "guestName", "guestPhone", "id", "idNumberMasked", "pricingVersion",
+		"stay": {"checkInAt", "checkOutAt", "deposit", "extras", "guestId", "guestName", "guestPhone", "id", "pricingVersion",
 			"quote", "rentalType", "roomCode", "roomId", "status"},
 		"extra": {"amount", "name", "quantity", "serviceCode", "unitAmount"},
 		"name":  {"en", "vi"},

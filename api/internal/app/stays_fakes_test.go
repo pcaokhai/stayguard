@@ -217,9 +217,11 @@ func (e *stayEnv) setStatus(s room.Status) {
 	e.repo.rooms[tenantA][roomA] = rm
 }
 
+var yes = true
+
 func goodInput() CreateStayInput {
 	id := idMarker
-	return CreateStayInput{RentalType: "HOURLY", GuestName: "Marker Guest", GuestPhone: "+84 900 000 111", IDNumber: &id, Deposit: 200_000}
+	return CreateStayInput{RentalType: "HOURLY", GuestName: "Marker Guest", GuestPhone: "+84 900 000 111", IDNumber: &id, IDConsent: &yes, Deposit: 200_000}
 }
 
 func mustLoc(t *testing.T) *time.Location {

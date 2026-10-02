@@ -83,8 +83,8 @@ func sampleStay(full bool) app.StayDetail {
 		},
 	}
 	if full {
-		masked, out := "*****456", time.Date(2026, 10, 1, 5, 0, 0, 0, time.UTC)
-		d.IDNumberMasked, d.CheckOutAt, d.Status = &masked, &out, "CHECKED_OUT"
+		out := time.Date(2026, 10, 1, 5, 0, 0, 0, time.UTC)
+		d.GuestID, d.CheckOutAt, d.Status = app.GuestIDIndicators{HasIDNumber: true}, &out, "CHECKED_OUT"
 		d.Extras = []app.ExtraView{{ServiceCode: "sv1", Name: app.LocalizedName{VI: "Nuoc", EN: "Water"}, Quantity: 2, UnitAmount: 10_000, Amount: 20_000}}
 		d.Quote.ExtrasAmount, d.Quote.Total, d.Quote.BalanceDue, d.Quote.Capped = 20_000, 270_000, 170_000, true
 	}

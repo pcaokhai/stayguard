@@ -36,6 +36,7 @@ type Server struct {
 	staff        StaffService
 	bank         BankService
 	setup        SetupService
+	guestIDs     GuestIDService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
@@ -63,33 +64,5 @@ func (Server) StreamPaymentEvents(context.Context, gen.StreamPaymentEventsReques
 }
 
 func (Server) ReceiveBankWebhook(context.Context, gen.ReceiveBankWebhookRequestObject) (gen.ReceiveBankWebhookResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) DeleteGuestIdNumber(context.Context, gen.DeleteGuestIdNumberRequestObject) (gen.DeleteGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) DeleteGuestIdPhoto(context.Context, gen.DeleteGuestIdPhotoRequestObject) (gen.DeleteGuestIdPhotoResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetGuestIdPhoto(context.Context, gen.GetGuestIdPhotoRequestObject) (gen.GetGuestIdPhotoResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetGuestIdRecord(context.Context, gen.GetGuestIdRecordRequestObject) (gen.GetGuestIdRecordResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) RevealGuestIdNumber(context.Context, gen.RevealGuestIdNumberRequestObject) (gen.RevealGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) SetGuestIdNumber(context.Context, gen.SetGuestIdNumberRequestObject) (gen.SetGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UploadGuestIdPhoto(context.Context, gen.UploadGuestIdPhotoRequestObject) (gen.UploadGuestIdPhotoResponseObject, error) {
 	return nil, errNotImplemented
 }

@@ -4,6 +4,7 @@ package httpadapter
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,6 +19,7 @@ func useBaseMiddleware(r chi.Router, log *slog.Logger) {
 	r.Use(requestLog(log))
 	r.Use(middleware.Recoverer)
 	r.Use(limitBody)
+	r.Use(noStoreGuestID)
 }
 
 // maxRequestBodyBytes caps every request body: the largest legitimate body (check-in) is well under
@@ -28,11 +30,15 @@ const maxRequestBodyBytes = 64 << 10
 // otherwise (chunked bodies), so oversize input never reaches a use case.
 func limitBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ContentLength > maxRequestBodyBytes {
-			writeProblem(w, http.StatusRequestEntityTooLarge, "Payload Too Large", "PAYLOAD_TOO_LARGE")
+		limit := int64(maxRequestBodyBytes)
+		if isPhotoUpload(r) {
+			limit = photoRouteMaxBody // only the guest ID photo upload may carry an image
+		}
+		if r.ContentLength > limit {
+			writeProblem(w, http.StatusRequestEntityTooLarge, "Payload Too Large", codeForLimit(limit))
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+		r.Body = http.MaxBytesReader(w, r.Body, limit)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -72,7 +78,9 @@ type Options struct {
 	// Bank serves the property, receiving account and SePay status operations.
 	Bank BankService
 	// Setup serves buildings, rooms, rate plans and items.
-	Setup      SetupService
+	Setup SetupService
+	// GuestIDs serves the guest ID number and photos.
+	GuestIDs   GuestIDService
 	TrustProxy bool
 	ProxyHops  int
 	// StayOps serves stay history, timeline, receipt and the check-in time and move corrections (no flag).
@@ -94,7 +102,7 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 	useBaseMiddleware(r, log)
 	r.Use(clientIP(o.TrustProxy, o.ProxyHops))
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithSetup(o.Setup).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance).WithRoster(o.Roster).WithFinance(o.Finance), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithSetup(o.Setup).WithGuestIDs(o.GuestIDs).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance).WithRoster(o.Roster).WithFinance(o.Finance), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})
@@ -103,4 +111,30 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 	r.Get("/readyz", readyz(log, o.Probe))
 	r.NotFound(staticHandler(o.StaticDir).ServeHTTP)
 	return r
+}
+
+// isPhotoUpload is PUT /v1/stays/{id}/guest-id/photos/{side}.
+func isPhotoUpload(r *http.Request) bool {
+	if r.Method != http.MethodPut || !strings.HasPrefix(r.URL.Path, "/v1/stays/") {
+		return false
+	}
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/stays/"), "/")
+	return len(parts) == 4 && parts[1] == "guest-id" && parts[2] == "photos"
+}
+
+func codeForLimit(limit int64) string {
+	if limit == photoRouteMaxBody {
+		return "PHOTO_TOO_LARGE"
+	}
+	return "PAYLOAD_TOO_LARGE"
+}
+
+// noStoreGuestID marks every guest ID response, errors included, as never cacheable (docs/15 rule 24).
+func noStoreGuestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/guest-id") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
+		next.ServeHTTP(w, r)
+	})
 }

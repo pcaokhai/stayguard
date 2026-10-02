@@ -37,15 +37,11 @@ func (s *Stays) detail(ctx context.Context, tx Tx, c Caller, rec StayRecord) (St
 	if err != nil {
 		return StayDetail{}, err
 	}
-	masked, err := s.maskedStoredID(c.TenantID, rec)
-	if err != nil {
-		return StayDetail{}, err
-	}
 	asOf, err := quoteInstant(rec, s.clock.Now())
 	if err != nil {
 		return StayDetail{}, err
 	}
-	return detailFor(rec, asOf, masked, loc)
+	return detailFor(rec, asOf, loc)
 }
 
 // quoteInstant fails closed on a stored status or a CHECKED_OUT stay without a check-out time.
@@ -61,20 +57,4 @@ func quoteInstant(rec StayRecord, now time.Time) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("stay %s has no check-out time", rec.ID)
 	}
 	return *rec.CheckOutAt, nil
-}
-
-// maskedStoredID decrypts only to mask; a failure is an error, never an empty or plain value.
-func (s *Stays) maskedStoredID(tenantID string, rec StayRecord) (*string, error) {
-	return maskedStored(s.enc, tenantID, rec)
-}
-
-func maskedStored(enc Encryptor, tenantID string, rec StayRecord) (*string, error) {
-	if len(rec.IDNumberEnc) == 0 {
-		return nil, nil
-	}
-	plain, err := enc.Decrypt(tenantID, idField(rec.ID), rec.IDNumberEnc)
-	if err != nil {
-		return nil, fmt.Errorf("stay id number: %w", err)
-	}
-	return maskedID(string(plain)), nil
 }

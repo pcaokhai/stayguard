@@ -50,7 +50,10 @@ func (q *Queries) GetCheckInRoom(ctx context.Context, arg GetCheckInRoomParams) 
 
 const getStayByID = `-- name: GetStayByID :one
 SELECT s.id, s.unit_id, u.code AS room_code, u.building_id, s.rental_type, s.status, s.guest_name, s.guest_phone,
-       s.id_number_enc, s.deposit, s.check_in_at, s.check_out_at, s.rate_plan_snapshot
+       EXISTS (SELECT 1 FROM app.guest_ids g WHERE g.tenant_id = s.tenant_id AND g.stay_id = s.id AND g.number_enc IS NOT NULL) AS has_id_number,
+       EXISTS (SELECT 1 FROM app.guest_id_photos gp WHERE gp.tenant_id = s.tenant_id AND gp.stay_id = s.id AND gp.side = 'FRONT') AS has_front_photo,
+       EXISTS (SELECT 1 FROM app.guest_id_photos gb WHERE gb.tenant_id = s.tenant_id AND gb.stay_id = s.id AND gb.side = 'BACK') AS has_back_photo,
+       s.deposit, s.check_in_at, s.check_out_at, s.rate_plan_snapshot
 FROM app.stays s
 JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
 WHERE s.tenant_id = $1 AND s.id = $2
@@ -70,7 +73,9 @@ type GetStayByIDRow struct {
 	Status           string
 	GuestName        string
 	GuestPhone       string
-	IDNumberEnc      []byte
+	HasIDNumber      bool
+	HasFrontPhoto    bool
+	HasBackPhoto     bool
 	Deposit          int64
 	CheckInAt        pgtype.Timestamptz
 	CheckOutAt       pgtype.Timestamptz
@@ -89,7 +94,9 @@ func (q *Queries) GetStayByID(ctx context.Context, arg GetStayByIDParams) (GetSt
 		&i.Status,
 		&i.GuestName,
 		&i.GuestPhone,
-		&i.IDNumberEnc,
+		&i.HasIDNumber,
+		&i.HasFrontPhoto,
+		&i.HasBackPhoto,
 		&i.Deposit,
 		&i.CheckInAt,
 		&i.CheckOutAt,
@@ -100,9 +107,9 @@ func (q *Queries) GetStayByID(ctx context.Context, arg GetStayByIDParams) (GetSt
 
 const insertStay = `-- name: InsertStay :exec
 INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, deposit, check_in_at,
-                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc, created_by)
+                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, created_by)
 VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6,
-        $7, $8, $9, $10, $11, $12)
+        $7, $8, $9, $10, $11)
 `
 
 type InsertStayParams struct {
@@ -116,7 +123,6 @@ type InsertStayParams struct {
 	RatePlanSchema   int16
 	GuestName        string
 	GuestPhone       string
-	IDNumberEnc      []byte
 	CreatedBy        pgtype.Text
 }
 
@@ -133,7 +139,6 @@ func (q *Queries) InsertStay(ctx context.Context, arg InsertStayParams) error {
 		arg.RatePlanSchema,
 		arg.GuestName,
 		arg.GuestPhone,
-		arg.IDNumberEnc,
 		arg.CreatedBy,
 	)
 	return err

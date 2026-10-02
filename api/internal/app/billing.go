@@ -85,13 +85,9 @@ func (b *Billing) detail(ctx context.Context, tx Tx, c Caller, rec StayRecord) (
 	if err != nil {
 		return StayDetail{}, err
 	}
-	masked, err := maskedStored(b.enc, c.TenantID, rec)
-	if err != nil {
-		return StayDetail{}, err
-	}
 	asOf, err := quoteInstant(rec, b.clock.Now())
 	if err != nil {
 		return StayDetail{}, err
 	}
-	return detailFor(rec, asOf, masked, loc)
+	return detailFor(rec, asOf, loc)
 }

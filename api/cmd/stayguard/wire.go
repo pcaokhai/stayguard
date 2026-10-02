@@ -10,6 +10,7 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/adapter/clock"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/crypto"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/ids"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/images"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/permissions"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/pricing"
@@ -30,6 +31,7 @@ type deps struct {
 	staff        *app.Staff
 	bank         *app.Bank
 	setup        *app.Setup
+	guestIDs     *app.GuestIDs
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -104,6 +106,11 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	guestIDs, err := newGuestIDs(cfg, uow, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	bank, err := newBank(cfg, uow, auth, idem, audit, clock.System{})
 	if err != nil {
 		pool.Close()
@@ -115,6 +122,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		auth:         auth,
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		bank:         bank,
+		guestIDs:     guestIDs,
 		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}).WithAlerts(postgres.AlertWriter{}).WithExpenses(postgres.FinanceRepo{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
@@ -268,4 +276,13 @@ func newFinance(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWr
 		Expenses: app.NewExpenses(uow, repo, levels, idem, audit, id, clk),
 		Reports:  app.NewReports(uow, repo, repo, levels, clk),
 	}
+}
+
+// newGuestIDs builds the guest ID use cases: photos are decoded and re-encoded by the images adapter, then encrypted.
+func newGuestIDs(cfg config.Config, uow app.UnitOfWork, audit app.AuditWriter, clk app.Clock) (*app.GuestIDs, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewGuestIDs(uow, postgres.GuestIDRepo{}, permissions.Stored{}, enc, images.Sanitizer{}, audit, ids.New(clk.Now), clk), nil
 }

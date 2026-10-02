@@ -33,11 +33,18 @@ type ExtraRecord struct {
 	UnitAmount  int64
 }
 
+// GuestIDIndicators say what guest ID data is on file, never the data (docs/15 rule 22).
+type GuestIDIndicators struct {
+	HasIDNumber   bool `json:"hasIdNumber"`
+	HasFrontPhoto bool `json:"hasFrontPhoto"`
+	HasBackPhoto  bool `json:"hasBackPhoto"`
+}
+
 // StayRecord is a stored stay with its room, building and extras.
 type StayRecord struct {
 	ID, RoomID, RoomCode, BuildingID, RentalType, Status string
 	GuestName, GuestPhone                                string
-	IDNumberEnc                                          []byte
+	GuestID                                              GuestIDIndicators
 	Deposit                                              int64
 	CheckInAt                                            time.Time
 	CheckOutAt                                           *time.Time

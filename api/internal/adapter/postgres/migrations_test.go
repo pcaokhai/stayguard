@@ -14,7 +14,7 @@ var appTables = []string{
 	"tenants", "users", "sessions", "properties", "buildings", "floors", "unit_types", "units",
 	"stays", "services", "stay_extras", "invoices", "payments", "payment_events",
 	"audit_logs", "idempotency_keys",
-	"pin_credentials", "staff_profiles", "building_permissions", "bank_accounts", "stock_movements", "stocktakes",
+	"pin_credentials", "staff_profiles", "building_permissions", "bank_accounts", "stock_movements", "stocktakes", "guest_ids", "guest_id_photos",
 	"stay_edits", "alerts", // 0013 (L-B1)
 	"shifts", "cash_entries", // 0014 (L-B2)
 	"maintenance_tickets",                  // 0016 (L-B4)

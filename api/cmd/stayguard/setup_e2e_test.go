@@ -10,10 +10,12 @@ import (
 	"time"
 )
 
-func (e *env) ownerSetup() string {
+func (e *env) ownerSetup() string { return e.ownerSetupRooms(2) }
+
+func (e *env) ownerSetupRooms(rooms int) string {
 	e.t.Helper()
 	e.seedOwner()
-	e.seedStayTenant(staffTenant, 2)
+	e.seedStayTenant(staffTenant, rooms)
 	// A second room type to change to; its plan is the seed plan.
 	e.exec(`INSERT INTO app.unit_types (id, tenant_id, code, name, rate_plan, rate_plan_version)
 		VALUES ('ut_vip', $1, 'VIP', '{"vi":"VIP","en":"VIP"}', $2, 1)`, staffTenant, seedPlanSnapshot())

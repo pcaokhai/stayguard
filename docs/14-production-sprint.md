@@ -155,7 +155,7 @@ Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, To
 #### [x] F-A1 Stock complete (API-1) — migration 0017
 `listStockMovements`, `removeService` (stop selling when sold), `createStocktake` with alerts; `soldLast7Days`, `latestUnitCost` on services.
 
-#### [ ] F-A2 Guest ID (API-1) — migration 0018
+#### [x] F-A2 Guest ID (API-1) — migration 0018
 `setGuestIdNumber`, `uploadGuestIdPhoto`, `getGuestIdRecord`, `revealGuestIdNumber`, `getGuestIdPhoto`, `deleteGuestIdPhoto`, `deleteGuestIdNumber`; `createStay` accepts `idConsent`; indicators on stays and lists; daily retention job; separate repository so front-desk queries cannot read the data.
 Tests (required): SG-805 AC1–AC5, including a log-capture test proving no number or image bytes reach logs.
 

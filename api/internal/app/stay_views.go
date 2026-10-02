@@ -7,7 +7,6 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/money"
 	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
-	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
 // errCorruptStoredRentalType carries no value: the stored string could be tenant data.
@@ -17,20 +16,20 @@ var errCorruptStoredRentalType = errors.New("stay has an unknown stored rental t
 // so it must round-trip through JSON and never holds the plain ID number. (StayView is the room
 // map's compact active stay.)
 type StayDetail struct {
-	ID             string      `json:"id"`
-	RoomID         string      `json:"roomId"`
-	RoomCode       string      `json:"roomCode"`
-	RentalType     string      `json:"rentalType"`
-	Status         string      `json:"status"`
-	CheckInAt      time.Time   `json:"checkInAt"`
-	CheckOutAt     *time.Time  `json:"checkOutAt,omitempty"`
-	GuestName      string      `json:"guestName"`
-	GuestPhone     string      `json:"guestPhone"`
-	IDNumberMasked *string     `json:"idNumberMasked,omitempty"`
-	Deposit        int64       `json:"deposit"`
-	Extras         []ExtraView `json:"extras"`
-	Quote          QuoteView   `json:"quote"`
-	PricingVersion int         `json:"pricingVersion"`
+	ID             string            `json:"id"`
+	RoomID         string            `json:"roomId"`
+	RoomCode       string            `json:"roomCode"`
+	RentalType     string            `json:"rentalType"`
+	Status         string            `json:"status"`
+	CheckInAt      time.Time         `json:"checkInAt"`
+	CheckOutAt     *time.Time        `json:"checkOutAt,omitempty"`
+	GuestName      string            `json:"guestName"`
+	GuestPhone     string            `json:"guestPhone"`
+	GuestID        GuestIDIndicators `json:"guestId"`
+	Deposit        int64             `json:"deposit"`
+	Extras         []ExtraView       `json:"extras"`
+	Quote          QuoteView         `json:"quote"`
+	PricingVersion int               `json:"pricingVersion"`
 }
 
 type ExtraView struct {
@@ -60,9 +59,9 @@ type LineView struct {
 	Amount     int64  `json:"amount"`
 }
 
-// detailFor prices rec as of asOf from its own snapshot and assembles the view. masked is the
-// already-masked ID number (nil when none).
-func detailFor(rec StayRecord, asOf time.Time, masked *string, loc *time.Location) (StayDetail, error) {
+// detailFor prices rec as of asOf from its own snapshot and assembles the view. Guest ID data is never in it,
+// only the indicators.
+func detailFor(rec StayRecord, asOf time.Time, loc *time.Location) (StayDetail, error) {
 	plan, err := pricing.ParseRatePlan(rec.RatePlanSnapshot)
 	if err != nil {
 		return StayDetail{}, fmt.Errorf("stay rate plan snapshot: %w", err)
@@ -90,7 +89,7 @@ func detailFor(rec StayRecord, asOf time.Time, masked *string, loc *time.Locatio
 	return StayDetail{
 		ID: rec.ID, RoomID: rec.RoomID, RoomCode: rec.RoomCode, RentalType: rec.RentalType, Status: rec.Status,
 		CheckInAt: rec.CheckInAt.UTC(), CheckOutAt: utcPtr(rec.CheckOutAt), GuestName: rec.GuestName,
-		GuestPhone: rec.GuestPhone, IDNumberMasked: masked, Deposit: rec.Deposit, Extras: views,
+		GuestPhone: rec.GuestPhone, GuestID: rec.GuestID, Deposit: rec.Deposit, Extras: views,
 		Quote:          quoteViewOf(asOf, q, bill, rec.Deposit),
 		PricingVersion: int(plan.Version),
 	}, nil
@@ -136,12 +135,4 @@ func utcPtr(t *time.Time) *time.Time {
 	}
 	u := t.UTC()
 	return &u
-}
-
-func maskedID(plain string) *string {
-	if plain == "" {
-		return nil
-	}
-	m := stay.MaskIDNumber(plain)
-	return &m
 }

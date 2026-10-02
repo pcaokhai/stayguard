@@ -165,8 +165,8 @@ func TestAuthMiddlewareDuplicateHeader_SG102_AC4(t *testing.T) {
 func TestAuthMiddlewareSchemeCase_SG102_AC4(t *testing.T) {
 	h := newTestRouter(&bytes.Buffer{})
 	for _, scheme := range []string{"Bearer", "bearer", "BEARER"} {
-		if rec := do(h, "GET", "/v1/owner/stays/st_x/guest-id", scheme+" "+goodToken); rec.Code != 501 {
-			t.Errorf("%s: code=%d, want 501 (authenticated, stub reached)", scheme, rec.Code)
+		if rec := do(h, "GET", "/v1/me", scheme+" "+goodToken); rec.Code != 200 {
+			t.Errorf("%s: code=%d, want 200 (authenticated)", scheme, rec.Code)
 		}
 	}
 }

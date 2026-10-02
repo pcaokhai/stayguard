@@ -3,7 +3,6 @@
 package postgres
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -68,7 +67,7 @@ func TestStaysRepo_SG203_AC1(t *testing.T) {
 			t.Fatalf("stay by id: ok=%v err=%v", ok, err)
 		}
 		if rec.RoomCode != "A201" || rec.BuildingID != stayTenantA+"_b1" || rec.Status != "ACTIVE" || rec.GuestPhone != "0900000009" ||
-			rec.Deposit != 100_000 || !rec.CheckInAt.Equal(stayCheckIn) || rec.CheckOutAt != nil || !bytes.Equal(rec.IDNumberEnc, []byte{1, 0xde, 0xad, 0xbe, 0xef}) {
+			rec.Deposit != 100_000 || !rec.CheckInAt.Equal(stayCheckIn) || rec.CheckOutAt != nil || !rec.GuestID.HasIDNumber {
 			t.Errorf("record = %+v", rec)
 		}
 		if len(rec.Extras) != 1 || rec.Extras[0].ServiceCode != "WATER" || rec.Extras[0].Name != (app.LocalizedName{VI: "Nuoc", EN: "Water"}) || rec.Extras[0].Quantity != 2 || rec.Extras[0].UnitAmount != 10000 {

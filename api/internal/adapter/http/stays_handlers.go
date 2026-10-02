@@ -21,7 +21,7 @@ func (s Server) CreateStay(ctx context.Context, req gen.CreateStayRequestObject)
 	}
 	b := req.Body
 	in := app.CreateStayInput{RentalType: string(b.RentalType), GuestName: b.GuestName, GuestPhone: b.GuestPhone,
-		IDNumber: b.IdNumber, Deposit: b.Deposit}
+		IDNumber: b.IdNumber, IDConsent: b.IdConsent, Deposit: b.Deposit}
 	// The generated binding already typed the key as a UUID; the use case bounds its length again.
 	d, _, err := s.stays.CreateStay(ctx, c, req.RoomId, req.Params.IdempotencyKey.String(), in)
 	if err != nil {

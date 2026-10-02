@@ -113,6 +113,10 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	if err != nil {
 		t.Fatalf("auth: %v", err)
 	}
+	guestIDs, err := newGuestIDs(cfg, uow, postgres.NewAuditWriter(), clk)
+	if err != nil {
+		t.Fatalf("guest ids: %v", err)
+	}
 	bank, err := newBank(cfg, uow, auth, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk)
 	if err != nil {
 		t.Fatalf("bank: %v", err)
@@ -120,7 +124,7 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	logs := &syncBuffer{}
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
-		Auth: auth, Staff: newStaff(uow, auth, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk), Bank: bank, Setup: app.NewSetup(uow, postgres.SetupRepo{}, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), ids.New(clk.Now), clk).WithAlerts(postgres.AlertWriter{}).WithExpenses(postgres.FinanceRepo{}),
+		Auth: auth, Staff: newStaff(uow, auth, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk), Bank: bank, GuestIDs: guestIDs, Setup: app.NewSetup(uow, postgres.SetupRepo{}, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), ids.New(clk.Now), clk).WithAlerts(postgres.AlertWriter{}).WithExpenses(postgres.FinanceRepo{}),
 		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true, Payments: payments, StayOps: stayOps, Shifts: shifts, Monitor: monitorOps{newMonitor(uow, clk), payments},
 		Maintenance:  newMaintenance(uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk),
 		Roster:       newRosters(uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk),

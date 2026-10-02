@@ -257,7 +257,7 @@ func (s *StayEdits) checkPriced(ctx context.Context, tx Tx, rec StayRecord) erro
 	if err != nil {
 		return err
 	}
-	_, err = detailFor(rec, storedTime(s.clock.Now()), nil, loc)
+	_, err = detailFor(rec, storedTime(s.clock.Now()), loc)
 	return err
 }
 
@@ -266,15 +266,11 @@ func (s *StayEdits) detail(ctx context.Context, tx Tx, c Caller, rec StayRecord)
 	if err != nil {
 		return StayDetail{}, err
 	}
-	masked, err := maskedStored(s.enc, c.TenantID, rec)
-	if err != nil {
-		return StayDetail{}, err
-	}
 	asOf, err := quoteInstant(rec, s.clock.Now())
 	if err != nil {
 		return StayDetail{}, err
 	}
-	return detailFor(rec, asOf, masked, loc)
+	return detailFor(rec, asOf, loc)
 }
 
 func (s *StayEdits) auditAppend(ctx context.Context, tx Tx, c Caller, action, stayID string, after any) error {

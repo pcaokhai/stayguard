@@ -173,10 +173,9 @@ func TestStayDeposit_SG203_AC5(t *testing.T) {
 
 func TestStayViewJSON_SG203_AC3(t *testing.T) {
 	out := time.Date(2026, 10, 6, 1, 2, 3, 456, time.UTC)
-	m := "*****345"
 	v := StayDetail{ID: "st1", RoomID: "r", RoomCode: "101", RentalType: "DAILY", Status: "CHECKED_OUT",
 		CheckInAt: time.Date(2026, 10, 5, 3, 0, 0, 0, time.UTC), CheckOutAt: &out, GuestName: "Nguyễn Văn A", GuestPhone: "+84 1",
-		IDNumberMasked: &m, Deposit: 9, PricingVersion: 2,
+		GuestID: GuestIDIndicators{HasIDNumber: true, HasBackPhoto: true}, Deposit: 9, PricingVersion: 2,
 		Extras: []ExtraView{{"W", LocalizedName{"Nước", "Water"}, 2, 15_000, 30_000}},
 		Quote: QuoteView{AsOf: out, StayAmount: 1, ExtrasAmount: 2, Total: 3, DepositPaid: 4, BalanceDue: 5, RefundDue: 6, Capped: true,
 			Lines: []LineView{{"DAILY", 1, 350_000, 350_000}}}}
@@ -191,7 +190,7 @@ func TestStayViewJSON_SG203_AC3(t *testing.T) {
 	var none StayDetail
 	raw, _ = json.Marshal(none)
 	var backNone StayDetail
-	if err := json.Unmarshal(raw, &backNone); err != nil || backNone.IDNumberMasked != nil || backNone.CheckOutAt != nil {
+	if err := json.Unmarshal(raw, &backNone); err != nil || backNone.GuestID.HasIDNumber || backNone.CheckOutAt != nil {
 		t.Fatalf("nil pointers must stay nil: %v", err)
 	}
 }

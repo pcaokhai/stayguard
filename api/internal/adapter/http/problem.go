@@ -177,6 +177,12 @@ func mapStayError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusConflict, "Conflict", "LEAVE_STATE")
 	case errors.Is(err, app.ErrRosterNotEmpty):
 		writeProblem(w, http.StatusConflict, "Conflict", "ROSTER_NOT_EMPTY")
+	case errors.Is(err, app.ErrPhotoTooLarge):
+		writeProblem(w, http.StatusRequestEntityTooLarge, "Payload Too Large", "PHOTO_TOO_LARGE")
+	case errors.Is(err, app.ErrUnsupportedMedia):
+		writeProblem(w, http.StatusUnsupportedMediaType, "Unsupported Media Type", "UNSUPPORTED_MEDIA")
+	case errors.Is(err, app.ErrGuestIDClosed):
+		writeProblem(w, http.StatusConflict, "Conflict", "GUEST_ID_CLOSED")
 	case errors.Is(err, app.ErrRoomOccupied):
 		writeProblem(w, http.StatusConflict, "Conflict", "ROOM_OCCUPIED")
 	case errors.Is(err, app.ErrTicketDone):

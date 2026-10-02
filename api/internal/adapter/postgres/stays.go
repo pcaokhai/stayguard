@@ -62,7 +62,7 @@ func (StayRepo) InsertStay(ctx context.Context, tx app.Tx, s app.NewStay) error 
 	err = sqlcgen.New(t).InsertStay(ctx, sqlcgen.InsertStayParams{
 		ID: s.ID, TenantID: t.tenant, UnitID: s.RoomID, RentalType: s.RentalType, Deposit: s.Deposit,
 		CheckInAt: pgtype.Timestamptz{Time: s.CheckInAt, Valid: true}, RatePlanSnapshot: s.RatePlanSnapshot,
-		RatePlanSchema: int16(s.RatePlanSchema), GuestName: s.GuestName, GuestPhone: s.GuestPhone, IDNumberEnc: s.IDNumberEnc,
+		RatePlanSchema: int16(s.RatePlanSchema), GuestName: s.GuestName, GuestPhone: s.GuestPhone,
 		CreatedBy: optText(s.CreatedBy),
 	})
 	var pe *pgconn.PgError
@@ -71,6 +71,9 @@ func (StayRepo) InsertStay(ctx context.Context, tx app.Tx, s app.NewStay) error 
 	}
 	if err != nil {
 		return insertFailure(err)
+	}
+	if len(s.IDNumberEnc) > 0 { // consent was ticked at check-in (the use case refuses the number without it)
+		return GuestIDRepo{}.putNumber(ctx, t, s.ID, s.IDNumberEnc, s.CheckInAt, s.CreatedBy)
 	}
 	return nil
 }
@@ -128,7 +131,8 @@ func (StayRepo) Timezone(ctx context.Context, tx app.Tx) (string, error) {
 func toStayRecord(r sqlcgen.GetStayByIDRow, extras []sqlcgen.ListStayExtrasRow) (app.StayRecord, error) {
 	rec := app.StayRecord{
 		ID: r.ID, RoomID: r.UnitID, RoomCode: r.RoomCode, BuildingID: r.BuildingID, RentalType: r.RentalType,
-		Status: r.Status, GuestName: r.GuestName, GuestPhone: r.GuestPhone, IDNumberEnc: r.IDNumberEnc,
+		Status: r.Status, GuestName: r.GuestName, GuestPhone: r.GuestPhone,
+		GuestID: app.GuestIDIndicators{HasIDNumber: r.HasIDNumber, HasFrontPhoto: r.HasFrontPhoto, HasBackPhoto: r.HasBackPhoto},
 		Deposit: r.Deposit, CheckInAt: r.CheckInAt.Time, RatePlanSnapshot: r.RatePlanSnapshot,
 	}
 	if r.CheckOutAt.Valid {

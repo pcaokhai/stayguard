@@ -18,7 +18,7 @@ func toStay(d app.StayDetail) gen.Stay {
 	return gen.Stay{
 		Id: d.ID, RoomId: d.RoomID, RoomCode: d.RoomCode, RentalType: gen.RentalType(d.RentalType),
 		Status: gen.StayStatus(d.Status), CheckInAt: d.CheckInAt, CheckOutAt: d.CheckOutAt,
-		GuestName: d.GuestName, GuestPhone: d.GuestPhone, GuestId: &gen.GuestIdIndicators{HasIdNumber: d.IDNumberMasked != nil}, // the masked number is read only through the owner endpoints (F-A2)
+		GuestName: d.GuestName, GuestPhone: d.GuestPhone, GuestId: &gen.GuestIdIndicators{HasIdNumber: d.GuestID.HasIDNumber, HasFrontPhoto: d.GuestID.HasFrontPhoto, HasBackPhoto: d.GuestID.HasBackPhoto},
 		Deposit: d.Deposit, Extras: extras, Quote: toQuote(d.Quote), PricingVersion: d.PricingVersion,
 	}
 }

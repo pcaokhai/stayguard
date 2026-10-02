@@ -17,9 +17,9 @@ FOR UPDATE OF u;
 -- name: InsertStay :exec
 -- check_in_at comes from the argument (the server clock of the use case), never from now().
 INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, deposit, check_in_at,
-                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc, created_by)
+                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, created_by)
 VALUES (@id, @tenant_id, @unit_id, @rental_type, 'ACTIVE', @deposit, @check_in_at,
-        @rate_plan_snapshot, @rate_plan_schema, @guest_name, @guest_phone, @id_number_enc, sqlc.narg(created_by));
+        @rate_plan_snapshot, @rate_plan_schema, @guest_name, @guest_phone, sqlc.narg(created_by));
 
 -- name: OccupyRoom :execrows
 UPDATE app.units SET status = 'OCCUPIED'
@@ -27,7 +27,10 @@ WHERE tenant_id = @tenant_id AND id = @unit_id AND status = 'VACANT';
 
 -- name: GetStayByID :one
 SELECT s.id, s.unit_id, u.code AS room_code, u.building_id, s.rental_type, s.status, s.guest_name, s.guest_phone,
-       s.id_number_enc, s.deposit, s.check_in_at, s.check_out_at, s.rate_plan_snapshot
+       EXISTS (SELECT 1 FROM app.guest_ids g WHERE g.tenant_id = s.tenant_id AND g.stay_id = s.id AND g.number_enc IS NOT NULL) AS has_id_number,
+       EXISTS (SELECT 1 FROM app.guest_id_photos gp WHERE gp.tenant_id = s.tenant_id AND gp.stay_id = s.id AND gp.side = 'FRONT') AS has_front_photo,
+       EXISTS (SELECT 1 FROM app.guest_id_photos gb WHERE gb.tenant_id = s.tenant_id AND gb.stay_id = s.id AND gb.side = 'BACK') AS has_back_photo,
+       s.deposit, s.check_in_at, s.check_out_at, s.rate_plan_snapshot
 FROM app.stays s
 JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
 WHERE s.tenant_id = @tenant_id AND s.id = @stay_id;
