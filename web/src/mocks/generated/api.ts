@@ -203,11 +203,19 @@ export interface StatusCounts {
   maintenance: number;
 }
 
+export type BuildingFloorsItem = {
+  id: string;
+  name: string;
+  order: number;
+};
+
 export interface Building {
   id: string;
   code: string;
   name: string;
   level: PermissionLevel;
+  /** The building's floors in display order */
+  floors?: BuildingFloorsItem[];
   counts: StatusCounts;
 }
 
@@ -229,6 +237,8 @@ export interface Room {
   id: string;
   code: string;
   buildingId: string;
+  floorId?: string;
+  floorName?: string;
   floor: number;
   unitType: RoomUnitType;
   status: RoomStatus;
@@ -798,6 +808,8 @@ export interface CreateStaffResponse {
 export interface RosterAssignment {
   userId: string;
   date: string;
+  /** Filled in answers so a manager sees names without listStaff (which shows pay); ignored in requests */
+  readonly userName?: string;
   shift: ShiftCode;
 }
 
@@ -1460,6 +1472,17 @@ export interface MoveStayRequest {
   rentalType: RentalType;
 }
 
+export interface InvoiceCandidate {
+  invoiceId: string;
+  billCode: string;
+  roomCode: string;
+  guestName: string;
+  checkedOutAt: string;
+  total: Vnd;
+  paid: Vnd;
+  balance: Vnd;
+}
+
 export type StayListItemState = typeof StayListItemState[keyof typeof StayListItemState];
 
 
@@ -1484,6 +1507,13 @@ export interface StayListItem {
   state?: StayListItemState;
   status: StayStatus;
   frontDeskName?: string;
+  /**
+     * The invoice of a checked-out stay
+     * @nullable
+     */
+  invoiceId?: string | null;
+  /** @nullable */
+  billCode?: string | null;
   guestId: GuestIdIndicators;
 }
 
@@ -1833,6 +1863,29 @@ export type ListStays200 = {
 
 export type GetStayTimeline200 = {
   items: StayTimelineEvent[];
+};
+
+export type ListInvoicesParams = {
+/**
+ * Only UNPAID exists today; it is the default.
+ */
+status?: ListInvoicesStatus;
+/**
+ * Whole VND of the transfer to match
+ * @minimum 1
+ */
+amount?: number;
+};
+
+export type ListInvoicesStatus = typeof ListInvoicesStatus[keyof typeof ListInvoicesStatus];
+
+
+export const ListInvoicesStatus = {
+  UNPAID: 'UNPAID',
+} as const;
+
+export type ListInvoices200 = {
+  items: InvoiceCandidate[];
 };
 
 export type ListTransactionsParams = {
@@ -4471,7 +4524,7 @@ export const getPutRosterUrl = () => {
 /**
  * @summary Set and remove assignments in one change
  */
-export const putRoster = async (putRosterRequest: PutRosterRequest, options?: RequestInit): Promise<putRosterResponse> => {
+export const putRoster = async (putRosterRequest: NonReadonly<PutRosterRequest>, options?: RequestInit): Promise<putRosterResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -7812,6 +7865,74 @@ export const getReceipt = async (invoiceId: string, options?: RequestInit): Prom
 
   const data: getReceiptResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getReceiptResponse
+}
+
+
+
+export type listInvoicesResponse200 = {
+  data: ListInvoices200
+  status: 200
+}
+
+export type listInvoicesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listInvoicesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listInvoicesResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type listInvoicesResponseSuccess = (listInvoicesResponse200) & {
+  headers: Headers;
+};
+export type listInvoicesResponseError = (listInvoicesResponse401 | listInvoicesResponse403 | listInvoicesResponse422) & {
+  headers: Headers;
+};
+
+export type listInvoicesResponse = (listInvoicesResponseSuccess | listInvoicesResponseError)
+
+export const getListInvoicesUrl = (params?: ListInvoicesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/owner/invoices?${stringifiedParams}` : `/v1/owner/invoices`
+}
+
+/**
+ * Checked-out invoices that are not paid. With `amount`, invoices whose balance equals it come first, then the rest by check-out time, newest first. `balance` is the total minus what is already covered: the deposit and any money the bank reported that did not settle the invoice. Used to link an unmatched transfer.
+ * @summary Invoices still to be paid, best match for a bank amount first
+ */
+export const listInvoices = async (params?: ListInvoicesParams, options?: RequestInit): Promise<listInvoicesResponse> => {
+
+  const res = await fetch(getListInvoicesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listInvoicesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listInvoicesResponse
 }
 
 

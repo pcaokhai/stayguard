@@ -42,7 +42,7 @@ var want = map[string]struct{ roles, need string }{
 	"getExpenseMonth": {"O", "-"}, "createExpense": {"O", "-"}, "updateExpense": {"O", "-"}, "deleteExpense": {"O", "-"}, "getIncomeCostReport": {"O", "-"},
 	"updateProperty": {"O", "-"}, "listBankAccounts": {"O", "-"}, "createBankAccount": {"O", "-"}, "makeDefaultBankAccount": {"O", "-"},
 	"removeBankAccount": {"O", "-"}, "createBuilding": {"O", "-"}, "updateBuilding": {"O", "-"}, "createFloor": {"O", "-"}, "createRooms": {"O", "-"},
-	"updateRatePlan": {"O", "-"}, "removeService": {"O", "-"}, "linkTransferToInvoice": {"O", "-"}, "listAuditLogs": {"O", "-"},
+	"updateRatePlan": {"O", "-"}, "removeService": {"O", "-"}, "linkTransferToInvoice": {"O", "-"}, "listInvoices": {"O", "-"}, "listAuditLogs": {"O", "-"},
 }
 
 var public = []string{"createDemoSession", "getHealth", "getReadiness", "receiveBankWebhook", "receiveBankWebhookLegacy", "signIn"}

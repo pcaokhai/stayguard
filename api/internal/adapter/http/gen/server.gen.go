@@ -994,6 +994,21 @@ func (e TransactionReconciliation) Valid() bool {
 	}
 }
 
+// Defines values for ListInvoicesParamsStatus.
+const (
+	ListInvoicesParamsStatusUNPAID ListInvoicesParamsStatus = "UNPAID"
+)
+
+// Valid indicates whether the value is a known member of the ListInvoicesParamsStatus enum.
+func (e ListInvoicesParamsStatus) Valid() bool {
+	switch e {
+	case ListInvoicesParamsStatusUNPAID:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeleteGuestIdPhotoParamsSide.
 const (
 	DeleteGuestIdPhotoParamsSideBACK  DeleteGuestIdPhotoParamsSide = "BACK"
@@ -1209,11 +1224,18 @@ type BillLine struct {
 
 // Building defines model for Building.
 type Building struct {
-	Code   string          `json:"code"`
-	Counts StatusCounts    `json:"counts"`
-	Id     string          `json:"id"`
-	Level  PermissionLevel `json:"level"`
-	Name   string          `json:"name"`
+	Code   string       `json:"code"`
+	Counts StatusCounts `json:"counts"`
+
+	// Floors The building's floors in display order
+	Floors *[]struct {
+		Id    string `json:"id"`
+		Name  string `json:"name"`
+		Order int    `json:"order"`
+	} `json:"floors,omitempty"`
+	Id    string          `json:"id"`
+	Level PermissionLevel `json:"level"`
+	Name  string          `json:"name"`
 }
 
 // BuildingAccess defines model for BuildingAccess.
@@ -1600,6 +1622,23 @@ type Invoice struct {
 // InvoiceStatus defines model for Invoice.Status.
 type InvoiceStatus string
 
+// InvoiceCandidate defines model for InvoiceCandidate.
+type InvoiceCandidate struct {
+	// Balance Whole Vietnamese dong
+	Balance      Vnd       `json:"balance"`
+	BillCode     string    `json:"billCode"`
+	CheckedOutAt time.Time `json:"checkedOutAt"`
+	GuestName    string    `json:"guestName"`
+	InvoiceId    string    `json:"invoiceId"`
+
+	// Paid Whole Vietnamese dong
+	Paid     Vnd    `json:"paid"`
+	RoomCode string `json:"roomCode"`
+
+	// Total Whole Vietnamese dong
+	Total Vnd `json:"total"`
+}
+
 // LeaveBalance defines model for LeaveBalance.
 type LeaveBalance struct {
 	Annual int `json:"annual"`
@@ -1975,6 +2014,8 @@ type Room struct {
 	BuildingId string       `json:"buildingId"`
 	Code       string       `json:"code"`
 	Floor      int          `json:"floor"`
+	FloorId    *string      `json:"floorId,omitempty"`
+	FloorName  *string      `json:"floorName,omitempty"`
 	Id         string       `json:"id"`
 
 	// Note Free text such as a maintenance reason
@@ -2009,6 +2050,9 @@ type RosterAssignment struct {
 	Date   openapi_types.Date `json:"date"`
 	Shift  ShiftCode          `json:"shift"`
 	UserId string             `json:"userId"`
+
+	// UserName Filled in answers so a manager sees names without listStaff (which shows pay); ignored in requests
+	UserName *string `json:"userName,omitempty"`
 }
 
 // SepayStatus defines model for SepayStatus.
@@ -2179,12 +2223,16 @@ type Stay struct {
 
 // StayListItem defines model for StayListItem.
 type StayListItem struct {
-	CheckInAt     time.Time          `json:"checkInAt"`
-	CheckOutAt    *time.Time         `json:"checkOutAt,omitempty"`
-	FrontDeskName *string            `json:"frontDeskName,omitempty"`
-	GuestId       GuestIdIndicators  `json:"guestId"`
-	GuestName     string             `json:"guestName"`
-	Id            string             `json:"id"`
+	BillCode      *string           `json:"billCode,omitempty"`
+	CheckInAt     time.Time         `json:"checkInAt"`
+	CheckOutAt    *time.Time        `json:"checkOutAt,omitempty"`
+	FrontDeskName *string           `json:"frontDeskName,omitempty"`
+	GuestId       GuestIdIndicators `json:"guestId"`
+	GuestName     string            `json:"guestName"`
+	Id            string            `json:"id"`
+
+	// InvoiceId The invoice of a checked-out stay
+	InvoiceId     *string            `json:"invoiceId,omitempty"`
 	PaymentMethod *PaymentMethod     `json:"paymentMethod,omitempty"`
 	RentalType    RentalType         `json:"rentalType"`
 	RoomCode      string             `json:"roomCode"`
@@ -2501,6 +2549,18 @@ type CreateExpenseParams struct {
 	// IdempotencyKey Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
+
+// ListInvoicesParams defines parameters for ListInvoices.
+type ListInvoicesParams struct {
+	// Status Only UNPAID exists today; it is the default.
+	Status *ListInvoicesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Amount Whole VND of the transfer to match
+	Amount *int64 `form:"amount,omitempty" json:"amount,omitempty"`
+}
+
+// ListInvoicesParamsStatus defines parameters for ListInvoices.
+type ListInvoicesParamsStatus string
 
 // ListLeaveRequestsParams defines parameters for ListLeaveRequests.
 type ListLeaveRequestsParams struct {
@@ -3019,6 +3079,9 @@ type ServerInterface interface {
 	// UpdateExpense Edit a manual or recurring expense
 	// (PATCH /v1/owner/expenses/{expenseId})
 	UpdateExpense(w http.ResponseWriter, r *http.Request, expenseId string)
+	// ListInvoices Invoices still to be paid, best match for a bank amount first
+	// (GET /v1/owner/invoices)
+	ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams)
 	// ListLeaveRequests Leave requests to decide
 	// (GET /v1/owner/leave-requests)
 	ListLeaveRequests(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsParams)
@@ -3423,6 +3486,12 @@ func (_ Unimplemented) DeleteExpense(w http.ResponseWriter, r *http.Request, exp
 // UpdateExpense Edit a manual or recurring expense
 // (PATCH /v1/owner/expenses/{expenseId})
 func (_ Unimplemented) UpdateExpense(w http.ResponseWriter, r *http.Request, expenseId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListInvoices Invoices still to be paid, best match for a bank amount first
+// (GET /v1/owner/invoices)
+func (_ Unimplemented) ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -4880,6 +4949,52 @@ func (siw *ServerInterfaceWrapper) UpdateExpense(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateExpense(w, r, expenseId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInvoices operation middleware
+func (siw *ServerInterfaceWrapper) ListInvoices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvoicesParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "amount" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "amount", r.URL.Query(), &params.Amount, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "amount"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvoices(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7864,6 +7979,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/v1/invoices/{invoiceId}/receipt", wrapper.GetReceipt)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/owner/invoices", wrapper.ListInvoices)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/owner/transactions", wrapper.ListTransactions)
 	})
 	r.Group(func(r chi.Router) {
@@ -10110,6 +10228,78 @@ type UpdateExpense422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateExpense422ApplicationProblemPlusJSONResponse) VisitUpdateExpenseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoicesRequestObject struct {
+	Params ListInvoicesParams
+}
+
+type ListInvoicesResponseObject interface {
+	VisitListInvoicesResponse(w http.ResponseWriter) error
+}
+
+type ListInvoices200JSONResponse struct {
+	Items []InvoiceCandidate `json:"items"`
+}
+
+func (response ListInvoices200JSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoices401ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoices403ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoices422ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -15420,6 +15610,9 @@ type StrictServerInterface interface {
 	// UpdateExpense Edit a manual or recurring expense
 	// (PATCH /v1/owner/expenses/{expenseId})
 	UpdateExpense(ctx context.Context, request UpdateExpenseRequestObject) (UpdateExpenseResponseObject, error)
+	// ListInvoices Invoices still to be paid, best match for a bank amount first
+	// (GET /v1/owner/invoices)
+	ListInvoices(ctx context.Context, request ListInvoicesRequestObject) (ListInvoicesResponseObject, error)
 	// ListLeaveRequests Leave requests to decide
 	// (GET /v1/owner/leave-requests)
 	ListLeaveRequests(ctx context.Context, request ListLeaveRequestsRequestObject) (ListLeaveRequestsResponseObject, error)
@@ -16594,6 +16787,32 @@ func (sh *strictHandler) UpdateExpense(w http.ResponseWriter, r *http.Request, e
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateExpenseResponseObject); ok {
 		if err := validResponse.VisitUpdateExpenseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInvoices operation middleware
+func (sh *strictHandler) ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams) {
+	var request ListInvoicesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvoices(ctx, request.(ListInvoicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvoices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvoicesResponseObject); ok {
+		if err := validResponse.VisitListInvoicesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

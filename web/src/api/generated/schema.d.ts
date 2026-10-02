@@ -1390,6 +1390,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/owner/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoices still to be paid, best match for a bank amount first
+         * @description Checked-out invoices that are not paid. With `amount`, invoices whose balance equals it come first, then the rest by check-out time, newest first. `balance` is the total minus what is already covered: the deposit and any money the bank reported that did not settle the invoice. Used to link an unmatched transfer.
+         */
+        get: operations["listInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/owner/transactions": {
         parameters: {
             query?: never;
@@ -1740,6 +1760,12 @@ export interface components {
             code: string;
             name: string;
             level: components["schemas"]["PermissionLevel"];
+            /** @description The building's floors in display order */
+            floors?: {
+                id: string;
+                name: string;
+                order: number;
+            }[];
             counts: components["schemas"]["StatusCounts"];
         };
         StaySummary: {
@@ -1755,6 +1781,8 @@ export interface components {
             id: string;
             code: string;
             buildingId: string;
+            floorId?: string;
+            floorName?: string;
             floor: number;
             unitType: {
                 code: string;
@@ -2096,6 +2124,8 @@ export interface components {
             userId: string;
             /** Format: date */
             date: string;
+            /** @description Filled in answers so a manager sees names without listStaff (which shows pay); ignored in requests */
+            readonly userName?: string;
             shift: components["schemas"]["ShiftCode"];
         };
         /** @enum {string} */
@@ -2478,6 +2508,17 @@ export interface components {
             toRoomId: string;
             rentalType: components["schemas"]["RentalType"];
         };
+        InvoiceCandidate: {
+            invoiceId: string;
+            billCode: string;
+            roomCode: string;
+            guestName: string;
+            /** Format: date-time */
+            checkedOutAt: string;
+            total: components["schemas"]["Vnd"];
+            paid: components["schemas"]["Vnd"];
+            balance: components["schemas"]["Vnd"];
+        };
         StayListItem: {
             id: string;
             roomCode: string;
@@ -2493,6 +2534,9 @@ export interface components {
             state?: "IN_STAY" | "PAID" | "UNPAID" | "MISMATCH" | "TIME_EDITED";
             status: components["schemas"]["StayStatus"];
             frontDeskName?: string;
+            /** @description The invoice of a checked-out stay */
+            invoiceId?: string | null;
+            billCode?: string | null;
             guestId: components["schemas"]["GuestIdIndicators"];
         };
         StayTimelineEvent: {
@@ -5068,6 +5112,36 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listInvoices: {
+        parameters: {
+            query?: {
+                /** @description Only UNPAID exists today; it is the default. */
+                status?: "UNPAID";
+                /** @description Whole VND of the transfer to match */
+                amount?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["InvoiceCandidate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Unprocessable"];
         };
     };
     listTransactions: {

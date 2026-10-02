@@ -2673,6 +2673,55 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/owner/invoices:
+    get:
+      tags:
+      - Payments
+      operationId: listInvoices
+      summary: Invoices still to be paid, best match for a bank amount first
+      description: 'Checked-out invoices that are not paid. With `amount`, invoices whose balance equals it come first, then the
+        rest by check-out time, newest first. `balance` is the total minus what is already covered: the deposit and any money the
+        bank reported that did not settle the invoice. Used to link an unmatched transfer.'
+      x-story: SG-903
+      x-access: OWNER
+      x-release: full
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: Only UNPAID exists today; it is the default.
+        schema:
+          type: string
+          enum:
+          - UNPAID
+      - name: amount
+        in: query
+        required: false
+        description: Whole VND of the transfer to match
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceCandidate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/owner/transactions:
     get:
       tags:
@@ -3619,6 +3668,22 @@ components:
           type: string
         level:
           $ref: '#/components/schemas/PermissionLevel'
+        floors:
+          type: array
+          description: The building's floors in display order
+          items:
+            type: object
+            required:
+            - id
+            - name
+            - order
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              order:
+                type: integer
         counts:
           $ref: '#/components/schemas/StatusCounts'
     StaySummary:
@@ -3659,6 +3724,10 @@ components:
         code:
           type: string
         buildingId:
+          type: string
+        floorId:
+          type: string
+        floorName:
           type: string
         floor:
           type: integer
@@ -4591,6 +4660,10 @@ components:
       properties:
         userId: *id005
         date: *id003
+        userName:
+          type: string
+          readOnly: true
+          description: Filled in answers so a manager sees names without listStaff (which shows pay); ignored in requests
         shift:
           $ref: '#/components/schemas/ShiftCode'
     LeaveKind:
@@ -5564,6 +5637,35 @@ components:
         toRoomId: *id005
         rentalType:
           $ref: '#/components/schemas/RentalType'
+    InvoiceCandidate:
+      type: object
+      required:
+      - invoiceId
+      - billCode
+      - roomCode
+      - guestName
+      - checkedOutAt
+      - total
+      - paid
+      - balance
+      properties:
+        invoiceId:
+          type: string
+        billCode:
+          type: string
+        roomCode:
+          type: string
+        guestName:
+          type: string
+        checkedOutAt:
+          type: string
+          format: date-time
+        total:
+          $ref: '#/components/schemas/Vnd'
+        paid:
+          $ref: '#/components/schemas/Vnd'
+        balance:
+          $ref: '#/components/schemas/Vnd'
     StayListItem:
       type: object
       required:
@@ -5605,6 +5707,15 @@ components:
         status:
           $ref: '#/components/schemas/StayStatus'
         frontDeskName: *id005
+        invoiceId:
+          type:
+          - string
+          - 'null'
+          description: The invoice of a checked-out stay
+        billCode:
+          type:
+          - string
+          - 'null'
         guestId:
           $ref: '#/components/schemas/GuestIdIndicators'
     StayTimelineEvent:
