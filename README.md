@@ -106,6 +106,7 @@ npm run dev
 | Lint | `make lint` | `golangci-lint` for the API, ESLint for the web |
 | Format | `make fmt` | |
 | Contract checks | `make contracts` | Spectral lint, oasdiff against `main`, schema compile, pricing vectors |
+| Money-path smoke test | `make smoke` | builds its own stack (project `stayguard-smoke`, port 18080, so a `make up` stack can keep running), creates a test guesthouse with the installer commands, then drives the phone UI with Playwright: sign in, check in, extras, check out, pay by a signed SePay-style webhook, clean, close the shift, owner sees the revenue. Needs Docker, `npm ci` in `web/`, `python3`. `KEEP=1` leaves the stack up; `REUSE=1` runs again on it (about 15 s) |
 | Web production build | `cd web && npm run build` | also run once with `NEXT_PUBLIC_MOCK=1` to check mock mode |
 
 Tests are required for pricing, check-out and invoice, payments and settlement, tenant scoping, sign-in and roles (see `CLAUDE.md` section 4). Everything else is checked by build, typecheck, lint and the manual flow below.

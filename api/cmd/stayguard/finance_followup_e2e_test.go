@@ -58,6 +58,11 @@ func TestOwnerCash_NoShiftButNeverDropped_FU1(t *testing.T) {
 	rep := parse(raw)
 	var total int64
 	_ = e.owner.QueryRow(context.Background(), `SELECT total FROM app.invoices WHERE id = $1`, r.invoice).Scan(&total)
+	// The owner overview must tell the same story as the report: revenue is what paid invoices were for, deposit included.
+	_, raw = e.send("GET", "/v1/owner/overview?date="+day, r.token, "", nil)
+	if ov := parse(raw); ov["revenueTotal"] != float64(total) || ov["cashExpected"] != float64(total) || ov["transfersReceived"] != float64(0) {
+		t.Fatalf("overview revenue %v (cash %v, transfers %v), invoice total %d: %s", ov["revenueTotal"], ov["cashExpected"], ov["transfersReceived"], total, raw)
+	}
 	if st != 200 || methodShares(t, rep)["CASH"] != total || rep["revenue"] != float64(total) {
 		t.Fatalf("revenue by method %v, invoice total %d: %s", methodShares(t, rep), total, raw)
 	}

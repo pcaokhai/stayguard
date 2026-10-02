@@ -1,7 +1,7 @@
 # StayGuard task runner. Targets not yet built print the story that adds them and fail.
 COMPOSE := docker compose -f deploy/compose.yaml
 
-.PHONY: gen-api gen-sqlc gen-sqlc-docker gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
+.PHONY: gen-api gen-sqlc gen-sqlc-docker gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e smoke
 
 # Local data encryption key, created once and never committed (deploy/.env.local is git-ignored).
 deploy/.env.local:
@@ -87,5 +87,9 @@ migrate:
 # Testcontainers needs a running Docker daemon. RACE=1 adds -race (needs cgo; CI sets it).
 test-api-int:
 	cd api && go test $(if $(RACE),-race) -tags integration -count=1 ./...
+# Money-path smoke test: builds the stack, sets up a test guesthouse and drives the web app with Playwright (scripts/smoke.sh).
+smoke:
+	scripts/smoke.sh
+
 e2e:
 	$(call not_yet,SG-603)

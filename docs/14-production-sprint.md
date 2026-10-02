@@ -149,7 +149,7 @@ Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, To
 3. `stayguard tenant import` with the customer's real data (file outside git); set SePay secret; Test-mode transfer, then one live 2,000đ transfer; scan the QR with two banking apps.
 4. Staff get one-time PINs; walk the receptionist through on their own phone.
 
-Done under G1 (not tracked as tasks): X1 deploy files (`deploy/compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`, README for a fresh VPS; booted and restore-rehearsed locally). X2 smoke test: see below once added.
+Done under G1 (not tracked as tasks): X1 deploy files (`deploy/compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`, README for a fresh VPS; booted and restore-rehearsed locally). X2 `web/e2e/smoke.spec.ts` + `make smoke` (README section 4): the money path from sign-in to closed shift against a real stack, with a signed webhook computed in the test.
 
 ### Fast-follow (hours 24–44)
 

@@ -1,0 +1,30 @@
+{
+  "guesthouseCode": "smoke",
+  "name": "Smoke Test Guesthouse",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "defaultLocale": "en",
+  "property": { "name": "Smoke Test Guesthouse", "address": "1 Test Street", "phone": "0900000000" },
+  "bankAccount": { "bankBin": "970436", "accountNo": "1017588888", "accountName": "SMOKE TEST GUESTHOUSE" },
+  "buildings": [{ "code": "A", "name": "Building A", "floors": 1, "roomsPerFloor": 3 }],
+  "unitTypes": [
+    {
+      "code": "STANDARD",
+      "name": { "vi": "Phòng thường", "en": "Standard" },
+      "ratePlan": {
+        "version": 1, "currency": "VND", "graceMinutes": 15,
+        "hourly": { "firstHour": 80000, "extraHour": 20000 },
+        "overnight": { "price": 200000, "windowStart": "21:00", "windowEnd": "12:00" },
+        "daily": { "price": 300000, "windowStart": "14:00", "windowEnd": "12:00" }
+      }
+    }
+  ],
+  "services": [{ "code": "WATER", "name": { "vi": "Nước suối", "en": "Still water" }, "price": 10000, "stock": 40 }],
+  "owner": { "name": "Smoke Owner", "username": "owner" },
+  "staff": [
+    {
+      "name": "Smoke Linh", "username": "linh", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
+      "contract": { "payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12 },
+      "buildingAccess": { "A": "EDIT" }
+    }
+  ]
+}

@@ -255,21 +255,23 @@ func TestOwnerOverview_A4(t *testing.T) {
 		}
 		return int64(cur.(float64))
 	}
+	// Revenue is what the invoices were for (docs 15 rule 18, like the report): each stay's 100,000 cash deposit counts too.
+	const deposits = 2 * 100000
 	ov := e.call("GET", "/v1/owner/overview", cash.token, nil)
 	if ov.status != 200 {
 		t.Fatalf("overview: %d %v", ov.status, ov.body)
 	}
-	if got := num(ov, "revenueTotal"); got != cash.balance+xfer.balance {
-		t.Errorf("revenueTotal = %d, want %d", got, cash.balance+xfer.balance)
+	if got := num(ov, "revenueTotal"); got != cash.balance+xfer.balance+deposits {
+		t.Errorf("revenueTotal = %d, want %d", got, cash.balance+xfer.balance+deposits)
 	}
 	if got := num(ov, "transfersReceived"); got != xfer.balance {
 		t.Errorf("transfersReceived = %d, want %d", got, xfer.balance)
 	}
-	if got := num(ov, "cashExpected"); got != cash.balance {
-		t.Errorf("cashExpected = %d, want %d", got, cash.balance)
+	if got := num(ov, "cashExpected"); got != cash.balance+deposits {
+		t.Errorf("cashExpected = %d, want %d", got, cash.balance+deposits)
 	}
 	byB, _ := ov.body["byBuilding"].([]any)
-	if len(byB) != 2 || byB[0].(map[string]any)["revenue"].(float64) != float64(cash.balance+xfer.balance) || byB[1].(map[string]any)["revenue"].(float64) != 0 {
+	if len(byB) != 2 || byB[0].(map[string]any)["revenue"].(float64) != float64(cash.balance+xfer.balance+deposits) || byB[1].(map[string]any)["revenue"].(float64) != 0 {
 		t.Errorf("byBuilding = %v", byB)
 	}
 	if num(ov, "occupancy", "totalRooms") != 35 || num(ov, "occupancy", "occupiedRooms") != 11 || num(ov, "occupancy", "overdueRooms") < 1 {

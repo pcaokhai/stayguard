@@ -1,0 +1,17 @@
+# Smoke test override (see `make smoke`): the real sign-in (no demo picker), every finished slice on, and ports that do not
+# collide with a dev stack started by `make up`. Local only.
+services:
+  db:
+    ports: !override
+      - "127.0.0.1:${SMOKE_DB_PORT:-15432}:5432"
+  api:
+    build:
+      args:
+        NEXT_PUBLIC_DEMO_MODE: "0"
+    environment:
+      DEMO_MODE: "0"
+      FF_S1_ROOM_MAP: "1"
+      FF_S2_CHECKIN: "1"
+      FF_S3_CHECKOUT: "1"
+    ports: !override
+      - "127.0.0.1:${SMOKE_PORT:-18080}:8080"

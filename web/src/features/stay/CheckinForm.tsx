@@ -72,6 +72,7 @@ export function CheckinForm() {
       guestName: "",
       guestPhone: "",
       deposit: vndNumber(DEFAULT_DEPOSIT),
+      idNumber: "", // optional: left undefined, the schema would refuse an untouched form
     },
   });
 
