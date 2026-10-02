@@ -38,14 +38,41 @@ type Auth struct {
 	byCode   RateLimiter
 	// dummyHash is checked when the user does not exist, so timing does not reveal it.
 	dummyHash string
+	// gate caps concurrent bcrypt work: above it a request is refused with 429 instead of queueing CPU.
+	gate chan struct{}
 }
+
+// maxConcurrentHashes bounds bcrypt operations running at once (about 250 ms of one core each).
+const maxConcurrentHashes = 4
 
 func NewAuth(s *Sessions, tenants TenantByCode, repo AuthRepo, hasher PinHasher, audit AuditWriter, alerts AlertWriter, byIP, byCode RateLimiter) (*Auth, error) {
 	dummy, err := hasher.Hash("000000")
 	if err != nil {
 		return nil, err
 	}
-	return &Auth{s, tenants, repo, hasher, audit, alerts, byIP, byCode, dummy}, nil
+	return &Auth{s, tenants, repo, hasher, audit, alerts, byIP, byCode, dummy, make(chan struct{}, maxConcurrentHashes)}, nil
+}
+
+// verify and hash run the slow hash under the gate; ErrTooManyRequests when the gate is full. Callers count a wrong
+// PIN only after verify answered, so a refused request never counts as an attempt.
+func (a *Auth) verify(hash, pin string) (bool, error) {
+	select {
+	case a.gate <- struct{}{}:
+		defer func() { <-a.gate }()
+		return a.hasher.Verify(hash, pin), nil
+	default:
+		return false, ErrTooManyRequests
+	}
+}
+
+func (a *Auth) hash(pin string) (string, error) {
+	select {
+	case a.gate <- struct{}{}:
+		defer func() { <-a.gate }()
+		return a.hasher.Hash(pin)
+	default:
+		return "", ErrTooManyRequests
+	}
 }
 
 // SignInResult is a new session; the raw token exists only in this value.
@@ -72,12 +99,16 @@ func (a *Auth) SignIn(ctx context.Context, ip, code, username, pin string) (Sign
 	if !a.byIP.Allow("ip:"+ip) || !a.byCode.Allow("code:"+code) {
 		return SignInResult{}, ErrTooManyRequests
 	}
+	// A cancelled request still counts its wrong PIN: the transaction below must be able to commit.
+	ctx = context.WithoutCancel(ctx)
 	tenantID, found, err := a.tenants.TenantByCode(ctx, code)
 	if err != nil {
 		return SignInResult{}, err
 	}
 	if !found {
-		a.hasher.Verify(a.dummyHash, pin)
+		if _, err = a.verify(a.dummyHash, pin); err != nil {
+			return SignInResult{}, err
+		}
 		return SignInResult{}, ErrPinInvalid
 	}
 	var out signInOutcome
@@ -106,7 +137,9 @@ func (a *Auth) signInTx(ctx context.Context, tx Tx, tenantID, username, pin stri
 		return signInOutcome{err: err}
 	}
 	if !ok || u.Status != statusActive || u.Access == accessNone {
-		a.hasher.Verify(a.dummyHash, pin)
+		if _, err = a.verify(a.dummyHash, pin); err != nil {
+			return signInOutcome{err: err}
+		}
 		return signInOutcome{err: ErrPinInvalid}
 	}
 	state, ok, err := a.repo.PinState(ctx, tx, u.ID)
@@ -116,7 +149,11 @@ func (a *Auth) signInTx(ctx context.Context, tx Tx, tenantID, username, pin stri
 	if state.LockedUntil != nil && now.Before(*state.LockedUntil) {
 		return signInOutcome{err: &AccountLockedError{Until: *state.LockedUntil}}
 	}
-	if !a.hasher.Verify(state.Hash, pin) {
+	good, err := a.verify(state.Hash, pin)
+	if err != nil {
+		return signInOutcome{err: err}
+	}
+	if !good {
 		return signInOutcome{err: a.recordWrongPin(ctx, tx, u.ID, state, now)}
 	}
 	if state.OneTimeExpiresAt != nil && !now.Before(*state.OneTimeExpiresAt) {
@@ -124,6 +161,11 @@ func (a *Auth) signInTx(ctx context.Context, tx Tx, tenantID, username, pin stri
 	}
 	if state.FailedCount > 0 || state.LockedUntil != nil {
 		if err = a.repo.SetPinFailures(ctx, tx, u.ID, 0, nil, nil); err != nil {
+			return signInOutcome{err: err}
+		}
+	}
+	if a.hasher.NeedsRehash(state.Hash) {
+		if err = a.upgradeHash(ctx, tx, u.ID, pin); err != nil {
 			return signInOutcome{err: err}
 		}
 	}
@@ -136,6 +178,15 @@ func errOr(err, fallback error) error {
 		return err
 	}
 	return fallback
+}
+
+// upgradeHash replaces a hash of an older scheme by the current one, once the PIN is known to be right.
+func (a *Auth) upgradeHash(ctx context.Context, tx Tx, userID, pin string) error {
+	h, err := a.hash(pin)
+	if err != nil {
+		return err
+	}
+	return a.repo.UpdatePinHash(ctx, tx, userID, h)
 }
 
 // recordWrongPin counts the failure and, on the fifth within the window, locks the account and audits it.
@@ -190,10 +241,11 @@ func (a *Auth) ChangePin(ctx context.Context, c Caller, current, next string) er
 	if current == next {
 		return ErrPinTooSimple
 	}
-	hash, err := a.hasher.Hash(next)
+	hash, err := a.hash(next)
 	if err != nil {
 		return err
 	}
+	ctx = context.WithoutCancel(ctx) // a cancelled request still counts a wrong current PIN
 	var outcome error
 	err = a.sessions.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
 		now := a.sessions.clock.Now()
@@ -221,7 +273,11 @@ func (a *Auth) checkPin(ctx context.Context, tx Tx, userID, pin string, now time
 	if st.LockedUntil != nil && now.Before(*st.LockedUntil) {
 		return &AccountLockedError{Until: *st.LockedUntil}
 	}
-	if !a.hasher.Verify(st.Hash, pin) {
+	good, err := a.verify(st.Hash, pin)
+	if err != nil {
+		return err
+	}
+	if !good {
 		return a.recordWrongPin(ctx, tx, userID, st, now)
 	}
 	return nil

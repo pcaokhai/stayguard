@@ -142,3 +142,11 @@ func (AuthRepo) DeleteOtherSessions(ctx context.Context, tx app.Tx, userID, keep
 		TenantID: t.tenant, UserID: userID, KeepHash: keepHash,
 	}))
 }
+
+func (AuthRepo) UpdatePinHash(ctx context.Context, tx app.Tx, userID, hash string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("update pin hash", sqlcgen.New(t).UpdatePinHash(ctx, sqlcgen.UpdatePinHashParams{TenantID: t.tenant, UserID: userID, PinHash: hash}))
+}

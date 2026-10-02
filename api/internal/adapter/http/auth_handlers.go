@@ -19,9 +19,10 @@ type AuthService interface {
 
 type ipKey struct{}
 
-// clientIP puts the caller's address on the context for rate limiting. Behind a trusted proxy it is the
-// last X-Forwarded-For entry (the one the proxy appended); otherwise the TCP peer, which a client cannot forge.
-func clientIP(trustProxy bool) func(http.Handler) http.Handler {
+// clientIP puts the caller's address on the context for rate limiting. Behind trusted proxies it is the entry
+// hops from the right of X-Forwarded-For (hops 1 is the last one, appended by the single proxy in front); with
+// fewer entries than hops, or without trust, it is the TCP peer, which a client cannot forge.
+func clientIP(trustProxy bool, hops int) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ip, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -30,7 +31,9 @@ func clientIP(trustProxy bool) func(http.Handler) http.Handler {
 			}
 			if xff := r.Header.Get("X-Forwarded-For"); trustProxy && xff != "" {
 				parts := strings.Split(xff, ",")
-				ip = strings.TrimSpace(parts[len(parts)-1])
+				if i := len(parts) - hops; i >= 0 && hops >= 1 {
+					ip = strings.TrimSpace(parts[i])
+				}
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ipKey{}, ip)))
 		})

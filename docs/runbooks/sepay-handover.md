@@ -25,6 +25,10 @@ Decision: there is no web page for tenant setup or SePay keys. The installer doe
 
 Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ transfer in Live mode; the QR screen must turn Paid by itself.
 
+## Server settings the installer must check once
+
+- `TRUST_PROXY=1` and `TRUSTED_PROXY_HOPS=1` in `deploy/.env.prod`: one Caddy in front, the app port closed to the internet (see `deploy/README.md`). Without them every sign-in shares the proxy's address and the per-IP limit locks everyone out together.
+
 ## Rules
 
 - The secret is write-only: no command or screen prints it back.

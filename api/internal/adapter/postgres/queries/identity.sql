@@ -72,3 +72,6 @@ DELETE FROM app.sessions WHERE tenant_id = @tenant_id AND token_hash = @token_ha
 
 -- name: DeleteOtherUserSessions :exec
 DELETE FROM app.sessions WHERE tenant_id = @tenant_id AND user_id = @user_id AND token_hash <> @keep_hash;
+
+-- name: UpdatePinHash :exec
+UPDATE app.pin_credentials SET pin_hash = @pin_hash WHERE tenant_id = @tenant_id AND user_id = @user_id;

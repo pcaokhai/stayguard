@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	maxProxyHops     = 5
 	defaultPort      = 8080
 	maxPort          = 65535
 	defaultStaticDir = "web/out"
@@ -34,8 +35,11 @@ type Config struct {
 	DemoMode bool
 	// TrustProxy (TRUST_PROXY, default false) reads the client address from X-Forwarded-For; set it only behind the reverse proxy.
 	TrustProxy bool
-	SessionTTL time.Duration // SESSION_TTL_HOURS, default 12
-	TrialTTL   time.Duration // TRIAL_TTL_HOURS, default 24
+	// TrustedProxyHops (TRUSTED_PROXY_HOPS, default 1) is how many reverse proxies stand in front of the server:
+	// the client address is that many entries from the right of X-Forwarded-For. One Caddy means 1.
+	TrustedProxyHops int
+	SessionTTL       time.Duration // SESSION_TTL_HOURS, default 12
+	TrialTTL         time.Duration // TRIAL_TTL_HOURS, default 24
 	// RoomMapEnabled (FF_S1_ROOM_MAP, default false) turns on the room map operations (slice S1).
 	RoomMapEnabled bool
 	// DataEncryptionKey (DATA_ENCRYPTION_KEY, standard base64 of 32 bytes) encrypts sensitive fields.
@@ -116,6 +120,14 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("TRUST_PROXY must be a boolean, got %q", v)
 		}
 		c.TrustProxy = b
+	}
+	c.TrustedProxyHops = 1
+	if v := getenv("TRUSTED_PROXY_HOPS"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > maxProxyHops {
+			return Config{}, fmt.Errorf("TRUSTED_PROXY_HOPS must be an integer in 1..%d, got %q", maxProxyHops, v)
+		}
+		c.TrustedProxyHops = n
 	}
 	if v := getenv("ALLOW_PRIVILEGED_DB"); v != "" {
 		b, err := strconv.ParseBool(v)

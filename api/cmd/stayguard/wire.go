@@ -89,7 +89,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
-	auth, err := newAuth(sessions, pool, audit, clock.System{})
+	auth, err := newAuth(cfg, sessions, pool, audit, clock.System{})
 	if err != nil {
 		pool.Close()
 		return deps{}, err
@@ -198,8 +198,8 @@ const (
 )
 
 // newAuth builds PIN sign-in with per-IP and per-guesthouse-code rate limits.
-func newAuth(sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
-	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.PinHasher{}, audit, postgres.AlertWriter{},
+func newAuth(cfg config.Config, sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
+	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.NewPinHasher(cfg.DataEncryptionKey), audit, postgres.AlertWriter{},
 		ratelimit.New(signInPerIP, signInRateEvery, clk.Now), ratelimit.New(signInPerCode, signInRateEvery, clk.Now))
 }
 
@@ -233,7 +233,7 @@ func newInstaller(cfg config.Config, pool *pgxpool.Pool, clk app.Clock) (*app.In
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
 	return app.NewInstaller(postgres.NewUnitOfWork(pool), postgres.NewTenantResolver(pool), postgres.TenantSetupRepo{}, postgres.DemoSeedRepo{},
-		postgres.BankRepo{}, postgres.StaffRepo{}, postgres.NewAuthRepo(), enc, crypto.PinHasher{}, crypto.PinGenerator{}, crypto.TokenGenerator{},
+		postgres.BankRepo{}, postgres.StaffRepo{}, postgres.NewAuthRepo(), enc, crypto.NewPinHasher(cfg.DataEncryptionKey), crypto.PinGenerator{}, crypto.TokenGenerator{},
 		postgres.NewAuditWriter(), postgres.AlertWriter{}, ids.New(clk.Now), clk), nil
 }
 

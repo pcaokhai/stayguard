@@ -360,6 +360,21 @@ func (q *Queries) UpdatePinFailures(ctx context.Context, arg UpdatePinFailuresPa
 	return err
 }
 
+const updatePinHash = `-- name: UpdatePinHash :exec
+UPDATE app.pin_credentials SET pin_hash = $1 WHERE tenant_id = $2 AND user_id = $3
+`
+
+type UpdatePinHashParams struct {
+	PinHash  string
+	TenantID string
+	UserID   string
+}
+
+func (q *Queries) UpdatePinHash(ctx context.Context, arg UpdatePinHashParams) error {
+	_, err := q.db.Exec(ctx, updatePinHash, arg.PinHash, arg.TenantID, arg.UserID)
+	return err
+}
+
 const updateUserLocale = `-- name: UpdateUserLocale :execrows
 UPDATE app.users SET locale = $1 WHERE tenant_id = $2 AND id = $3
 `

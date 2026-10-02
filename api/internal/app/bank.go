@@ -155,6 +155,7 @@ func (b *Bank) CreateAccount(ctx context.Context, c Caller, key string, in BankA
 	if err := validateAccountInput(in); err != nil {
 		return BankAccountView{}, err
 	}
+	ctx = context.WithoutCancel(ctx) // a cancelled request still counts a wrong owner PIN
 	var view BankAccountView
 	var outcome error
 	err := b.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
@@ -243,6 +244,7 @@ func (b *Bank) change(ctx context.Context, c Caller, op, id, ownerPin, action st
 	if access.ValidatePinFormat(ownerPin) != nil {
 		return BankAccountView{}, &ValidationError{"ownerPin", "must be six digits"}
 	}
+	ctx = context.WithoutCancel(ctx) // a cancelled request still counts a wrong owner PIN
 	var view BankAccountView
 	var outcome error
 	err := b.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {

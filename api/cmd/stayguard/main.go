@@ -79,7 +79,7 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
 			Rooms: d.rooms, RoomMapEnabled: cfg.RoomMapEnabled, Stays: d.stays, CheckInEnabled: cfg.CheckInEnabled,
 			Billing: d.billing, CheckoutEnabled: cfg.CheckoutEnabled, Payments: d.payments, Housekeeping: d.housekeeping, Owner: d.owner, StayOps: d.stayOps, Shifts: d.shifts, Monitor: d.monitor, Maintenance: d.maintenance,
-			Auth: d.auth, Staff: d.staff, Bank: d.bank, TrustProxy: cfg.TrustProxy,
+			Auth: d.auth, Staff: d.staff, Bank: d.bank, TrustProxy: cfg.TrustProxy, ProxyHops: cfg.TrustedProxyHops,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,

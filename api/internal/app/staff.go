@@ -179,6 +179,9 @@ func (s *Staff) CreateStaff(ctx context.Context, c Caller, key string, in StaffI
 	if key == "" || len(key) > maxIdempotencyKeyBytes {
 		return StaffView{}, nil, ErrInvalidIdempotencyKey
 	}
+	if err := managerCeiling(c, &in.AppAccess); err != nil {
+		return StaffView{}, nil, err
+	}
 	if err := validateStaffInput(in); err != nil {
 		return StaffView{}, nil, err
 	}
@@ -231,7 +234,7 @@ func (s *Staff) newOneTimePin() (*OneTimePin, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("generate pin: %w", err)
 	}
-	hash, err := s.auth.hasher.Hash(pin)
+	hash, err := s.auth.hash(pin)
 	if err != nil {
 		return nil, "", fmt.Errorf("hash pin: %w", err)
 	}
@@ -324,12 +327,18 @@ func (s *Staff) UpdateStaff(ctx context.Context, c Caller, userID string, in Sta
 	if err := s.authz.Check("updateStaff", c.Role, access.EDIT); err != nil {
 		return StaffView{}, err
 	}
+	if err := managerCeiling(c, in.AppAccess); err != nil {
+		return StaffView{}, err
+	}
 	patch, err := s.patchOf(in)
 	if err != nil {
 		return StaffView{}, err
 	}
 	var out StaffView
 	err = s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		if err := s.guardTarget(ctx, tx, c, userID); err != nil {
+			return err
+		}
 		cur, err := s.view(ctx, tx, userID)
 		if err != nil || cur.Status == statusRemoved {
 			return errOr(err, ErrNotFound)
@@ -353,6 +362,14 @@ func (s *Staff) UpdateStaff(ctx context.Context, c Caller, userID string, in Sta
 			map[string]any{"position": out.Position, "appAccess": out.AppAccess})
 	})
 	return out, err
+}
+
+// managerCeiling: a MANAGER cannot grant app access above RECEPTIONIST (MANAGER is the owner's to give).
+func managerCeiling(c Caller, appAccess *string) error {
+	if c.Role == access.RoleManager && appAccess != nil && *appAccess == "MANAGER" {
+		return access.ErrRoleForbidden
+	}
+	return nil
 }
 
 // checkAccessChange: sign-in needs a username, and a person created without one (appAccess NONE) cannot be given access.
@@ -393,6 +410,19 @@ func (s *Staff) patchOf(in StaffUpdate) (StaffPatch, error) {
 	return p, nil
 }
 
+// guardTarget stops a MANAGER from acting on an OWNER or another MANAGER: the optional manager runs the desk, not the owner's
+// people. It runs inside the transaction and reports ErrNotFound for an unknown id.
+func (s *Staff) guardTarget(ctx context.Context, tx Tx, c Caller, userID string) error {
+	role, _, ok, err := s.repo.UserRole(ctx, tx, userID)
+	if err != nil || !ok {
+		return errOr(err, ErrNotFound)
+	}
+	if c.Role == access.RoleManager && (role == access.RoleOwner || role == access.RoleManager) {
+		return access.ErrRoleForbidden
+	}
+	return nil
+}
+
 // ResetPin issues a new one-time PIN and ends the person's sessions. Unlike createStaff it takes no
 // idempotency key: a retry simply issues another PIN and the earlier one stops working.
 func (s *Staff) ResetPin(ctx context.Context, c Caller, userID string) (OneTimePin, error) {
@@ -404,6 +434,9 @@ func (s *Staff) ResetPin(ctx context.Context, c Caller, userID string) (OneTimeP
 		return OneTimePin{}, err
 	}
 	err = s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		if err := s.guardTarget(ctx, tx, c, userID); err != nil {
+			return err
+		}
 		cur, err := s.view(ctx, tx, userID)
 		if err != nil || cur.Status == statusRemoved {
 			return errOr(err, ErrNotFound)
@@ -441,6 +474,9 @@ func (s *Staff) setLock(ctx context.Context, c Caller, op, userID, status, actio
 	}
 	var out StaffView
 	err := s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		if err := s.guardTarget(ctx, tx, c, userID); err != nil {
+			return err
+		}
 		if ok, err := s.repo.SetStatus(ctx, tx, userID, status); err != nil || !ok {
 			return errOr(err, ErrNotFound)
 		}
@@ -472,12 +508,16 @@ func (s *Staff) RemoveStaff(ctx context.Context, c Caller, userID, ownerPin stri
 	if access.ValidatePinFormat(ownerPin) != nil {
 		return &ValidationError{"ownerPin", "must be six digits"}
 	}
+	ctx = context.WithoutCancel(ctx) // a cancelled request still counts a wrong owner PIN
 	var outcome error
 	err := s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
 		failure, err := s.auth.requireOwnerPin(ctx, tx, c.UserID, ownerPin, s.clock.Now())
 		if err != nil || failure != nil {
 			outcome = failure
 			return err // a wrong owner PIN commits its count
+		}
+		if err := s.guardTarget(ctx, tx, c, userID); err != nil {
+			return err
 		}
 		cur, err := s.view(ctx, tx, userID)
 		if err != nil || cur.Status == statusRemoved {

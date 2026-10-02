@@ -26,10 +26,12 @@ type TenantByCode interface {
 	TenantByCode(ctx context.Context, code string) (tenantID string, found bool, err error)
 }
 
-// PinHasher is a slow salted hash.
+// PinHasher is a slow salted, peppered hash. NeedsRehash is true for a hash made by an older scheme: it still
+// verifies and is replaced on the next successful sign-in.
 type PinHasher interface {
 	Hash(pin string) (string, error)
 	Verify(hash, pin string) bool
+	NeedsRehash(hash string) bool
 }
 
 // RateLimiter counts calls per key and says whether the call is within the limit.
@@ -60,6 +62,8 @@ type AuthRepo interface {
 	PinState(ctx context.Context, tx Tx, userID string) (PinState, bool, error)
 	SetPinFailures(ctx context.Context, tx Tx, userID string, count int, first, lockedUntil *time.Time) error
 	// SetPin replaces the PIN and clears failures and the lock.
+	// UpdatePinHash swaps the stored hash of the same PIN (scheme upgrade) without touching lock or expiry state.
+	UpdatePinHash(ctx context.Context, tx Tx, userID, hash string) error
 	SetPin(ctx context.Context, tx Tx, userID, hash string, mustChange bool, oneTimeExpiresAt *time.Time, now time.Time) error
 	DeleteSession(ctx context.Context, tx Tx, tokenHash string) error
 	DeleteOtherSessions(ctx context.Context, tx Tx, userID, keepHash string) error

@@ -123,3 +123,24 @@ func TestLoadSessionCap_SG102_AC2(t *testing.T) {
 		t.Fatalf("cap itself must be accepted: %+v err=%v", c, err)
 	}
 }
+
+func TestLoad_TrustedProxyHops_Hardening9(t *testing.T) {
+	get := func(v string) (Config, error) {
+		m := map[string]string{"DATABASE_URL": testDBURL}
+		if v != "" {
+			m["TRUSTED_PROXY_HOPS"] = v
+		}
+		return Load(env(m))
+	}
+	if c, err := get(""); err != nil || c.TrustedProxyHops != 1 {
+		t.Fatalf("default: %+v %v", c, err)
+	}
+	if c, err := get("2"); err != nil || c.TrustedProxyHops != 2 {
+		t.Fatalf("two: %+v %v", c, err)
+	}
+	for _, bad := range []string{"0", "-1", "x", "99"} {
+		if _, err := get(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}

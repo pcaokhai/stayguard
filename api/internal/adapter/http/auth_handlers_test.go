@@ -47,8 +47,12 @@ func (f *fakeAuth) SignOut(context.Context, app.Caller) error { f.signedOut = tr
 func (f *fakeAuth) ChangePin(context.Context, app.Caller, string, string) error { return f.changeErr }
 
 func authRouter(a *fakeAuth, logs *bytes.Buffer, trustProxy bool) http.Handler {
+	return authRouterHops(a, logs, trustProxy, 1)
+}
+
+func authRouterHops(a *fakeAuth, logs *bytes.Buffer, trustProxy bool, hops int) http.Handler {
 	return NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), Options{
-		Probe: readyProbe{}, Sessions: pinChangeSessions{&fakeSessions{}}, Auth: a, TrustProxy: trustProxy,
+		Probe: readyProbe{}, Sessions: pinChangeSessions{&fakeSessions{}}, Auth: a, TrustProxy: trustProxy, ProxyHops: hops,
 	})
 }
 
@@ -116,6 +120,16 @@ func TestSignInHTTP_ClientIP_SG701_AC5(t *testing.T) {
 		want := map[bool]string{false: "10.0.0.9", true: "203.0.113.7"}[trust]
 		if a.ip != want {
 			t.Errorf("trust=%v ip=%q want %q", trust, a.ip, want)
+		}
+	}
+	// Hardening 9: with a second proxy layer the client is the second entry from the right; too few entries fall back to the peer.
+	for hops, want := range map[int]string{1: "203.0.113.7", 2: "6.6.6.6", 3: "10.0.0.9"} {
+		req := httptest.NewRequest("POST", "/v1/auth/sign-in", strings.NewReader(signInBody))
+		req.RemoteAddr = "10.0.0.9:5555"
+		req.Header.Set("X-Forwarded-For", "6.6.6.6, 203.0.113.7")
+		authRouterHops(a, &bytes.Buffer{}, true, hops).ServeHTTP(httptest.NewRecorder(), req)
+		if a.ip != want {
+			t.Errorf("hops=%d ip=%q want %q", hops, a.ip, want)
 		}
 	}
 }

@@ -13,11 +13,12 @@ import (
 type authKey struct{ tenant, id string }
 
 type fakeAuthRepo struct {
-	users   map[authKey]SignInUser // by tenant+user id
-	byName  map[authKey]string     // tenant+username -> user id
-	deleted []string
-	kept    string
-	setPins []string
+	users    map[authKey]SignInUser // by tenant+user id
+	byName   map[authKey]string     // tenant+username -> user id
+	deleted  []string
+	kept     string
+	setPins  []string
+	upgraded []string
 }
 
 func (r *fakeAuthRepo) SignInUser(_ context.Context, tx Tx, username string) (SignInUser, bool, error) {
@@ -50,6 +51,11 @@ func (r *fakeAuthRepo) SetPin(_ context.Context, tx Tx, id, hash string, must bo
 	return nil
 }
 
+func (r *fakeAuthRepo) UpdatePinHash(_ context.Context, _ Tx, _, hash string) error {
+	r.upgraded = append(r.upgraded, hash)
+	return nil
+}
+
 func (r *fakeAuthRepo) DeleteSession(_ context.Context, _ Tx, h string) error {
 	r.deleted = append(r.deleted, h)
 	return nil
@@ -72,6 +78,7 @@ type fakeHasher struct{}
 
 func (fakeHasher) Hash(pin string) (string, error) { return "hash(" + pin + ")", nil }
 func (fakeHasher) Verify(h, pin string) bool       { return h == "hash("+pin+")" }
+func (fakeHasher) NeedsRehash(string) bool         { return false }
 
 type allowAll struct{}
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -23,10 +24,14 @@ type testHasher struct{}
 
 func (testHasher) Hash(pin string) (string, error) { return "hashed:" + pin, nil }
 func (testHasher) Verify(hash, pin string) bool    { return hash == "hashed:"+pin }
+func (testHasher) NeedsRehash(string) bool         { return false }
 
-type testGen struct{ n atomic.Int32 }
+// genSeq is package-wide: row ids are unique across tenants and the database is shared by the package.
+var genSeq atomic.Int32
 
-func (g *testGen) New(prefix string) string { return fmt.Sprintf("%s_%d", prefix, g.n.Add(1)) }
+type testGen struct{}
+
+func (testGen) New(prefix string) string { return fmt.Sprintf("%s_auth_%d", prefix, genSeq.Add(1)) }
 
 // tokenSeq is package-wide: the database is shared, and a session token hash is unique across tenants.
 var tokenSeq atomic.Int32
@@ -69,7 +74,7 @@ func newAuthEnv(t *testing.T) authEnv {
 	pool := newAppPool(t, db, 4)
 	uow := NewUnitOfWork(pool)
 	clk := &movingClock{now: time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)}
-	sess := app.NewSessions(app.SessionsConfig{SessionTTL: time.Hour}, uow, NewSessionResolver(pool), NewIdentityRepo(), clk, &testGen{}, testTokens{}, noSeeder{})
+	sess := app.NewSessions(app.SessionsConfig{SessionTTL: time.Hour}, uow, NewSessionResolver(pool), NewIdentityRepo(), clk, testGen{}, testTokens{}, noSeeder{})
 	auth, err := app.NewAuth(sess, NewTenantResolver(pool), NewAuthRepo(), testHasher{}, NewAuditWriter(), AlertWriter{}, allowAllLimiter{}, allowAllLimiter{})
 	if err != nil {
 		t.Fatal(err)
@@ -207,5 +212,60 @@ func TestSignInPostgres_OneTimePinAndBlockedUser_SG701_AC3(t *testing.T) {
 	}
 	if _, err = e.auth.SignIn(ctx, "1.1.1.1", e.codeA, "ann", "260814"); !errors.Is(err, app.ErrPinInvalid) {
 		t.Fatalf("removed user sign-in: %v", err)
+	}
+}
+
+// Hardening 4: concurrent wrong PINs cannot exceed the limit. The credential row is locked while a PIN is checked,
+// so at most five are evaluated and every other request sees the lock.
+func TestSignInPostgres_ParallelWrongPinsAreAtomic_Hardening4(t *testing.T) {
+	ctx := context.Background()
+	e := newAuthEnv(t)
+	const attempts = 20
+	results := make(chan error, attempts)
+	var start sync.WaitGroup
+	start.Add(1)
+	for i := 0; i < attempts; i++ {
+		go func() {
+			start.Wait()
+			_, err := e.auth.SignIn(ctx, "1.1.1.1", e.codeA, "ann", "159357")
+			results <- err
+		}()
+	}
+	start.Done()
+	var invalid, locked, other int
+	for i := 0; i < attempts; i++ {
+		var l *app.AccountLockedError
+		switch err := <-results; {
+		case errors.Is(err, app.ErrPinInvalid):
+			invalid++
+		case errors.As(err, &l):
+			locked++
+		default:
+			other++
+			t.Logf("unexpected: %v", err)
+		}
+	}
+	if other != 0 || invalid != 4 || locked != attempts-4 {
+		t.Fatalf("invalid=%d locked=%d other=%d: want exactly 4 evaluated wrong PINs, the rest locked", invalid, locked, other)
+	}
+	var failed int
+	owner := connAs(t, e.db, "owner")
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM app.audit_logs WHERE tenant_id = $1 AND action = 'ACCOUNT_LOCKED'`, e.tenantA).Scan(&failed); err != nil || failed != 1 {
+		t.Fatalf("exactly one lock event expected, got %d %v", failed, err)
+	}
+}
+
+// Hardening 4: a request whose context is already cancelled still counts its wrong PIN.
+func TestSignInPostgres_CancelledRequestStillCounts_Hardening4(t *testing.T) {
+	e := newAuthEnv(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := e.auth.SignIn(ctx, "1.1.1.1", e.codeA, "ann", "159357"); !errors.Is(err, app.ErrPinInvalid) {
+		t.Fatalf("%v", err)
+	}
+	var n int
+	owner := connAs(t, e.db, "owner")
+	if err := owner.QueryRow(context.Background(), `SELECT failed_count FROM app.pin_credentials WHERE tenant_id = $1`, e.tenantA).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("failed_count = %d %v", n, err)
 	}
 }

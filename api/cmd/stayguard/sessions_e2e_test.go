@@ -109,7 +109,7 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	if err != nil {
 		t.Fatalf("stay ops: %v", err)
 	}
-	auth, err := newAuth(sessions, pool, postgres.NewAuditWriter(), clk)
+	auth, err := newAuth(cfg, sessions, pool, postgres.NewAuditWriter(), clk)
 	if err != nil {
 		t.Fatalf("auth: %v", err)
 	}

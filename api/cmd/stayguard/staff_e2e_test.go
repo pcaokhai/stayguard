@@ -23,7 +23,7 @@ func (e *env) seedOwner() {
 	e.t.Helper()
 	e.exec(`INSERT INTO app.tenants (id, name, guesthouse_code) VALUES ($1, 'Staff Co', $2)`, staffTenant, staffCode)
 	e.exec(`INSERT INTO app.users (id, tenant_id, name, role, app_access, username) VALUES ('us_owner', $1, 'Owner', 'OWNER', 'OWNER', 'owner1')`, staffTenant)
-	hash, err := crypto.PinHasher{}.Hash(ownerPIN)
+	hash, err := crypto.NewPinHasher(testDataKey).Hash(ownerPIN)
 	if err != nil {
 		e.t.Fatal(err)
 	}
