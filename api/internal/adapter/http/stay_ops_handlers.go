@@ -81,12 +81,12 @@ func deref(s *string) string {
 	return *s
 }
 
-// toStayListItem carries guestId indicators as all false until the guest ID task (F-A2) fills them.
+// toStayListItem carries the guestId indicators of the stay (never the data).
 func toStayListItem(r app.StayListRow) gen.StayListItem {
 	state := gen.StayListItemState(r.State)
 	item := gen.StayListItem{Id: r.ID, RoomCode: r.RoomCode, GuestName: r.GuestName, RentalType: gen.RentalType(r.RentalType),
 		CheckInAt: r.CheckInAt, CheckOutAt: r.CheckOutAt, Total: r.Total, State: &state, Status: gen.StayStatus(r.Status),
-		GuestId: gen.GuestIdIndicators{}, InvoiceId: nilIfEmpty(r.InvoiceID), BillCode: nilIfEmpty(r.BillCode)}
+		GuestId: toIndicators(r.GuestID), InvoiceId: nilIfEmpty(r.InvoiceID), BillCode: nilIfEmpty(r.BillCode)}
 	if r.PaymentMethod != "" {
 		m := gen.PaymentMethod(r.PaymentMethod)
 		item.PaymentMethod = &m

@@ -154,3 +154,28 @@ func TestTimelineAndReceipt_Access_SG904(t *testing.T) {
 		t.Errorf("no building access: %v", err)
 	}
 }
+
+type fakeIndicators struct{ calls, lastIDs int }
+
+func (f *fakeIndicators) Indicators(_ context.Context, _ Tx, ids []string) (map[string]GuestIDIndicators, error) {
+	f.calls++
+	f.lastIDs = len(ids)
+	return map[string]GuestIDIndicators{ids[0]: {HasIDNumber: true, HasFrontPhoto: true}}, nil
+}
+
+// One batched read per page, however many stays it holds.
+func TestAddIndicators_OneReadPerPage_FollowUp(t *testing.T) {
+	f := &fakeIndicators{}
+	h := &StayHistory{guestIDs: f}
+	rows := []StayListRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	if err := h.addIndicators(context.Background(), fakeTx{"tn"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	if f.calls != 1 || f.lastIDs != 3 || !rows[0].GuestID.HasIDNumber || !rows[0].GuestID.HasFrontPhoto || rows[1].GuestID.HasIDNumber {
+		t.Fatalf("calls=%d ids=%d rows=%+v", f.calls, f.lastIDs, rows)
+	}
+	h2 := &StayHistory{}
+	if err := h2.addIndicators(context.Background(), fakeTx{"tn"}, rows); err != nil {
+		t.Fatal(err)
+	}
+}

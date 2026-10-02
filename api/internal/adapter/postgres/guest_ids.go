@@ -81,6 +81,23 @@ func (GuestIDRepo) Record(ctx context.Context, tx app.Tx, stayID string) (app.Gu
 	return out, true, nil
 }
 
+// Indicators is the batched read for lists: yes/no flags for the given stays in one query.
+func (GuestIDRepo) Indicators(ctx context.Context, tx app.Tx, stayIDs []string) (map[string]app.GuestIDIndicators, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).GuestIDIndicatorsFor(ctx, sqlcgen.GuestIDIndicatorsForParams{TenantID: t.tenant, StayIds: stayIDs})
+	if err != nil {
+		return nil, wrap("select guest id indicators", err)
+	}
+	out := make(map[string]app.GuestIDIndicators, len(rows))
+	for _, r := range rows {
+		out[r.StayID] = app.GuestIDIndicators{HasIDNumber: r.HasNumber, HasFrontPhoto: r.HasFront, HasBackPhoto: r.HasBack}
+	}
+	return out, nil
+}
+
 func (GuestIDRepo) ClearNumber(ctx context.Context, tx app.Tx, stayID string) (bool, error) {
 	t, err := pgTx(tx)
 	if err != nil {

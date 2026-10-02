@@ -168,6 +168,53 @@ func (q *Queries) GetGuestPhotoEnc(ctx context.Context, arg GetGuestPhotoEncPara
 	return image_enc, err
 }
 
+const guestIDIndicatorsFor = `-- name: GuestIDIndicatorsFor :many
+SELECT g.stay_id,
+       (g.number_enc IS NOT NULL)::boolean AS has_number,
+       EXISTS (SELECT 1 FROM app.guest_id_photos p WHERE p.tenant_id = g.tenant_id AND p.stay_id = g.stay_id AND p.side = 'FRONT') AS has_front,
+       EXISTS (SELECT 1 FROM app.guest_id_photos p WHERE p.tenant_id = g.tenant_id AND p.stay_id = g.stay_id AND p.side = 'BACK') AS has_back
+FROM app.guest_ids g
+WHERE g.tenant_id = $1 AND g.stay_id = ANY($2::text[])
+`
+
+type GuestIDIndicatorsForParams struct {
+	TenantID string
+	StayIds  []string
+}
+
+type GuestIDIndicatorsForRow struct {
+	StayID    string
+	HasNumber bool
+	HasFront  bool
+	HasBack   bool
+}
+
+// Yes/no flags for a page of stays in one read; stays with no guest ID row are simply absent.
+func (q *Queries) GuestIDIndicatorsFor(ctx context.Context, arg GuestIDIndicatorsForParams) ([]GuestIDIndicatorsForRow, error) {
+	rows, err := q.db.Query(ctx, guestIDIndicatorsFor, arg.TenantID, arg.StayIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GuestIDIndicatorsForRow
+	for rows.Next() {
+		var i GuestIDIndicatorsForRow
+		if err := rows.Scan(
+			&i.StayID,
+			&i.HasNumber,
+			&i.HasFront,
+			&i.HasBack,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const guestIDStay = `-- name: GuestIDStay :one
 
 SELECT s.id, s.status, s.check_out_at, u.building_id, u.code AS room_code

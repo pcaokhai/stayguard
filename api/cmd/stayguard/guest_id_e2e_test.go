@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -341,3 +342,45 @@ func (e *env) jobs() []tenantJob {
 	}
 	return j
 }
+
+// listStays carries the same indicators as getStay, from one batched read per page.
+func TestListStays_GuestIDIndicators_FollowUp(t *testing.T) {
+	e := newEnv(t)
+	owner := e.ownerSetupRooms(3)
+	desk := e.roleToken(owner, "linh", "RECEPTIONIST", "FRONT_DESK", "EDIT")
+	mk := func(room int, body map[string]any) string {
+		st, raw := e.checkIn(desk, room, newKey(), stayBody(body))
+		if st != 201 {
+			t.Fatalf("check-in %d: %d %s", room, st, raw)
+		}
+		return parse(raw)["id"].(string)
+	}
+	withBoth := mk(1, map[string]any{"idNumber": gidNumber})
+	if st, _, _ := e.upload(desk, withBoth, "FRONT", photoJPEG(t, 20, 20), "image/jpeg"); st != 200 {
+		t.Fatalf("upload: %d", st)
+	}
+	photoOnly := mk(2, nil)
+	if st, _, _ := e.upload(desk, photoOnly, "BACK", photoJPEG(t, 20, 20), "image/jpeg"); st != 200 {
+		t.Fatalf("upload: %d", st)
+	}
+	none := mk(3, nil)
+	want := map[string][3]bool{withBoth: {true, true, false}, photoOnly: {false, false, true}, none: {false, false, false}}
+	for name, token := range map[string]string{"receptionist": desk, "owner": owner} {
+		r := e.call("GET", "/v1/stays", token, nil)
+		if r.status != 200 || len(items(r)) != 3 {
+			t.Fatalf("%s list: %d %v", name, r.status, r.body)
+		}
+		for _, it := range items(r) {
+			g := it["guestId"].(map[string]any)
+			got := [3]bool{g["hasIdNumber"] == true, g["hasFrontPhoto"] == true, g["hasBackPhoto"] == true}
+			if got != want[it["id"].(string)] {
+				t.Errorf("%s: stay %v flags %v, want %v", name, it["id"], got, want[it["id"].(string)])
+			}
+			if strings.Contains(string(mustJSON(it)), gidNumber) {
+				t.Error("the number is in the list")
+			}
+		}
+	}
+}
+
+func mustJSON(v any) []byte { b, _ := json.Marshal(v); return b }

@@ -215,7 +215,7 @@ func newStayOps(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 	levels := permissions.Stored{}
 	return stayOps{
 		StayEdits:   app.NewStayEdits(uow, postgres.StayEditRepo{}, levels, enc, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk),
-		StayHistory: app.NewStayHistory(uow, postgres.StayHistoryRepo{}, levels, clk),
+		StayHistory: app.NewStayHistory(uow, postgres.StayHistoryRepo{}, levels, clk).WithGuestIDs(postgres.GuestIDRepo{}),
 	}, nil
 }
 

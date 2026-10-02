@@ -54,3 +54,12 @@ DELETE FROM app.guest_id_photos WHERE tenant_id = @tenant_id AND stay_id = @stay
 
 -- name: DeleteGuestIDRow :exec
 DELETE FROM app.guest_ids WHERE tenant_id = @tenant_id AND stay_id = @stay_id;
+
+-- name: GuestIDIndicatorsFor :many
+-- Yes/no flags for a page of stays in one read; stays with no guest ID row are simply absent.
+SELECT g.stay_id,
+       (g.number_enc IS NOT NULL)::boolean AS has_number,
+       EXISTS (SELECT 1 FROM app.guest_id_photos p WHERE p.tenant_id = g.tenant_id AND p.stay_id = g.stay_id AND p.side = 'FRONT') AS has_front,
+       EXISTS (SELECT 1 FROM app.guest_id_photos p WHERE p.tenant_id = g.tenant_id AND p.stay_id = g.stay_id AND p.side = 'BACK') AS has_back
+FROM app.guest_ids g
+WHERE g.tenant_id = @tenant_id AND g.stay_id = ANY(@stay_ids::text[]);

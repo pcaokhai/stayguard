@@ -35,12 +35,17 @@ type StayHistory struct {
 	uow   UnitOfWork
 	repo  StayHistoryRepo
 	clock Clock
+	// guestIDs fills the guestId flags of a page; nil leaves them false.
+	guestIDs GuestIDIndicatorsReader
 	guard
 }
 
 func NewStayHistory(uow UnitOfWork, repo StayHistoryRepo, levels BuildingLevels, clock Clock) *StayHistory {
 	return &StayHistory{uow: uow, repo: repo, clock: clock, guard: guard{levels: levels}}
 }
+
+// WithGuestIDs makes lists carry the guest ID indicators, one batched read per page.
+func (h *StayHistory) WithGuestIDs(r GuestIDIndicatorsReader) *StayHistory { h.guestIDs = r; return h }
 
 // ListStays returns the stays checked in on the chosen days, newest first, from buildings the caller can view.
 // A receptionist is limited to the last frontDeskHistoryDays days of the property settings (default 7); owners and managers have no limit.
@@ -64,7 +69,7 @@ func (h *StayHistory) ListStays(ctx context.Context, c Caller, q StayListQuery) 
 			return fmt.Errorf("stays: %w", err)
 		}
 		out = pageOf(rows)
-		return nil
+		return h.addIndicators(ctx, tx, out.Items)
 	})
 	return out, err
 }
@@ -278,4 +283,23 @@ func receiptOf(rec ReceiptRecord) (ReceiptView, error) {
 		v.Payments[i] = ReceiptPayment{ID: p.ID, Method: p.Method, Amount: p.Amount, At: p.At.UTC()}
 	}
 	return v, nil
+}
+
+// addIndicators sets the flags of every row of the page with a single read (no query per stay).
+func (h *StayHistory) addIndicators(ctx context.Context, tx Tx, rows []StayListRow) error {
+	if h.guestIDs == nil || len(rows) == 0 {
+		return nil
+	}
+	ids := make([]string, len(rows))
+	for i, r := range rows {
+		ids[i] = r.ID
+	}
+	flags, err := h.guestIDs.Indicators(ctx, tx, ids)
+	if err != nil {
+		return fmt.Errorf("guest id indicators: %w", err)
+	}
+	for i := range rows {
+		rows[i].GuestID = flags[rows[i].ID]
+	}
+	return nil
 }

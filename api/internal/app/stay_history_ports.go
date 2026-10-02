@@ -26,6 +26,7 @@ type StayListRow struct {
 	Total                                                             *int64
 	PaymentMethod                                                     string
 	InvoiceID, BillCode                                               string // empty until the stay is checked out
+	GuestID                                                           GuestIDIndicators
 }
 
 // TimelineRow is one event of a stay; Details hold display values only.
@@ -53,6 +54,12 @@ type ReceiptRecord struct {
 }
 
 // StayHistoryRepo filters by the tenant of the Tx.
+// GuestIDIndicatorsReader reads the yes/no guest ID flags of many stays in one query. It is the guest ID repository's
+// narrow door for lists: never the data itself.
+type GuestIDIndicatorsReader interface {
+	Indicators(ctx context.Context, tx Tx, stayIDs []string) (map[string]GuestIDIndicators, error)
+}
+
 type StayHistoryRepo interface {
 	Timezone(ctx context.Context, tx Tx) (string, error)
 	// FrontDeskDays is the property setting: how many days back a receptionist may look.
