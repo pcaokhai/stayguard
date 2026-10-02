@@ -17,9 +17,9 @@ FOR UPDATE OF u;
 -- name: InsertStay :exec
 -- check_in_at comes from the argument (the server clock of the use case), never from now().
 INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, deposit, check_in_at,
-                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc)
+                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc, created_by)
 VALUES (@id, @tenant_id, @unit_id, @rental_type, 'ACTIVE', @deposit, @check_in_at,
-        @rate_plan_snapshot, @rate_plan_schema, @guest_name, @guest_phone, @id_number_enc);
+        @rate_plan_snapshot, @rate_plan_schema, @guest_name, @guest_phone, @id_number_enc, sqlc.narg(created_by));
 
 -- name: OccupyRoom :execrows
 UPDATE app.units SET status = 'OCCUPIED'

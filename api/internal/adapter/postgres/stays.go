@@ -63,6 +63,7 @@ func (StayRepo) InsertStay(ctx context.Context, tx app.Tx, s app.NewStay) error 
 		ID: s.ID, TenantID: t.tenant, UnitID: s.RoomID, RentalType: s.RentalType, Deposit: s.Deposit,
 		CheckInAt: pgtype.Timestamptz{Time: s.CheckInAt, Valid: true}, RatePlanSnapshot: s.RatePlanSnapshot,
 		RatePlanSchema: int16(s.RatePlanSchema), GuestName: s.GuestName, GuestPhone: s.GuestPhone, IDNumberEnc: s.IDNumberEnc,
+		CreatedBy: optText(s.CreatedBy),
 	})
 	var pe *pgconn.PgError
 	if errors.As(err, &pe) && pe.Code == pgUniqueViolation && pe.ConstraintName == oneActiveStayIndex {

@@ -11,8 +11,8 @@ FOR UPDATE OF s;
 
 -- name: InsertStayExtra :exec
 -- created_at comes from the argument (the server clock of the use case), never from now().
-INSERT INTO app.stay_extras (id, tenant_id, stay_id, service_id, quantity, unit_amount, amount, created_at)
-VALUES (@id, @tenant_id, @stay_id, @service_id, @quantity, @unit_amount, @amount, @created_at);
+INSERT INTO app.stay_extras (id, tenant_id, stay_id, service_id, quantity, unit_amount, amount, created_at, created_by)
+VALUES (@id, @tenant_id, @stay_id, @service_id, @quantity, @unit_amount, @amount, @created_at, sqlc.narg(created_by));
 
 -- name: MarkStayCheckedOut :execrows
 UPDATE app.stays SET status = 'CHECKED_OUT', check_out_at = @at

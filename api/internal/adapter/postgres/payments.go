@@ -91,7 +91,7 @@ func (PaymentRepo) PendingTransfers(ctx context.Context, tx app.Tx) ([]app.Pendi
 	}
 	out := make([]app.PendingTransfer, len(rows))
 	for i, r := range rows {
-		out[i] = app.PendingTransfer{PaymentID: r.ID, InvoiceID: r.InvoiceID, StayID: r.StayID, BillCode: r.BillCode, Amount: r.Amount}
+		out[i] = app.PendingTransfer{PaymentID: r.ID, InvoiceID: r.InvoiceID, StayID: r.StayID, BillCode: r.BillCode, RoomCode: r.RoomCode, Amount: r.Amount}
 	}
 	return out, nil
 }

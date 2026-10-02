@@ -97,7 +97,7 @@ Tests (required): docs/archive/14-demo-plan.md P3 test list; QR account comes on
 `createBuilding`, `updateBuilding`, `createFloor`, `createRooms`, `updateRoom`, `listRatePlans`, `updateRatePlan`, `previewPrice`, `createService`, `updateService`, `restockService` (OPENING and IN movements; stock never edited directly).
 Tests: `previewPrice` uses `domain/pricing` (one golden case through the endpoint); room with a guest cannot change type or retire.
 
-#### [ ] L-B1 Stays: edit time, move, history, receipt, alerts (API-2) — migration 0013
+#### [x] L-B1 Stays: edit time, move, history, receipt, alerts (API-2) — migration 0013
 `editCheckInTime`, `moveStay`, `listStays` (date or range, receptionist window `frontDeskHistoryDays`, `guestId` indicators all false until F-A2), `getReceipt`, `getStayTimeline`; `alerts` table and the alert writer (STAY_TIME_EDITED, PAYMENT_MISMATCH, UNMATCHED_TRANSFER); `stay_edits`.
 Tests (required): SG-801 AC1–AC3 (the edit changes the price through pricing; out-of-range 422), receptionist window 422.
 

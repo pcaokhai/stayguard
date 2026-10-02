@@ -91,6 +91,8 @@ var (
 	anyRole = []Role{RoleOwner, RoleManager, RoleReceptionist, RoleHousekeeping}
 	front   = []Role{RoleOwner, RoleManager, RoleReceptionist}
 	owner   = []Role{RoleOwner}
+	// ownerManager: owner and the optional manager (docs/15 §2).
+	ownerManager = []Role{RoleOwner, RoleManager}
 )
 
 // rules is keyed by OpenAPI operationId; a test keeps it in step with contracts/openapi.yaml.
@@ -186,11 +188,11 @@ var rules = map[string]rule{
 	"listStockMovements":       {roles: owner, scope: ScopeOwnerOnly},
 	"removeService":            {roles: owner, scope: ScopeOwnerOnly},
 	"createStocktake":          {roles: owner, scope: ScopeOwnerOnly},
-	"editCheckInTime":          {roles: owner, scope: ScopeOwnerOnly},
-	"moveStay":                 {roles: owner, scope: ScopeOwnerOnly},
-	"listStays":                {roles: owner, scope: ScopeOwnerOnly},
-	"getStayTimeline":          {roles: owner, scope: ScopeOwnerOnly},
-	"getReceipt":               {roles: owner, scope: ScopeOwnerOnly},
+	"editCheckInTime":          {roles: front, min: EDIT, scope: ScopeBuilding},
+	"moveStay":                 {roles: front, min: EDIT, scope: ScopeBuilding},
+	"listStays":                {roles: front, scope: ScopeFilter},
+	"getStayTimeline":          {roles: ownerManager, scope: ScopeOwnerOnly},
+	"getReceipt":               {roles: front, min: VIEW, scope: ScopeBuilding},
 	"listTransactions":         {roles: owner, scope: ScopeOwnerOnly},
 	"linkTransferToInvoice":    {roles: owner, scope: ScopeOwnerOnly},
 	"listAlerts":               {roles: owner, scope: ScopeOwnerOnly},

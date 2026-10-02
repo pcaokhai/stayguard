@@ -35,6 +35,10 @@ var want = map[string]struct{ roles, need string }{
 	"listStaffPermissions":     {"O", "-"},
 	"setBuildingPermission":    {"O", "-"},
 	"getShiftReview":           {"O", "-"},
+	"editCheckInTime":          {"OR", "E"},
+	"moveStay":                 {"OR", "E"},
+	"listStays":                {"OR", "-"},
+	"getReceipt":               {"OR", "V"},
 }
 
 var public = []string{"createDemoSession", "getHealth", "getReadiness", "receiveBankWebhook"}

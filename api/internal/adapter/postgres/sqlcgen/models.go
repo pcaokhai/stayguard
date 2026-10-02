@@ -8,6 +8,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AppAlert struct {
+	ID        string
+	TenantID  string
+	Kind      string
+	RoomCode  pgtype.Text
+	ShiftID   pgtype.Text
+	StayID    pgtype.Text
+	ActorID   pgtype.Text
+	Amount    pgtype.Int8
+	Details   []byte
+	CreatedAt pgtype.Timestamptz
+	ReadAt    pgtype.Timestamptz
+	ReadBy    pgtype.Text
+}
+
 type AppAuditLog struct {
 	ID         string
 	TenantID   string
@@ -136,6 +151,22 @@ type AppStay struct {
 	GuestName        string
 	GuestPhone       string
 	RatePlanSchema   int16
+	CreatedBy        pgtype.Text
+}
+
+type AppStayEdit struct {
+	ID           string
+	TenantID     string
+	StayID       string
+	Kind         string
+	ActorID      pgtype.Text
+	OldCheckInAt pgtype.Timestamptz
+	NewCheckInAt pgtype.Timestamptz
+	ReasonCode   pgtype.Text
+	Note         pgtype.Text
+	FromRoomCode pgtype.Text
+	ToRoomCode   pgtype.Text
+	CreatedAt    pgtype.Timestamptz
 }
 
 type AppStayExtra struct {
@@ -147,6 +178,7 @@ type AppStayExtra struct {
 	UnitAmount int64
 	Amount     int64
 	CreatedAt  pgtype.Timestamptz
+	CreatedBy  pgtype.Text
 }
 
 type AppTenant struct {

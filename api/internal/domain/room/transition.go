@@ -25,3 +25,14 @@ func Clean(stored Status) (Status, error) {
 	}
 	return StatusVacant, nil
 }
+
+// ErrNotOccupied: only an OCCUPIED room can be left by its guest.
+var ErrNotOccupied = errors.New("room: not occupied")
+
+// MoveOut moves an OCCUPIED room to TO_CLEAN when its guest moves to another room.
+func MoveOut(stored Status) (Status, error) {
+	if stored != StatusOccupied {
+		return "", ErrNotOccupied
+	}
+	return StatusToClean, nil
+}

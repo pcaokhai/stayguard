@@ -27,6 +27,7 @@ type Server struct {
 	housekeeping HousekeepingService
 	owner        OwnerService
 	auth         AuthService
+	stayOps      StayOpsService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
@@ -36,6 +37,10 @@ func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roo
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
 		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner, auth: auth}
 }
+
+// WithStayOps adds the stay history and correction use cases (editCheckInTime, moveStay, listStays,
+// getStayTimeline, getReceipt); a Server without them answers those operations with a nil dereference, so the router always sets them.
+func (s Server) WithStayOps(ops StayOpsService) Server { s.stayOps = ops; return s }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
 	return nil, errNotImplemented
@@ -145,10 +150,6 @@ func (Server) DeleteGuestIdPhoto(context.Context, gen.DeleteGuestIdPhotoRequestO
 	return nil, errNotImplemented
 }
 
-func (Server) EditCheckInTime(context.Context, gen.EditCheckInTimeRequestObject) (gen.EditCheckInTimeResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetExpenseMonth(context.Context, gen.GetExpenseMonthRequestObject) (gen.GetExpenseMonthResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -177,19 +178,11 @@ func (Server) GetProperty(context.Context, gen.GetPropertyRequestObject) (gen.Ge
 	return nil, errNotImplemented
 }
 
-func (Server) GetReceipt(context.Context, gen.GetReceiptRequestObject) (gen.GetReceiptResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetRoster(context.Context, gen.GetRosterRequestObject) (gen.GetRosterResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) GetSepayStatus(context.Context, gen.GetSepayStatusRequestObject) (gen.GetSepayStatusResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetStayTimeline(context.Context, gen.GetStayTimelineRequestObject) (gen.GetStayTimelineResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -233,10 +226,6 @@ func (Server) ListStaff(context.Context, gen.ListStaffRequestObject) (gen.ListSt
 	return nil, errNotImplemented
 }
 
-func (Server) ListStays(context.Context, gen.ListStaysRequestObject) (gen.ListStaysResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListStockMovements(context.Context, gen.ListStockMovementsRequestObject) (gen.ListStockMovementsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -262,10 +251,6 @@ func (Server) MarkAlertRead(context.Context, gen.MarkAlertReadRequestObject) (ge
 }
 
 func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject) (gen.MarkPayrollPaidResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) MoveStay(context.Context, gen.MoveStayRequestObject) (gen.MoveStayResponseObject, error) {
 	return nil, errNotImplemented
 }
 

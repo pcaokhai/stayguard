@@ -88,7 +88,7 @@ func (b *Billing) addLocked(ctx context.Context, tx Tx, c Caller, stayID string,
 	if err != nil {
 		return StayDetail{}, err
 	}
-	added, err := b.take(ctx, tx, stayID, lines, rows)
+	added, err := b.take(ctx, tx, c, stayID, lines, rows)
 	if err != nil {
 		return StayDetail{}, err
 	}
@@ -144,7 +144,7 @@ type addedItem struct {
 
 // take decrements stock then inserts the extras row, line by line in code order. The unit amount is the
 // price the guarded decrement returned. Any error rolls the whole unit of work back, so partial stock is never kept.
-func (b *Billing) take(ctx context.Context, tx Tx, stayID string, lines []stay.ExtraLine, rows map[string]ServiceRow) ([]addedItem, error) {
+func (b *Billing) take(ctx context.Context, tx Tx, c Caller, stayID string, lines []stay.ExtraLine, rows map[string]ServiceRow) ([]addedItem, error) {
 	now := storedTime(b.clock.Now())
 	added := make([]addedItem, 0, len(lines))
 	for _, l := range lines {
@@ -158,7 +158,7 @@ func (b *Billing) take(ctx context.Context, tx Tx, stayID string, lines []stay.E
 			return nil, fmt.Errorf("extra amount: %w", err)
 		}
 		x := NewExtra{ID: b.ids.New(extraIDPrefix), StayID: stayID, ServiceID: svc.ID, Quantity: qty, UnitAmount: unit,
-			Amount: amount.Int64(), CreatedAt: now}
+			Amount: amount.Int64(), CreatedAt: now, CreatedBy: c.UserID}
 		if err := b.stays.InsertExtra(ctx, tx, x); err != nil {
 			return nil, fmt.Errorf("insert extra: %w", err)
 		}

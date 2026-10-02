@@ -93,8 +93,8 @@ func (q *Queries) InsertInvoice(ctx context.Context, arg InsertInvoiceParams) er
 }
 
 const insertStayExtra = `-- name: InsertStayExtra :exec
-INSERT INTO app.stay_extras (id, tenant_id, stay_id, service_id, quantity, unit_amount, amount, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO app.stay_extras (id, tenant_id, stay_id, service_id, quantity, unit_amount, amount, created_at, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type InsertStayExtraParams struct {
@@ -106,6 +106,7 @@ type InsertStayExtraParams struct {
 	UnitAmount int64
 	Amount     int64
 	CreatedAt  pgtype.Timestamptz
+	CreatedBy  pgtype.Text
 }
 
 // created_at comes from the argument (the server clock of the use case), never from now().
@@ -119,6 +120,7 @@ func (q *Queries) InsertStayExtra(ctx context.Context, arg InsertStayExtraParams
 		arg.UnitAmount,
 		arg.Amount,
 		arg.CreatedAt,
+		arg.CreatedBy,
 	)
 	return err
 }

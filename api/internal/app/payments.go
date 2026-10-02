@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +21,8 @@ const (
 	auditPaySettled = "payment.settled"
 	routePayFmt     = "POST /v1/invoices/%s/payments"
 	maskKeep        = 4
+	// maxAlertNoteRunes bounds the transfer note copied into an alert.
+	maxAlertNoteRunes = 100
 )
 
 // PaymentQR is what the client renders as a QR image; the account is always the tenant's own.
@@ -57,8 +60,13 @@ type Payments struct {
 	audit AuditWriter
 	ids   IDGenerator
 	clock Clock
+	// alerts is optional (nil raises nothing): PAYMENT_MISMATCH and UNMATCHED_TRANSFER for the owner (SG-801).
+	alerts AlertWriter
 	guard
 }
+
+// WithAlerts turns on the owner alerts for bank events that cannot settle an invoice.
+func (p *Payments) WithAlerts(a AlertWriter) *Payments { p.alerts = a; return p }
 
 func NewPayments(uow UnitOfWork, repo PaymentRepo, levels BuildingLevels, enc Encryptor, idem IdempotencyStore,
 	audit AuditWriter, ids IDGenerator, clock Clock) *Payments {
@@ -240,11 +248,21 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 	}
 	ix, found := payment.FindBillCode(ev.Content, codes)
 	if !found {
+		a := AlertDraft{Kind: AlertUnmatchedTransfer, Amount: &ev.Amount, Details: map[string]string{"transferNote": clip(ev.Content)}}
+		if err := p.raise(ctx, tx, a); err != nil {
+			return SettleResult{}, err
+		}
 		return SettleResult{Result: payment.ResultUnmatched}, nil // the event row already says UNMATCHED
 	}
 	t := pend[ix]
 	if ev.Amount != t.Amount {
 		if err := p.repo.MarkMismatch(ctx, tx, t.PaymentID, ev.Amount, ev.ExternalID); err != nil {
+			return SettleResult{}, err
+		}
+		a := AlertDraft{Kind: AlertPaymentMismatch, RoomCode: t.RoomCode, StayID: t.StayID, Amount: &ev.Amount,
+			Details: map[string]string{"billCode": t.BillCode, "expected": strconv.FormatInt(t.Amount, 10),
+				"received": strconv.FormatInt(ev.Amount, 10)}}
+		if err := p.raise(ctx, tx, a); err != nil {
 			return SettleResult{}, err
 		}
 		return p.finish(ctx, tx, ev, payment.ResultMismatch, t.PaymentID)
@@ -260,6 +278,26 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 		return SettleResult{}, err
 	}
 	return p.finish(ctx, tx, ev, payment.ResultSettled, t.PaymentID)
+}
+
+// raise writes an alert in the settlement transaction; without an alert writer it does nothing.
+func (p *Payments) raise(ctx context.Context, tx Tx, a AlertDraft) error {
+	if p.alerts == nil {
+		return nil
+	}
+	a.ID = p.ids.New(alertIDPrefix)
+	if err := p.alerts.Raise(ctx, tx, a); err != nil {
+		return fmt.Errorf("raise alert: %w", err)
+	}
+	return nil
+}
+
+// clip bounds a bank transfer note shown in an alert.
+func clip(s string) string {
+	if r := []rune(s); len(r) > maxAlertNoteRunes {
+		return string(r[:maxAlertNoteRunes])
+	}
+	return s
 }
 
 func (p *Payments) finish(ctx context.Context, tx Tx, ev PaymentEvent, result, paymentID string) (SettleResult, error) {

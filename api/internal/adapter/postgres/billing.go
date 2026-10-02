@@ -64,7 +64,7 @@ func (BillingRepo) InsertExtra(ctx context.Context, tx app.Tx, e app.NewExtra) e
 	}
 	err = sqlcgen.New(t).InsertStayExtra(ctx, sqlcgen.InsertStayExtraParams{
 		ID: e.ID, TenantID: t.tenant, StayID: e.StayID, ServiceID: e.ServiceID, Quantity: int32(e.Quantity),
-		UnitAmount: e.UnitAmount, Amount: e.Amount, CreatedAt: pgtype.Timestamptz{Time: e.CreatedAt, Valid: true},
+		UnitAmount: e.UnitAmount, Amount: e.Amount, CreatedAt: pgtype.Timestamptz{Time: e.CreatedAt, Valid: true}, CreatedBy: optText(e.CreatedBy),
 	})
 	return writeFailure("insert extra", err)
 }

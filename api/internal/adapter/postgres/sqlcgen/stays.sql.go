@@ -100,9 +100,9 @@ func (q *Queries) GetStayByID(ctx context.Context, arg GetStayByIDParams) (GetSt
 
 const insertStay = `-- name: InsertStay :exec
 INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, status, deposit, check_in_at,
-                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc)
+                       rate_plan_snapshot, rate_plan_schema, guest_name, guest_phone, id_number_enc, created_by)
 VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6,
-        $7, $8, $9, $10, $11)
+        $7, $8, $9, $10, $11, $12)
 `
 
 type InsertStayParams struct {
@@ -117,6 +117,7 @@ type InsertStayParams struct {
 	GuestName        string
 	GuestPhone       string
 	IDNumberEnc      []byte
+	CreatedBy        pgtype.Text
 }
 
 // check_in_at comes from the argument (the server clock of the use case), never from now().
@@ -133,6 +134,7 @@ func (q *Queries) InsertStay(ctx context.Context, arg InsertStayParams) error {
 		arg.GuestName,
 		arg.GuestPhone,
 		arg.IDNumberEnc,
+		arg.CreatedBy,
 	)
 	return err
 }

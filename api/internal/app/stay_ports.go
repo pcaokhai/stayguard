@@ -17,6 +17,7 @@ type CheckInRoom struct {
 // NewStay is the row inserted at check-in; IDNumberEnc is already ciphertext (nil when none).
 type NewStay struct {
 	ID, RoomID, RentalType, GuestName, GuestPhone string
+	CreatedBy                                     string // user id; empty for seeded data
 	IDNumberEnc                                   []byte
 	Deposit                                       int64
 	CheckInAt                                     time.Time
@@ -61,6 +62,7 @@ type NewExtra struct {
 	Quantity, UnitAmount  int64
 	Amount                int64 // Quantity times UnitAmount; the table CHECK still guards it
 	CreatedAt             time.Time
+	CreatedBy             string // user id; empty for seeded data
 }
 
 // NewInvoice is the row inserted at check-out; Quote is the frozen quote JSON.

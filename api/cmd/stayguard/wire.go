@@ -33,6 +33,13 @@ type deps struct {
 	payments     *app.Payments
 	housekeeping *app.Housekeeping
 	owner        *app.Owner
+	stayOps      stayOps
+}
+
+// stayOps is the stay corrections and history behind one handler dependency.
+type stayOps struct {
+	*app.StayEdits
+	*app.StayHistory
 }
 
 func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
@@ -57,6 +64,11 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	stayOps, err := newStayOps(cfg, uow, idem, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	rooms := newRooms(uow, clock.System{})
 	sessions, err := newSessions(cfg, pool, uow, clock.System{})
 	if err != nil {
@@ -76,6 +88,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		stays:        stays,
 		billing:      billing,
 		payments:     payments,
+		stayOps:      stayOps,
 		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
@@ -136,7 +149,21 @@ func newPayments(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStor
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewPayments(uow, postgres.PaymentRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+	p := app.NewPayments(uow, postgres.PaymentRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk)
+	return p.WithAlerts(postgres.AlertWriter{}), nil
+}
+
+// newStayOps builds the check-in time and move corrections and the stay history reads.
+func newStayOps(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) (stayOps, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return stayOps{}, fmt.Errorf("data encryption key: %w", err)
+	}
+	levels := permissions.RoleBased{}
+	return stayOps{
+		StayEdits:   app.NewStayEdits(uow, postgres.StayEditRepo{}, levels, enc, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk),
+		StayHistory: app.NewStayHistory(uow, postgres.StayHistoryRepo{}, levels, clk),
+	}, nil
 }
 
 // Sign-in rate limits: a legitimate front desk signs in a few times a day, so these only stop guessing.

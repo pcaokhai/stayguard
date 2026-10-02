@@ -212,9 +212,11 @@ func (q *Queries) InsertPendingTransfer(ctx context.Context, arg InsertPendingTr
 }
 
 const listPendingTransfers = `-- name: ListPendingTransfers :many
-SELECT p.id, p.invoice_id, p.amount, i.bill_code, i.stay_id
+SELECT p.id, p.invoice_id, p.amount, i.bill_code, i.stay_id, u.code AS room_code
 FROM app.payments p
 JOIN app.invoices i ON i.tenant_id = p.tenant_id AND i.id = p.invoice_id
+JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
+JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
 WHERE p.tenant_id = $1 AND p.method = 'TRANSFER' AND p.status = 'PENDING'
 `
 
@@ -224,6 +226,7 @@ type ListPendingTransfersRow struct {
 	Amount    int64
 	BillCode  string
 	StayID    string
+	RoomCode  string
 }
 
 func (q *Queries) ListPendingTransfers(ctx context.Context, tenantID string) ([]ListPendingTransfersRow, error) {
@@ -241,6 +244,7 @@ func (q *Queries) ListPendingTransfers(ctx context.Context, tenantID string) ([]
 			&i.Amount,
 			&i.BillCode,
 			&i.StayID,
+			&i.RoomCode,
 		); err != nil {
 			return nil, err
 		}

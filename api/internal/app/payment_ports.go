@@ -32,8 +32,8 @@ type PaymentRecord struct {
 
 // PendingTransfer is an open transfer the payment-event handler may match.
 type PendingTransfer struct {
-	PaymentID, InvoiceID, StayID, BillCode string
-	Amount                                 int64
+	PaymentID, InvoiceID, StayID, BillCode, RoomCode string
+	Amount                                           int64
 }
 
 // NewPayment is a payment row to insert; a TRANSFER is always created PENDING by the adapter.
