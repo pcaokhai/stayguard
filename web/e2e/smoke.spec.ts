@@ -152,5 +152,5 @@ test("receptionist money path from check-in to closed shift, and the owner sees 
   await expect(ownerPage.locator("body")).toContainText(new RegExp(`${revenue}\\s*revenue today`), {
     timeout: 15_000,
   });
-  await expect(ownerPage.locator("body")).toContainText(/Latest payments\s*A101 · Transfer/i);
+  await expect(ownerPage.locator("body")).toContainText(/Latest payments\s*(See all\s*)?A101 · Transfer/i);
 });
