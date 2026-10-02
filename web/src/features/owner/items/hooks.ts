@@ -49,3 +49,74 @@ export function useUpdateItem() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["items"] }),
   });
 }
+
+export type Movement = components["schemas"]["StockMovement"];
+
+export function useMovements(code: string | null, kind?: Movement["kind"]) {
+  return useQuery({
+    queryKey: ["movements", code, kind],
+    enabled: !!code,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/owner/services/{serviceCode}/movements", {
+        params: { path: { serviceCode: code! }, query: kind ? { kind } : {} },
+      });
+      if (error || !data) throw new Error("listStockMovements failed");
+      return data.items;
+    },
+  });
+}
+
+// Stock only changes through restock, stocktake or a sale, so each leaves a history line.
+export function useRestock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { code: string; key: string; quantity: number; unitCost: number }) => {
+      const { data, error, response } = await api.POST("/v1/owner/services/{serviceCode}/restock", {
+        params: { path: { serviceCode: v.code }, header: idempotencyHeader(v.key) },
+        body: { quantity: v.quantity, unitCost: v.unitCost },
+      });
+      if (error || !data) throw fail("restockService", response.status);
+      return data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["items"] });
+      void qc.invalidateQueries({ queryKey: ["movements"] });
+    },
+  });
+}
+
+export function useRemoveItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { code: string; key: string }) => {
+      const { data, error, response } = await api.POST("/v1/owner/services/{serviceCode}/remove", {
+        params: { path: { serviceCode: v.code }, header: idempotencyHeader(v.key) },
+      });
+      if (error || !data) throw fail("removeService", response.status);
+      return data.result;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["items"] }),
+  });
+}
+
+export function useStocktake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: {
+      key: string;
+      lines: { serviceCode: string; counted: number }[];
+      note: string | null;
+    }) => {
+      const { data, error, response } = await api.POST("/v1/stocktakes", {
+        params: { header: idempotencyHeader(v.key) },
+        body: { lines: v.lines, note: v.note },
+      });
+      if (error || !data) throw fail("createStocktake", response.status);
+      return data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["items"] });
+      void qc.invalidateQueries({ queryKey: ["movements"] });
+    },
+  });
+}

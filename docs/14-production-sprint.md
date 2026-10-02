@@ -172,7 +172,7 @@ Show the check-in ID block, indicators everywhere, owner ID panel (masked number
 #### [ ] F-W2 My schedule and leave (WEB-1)
 Boards: LichCuaToi, XinNghi, NghiCuaToi, HuyNghi, LichNghiLeTanPC.
 
-#### [ ] F-W3 Stock pages (WEB-2)
+#### [x] F-W3 Stock pages (WEB-2)
 Boards: ChiTietMatHang, ChiTietMatHangPC, NhapThemHang, NhapThemHangPC, XoaMatHangPC, KiemKho, KiemKhoPC.
 
 #### [ ] F-W4 Maintenance and finance pages (WEB-2)

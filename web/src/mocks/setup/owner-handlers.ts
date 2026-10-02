@@ -506,6 +506,78 @@ const previewTotal = (b: {
 };
 
 export const ownerHandlers = [
+  http.get("*/v1/owner/services/:code/movements", ({ request }) => {
+    const kind = new URL(request.url).searchParams.get("kind");
+    const all = [
+      { at: at(0, 10, 20), kind: "IN", quantity: 20, unitCost: 6000, ref: null, actorName: "Chủ" },
+      {
+        at: at(0, 9, 5),
+        kind: "SALE",
+        quantity: -1,
+        unitCost: null,
+        ref: "A104",
+        actorName: "Lễ tân demo",
+      },
+      {
+        at: at(1, 17, 30),
+        kind: "COUNT",
+        quantity: 0,
+        unitCost: null,
+        ref: null,
+        actorName: "Chị Lan",
+      },
+      {
+        at: at(1, 13, 40),
+        kind: "SALE",
+        quantity: -2,
+        unitCost: null,
+        ref: "B203",
+        actorName: "Chị Hoa",
+      },
+      {
+        at: at(2, 8, 0),
+        kind: "OPENING",
+        quantity: 10,
+        unitCost: 6000,
+        ref: null,
+        actorName: "Chủ",
+      },
+    ];
+    return json({ items: all.filter((m) => !kind || m.kind === kind), nextCursor: null });
+  }),
+  http.post("*/v1/owner/services/:code/restock", async ({ params, request }) => {
+    const b = (await request.json()) as { quantity: number; unitCost: number };
+    const it = items.find((x) => x.code === params.code);
+    if (!it) return json({}, 404);
+    it.stock += b.quantity;
+    it.latestUnitCost = b.unitCost;
+    return json(it);
+  }),
+  http.post("*/v1/owner/services/:code/remove", ({ params }) => {
+    const i = items.findIndex((x) => x.code === params.code);
+    if (i < 0) return json({}, 404);
+    if (items[i].soldLast7Days > 0) {
+      items[i].onSale = false;
+      return json({ result: "STOPPED_SELLING" });
+    }
+    items.splice(i, 1);
+    return json({ result: "DELETED" });
+  }),
+  http.post("*/v1/stocktakes", async ({ request }) => {
+    const b = (await request.json()) as { lines: { serviceCode: string; counted: number }[] };
+    const differences = b.lines
+      .map((l) => ({
+        serviceCode: l.serviceCode,
+        system: items.find((x) => x.code === l.serviceCode)?.stock ?? 0,
+        counted: l.counted,
+      }))
+      .filter((d) => d.system !== d.counted);
+    differences.forEach((d) => {
+      const it = items.find((x) => x.code === d.serviceCode);
+      if (it) it.stock = d.counted;
+    });
+    return json({ id: "st1", differences, valueDifference: 0 }, 201);
+  }),
   http.get("*/v1/owner/property", () => json(property)),
   http.patch("*/v1/owner/property", async ({ request }) => {
     property = { ...property, ...((await request.json()) as object) };

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Info, ListChecks, Plus } from "lucide-react";
+import { ChevronRight, Info, ListChecks, Plus, Trash2 } from "lucide-react";
 import { FadeIn, StaggerList } from "@/components/motion";
 import { AppFrame } from "@/components/shell/AppFrame";
-import { isReady } from "@/components/shell/nav";
 import { TopBar } from "@/components/shell/TopBar";
 import { EmptyState, QueryError } from "@/components/StateView";
 import { Button } from "@/components/ui/button";
@@ -16,8 +15,10 @@ import { t, tf } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ItemForm } from "./ItemForm";
+import { RemoveItemDialog } from "./RemoveItemDialog";
 import { useItems, type Service } from "./hooks";
 
+const detailHref = (s: Service) => lp(`/owner/item?code=${encodeURIComponent(s.code)}`);
 const isLow = (s: Service) => s.lowStockAt != null && s.stock <= s.lowStockAt;
 const pill = "inline-block rounded-full border px-3 py-1 text-[13px] font-bold whitespace-nowrap";
 const Stock = ({ s }: { s: Service }) => (
@@ -34,6 +35,7 @@ const Stock = ({ s }: { s: Service }) => (
 export function ItemsView() {
   const q = useItems();
   const [form, setForm] = useState<{ item?: Service } | null>(null);
+  const [removing, setRemoving] = useState<Service | null>(null);
   const items = q.data ?? [];
   const low = items.filter(isLow).length;
 
@@ -54,7 +56,7 @@ export function ItemsView() {
       {t("items.add")}
     </Button>
   );
-  const stocktake = isReady("/owner/stocktake") && (
+  const stocktake = (
     <Button asChild variant="outline" size="lg" className="font-bold">
       <Link href={lp("/owner/stocktake")}>
         <ListChecks aria-hidden="true" />
@@ -90,10 +92,9 @@ export function ItemsView() {
           <StaggerList className="md:hidden">
             <Card className="gap-0 p-0 shadow-none">
               {items.map((s) => (
-                <button
+                <Link
                   key={s.code}
-                  type="button"
-                  onClick={() => setForm({ item: s })}
+                  href={detailHref(s)}
                   className="flex min-h-[72px] w-full items-center gap-2 border-t border-border px-4 py-3 text-left first:border-t-0"
                 >
                   <span className="min-w-0 flex-1 leading-snug">
@@ -102,7 +103,7 @@ export function ItemsView() {
                   </span>
                   <Stock s={s} />
                   <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                </button>
+                </Link>
               ))}
             </Card>
           </StaggerList>
@@ -142,15 +143,21 @@ export function ItemsView() {
                           <Stock s={s} />
                         </td>
                         <td className="px-3">{s.soldLast7Days ?? "—"}</td>
-                        <td className="px-3 pr-5 text-right">
-                          <Button
-                            variant="outline"
-                            size="lg"
-                            className="font-bold"
-                            onClick={() => setForm({ item: s })}
-                          >
-                            {t("items.manage")}
-                          </Button>
+                        <td className="px-3 pr-5">
+                          <span className="flex justify-end gap-2">
+                            <Button asChild variant="outline" size="lg" className="font-bold">
+                              <Link href={detailHref(s)}>{t("items.manage")}</Link>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon-lg"
+                              aria-label={`${t("stock.remove")} ${localized(s.name)}`}
+                              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                              onClick={() => setRemoving(s)}
+                            >
+                              <Trash2 aria-hidden="true" />
+                            </Button>
+                          </span>
                         </td>
                       </tr>
                     ))}

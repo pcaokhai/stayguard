@@ -34,6 +34,8 @@ const ROUTES = [
   "/owner/buildings",
   "/owner/rates",
   "/owner/items",
+  "/owner/item?code=TOWEL",
+  "/owner/stocktake",
   "/owner/stays",
   "/owner/stay?id=s2",
   "/owner/shifts",
