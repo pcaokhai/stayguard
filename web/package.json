@@ -36,7 +36,7 @@
     "openapi-typescript": "7.13.0",
     "orval": "8.39.0",
     "prettier": "3.9.9",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "5.0.3"
   },
   "overrides": {
