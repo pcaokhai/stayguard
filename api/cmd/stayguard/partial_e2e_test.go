@@ -188,3 +188,16 @@ func TestDepositOverBill_RefundIsACashPayout_FU(t *testing.T) {
 	}
 	_ = boss
 }
+
+// Owner decision: the money overview is the owner's alone; a manager (even with EDIT everywhere) gets 403.
+func TestOwnerOverview_ManagerForbidden_FU(t *testing.T) {
+	e := newEnv(t)
+	owner := e.ownerSetupRooms(1)
+	mgr := e.roleToken(owner, "mai3", "MANAGER", "MANAGER", "EDIT")
+	if st, _ := e.send("GET", "/v1/owner/overview", mgr, "", nil); st != 403 {
+		t.Fatalf("a manager read the owner overview: %d", st)
+	}
+	if st, _ := e.send("GET", "/v1/owner/overview", owner, "", nil); st != 200 {
+		t.Fatalf("the owner must read it: %d", st)
+	}
+}
