@@ -234,3 +234,19 @@ func pinFailureOrErr(err error) error {
 	}
 	return err
 }
+
+// requireOwnerPin checks the PIN the owner re-enters for a sensitive change. failure is ErrOwnerPinInvalid or an
+// AccountLockedError (the wrong try is counted, so the caller commits and returns it); err is an infrastructure
+// error (roll back). Both nil means the PIN is right.
+func (a *Auth) requireOwnerPin(ctx context.Context, tx Tx, userID, pin string, now time.Time) (failure, err error) {
+	switch e := a.checkPin(ctx, tx, userID, pin, now); {
+	case e == nil:
+		return nil, nil
+	case errors.Is(e, ErrPinInvalid):
+		return ErrOwnerPinInvalid, nil
+	case isLocked(e):
+		return e, nil
+	default:
+		return nil, e
+	}
+}

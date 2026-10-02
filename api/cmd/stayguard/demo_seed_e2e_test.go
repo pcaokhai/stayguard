@@ -45,7 +45,7 @@ func TestDemoSeed_A1(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM app.stays WHERE tenant_id = $1 AND status = 'ACTIVE'`, tenant); n != 11 {
 			t.Errorf("%s: %d active stays, want 11", tenant, n)
 		}
-		if n := e.count(`SELECT count(*) FROM app.tenants WHERE id = $1 AND bank_account_enc IS NOT NULL`, tenant); n != 1 {
+		if n := e.count(`SELECT count(*) FROM app.bank_accounts WHERE tenant_id = $1 AND is_default AND sepay_status = 'CONNECTED'`, tenant); n != 1 {
 			t.Errorf("%s: bank account not stored", tenant)
 		}
 	}

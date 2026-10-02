@@ -36,6 +36,22 @@ type AppAuditLog struct {
 	CreatedAt  pgtype.Timestamptz
 }
 
+type AppBankAccount struct {
+	ID                       string
+	TenantID                 string
+	BankBin                  string
+	BankName                 string
+	AccountEnc               []byte
+	AccountNoMasked          string
+	AccountName              string
+	AccountFp                string
+	IsDefault                bool
+	SepayStatus              string
+	MakeDefaultWhenConnected bool
+	LastWebhookAt            pgtype.Timestamptz
+	CreatedAt                pgtype.Timestamptz
+}
+
 type AppBuilding struct {
 	ID         string
 	TenantID   string
@@ -133,11 +149,16 @@ type AppPinCredential struct {
 }
 
 type AppProperty struct {
-	ID        string
-	TenantID  string
-	Name      string
-	Vertical  string
-	CreatedAt pgtype.Timestamptz
+	ID                   string
+	TenantID             string
+	Name                 string
+	Vertical             string
+	CreatedAt            pgtype.Timestamptz
+	Address              pgtype.Text
+	Phone                pgtype.Text
+	QrExpiryMinutes      int32
+	IDRetentionDays      int32
+	FrontDeskHistoryDays int32
 }
 
 type AppService struct {
@@ -236,16 +257,18 @@ type AppStayExtra struct {
 }
 
 type AppTenant struct {
-	ID             string
-	Name           string
-	DefaultLocale  string
-	Currency       string
-	TimeZone       string
-	IsTrial        bool
-	ExpiresAt      pgtype.Timestamptz
-	BankAccountEnc []byte
-	CreatedAt      pgtype.Timestamptz
-	GuesthouseCode pgtype.Text
+	ID               string
+	Name             string
+	DefaultLocale    string
+	Currency         string
+	TimeZone         string
+	IsTrial          bool
+	ExpiresAt        pgtype.Timestamptz
+	CreatedAt        pgtype.Timestamptz
+	GuesthouseCode   pgtype.Text
+	HookID           pgtype.Text
+	SepaySecretEnc   []byte
+	SepaySignatureOk pgtype.Bool
 }
 
 type AppTransaction struct {

@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/pcaokhai/stayguard/api/internal/domain/payment"
 	"github.com/pcaokhai/stayguard/api/internal/domain/pricing"
 )
 
@@ -25,7 +27,9 @@ const (
 // DemoData is a trial tenant's starting rows with every id already generated.
 type DemoData struct {
 	PropertyID, PropertyName string
-	BankAccountEnc           []byte
+	PropertyAddress          *string
+	PropertyPhone            *string
+	BankAccounts             []NewBankAccount
 	Buildings                []DemoBuilding
 	Floors                   []DemoFloor
 	UnitTypes                []DemoUnitType
@@ -144,11 +148,12 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 	if err := json.Unmarshal(demoSeedJSON, &f); err != nil {
 		return DemoData{}, fmt.Errorf("demo seed: %w", err)
 	}
-	enc, err := d.enc.Encrypt(tenantID, bankAccountField, f.Tenant.BankAccount)
+	out := DemoData{PropertyID: d.ids.New("pr"), PropertyName: trialTenantName}
+	acc, err := d.demoAccount(tenantID, f.Tenant.BankAccount)
 	if err != nil {
-		return DemoData{}, fmt.Errorf("demo seed bank account: %w", err)
+		return DemoData{}, err
 	}
-	out := DemoData{PropertyID: d.ids.New("pr"), PropertyName: trialTenantName, BankAccountEnc: enc}
+	out.BankAccounts = []NewBankAccount{acc}
 	plans := map[string]DemoUnitType{}
 	for _, u := range f.UnitTypes {
 		plan, err := pricing.ParseRatePlan(u.RatePlan)
@@ -183,6 +188,22 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 		return DemoData{}, err
 	}
 	return d.addExtras(out, now)
+}
+
+// demoAccount is the trial's receiving account: connected and default, because the simulator stands in for SePay.
+func (d *DemoSeeder) demoAccount(tenantID string, raw json.RawMessage) (NewBankAccount, error) {
+	var acc struct{ BankBin, AccountNo, AccountName string }
+	if err := json.Unmarshal(raw, &acc); err != nil {
+		return NewBankAccount{}, fmt.Errorf("demo seed bank account: %w", err)
+	}
+	id := d.ids.New(bankIDPrefix)
+	enc, err := d.enc.Encrypt(tenantID, bankAccountFieldOf(id), raw)
+	if err != nil {
+		return NewBankAccount{}, fmt.Errorf("demo seed bank account: %w", err)
+	}
+	return NewBankAccount{ID: id, BankBin: acc.BankBin, BankName: payment.BankName(acc.BankBin), Masked: maskAccount(acc.AccountNo), Name: acc.AccountName,
+		Fingerprint: hex.EncodeToString(d.enc.Fingerprint(tenantID, bankAccountField, []byte(acc.BankBin+"/"+acc.AccountNo))),
+		Enc:         enc, IsDefault: true, Connected: true}, nil
 }
 
 func (d *DemoSeeder) addExtras(out DemoData, now time.Time) (DemoData, error) {

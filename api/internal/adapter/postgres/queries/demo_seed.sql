@@ -1,10 +1,7 @@
 -- Every query filters by tenant explicitly; RLS is the second guard (ADR-005).
 
--- name: SetTenantBankAccount :exec
-UPDATE app.tenants SET bank_account_enc = @bank_account_enc WHERE id = @tenant_id;
-
 -- name: InsertProperty :exec
-INSERT INTO app.properties (id, tenant_id, name) VALUES (@id, @tenant_id, @name);
+INSERT INTO app.properties (id, tenant_id, name, address, phone) VALUES (@id, @tenant_id, @name, sqlc.narg(address), sqlc.narg(phone));
 
 -- name: InsertBuilding :exec
 INSERT INTO app.buildings (id, tenant_id, property_id, code, name)

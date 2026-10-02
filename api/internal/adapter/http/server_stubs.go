@@ -31,6 +31,7 @@ type Server struct {
 	shifts       ShiftService
 	monitor      MonitorService
 	staff        StaffService
+	bank         BankService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
@@ -74,10 +75,6 @@ func (Server) CancelMyLeave(context.Context, gen.CancelMyLeaveRequestObject) (ge
 }
 
 func (Server) CopyRosterWeek(context.Context, gen.CopyRosterWeekRequestObject) (gen.CopyRosterWeekResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreateBankAccount(context.Context, gen.CreateBankAccountRequestObject) (gen.CreateBankAccountResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -149,23 +146,11 @@ func (Server) GetPayroll(context.Context, gen.GetPayrollRequestObject) (gen.GetP
 	return nil, errNotImplemented
 }
 
-func (Server) GetProperty(context.Context, gen.GetPropertyRequestObject) (gen.GetPropertyResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetRoster(context.Context, gen.GetRosterRequestObject) (gen.GetRosterResponseObject, error) {
 	return nil, errNotImplemented
 }
 
-func (Server) GetSepayStatus(context.Context, gen.GetSepayStatusRequestObject) (gen.GetSepayStatusResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetTicket(context.Context, gen.GetTicketRequestObject) (gen.GetTicketResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListBankAccounts(context.Context, gen.ListBankAccountsRequestObject) (gen.ListBankAccountsResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -189,10 +174,6 @@ func (Server) ListTickets(context.Context, gen.ListTicketsRequestObject) (gen.Li
 	return nil, errNotImplemented
 }
 
-func (Server) MakeDefaultBankAccount(context.Context, gen.MakeDefaultBankAccountRequestObject) (gen.MakeDefaultBankAccountResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject) (gen.MarkPayrollPaidResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -202,14 +183,6 @@ func (Server) PreviewPrice(context.Context, gen.PreviewPriceRequestObject) (gen.
 }
 
 func (Server) PutRoster(context.Context, gen.PutRosterRequestObject) (gen.PutRosterResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ReceiveBankWebhookLegacy(context.Context, gen.ReceiveBankWebhookLegacyRequestObject) (gen.ReceiveBankWebhookLegacyResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) RemoveBankAccount(context.Context, gen.RemoveBankAccountRequestObject) (gen.RemoveBankAccountResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -242,10 +215,6 @@ func (Server) UpdateExpense(context.Context, gen.UpdateExpenseRequestObject) (ge
 }
 
 func (Server) UpdatePayrollLine(context.Context, gen.UpdatePayrollLineRequestObject) (gen.UpdatePayrollLineResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateProperty(context.Context, gen.UpdatePropertyRequestObject) (gen.UpdatePropertyResponseObject, error) {
 	return nil, errNotImplemented
 }
 

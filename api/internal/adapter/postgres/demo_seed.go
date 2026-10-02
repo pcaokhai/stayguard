@@ -21,11 +21,14 @@ func (DemoSeedRepo) InsertDemoData(ctx context.Context, tx app.Tx, d app.DemoDat
 	}
 	q := sqlcgen.New(t)
 	tid := t.tenant
-	if err := q.SetTenantBankAccount(ctx, sqlcgen.SetTenantBankAccountParams{BankAccountEnc: d.BankAccountEnc, TenantID: tid}); err != nil {
-		return wrap("set bank account", err)
-	}
-	if err := q.InsertProperty(ctx, sqlcgen.InsertPropertyParams{ID: d.PropertyID, TenantID: tid, Name: d.PropertyName}); err != nil {
+	if err := q.InsertProperty(ctx, sqlcgen.InsertPropertyParams{ID: d.PropertyID, TenantID: tid, Name: d.PropertyName,
+		Address: text(d.PropertyAddress), Phone: text(d.PropertyPhone)}); err != nil {
 		return wrap("insert property", err)
+	}
+	for _, a := range d.BankAccounts {
+		if err := (BankRepo{}).InsertAccount(ctx, tx, a); err != nil {
+			return err
+		}
 	}
 	for _, b := range d.Buildings {
 		if err := q.InsertBuilding(ctx, sqlcgen.InsertBuildingParams{ID: b.ID, TenantID: tid, PropertyID: d.PropertyID, Code: b.Code, Name: b.Name}); err != nil {

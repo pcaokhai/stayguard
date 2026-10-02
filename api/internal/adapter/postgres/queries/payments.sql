@@ -77,5 +77,6 @@ ON CONFLICT (provider, external_id) DO NOTHING;
 UPDATE app.payment_events SET result = @result
 WHERE tenant_id = @tenant_id AND provider = @provider AND external_id = @external_id;
 
--- name: GetTenantBankAccount :one
-SELECT bank_account_enc FROM app.tenants WHERE id = @tenant_id;
+-- name: GetDefaultBankAccount :one
+SELECT id, account_enc FROM app.bank_accounts
+WHERE tenant_id = @tenant_id AND is_default AND sepay_status = 'CONNECTED';

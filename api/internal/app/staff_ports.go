@@ -84,6 +84,8 @@ type StaffRepo interface {
 	// StaffLevels is every stored level by user id.
 	StaffLevels(ctx context.Context, tx Tx) (map[string]map[string]access.Level, error)
 	InsertStaff(ctx context.Context, tx Tx, s StaffInsert) error
+	// InsertOwner stores the owner: a user with full app access and no staff profile.
+	InsertOwner(ctx context.Context, tx Tx, id, name, username string) error
 	// UpdateStaff reports false when the person is not a staff member or is removed.
 	UpdateStaff(ctx context.Context, tx Tx, id string, p StaffPatch) (bool, error)
 	SetStatus(ctx context.Context, tx Tx, id, status string) (bool, error)
@@ -114,3 +116,5 @@ type OneTimePin struct {
 // String and GoString keep the PIN out of %v and %+v output.
 func (p OneTimePin) String() string   { return "OneTimePin{" + redacted + "}" }
 func (p OneTimePin) GoString() string { return p.String() }
+
+func moneyOf(n int64) money.Vnd { return money.Vnd(n) }

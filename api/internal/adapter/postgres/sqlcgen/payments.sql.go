@@ -26,6 +26,23 @@ func (q *Queries) ExpirePendingForInvoice(ctx context.Context, arg ExpirePending
 	return err
 }
 
+const getDefaultBankAccount = `-- name: GetDefaultBankAccount :one
+SELECT id, account_enc FROM app.bank_accounts
+WHERE tenant_id = $1 AND is_default AND sepay_status = 'CONNECTED'
+`
+
+type GetDefaultBankAccountRow struct {
+	ID         string
+	AccountEnc []byte
+}
+
+func (q *Queries) GetDefaultBankAccount(ctx context.Context, tenantID string) (GetDefaultBankAccountRow, error) {
+	row := q.db.QueryRow(ctx, getDefaultBankAccount, tenantID)
+	var i GetDefaultBankAccountRow
+	err := row.Scan(&i.ID, &i.AccountEnc)
+	return i, err
+}
+
 const getPaymentByID = `-- name: GetPaymentByID :one
 SELECT p.id, p.invoice_id, p.method, p.status, p.amount, p.received_amount, p.paid_at, p.transaction_id,
        i.bill_code, u.building_id
@@ -116,17 +133,6 @@ func (q *Queries) GetPendingPaymentForInvoice(ctx context.Context, arg GetPendin
 		&i.BuildingID,
 	)
 	return i, err
-}
-
-const getTenantBankAccount = `-- name: GetTenantBankAccount :one
-SELECT bank_account_enc FROM app.tenants WHERE id = $1
-`
-
-func (q *Queries) GetTenantBankAccount(ctx context.Context, tenantID string) ([]byte, error) {
-	row := q.db.QueryRow(ctx, getTenantBankAccount, tenantID)
-	var bank_account_enc []byte
-	err := row.Scan(&bank_account_enc)
-	return bank_account_enc, err
 }
 
 const insertCashPayment = `-- name: InsertCashPayment :exec

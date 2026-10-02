@@ -51,6 +51,12 @@ func (r *fakeStaffRepo) InsertStaff(_ context.Context, _ Tx, s StaffInsert) erro
 	return nil
 }
 
+func (r *fakeStaffRepo) InsertOwner(_ context.Context, _ Tx, id, name, username string) error {
+	r.roles[id] = access.RoleOwner
+	r.usernames[username] = true
+	return nil
+}
+
 func (r *fakeStaffRepo) UpdateStaff(_ context.Context, _ Tx, id string, p StaffPatch) (bool, error) {
 	row, ok := r.rows[id]
 	if !ok {

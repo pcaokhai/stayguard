@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -475,15 +474,10 @@ func (s *Staff) RemoveStaff(ctx context.Context, c Caller, userID, ownerPin stri
 	}
 	var outcome error
 	err := s.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
-		if err := s.auth.checkPin(ctx, tx, c.UserID, ownerPin, s.clock.Now()); err != nil {
-			if errors.Is(err, ErrPinInvalid) {
-				err = ErrOwnerPinInvalid
-			}
-			outcome = err
-			if errors.Is(err, ErrOwnerPinInvalid) || isLocked(err) {
-				return nil // a wrong owner PIN commits its count
-			}
-			return err
+		failure, err := s.auth.requireOwnerPin(ctx, tx, c.UserID, ownerPin, s.clock.Now())
+		if err != nil || failure != nil {
+			outcome = failure
+			return err // a wrong owner PIN commits its count
 		}
 		cur, err := s.view(ctx, tx, userID)
 		if err != nil || cur.Status == statusRemoved {

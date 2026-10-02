@@ -37,6 +37,11 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) > 1 && (os.Args[1] == "tenant" || os.Args[1] == "sepay") {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		return runInstallerCLI(ctx, os.Args[1:])
+	}
 	load := config.Load
 	isMigrate := len(os.Args) > 1 && os.Args[1] == migrateCommand
 	if isMigrate {
@@ -74,7 +79,7 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
 			Rooms: d.rooms, RoomMapEnabled: cfg.RoomMapEnabled, Stays: d.stays, CheckInEnabled: cfg.CheckInEnabled,
 			Billing: d.billing, CheckoutEnabled: cfg.CheckoutEnabled, Payments: d.payments, Housekeeping: d.housekeeping, Owner: d.owner, StayOps: d.stayOps, Shifts: d.shifts, Monitor: d.monitor,
-			Auth: d.auth, Staff: d.staff, TrustProxy: cfg.TrustProxy,
+			Auth: d.auth, Staff: d.staff, Bank: d.bank, TrustProxy: cfg.TrustProxy,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,

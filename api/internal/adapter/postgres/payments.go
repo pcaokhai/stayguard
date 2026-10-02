@@ -193,13 +193,16 @@ func (PaymentRepo) CloseInvoice(ctx context.Context, tx app.Tx, invoiceID, stayI
 	return wrap("release room", q.ReleaseRoomToClean(ctx, sqlcgen.ReleaseRoomToCleanParams{TenantID: t.tenant, StayID: stayID}))
 }
 
-func (PaymentRepo) BankAccount(ctx context.Context, tx app.Tx) ([]byte, error) {
+func (PaymentRepo) DefaultBankAccount(ctx context.Context, tx app.Tx) (string, []byte, error) {
 	t, err := pgTx(tx)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	b, err := sqlcgen.New(t).GetTenantBankAccount(ctx, t.tenant)
-	return b, wrap("select bank account", err)
+	row, err := sqlcgen.New(t).GetDefaultBankAccount(ctx, t.tenant)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil, nil
+	}
+	return row.ID, row.AccountEnc, wrap("select default bank account", err)
 }
 
 func (PaymentRepo) LockEvent(ctx context.Context, tx app.Tx, eventID string) (app.StoredEvent, bool, error) {

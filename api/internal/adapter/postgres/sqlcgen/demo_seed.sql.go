@@ -7,6 +7,8 @@ package sqlcgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const insertBuilding = `-- name: InsertBuilding :exec
@@ -55,17 +57,27 @@ func (q *Queries) InsertFloor(ctx context.Context, arg InsertFloorParams) error 
 }
 
 const insertProperty = `-- name: InsertProperty :exec
-INSERT INTO app.properties (id, tenant_id, name) VALUES ($1, $2, $3)
+
+INSERT INTO app.properties (id, tenant_id, name, address, phone) VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertPropertyParams struct {
 	ID       string
 	TenantID string
 	Name     string
+	Address  pgtype.Text
+	Phone    pgtype.Text
 }
 
+// Every query filters by tenant explicitly; RLS is the second guard (ADR-005).
 func (q *Queries) InsertProperty(ctx context.Context, arg InsertPropertyParams) error {
-	_, err := q.db.Exec(ctx, insertProperty, arg.ID, arg.TenantID, arg.Name)
+	_, err := q.db.Exec(ctx, insertProperty,
+		arg.ID,
+		arg.TenantID,
+		arg.Name,
+		arg.Address,
+		arg.Phone,
+	)
 	return err
 }
 
@@ -146,21 +158,5 @@ func (q *Queries) InsertUnitType(ctx context.Context, arg InsertUnitTypeParams) 
 		arg.RatePlan,
 		arg.RatePlanVersion,
 	)
-	return err
-}
-
-const setTenantBankAccount = `-- name: SetTenantBankAccount :exec
-
-UPDATE app.tenants SET bank_account_enc = $1 WHERE id = $2
-`
-
-type SetTenantBankAccountParams struct {
-	BankAccountEnc []byte
-	TenantID       string
-}
-
-// Every query filters by tenant explicitly; RLS is the second guard (ADR-005).
-func (q *Queries) SetTenantBankAccount(ctx context.Context, arg SetTenantBankAccountParams) error {
-	_, err := q.db.Exec(ctx, setTenantBankAccount, arg.BankAccountEnc, arg.TenantID)
 	return err
 }

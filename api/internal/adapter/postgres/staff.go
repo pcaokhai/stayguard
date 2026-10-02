@@ -123,6 +123,16 @@ func (StaffRepo) InsertStaff(ctx context.Context, tx app.Tx, s app.StaffInsert) 
 	}))
 }
 
+func (StaffRepo) InsertOwner(ctx context.Context, tx app.Tx, id, name, username string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("insert owner", sqlcgen.New(t).InsertStaffUser(ctx, sqlcgen.InsertStaffUserParams{
+		ID: id, TenantID: t.tenant, Name: name, Role: string(access.RoleOwner), AppAccess: string(access.RoleOwner), Username: text(&username),
+	}))
+}
+
 func (StaffRepo) UpdateStaff(ctx context.Context, tx app.Tx, id string, p app.StaffPatch) (bool, error) {
 	t, err := pgTx(tx)
 	if err != nil {

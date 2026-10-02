@@ -77,5 +77,7 @@ type PaymentRepo interface {
 	MarkMismatch(ctx context.Context, tx Tx, paymentID string, received int64, transactionID string) error
 	// CloseInvoice marks the invoice PAID and its occupied room TO_CLEAN.
 	CloseInvoice(ctx context.Context, tx Tx, invoiceID, stayID string, at time.Time) error
-	BankAccount(ctx context.Context, tx Tx) ([]byte, error)
+	// DefaultBankAccount is the tenant's default, SePay-connected receiving account (empty id when there is none):
+	// the one account a QR may pay.
+	DefaultBankAccount(ctx context.Context, tx Tx) (id string, enc []byte, err error)
 }

@@ -92,6 +92,7 @@ Tests (required): one table test over every operation × role (OWNER, MANAGER, R
 #### [ ] L-A3 Tenant import, SePay and bank accounts (API-1) — migration 0011
 `stayguard tenant import --file`, `stayguard sepay webhook|set-secret|status` (docs/runbooks/sepay-handover.md); `bank_accounts` (one default, others PENDING), `getProperty`, `updateProperty`, `listBankAccounts`, `createBankAccount`, `makeDefaultBankAccount`, `removeBankAccount`, `getSepayStatus`; `receiveBankWebhook` at `/v1/webhooks/bank/{hookId}` with HMAC per SePay's current docs (Khai pastes the link), mapped to the existing settlement handler; QR uses the default account.
 Tests (required): docs/archive/14-demo-plan.md P3 test list; QR account comes only from the default account; secret never in logs.
+*Status: everything except `receiveBankWebhook` is merged (CLI, bank accounts, property, status, 410 for the old path). The webhook handler waits for the SePay webhook documentation link from Khai; box stays unticked until then.*
 
 #### [ ] L-A4 Setup: rooms, rates, extras basics (API-1) — migration 0012
 `createBuilding`, `updateBuilding`, `createFloor`, `createRooms`, `updateRoom`, `listRatePlans`, `updateRatePlan`, `previewPrice`, `createService`, `updateService`, `restockService` (OPENING and IN movements; stock never edited directly).

@@ -351,7 +351,7 @@ func (p *Payments) load(ctx context.Context, tx Tx, op string, c Caller, id stri
 	return rec, p.checkBuilding(ctx, op, c, rec.BuildingID)
 }
 
-// view adds the QR to a pending transfer; the account is read from the tenant, never from the request.
+// view adds the QR to a pending transfer; the account is the tenant's default, never taken from the request.
 func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentView, error) {
 	v := PaymentView{ID: r.ID, InvoiceID: r.InvoiceID, Method: r.Method, Status: r.Status, Amount: r.Amount,
 		ReceivedAmount: r.ReceivedAmount, PaidAt: r.PaidAt, TransactionID: r.TransactionID}
@@ -364,14 +364,14 @@ func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentVie
 }
 
 func (p *Payments) qr(ctx context.Context, tx Tx, r PaymentRecord) (*PaymentQR, error) {
-	raw, err := p.repo.BankAccount(ctx, tx)
+	id, raw, err := p.repo.DefaultBankAccount(ctx, tx)
 	if err != nil {
 		return nil, fmt.Errorf("bank account: %w", err)
 	}
-	if len(raw) == 0 {
+	if id == "" || len(raw) == 0 {
 		return nil, ErrNoBankAccount
 	}
-	plain, err := p.enc.Decrypt(tx.TenantID(), bankAccountField, raw)
+	plain, err := p.enc.Decrypt(tx.TenantID(), bankAccountFieldOf(id), raw)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt bank account: %w", err)
 	}

@@ -28,6 +28,7 @@ type deps struct {
 	sessions     *app.Sessions
 	auth         *app.Auth
 	staff        *app.Staff
+	bank         *app.Bank
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -92,11 +93,17 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	bank, err := newBank(cfg, uow, auth, idem, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	return deps{
 		pool:         pool,
 		sessions:     sessions,
 		auth:         auth,
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
+		bank:         bank,
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,
@@ -206,4 +213,24 @@ func newShifts(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWri
 
 func newMonitor(uow app.UnitOfWork, clk app.Clock) *app.Monitor {
 	return app.NewMonitor(uow, postgres.MonitorRepo{}, permissions.Stored{}, clk)
+}
+
+// newBank builds the property, receiving account and SePay status use cases.
+func newBank(cfg config.Config, uow app.UnitOfWork, auth *app.Auth, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) (*app.Bank, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewBank(uow, postgres.BankRepo{}, auth, enc, idem, audit, ids.New(clk.Now), clk), nil
+}
+
+// newInstaller builds what the installer CLI runs: import, webhook address, SePay secret and status.
+func newInstaller(cfg config.Config, pool *pgxpool.Pool, clk app.Clock) (*app.Installer, error) {
+	enc, err := crypto.NewAESGCM(cfg.DataEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("data encryption key: %w", err)
+	}
+	return app.NewInstaller(postgres.NewUnitOfWork(pool), postgres.NewTenantResolver(pool), postgres.TenantSetupRepo{}, postgres.DemoSeedRepo{},
+		postgres.BankRepo{}, postgres.StaffRepo{}, postgres.NewAuthRepo(), enc, crypto.PinHasher{}, crypto.PinGenerator{}, crypto.TokenGenerator{},
+		postgres.NewAuditWriter(), postgres.AlertWriter{}, ids.New(clk.Now), clk), nil
 }

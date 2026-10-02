@@ -19,6 +19,7 @@ var isolationFixtures = []fixture{
 	{"users", `INSERT INTO app.users (id, tenant_id, name, role) VALUES ($2::text || '_u', $1::text, 'u', 'OWNER')`},
 	{"pin_credentials", `INSERT INTO app.pin_credentials (tenant_id, user_id, pin_hash) VALUES ($1::text, $2::text || '_u', 'h')`},
 	{"staff_profiles", `INSERT INTO app.staff_profiles (tenant_id, user_id, position, pay_type, rate, fixed_allowance, standard_shifts, start_date, annual_leave_days) VALUES ($1::text, $2::text || '_u', 'OTHER', 'MONTHLY', 0, 0, 0, '2026-01-01', 0)`},
+	{"bank_accounts", `INSERT INTO app.bank_accounts (id, tenant_id, bank_bin, bank_name, account_enc, account_no_masked, account_name, account_fp) VALUES ($2::text || '_ba', $1::text, '970436', 'B', '\x00', '****', 'n', $2::text || '_fp')`},
 	{"sessions", `INSERT INTO app.sessions (token_hash, tenant_id, user_id, expires_at) VALUES ($2::text || '_s', $1::text, $2::text || '_u', now() + interval '1 hour')`},
 	{"properties", `INSERT INTO app.properties (id, tenant_id, name) VALUES ($2::text || '_p', $1::text, 'p')`},
 	{"buildings", `INSERT INTO app.buildings (id, tenant_id, property_id, code, name) VALUES ($2::text || '_b', $1::text, $2::text || '_p', 'B', 'b')`},
