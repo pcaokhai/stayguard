@@ -20,16 +20,16 @@ type Transaction = components["schemas"]["Transaction"];
 // Bottom sheet on phones, dialog from 640 px (boards GanPhieu, GanPhieuPC).
 export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: () => void }) {
   const wide = useMediaQuery("(min-width: 640px)");
-  const bills = useUnpaidBills(!!tx);
+  const bills = useUnpaidBills(!!tx, tx?.amount ?? 0);
   const link = useLinkTransfer();
   const [picked, setPicked] = useState<string | null>(null);
   const keys = useRef(new Map<string, string>());
   if (!tx) return null;
 
   const list = bills.data ?? [];
-  const chosen = list.find((b) => b.invoiceId && b.invoiceId === (picked ?? firstPick(list)));
+  const chosen = list.find((b) => b.invoiceId === (picked ?? list[0]?.invoiceId));
   const submit = () => {
-    if (!chosen?.invoiceId || !tx.paymentEventId) return;
+    if (!chosen || !tx.paymentEventId) return;
     const action = `${tx.paymentEventId}:${chosen.invoiceId}`;
     const key = keys.current.get(action) ?? newIdempotencyKey();
     keys.current.set(action, key);
@@ -37,7 +37,7 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
       { eventId: tx.paymentEventId, invoiceId: chosen.invoiceId, key },
       {
         onSuccess: () => {
-          toast.success(tf("money.linked", { bill: chosen.billCode ?? "" }));
+          toast.success(tf("money.linked", { bill: chosen.billCode }));
           onClose();
         },
         onError: (e) => {
@@ -82,23 +82,23 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
         className="gap-2.5"
       >
         {list.map((b, i) => {
-          const same = b.total === tx.amount;
+          const same = b.balance === tx.amount;
           return (
             <label
-              key={b.invoiceId ?? `${b.roomCode}-${i}`}
+              key={b.invoiceId}
               className="flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-border p-3 has-[:checked]:border-2 has-[:checked]:border-primary has-disabled:opacity-50"
             >
-              <RadioGroupItem value={b.invoiceId ?? ""} disabled={!b.invoiceId} />
+              <RadioGroupItem value={b.invoiceId} />
               <span className="min-w-0 flex-1">
-                <b className="block font-mono text-[13px]">{b.billCode ?? "—"}</b>
+                <b className="block font-mono text-[13px]">{b.billCode}</b>
                 <span className="text-[13px] text-muted-foreground">
                   {tf("money.outAt", {
                     room: b.roomCode,
-                    time: b.checkOutAt ? clockOf(b.checkOutAt) : "",
+                    time: clockOf(b.checkedOutAt),
                   })}
                 </span>
               </span>
-              {b.total != null && <b className="text-[16px]">{formatVnd(b.total)}</b>}
+              <b className="text-[16px]">{formatVnd(b.balance)}</b>
               <Badge variant={same ? "ok" : "warn"} className="max-sm:hidden">
                 {same ? t("money.sameAmount") : t("money.otherAmount")}
               </Badge>
@@ -114,14 +114,12 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
           {t("money.cancel")}
         </Button>
         <Button size="lg" disabled={!chosen || link.isPending} onClick={submit}>
-          {chosen ? tf("money.confirm", { bill: chosen.billCode ?? "" }) : t("money.link")}
+          {chosen ? tf("money.confirm", { bill: chosen.billCode }) : t("money.link")}
         </Button>
       </div>
     </ResponsiveDialog>
   );
 }
-
-const firstPick = (list: { invoiceId?: string }[]) => list.find((b) => b.invoiceId)?.invoiceId;
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (

@@ -17,8 +17,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { lp } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
-import { useStaff, type Staff } from "../staff/hooks";
-import { AssignSheet, dayFull, dayKey, SHIFTS } from "./AssignSheet";
+import { useIsOwner } from "../role";
+import { useStaff } from "../staff/hooks";
+import { AssignSheet, dayFull, dayKey, SHIFTS, type Person } from "./AssignSheet";
 import {
   type Leave,
   type Roster,
@@ -47,23 +48,33 @@ export function RosterView() {
   const days = weekDays(week);
   const [day, setDay] = useState(() => (days.includes(today()) ? today() : days[0]));
   const roster = useRoster(week, days[6]);
-  const staffQ = useStaff();
+  const isOwner = useIsOwner();
+  // listStaff shows pay and is owner-only; a manager sees the names the roster answer carries.
+  const staffQ = useStaff(isOwner);
   const pending = usePendingLeave();
   const copy = useCopyWeek();
   const decide = useDecideLeave();
   const [assign, setAssign] = useState<{ date: string; userId?: string } | null>(null);
   const [declining, setDeclining] = useState<Leave | null>(null);
   const [reason, setReason] = useState("");
-  const staff: Staff[] = (staffQ.data ?? []).filter((s) => s.status !== "REMOVED");
   const r: Roster | undefined = roster.data;
-  const name = (id?: string | null) => staff.find((s) => s.id === id)?.name ?? "";
+  const listed = (staffQ.data ?? []).filter((s) => s.status !== "REMOVED");
+  const position = new Map(listed.map((s) => [s.id, s.position]));
+  const fromRoster = new Map<string, string>();
+  for (const a of r?.assignments ?? []) if (a.userName) fromRoster.set(a.userId, a.userName);
+  for (const l of r?.leave ?? []) fromRoster.set(l.userId, l.userName);
+  const staff: Person[] = listed.length
+    ? listed.map((s) => ({ id: s.id, name: s.name }))
+    : [...fromRoster].map(([id, name]) => ({ id, name }));
+  const name = (id?: string | null) =>
+    staff.find((s) => s.id === id)?.name ?? fromRoster.get(id ?? "") ?? "";
   const go = (w: string) => router.replace(lp(`/owner/roster?week=${w}`));
   const activeDay = days.includes(day) ? day : days[0];
 
-  if (roster.isError || staffQ.isError)
+  if (roster.isError || (isOwner && staffQ.isError))
     return (
       <AppFrame tabs={false}>
-        <QueryError onRetry={() => void Promise.all([roster.refetch(), staffQ.refetch()])} />
+        <QueryError onRetry={() => void roster.refetch()} />
       </AppFrame>
     );
 
@@ -308,7 +319,9 @@ export function RosterView() {
                             <td className="px-3 py-2.5 pl-5 leading-tight">
                               <b className="block text-[14px]">{s.name}</b>
                               <span className="text-[12px] text-muted-foreground">
-                                {t(`staff.position.${s.position}` as MessageKey)}
+                                {position.has(s.id)
+                                  ? t(`staff.position.${position.get(s.id)}` as MessageKey)
+                                  : ""}
                               </span>
                             </td>
                             {days.map((d) => {

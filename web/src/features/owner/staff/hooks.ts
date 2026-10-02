@@ -8,9 +8,10 @@ export type UpdateStaff = components["schemas"]["UpdateStaffRequest"];
 export type OneTimePin = components["schemas"]["OneTimePin"];
 export type Level = components["schemas"]["PermissionLevel"];
 
-export function useStaff() {
+export function useStaff(enabled = true) {
   return useQuery({
     queryKey: ["staff"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/owner/staff", { params: { query: {} } });
       if (error || !data) throw new Error("listStaff failed");

@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { components } from "@/api/generated/schema";
 import { api, idempotencyHeader } from "@/lib/api";
-import { addDays } from "../range";
-import { localDay } from "../format";
 
 export function useTransactions(q: string) {
   return useQuery({
@@ -17,32 +16,21 @@ export function useTransactions(q: string) {
   });
 }
 
-// A bill still waiting for money. The contract's stay list has no invoice id yet, so a row without
-// one cannot be chosen (see the report: StayListItem needs invoiceId and billCode).
-export type Candidate = {
-  invoiceId?: string;
-  billCode?: string;
-  roomCode: string;
-  checkOutAt?: string | null;
-  total?: number | null;
-};
+export type Candidate = components["schemas"]["InvoiceCandidate"];
 
-export function useUnpaidBills(enabled: boolean) {
+// Unpaid invoices for the transfer's amount; bills whose balance equals it come first.
+export function useUnpaidBills(enabled: boolean, amount: number) {
   return useQuery({
-    queryKey: ["unpaid-bills"],
+    queryKey: ["unpaid-bills", amount],
     enabled,
     queryFn: async (): Promise<Candidate[]> => {
-      const now = new Date();
-      const { data, error } = await api.GET("/v1/stays", {
-        params: { query: { from: localDay(addDays(now, -7)), to: localDay(now), state: "UNPAID" } },
+      const { data, error } = await api.GET("/v1/owner/invoices", {
+        params: { query: { amount } },
       });
-      if (error || !data) throw new Error("listStays failed");
-      return data.items.map((s) => ({
-        ...(s as { invoiceId?: string; billCode?: string }),
-        roomCode: s.roomCode,
-        checkOutAt: s.checkOutAt,
-        total: s.total,
-      }));
+      if (error || !data) throw new Error("listInvoices failed");
+      return [...data.items].sort(
+        (a, b) => Number(b.balance === amount) - Number(a.balance === amount),
+      );
     },
   });
 }

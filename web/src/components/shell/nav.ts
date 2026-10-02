@@ -124,8 +124,12 @@ export const OWNER_GROUPS: { label: MessageKey; items: NavItem[] }[] = [
 export const isOwnerRole = (r?: Role) => r === "OWNER" || r === "MANAGER";
 
 // Tabs without "More"; the owner's More tab is added by the bar itself.
+// A manager has no Overview (it is owner-only); the room map is their home (Khai's decision).
+const ownerTabs = (role: Role | undefined) =>
+  visible(OWNER_TABS).filter((i) => role !== "MANAGER" || i.href !== "/owner");
+
 export function tabsFor(role: Role | undefined): NavItem[] {
-  if (isOwnerRole(role)) return visible(OWNER_TABS);
+  if (isOwnerRole(role)) return ownerTabs(role);
   if (role === "RECEPTIONIST") return visible(DESK_TABS);
   if (role === "HOUSEKEEPING") return visible(HK_TABS);
   return [];
@@ -135,7 +139,7 @@ export function tabsFor(role: Role | undefined): NavItem[] {
 export function railFor(role: Role | undefined): NavItem[] {
   if (!isOwnerRole(role)) return tabsFor(role);
   const seen = new Set<string>();
-  return [...visible(OWNER_TABS), ...OWNER_GROUPS.flatMap((g) => visible(g.items))].filter(
+  return [...ownerTabs(role), ...OWNER_GROUPS.flatMap((g) => visible(g.items))].filter(
     (i) => !seen.has(i.href) && !!seen.add(i.href),
   );
 }

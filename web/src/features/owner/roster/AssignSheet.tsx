@@ -5,10 +5,10 @@ import { FormSheet } from "../FormFields";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { t, tf, type MessageKey } from "@/lib/t";
-import type { Staff } from "../staff/hooks";
 import { type Assignment, type ShiftCode, type Roster, usePutRoster } from "./hooks";
 import { dm } from "./week";
 
+export type Person = { id: string; name: string };
 export const SHIFTS: ShiftCode[] = ["MORNING", "AFTERNOON", "NIGHT"];
 export const dayKey = (date: string) =>
   `d${((new Date(`${date}T12:00:00`).getDay() + 6) % 7) + 1}` as const;
@@ -23,7 +23,7 @@ export function AssignSheet({
   onClose,
 }: {
   date: string;
-  staff: Staff[];
+  staff: Person[];
   only?: string;
   roster: Roster;
   onClose: () => void;

@@ -33,7 +33,11 @@ export function OwnerSidebar() {
               {t(`rooms.role${me!.user.role}` as "rooms.roleOWNER")}
             </span>
           </p>
-          {visible([{ label: "nav.overview", href: "/owner", icon: Home }]).map((i) => (
+          {visible(
+            me?.user.role === "MANAGER"
+              ? []
+              : [{ label: "nav.overview", href: "/owner", icon: Home }],
+          ).map((i) => (
             <Link
               key={i.href}
               href={lp(i.href)}

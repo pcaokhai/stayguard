@@ -13,6 +13,8 @@ import { lp } from "@/lib/locale";
 import { formatVnd } from "@/lib/money";
 import { t, tf } from "@/lib/t";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useMe } from "../session/useMe";
 import { AttentionList } from "./AttentionList";
 import { BuildingRows, Legend } from "./BuildingRows";
@@ -77,9 +79,16 @@ function Loading() {
 }
 
 export function OwnerOverview() {
-  const q = useOverview();
+  const router = useRouter();
   const me = useMe();
+  const manager = me.data?.user.role === "MANAGER";
+  // The overview is owner-only; a manager lands on the room map.
+  useEffect(() => {
+    if (manager) router.replace(lp("/owner/rooms"));
+  }, [manager, router]);
+  const q = useOverview(!manager);
   const o = q.data;
+  if (manager) return null;
   if (q.isError)
     return (
       <AppFrame>
