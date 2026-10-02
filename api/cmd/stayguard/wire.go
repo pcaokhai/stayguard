@@ -36,6 +36,13 @@ type deps struct {
 	owner        *app.Owner
 	stayOps      stayOps
 	shifts       *app.Shifts
+	monitor      monitorOps
+}
+
+// monitorOps is the owner monitoring reads and the link of an unmatched transfer behind one handler dependency.
+type monitorOps struct {
+	*app.Monitor
+	*app.Payments
 }
 
 // stayOps is the stay corrections and history behind one handler dependency.
@@ -96,7 +103,8 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		payments:     payments,
 		stayOps:      stayOps,
 		shifts:       shifts,
-		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}),
+		monitor:      monitorOps{newMonitor(uow, clock.System{}), payments},
+		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}).WithMonitor(postgres.MonitorRepo{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.Stored{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
 		idem:         idem,
@@ -194,4 +202,8 @@ func newStaff(uow app.UnitOfWork, auth *app.Auth, idem app.IdempotencyStore, aud
 // newShifts builds the shift use cases; they are also the cash ledger that check-in deposits and cash payments write to.
 func newShifts(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Shifts {
 	return app.NewShifts(uow, postgres.ShiftRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
+}
+
+func newMonitor(uow app.UnitOfWork, clk app.Clock) *app.Monitor {
+	return app.NewMonitor(uow, postgres.MonitorRepo{}, permissions.Stored{}, clk)
 }

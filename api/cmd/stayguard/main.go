@@ -73,7 +73,7 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 		Handler: httpadapter.NewRouter(log, httpadapter.Options{
 			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
 			Rooms: d.rooms, RoomMapEnabled: cfg.RoomMapEnabled, Stays: d.stays, CheckInEnabled: cfg.CheckInEnabled,
-			Billing: d.billing, CheckoutEnabled: cfg.CheckoutEnabled, Payments: d.payments, Housekeeping: d.housekeeping, Owner: d.owner, StayOps: d.stayOps, Shifts: d.shifts,
+			Billing: d.billing, CheckoutEnabled: cfg.CheckoutEnabled, Payments: d.payments, Housekeeping: d.housekeeping, Owner: d.owner, StayOps: d.stayOps, Shifts: d.shifts, Monitor: d.monitor,
 			Auth: d.auth, Staff: d.staff, TrustProxy: cfg.TrustProxy,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,

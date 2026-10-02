@@ -201,3 +201,19 @@ func (PaymentRepo) BankAccount(ctx context.Context, tx app.Tx) ([]byte, error) {
 	b, err := sqlcgen.New(t).GetTenantBankAccount(ctx, t.tenant)
 	return b, wrap("select bank account", err)
 }
+
+func (PaymentRepo) LockEvent(ctx context.Context, tx app.Tx, eventID string) (app.StoredEvent, bool, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return app.StoredEvent{}, false, err
+	}
+	r, err := sqlcgen.New(t).LockPaymentEvent(ctx, sqlcgen.LockPaymentEventParams{TenantID: pgtype.Text{String: t.tenant, Valid: true}, EventID: eventID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return app.StoredEvent{}, false, nil
+	}
+	if err != nil {
+		return app.StoredEvent{}, false, wrap("lock payment event", err)
+	}
+	ev := app.PaymentEvent{TenantID: t.tenant, Provider: r.Provider, ExternalID: r.ExternalID, Content: r.Content, Amount: r.Amount, ReceivedAt: r.ReceivedAt.Time}
+	return app.StoredEvent{ID: r.ID, Result: r.Result, Event: ev}, true, nil
+}

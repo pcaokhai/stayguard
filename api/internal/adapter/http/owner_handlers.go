@@ -65,5 +65,22 @@ func toOverview(v app.OwnerOverview) (gen.OwnerOverview, error) {
 	if err != nil {
 		return out, err
 	}
-	return out, json.Unmarshal(raw, &out)
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return out, err
+	}
+	out.Alerts = make([]gen.Alert, len(v.Alerts))
+	for i, a := range v.Alerts {
+		out.Alerts[i] = toAlert(a)
+	}
+	status := make([]gen.BuildingStatus, len(v.Buildings))
+	for i, b := range v.Buildings {
+		status[i] = gen.BuildingStatus{BuildingId: b.ID, Code: b.Code, TotalRooms: b.Total, Occupied: b.Occupied, Vacant: b.Vacant,
+			ToClean: b.ToClean, Overdue: b.Overdue, Maintenance: b.Maintenance, OccupancyPct: float32(b.OccupancyPct), RevenueToday: b.RevenueToday}
+	}
+	attention := make([]gen.AttentionItem, len(v.Attention))
+	for i, a := range v.Attention {
+		attention[i] = gen.AttentionItem{Kind: gen.AttentionItemKind(a.Kind), Ref: a.Ref, RoomCode: nilIfEmpty(a.RoomCode), Minutes: a.Minutes, Amount: a.Amount}
+	}
+	out.Buildings, out.Attention = &status, &attention
+	return out, nil
 }

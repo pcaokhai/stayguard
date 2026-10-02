@@ -105,7 +105,7 @@ Tests (required): SG-801 AC1–AC3 (the edit changes the price through pricing; 
 `getCurrentShift`, `recordCashPayout`, `closeShift`, `getShiftReview`, `listClosedShifts`; a shift opens on the first cash action of a signed-in receptionist; expected cash = float + cash taken − payouts; closing locks figures and alerts on any difference.
 Tests (required): expected cash with deposits, refunds and payouts; a closed shift cannot change; difference creates an alert.
 
-#### [ ] L-B3 Owner monitoring (API-2) — migration 0015
+#### [x] L-B3 Owner monitoring (API-2) — migration 0015
 `getOwnerOverview` v2 (`buildings`, `attention`), `listAlerts`, `markAlertRead`, `listTransactions`, `linkTransferToInvoice`, `listAuditLogs`.
 Tests (required): link only by OWNER, only for bank events, once (409), settles the invoice through the settlement code path.
 

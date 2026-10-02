@@ -292,6 +292,13 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 		}
 		return p.finish(ctx, tx, ev, payment.ResultMismatch, t.PaymentID)
 	}
+	return p.settleMatched(ctx, tx, ev, t, "")
+}
+
+// settleMatched is the tail of settlement: the pending transfer becomes PAID, the invoice closes and the event is
+// SETTLED. The bank-event handler and the owner's link of an unmatched transfer (linkTransferToInvoice) both end here.
+// actor is empty for a provider event.
+func (p *Payments) settleMatched(ctx context.Context, tx Tx, ev PaymentEvent, t PendingTransfer, actor string) (SettleResult, error) {
 	now := storedTime(p.clock.Now()) // payment time is the server's, not the provider's
 	if err := p.repo.SettleTransfer(ctx, tx, t.PaymentID, now, ev.Amount, ev.ExternalID); err != nil {
 		return SettleResult{}, err
@@ -299,7 +306,7 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 	if err := p.repo.CloseInvoice(ctx, tx, t.InvoiceID, t.StayID, now); err != nil {
 		return SettleResult{}, err
 	}
-	if err := p.auditPayment(ctx, tx, "", auditPaySettled, t.PaymentID, payment.MethodTransfer, t.InvoiceID, ev.Amount); err != nil {
+	if err := p.auditPayment(ctx, tx, actor, auditPaySettled, t.PaymentID, payment.MethodTransfer, t.InvoiceID, ev.Amount); err != nil {
 		return SettleResult{}, err
 	}
 	return p.finish(ctx, tx, ev, payment.ResultSettled, t.PaymentID)

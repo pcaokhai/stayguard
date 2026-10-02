@@ -29,6 +29,7 @@ type Server struct {
 	auth         AuthService
 	stayOps      StayOpsService
 	shifts       ShiftService
+	monitor      MonitorService
 	staff        StaffService
 }
 
@@ -164,18 +165,6 @@ func (Server) GetTicket(context.Context, gen.GetTicketRequestObject) (gen.GetTic
 	return nil, errNotImplemented
 }
 
-func (Server) LinkTransferToInvoice(context.Context, gen.LinkTransferToInvoiceRequestObject) (gen.LinkTransferToInvoiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListAlerts(context.Context, gen.ListAlertsRequestObject) (gen.ListAlertsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListAuditLogs(context.Context, gen.ListAuditLogsRequestObject) (gen.ListAuditLogsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListBankAccounts(context.Context, gen.ListBankAccountsRequestObject) (gen.ListBankAccountsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -200,15 +189,7 @@ func (Server) ListTickets(context.Context, gen.ListTicketsRequestObject) (gen.Li
 	return nil, errNotImplemented
 }
 
-func (Server) ListTransactions(context.Context, gen.ListTransactionsRequestObject) (gen.ListTransactionsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) MakeDefaultBankAccount(context.Context, gen.MakeDefaultBankAccountRequestObject) (gen.MakeDefaultBankAccountResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) MarkAlertRead(context.Context, gen.MarkAlertReadRequestObject) (gen.MarkAlertReadResponseObject, error) {
 	return nil, errNotImplemented
 }
 

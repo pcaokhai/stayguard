@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
+	"github.com/pcaokhai/stayguard/api/internal/domain/room"
 )
 
 const latestPaymentsLimit = 10
@@ -31,9 +32,31 @@ type OwnerRepo interface {
 	LatestPayments(ctx context.Context, tx Tx, limit int) ([]PaymentSummary, error)
 }
 
-// RoomCounter gives the room counts per building; *Rooms implements it.
+// RoomCounter gives the room counts per building and the rooms of one; *Rooms implements it.
 type RoomCounter interface {
 	ListBuildings(ctx context.Context, c Caller) ([]BuildingView, error)
+	ListRooms(ctx context.Context, c Caller, buildingID string, status *room.Status) ([]RoomView, error)
+}
+
+const (
+	overviewAlertsLimit = 5
+	// longToCleanMinutes is how long a room may wait to be cleaned before the owner is told.
+	longToCleanMinutes = 60
+)
+
+// BuildingStatus is the room counts and the day's revenue of one building. Occupied includes overdue rooms.
+type BuildingStatus struct {
+	ID, Code                                               string
+	Total, Occupied, Vacant, ToClean, Overdue, Maintenance int
+	OccupancyPct                                           float64
+	RevenueToday                                           int64
+}
+
+// AttentionItem is something that needs the owner now. Ref is an alert id or a room code.
+type AttentionItem struct {
+	Kind, Ref, RoomCode string
+	Minutes             *int
+	Amount              *int64
 }
 
 // OwnerOverview is the day summary. Alerts are empty until the alert slice exists (FAST MODE).
@@ -43,6 +66,9 @@ type OwnerOverview struct {
 	ByBuilding                                 []BuildingRevenue
 	OccupiedRooms, TotalRooms, OverdueRooms    int
 	LatestPayments                             []PaymentSummary
+	Buildings                                  []BuildingStatus
+	Alerts                                     []AlertRow
+	Attention                                  []AttentionItem
 }
 
 // Owner holds the owner overview use case (SG-403).
@@ -51,8 +77,13 @@ type Owner struct {
 	repo  OwnerRepo
 	rooms RoomCounter
 	clock Clock
-	authz access.Authorizer
+	// monitor is optional (nil leaves alerts and attention empty): the unread alerts and the rooms waiting too long.
+	monitor MonitorRepo
+	authz   access.Authorizer
 }
+
+// WithMonitor adds the alert and cleaning data to the overview.
+func (o *Owner) WithMonitor(m MonitorRepo) *Owner { o.monitor = m; return o }
 
 func NewOwner(uow UnitOfWork, repo OwnerRepo, rooms RoomCounter, clock Clock) *Owner {
 	return &Owner{uow: uow, repo: repo, rooms: rooms, clock: clock}
@@ -88,7 +119,7 @@ func (o *Owner) Overview(ctx context.Context, c Caller, date *time.Time) (OwnerO
 			out.TransfersReceived += r.Transfer
 			out.CashTotal += r.Cash
 		}
-		return nil
+		return o.watch(ctx, tx, &out)
 	})
 	if err != nil {
 		return OwnerOverview{}, err
@@ -97,11 +128,76 @@ func (o *Owner) Overview(ctx context.Context, c Caller, date *time.Time) (OwnerO
 	if err != nil {
 		return OwnerOverview{}, fmt.Errorf("room counts: %w", err)
 	}
+	revenue := map[string]int64{}
+	for _, r := range out.ByBuilding {
+		revenue[r.BuildingID] = r.Cash + r.Transfer
+	}
+	out.Buildings = make([]BuildingStatus, 0, len(buildings))
 	for _, b := range buildings {
 		n := b.Counts
+		total := n.Vacant + n.Occupied + n.Overdue + n.ToClean + n.Maintenance
 		out.OccupiedRooms += n.Occupied + n.Overdue
 		out.OverdueRooms += n.Overdue
-		out.TotalRooms += n.Vacant + n.Occupied + n.Overdue + n.ToClean + n.Maintenance
+		out.TotalRooms += total
+		out.Buildings = append(out.Buildings, BuildingStatus{ID: b.ID, Code: b.Code, Total: total, Occupied: n.Occupied + n.Overdue,
+			Vacant: n.Vacant, ToClean: n.ToClean, Overdue: n.Overdue, Maintenance: n.Maintenance,
+			OccupancyPct: occupancyPct(n.Occupied+n.Overdue, total), RevenueToday: revenue[b.ID]})
+		if n.Overdue > 0 {
+			if err := o.overdueRooms(ctx, c, b.ID, &out); err != nil {
+				return OwnerOverview{}, err
+			}
+		}
 	}
 	return out, nil
+}
+
+// occupancyPct is a percentage with one decimal.
+func occupancyPct(occupied, total int) float64 {
+	if total == 0 {
+		return 0
+	}
+	return float64(occupied*1000/total) / 10
+}
+
+// overdueRooms adds one OVERDUE_ROOM item per overdue room of a building.
+// ponytail: no minutes overdue (the room map derives the end of a stay from its snapshot); add when the web board shows it.
+func (o *Owner) overdueRooms(ctx context.Context, c Caller, buildingID string, out *OwnerOverview) error {
+	st := room.StatusOverdue
+	rooms, err := o.rooms.ListRooms(ctx, c, buildingID, &st)
+	if err != nil {
+		return fmt.Errorf("overdue rooms: %w", err)
+	}
+	for _, r := range rooms {
+		out.Attention = append(out.Attention, AttentionItem{Kind: "OVERDUE_ROOM", Ref: r.ID, RoomCode: r.Code})
+	}
+	return nil
+}
+
+// watch fills the unread alerts and the attention items that come from alerts and from rooms left uncleaned.
+func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
+	out.Alerts, out.Attention = []AlertRow{}, []AttentionItem{}
+	if o.monitor == nil {
+		return nil
+	}
+	now := storedTime(o.clock.Now())
+	alerts, err := o.monitor.Alerts(ctx, tx, AlertFilter{UnreadOnly: true, Limit: overviewAlertsLimit})
+	if err != nil {
+		return fmt.Errorf("unread alerts: %w", err)
+	}
+	out.Alerts = alerts
+	for _, a := range alerts {
+		switch a.Kind {
+		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort:
+			out.Attention = append(out.Attention, AttentionItem{Kind: a.Kind, Ref: a.ID, RoomCode: a.RoomCode, Amount: a.Amount})
+		}
+	}
+	waiting, err := o.monitor.LongToClean(ctx, tx, now.Add(-longToCleanMinutes*time.Minute))
+	if err != nil {
+		return fmt.Errorf("long to clean: %w", err)
+	}
+	for _, w := range waiting {
+		minutes := int(now.Sub(w.Since) / time.Minute)
+		out.Attention = append(out.Attention, AttentionItem{Kind: "LONG_TO_CLEAN", Ref: w.RoomCode, RoomCode: w.RoomCode, Minutes: &minutes})
+	}
+	return nil
 }

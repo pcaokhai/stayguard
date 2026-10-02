@@ -248,6 +248,20 @@ type AppTenant struct {
 	GuesthouseCode pgtype.Text
 }
 
+type AppTransaction struct {
+	TenantID       string
+	ID             string
+	HappenedAt     pgtype.Timestamptz
+	Amount         int64
+	Method         string
+	RoomCode       string
+	BillCode       string
+	Reconciliation string
+	TransferNote   string
+	PaymentEventID string
+	ShiftID        string
+}
+
 type AppUnit struct {
 	ID         string
 	TenantID   string

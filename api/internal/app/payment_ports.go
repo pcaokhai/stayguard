@@ -13,6 +13,8 @@ var (
 	ErrNoBankAccount = errors.New("tenant has no bank account")
 	// ErrPaymentNotPending is the backstop of the settle and mismatch updates (zero rows changed).
 	ErrPaymentNotPending = errors.New("payment is not pending")
+	// ErrEventNotLinkable: the bank event was already settled or linked, so linking it again is refused (HTTP 409).
+	ErrEventNotLinkable = errors.New("payment event is not an unmatched transfer")
 )
 
 // PayInvoice is the invoice as payment needs it, locked for the transaction.
@@ -50,6 +52,12 @@ type PaymentEvent struct {
 	ReceivedAt                              time.Time
 }
 
+// StoredEvent is a payment event row as stored; Result is a payment.Result value.
+type StoredEvent struct {
+	ID, Result string
+	Event      PaymentEvent
+}
+
 // PaymentRepo filters by the tenant of the Tx. SettleTransfer is called only by the payment-event handler.
 type PaymentRepo interface {
 	LockInvoice(ctx context.Context, tx Tx, invoiceID string) (PayInvoice, bool, error)
@@ -62,6 +70,8 @@ type PaymentRepo interface {
 	// InsertEvent reports false when (provider, external id) was seen before.
 	InsertEvent(ctx context.Context, tx Tx, id string, ev PaymentEvent) (bool, error)
 	SetEventResult(ctx context.Context, tx Tx, ev PaymentEvent, result string) error
+	// LockEvent takes the row lock of a stored event of this tenant; false when there is none.
+	LockEvent(ctx context.Context, tx Tx, eventID string) (StoredEvent, bool, error)
 	// SettleTransfer and MarkMismatch return ErrPaymentNotPending when no pending transfer was updated.
 	SettleTransfer(ctx context.Context, tx Tx, paymentID string, paidAt time.Time, received int64, transactionID string) error
 	MarkMismatch(ctx context.Context, tx Tx, paymentID string, received int64, transactionID string) error
