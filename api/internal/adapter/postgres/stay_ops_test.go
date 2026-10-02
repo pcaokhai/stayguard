@@ -183,7 +183,7 @@ func TestStayOps_ReceiptStatesAndBankAlerts_SG801(t *testing.T) {
 		t.Fatalf("unpaid history: %+v %v", page, err)
 	}
 
-	// The same bill code with part of the amount: PARTIAL event and PAYMENT_MISMATCH alert. A transfer with no bill code: UNMATCHED_TRANSFER.
+	// The same bill code with part of the amount: PARTIAL event (state MISMATCH, no immediate alert). A transfer with no bill code: UNMATCHED_TRANSFER.
 	pay := app.NewPayments(uow, PaymentRepo{}, editEverywhere{}, nil, NewIdempotencyStore(time.Hour), NewAuditWriter(), gen, clk).WithAlerts(AlertWriter{})
 	if res, err := pay.Settle(ctx, app.PaymentEvent{TenantID: ten, Provider: "t", ExternalID: "e1", Content: "PH1002A101", Amount: 40_000, ReceivedAt: opsNow}); err != nil || res.Result != "PARTIAL" {
 		t.Fatalf("partial: %+v %v", res, err)
@@ -205,7 +205,7 @@ func TestStayOps_ReceiptStatesAndBankAlerts_SG801(t *testing.T) {
 		}
 		got[k] = [2]any{rc, amt}
 	}
-	if got["PAYMENT_MISMATCH"] != [2]any{"A101", int64(40_000)} || got["UNMATCHED_TRANSFER"] != [2]any{"", int64(70_000)} || len(got) != 2 {
+	if got["UNMATCHED_TRANSFER"] != [2]any{"", int64(70_000)} || len(got) != 1 { // a short transfer raises nothing at once
 		t.Fatalf("alerts: %v", got)
 	}
 	if page, _ := history.ListStays(ctx, boss, app.StayListQuery{State: "MISMATCH"}); len(page.Items) != 1 {

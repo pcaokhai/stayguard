@@ -29,13 +29,7 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 
 - `TRUST_PROXY=1` and `TRUSTED_PROXY_HOPS=1` in `deploy/.env.prod`: one Caddy in front, the app port closed to the internet (see `deploy/README.md`). Without them every sign-in shares the proxy's address and the per-IP limit locks everyone out together.
 
-- Daily jobs (guest ID retention today; more later): one cron line on the server, with `DATABASE_URL` and `DATA_ENCRYPTION_KEY` as the app uses (no other database login):
-
-  ```
-  */5 * * * * stayguard cd /srv/stayguard && docker compose --env-file deploy/.env.prod exec -T api stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
-  ```
-
-  It prints counts only. Check the first night's run in the log.
+- Scheduled jobs (partial-transfer alerts, guest ID retention, recurring expenses): the `jobs` service in `deploy/compose.prod.yaml` runs them every 5 minutes with the app's environment; there is no cron line to add. Check `docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod logs jobs` shows a count line per job.
 
 ## If SePay deliveries are rejected for age
 

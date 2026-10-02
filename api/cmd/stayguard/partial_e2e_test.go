@@ -55,8 +55,8 @@ func TestPartialTransfers_AccumulateUntilPaid_FU(t *testing.T) {
 	if st, again := r.pay("TRANSFER"); st != 201 || again["id"] != id || num(again["remaining"]) != left || num(again["qr"].(map[string]any)["amount"]) != left {
 		t.Fatalf("a new transfer payment must show the remaining QR with the same bill code: %d %v", st, again)
 	}
-	if n := len(r.alerts("PAYMENT_MISMATCH")); n != 1 {
-		t.Fatalf("the owner is told about the partial transfer: %d alerts", n)
+	if n := len(r.alerts("PAYMENT_MISMATCH")) + len(r.alerts("PAYMENT_PARTIAL")); n != 0 {
+		t.Fatalf("a short transfer raises no immediate alert (PAYMENT_PARTIAL comes after 15 minutes): %d alerts", n)
 	}
 
 	res, err = h.Settle(context.Background(), r.event("bank-p2", left, r.code))

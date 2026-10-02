@@ -81,6 +81,23 @@ services:
     expose:
       - "8080"
 
+  # The scheduled jobs, every 5 minutes: partial-transfer alerts, guest ID retention, recurring expenses. One instance only (do not
+  # scale it); every job is safe to repeat, and a failed round is logged and the next one still runs. No cron on the server.
+  jobs:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        NEXT_PUBLIC_DEMO_MODE: "0"
+    command: ["jobs", "run", "--every", "5m"]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://stayguard_app:${APP_DB_PASSWORD}@db:5432/stayguard?sslmode=disable
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+    depends_on:
+      roles:
+        condition: service_completed_successfully
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

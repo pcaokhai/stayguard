@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -124,5 +125,35 @@ func TestShiftClose_ListsUnpaidInvoicesAndNeedsReason_FU(t *testing.T) {
 	closed, _ := review["shift"].(map[string]any)["unpaidInvoices"].([]any)
 	if st != 200 || review["shift"].(map[string]any)["status"] != "CLOSED" || len(closed) != 1 {
 		t.Fatalf("closing with a reason: %d %s", st, raw)
+	}
+}
+
+// The 15-minute timer runs on the server clock at the moment the event arrived, never on SePay's own transaction date (Vietnam
+// time without a zone, here 7 hours off).
+func TestPartialTransfer_TimerUsesServerReceiveTime_FU(t *testing.T) {
+	r := newPayRig(t, "A102")
+	r.connectHook(hookSecret)
+	if st, p := r.pay("TRANSFER"); st != 201 {
+		t.Fatalf("transfer: %d %v", st, p)
+	}
+	at := r.e.clock.Now()
+	body := r.sepayBody(t, 2001, "in", r.balance/2, "CK "+r.code)
+	var m map[string]any
+	_ = json.Unmarshal(body, &m)
+	m["transactionDate"] = at.UTC().Format("2006-01-02 15:04:05") // read as Vietnam time this is 7 hours in the past
+	body, _ = json.Marshal(m)
+	if st, out := r.webhook(hookID, hookSecret, at, body, ""); st != 200 {
+		t.Fatalf("webhook: %d %s", st, out)
+	}
+	if n := r.e.count(`SELECT count(*) FROM app.payment_events WHERE tenant_id = $1 AND result = 'PARTIAL' AND received_at = $2`, r.tenant, at.UTC()); n != 1 {
+		t.Fatalf("received_at must be the server clock %s", at.UTC())
+	}
+	r.runJobsAt(at.Add(14*time.Minute + 59*time.Second))
+	if n := len(r.alerts("PAYMENT_PARTIAL")); n != 0 {
+		t.Fatalf("an alert before 15 minutes of server time: %d", n)
+	}
+	r.runJobsAt(at.Add(15 * time.Minute))
+	if n := len(r.alerts("PAYMENT_PARTIAL")); n != 1 {
+		t.Fatalf("one alert at 15 minutes: %d", n)
 	}
 }

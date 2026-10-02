@@ -34,10 +34,10 @@ set -a; . "$ENV_FILE"; set +a
 
 if [ "${EXTERNAL_S3:-0}" = 1 ]; then
 	: "${BACKUP_S3_ENDPOINT:?EXTERNAL_S3=1 needs BACKUP_S3_ENDPOINT}"
-	services=(db api)
+	services=(db api jobs)
 else
 	export BACKUP_S3_ENDPOINT="http://localhost:$REHEARSE_MINIO_PORT" BACKUP_S3_PROVIDER=Minio BACKUP_S3_REGION=us-east-1
-	services=(db api minio minio-init)
+	services=(db api jobs minio minio-init)
 fi
 
 echo "== starting the production stack (first build takes a few minutes)"

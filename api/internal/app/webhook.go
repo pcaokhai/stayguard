@@ -118,7 +118,7 @@ func (w *Webhook) Receive(ctx context.Context, hookID, signature, timestamp stri
 		return err
 	}
 	ev := PaymentEvent{TenantID: tenantID, Provider: webhookProvider, ExternalID: strconv.FormatInt(p.ID, 10), Amount: p.TransferAmount,
-		Content: clipTo(p.Content, maxWebhookContent), ReceivedAt: w.receivedAt(p.TransactionDate)}
+		Content: clipTo(p.Content, maxWebhookContent), ReceivedAt: storedTime(w.clock.Now())} // the server clock; SePay's own date has no zone and is not trusted
 	accountID, ours := w.ourAccount(tenantID, accounts, p.AccountNumber)
 	if ours {
 		err = w.uow.Do(ctx, tenantID, func(ctx context.Context, tx Tx) error { return w.bank.TouchWebhook(ctx, tx, accountID, ev.ReceivedAt) })
@@ -166,17 +166,6 @@ func (w *Webhook) ourAccount(tenantID string, accounts []AccountBlob, number str
 		}
 	}
 	return "", false
-}
-
-// receivedAt reads SePay's Vietnam-time date; a value that does not parse falls back to the server clock.
-func (w *Webhook) receivedAt(s string) time.Time {
-	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-	if err == nil {
-		if t, perr := time.ParseInLocation("2006-01-02 15:04:05", s, loc); perr == nil {
-			return storedTime(t)
-		}
-	}
-	return storedTime(w.clock.Now())
 }
 
 func clipTo(s string, n int) string {

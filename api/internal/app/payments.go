@@ -321,12 +321,7 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 	if err := p.repo.SetTransferReceived(ctx, tx, t.PaymentID, total); err != nil {
 		return SettleResult{}, err
 	}
-	a := AlertDraft{Kind: AlertPaymentMismatch, RoomCode: t.RoomCode, StayID: t.StayID, Amount: &ev.Amount,
-		Details: map[string]string{"billCode": t.BillCode, "expected": strconv.FormatInt(t.Amount, 10),
-			"received": strconv.FormatInt(total, 10)}}
-	if err := p.raise(ctx, tx, a); err != nil {
-		return SettleResult{}, err
-	}
+	// No immediate alert: PAYMENT_PARTIAL (RaisePartialAlerts) tells the owner when it is still not paid 15 minutes later.
 	return SettleResult{Result: payment.ResultPartial, PaymentID: t.PaymentID}, nil
 }
 
