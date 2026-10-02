@@ -13,12 +13,9 @@ import (
 )
 
 const (
-	// defaultFrontDeskHistoryDays is how far back a receptionist may look (docs/15 rule 5).
-	// ponytail: a constant until the property settings (L-A3) hold `frontDeskHistoryDays`.
-	defaultFrontDeskHistoryDays = 7
-	maxHistoryRangeDays         = 366
-	historyPageSize             = 50
-	cursorSeparator             = "|"
+	maxHistoryRangeDays = 366
+	historyPageSize     = 50
+	cursorSeparator     = "|"
 )
 
 // StayListPage is one page of the history; NextCursor is empty on the last page.
@@ -46,7 +43,7 @@ func NewStayHistory(uow UnitOfWork, repo StayHistoryRepo, levels BuildingLevels,
 }
 
 // ListStays returns the stays checked in on the chosen days, newest first, from buildings the caller can view.
-// A receptionist is limited to the last defaultFrontDeskHistoryDays days; owners and managers have no limit.
+// A receptionist is limited to the last frontDeskHistoryDays days of the property settings (default 7); owners and managers have no limit.
 func (h *StayHistory) ListStays(ctx context.Context, c Caller, q StayListQuery) (StayListPage, error) {
 	const op = "listStays"
 	if err := h.checkRole(op, c); err != nil {
@@ -73,7 +70,11 @@ func (h *StayHistory) ListStays(ctx context.Context, c Caller, q StayListQuery) 
 }
 
 func (h *StayHistory) filter(ctx context.Context, tx Tx, c Caller, q StayListQuery, loc *time.Location) (StayFilter, error) {
-	from, to, err := h.window(c, q, loc)
+	days, err := h.repo.FrontDeskDays(ctx, tx)
+	if err != nil {
+		return StayFilter{}, fmt.Errorf("front desk history days: %w", err)
+	}
+	from, to, err := h.window(c, q, loc, days)
 	if err != nil {
 		return StayFilter{}, err
 	}
@@ -100,7 +101,7 @@ func (h *StayHistory) filter(ctx context.Context, tx Tx, c Caller, q StayListQue
 var historyStates = map[string]bool{"IN_STAY": true, "PAID": true, "UNPAID": true, "MISMATCH": true, "TIME_EDITED": true}
 
 // window turns the requested days into instants: [start of first day, start of the day after the last).
-func (h *StayHistory) window(c Caller, q StayListQuery, loc *time.Location) (time.Time, time.Time, error) {
+func (h *StayHistory) window(c Caller, q StayListQuery, loc *time.Location, frontDeskDays int) (time.Time, time.Time, error) {
 	today := dayOf(h.clock.Now().In(loc), loc)
 	first, last := today, today
 	switch {
@@ -119,7 +120,7 @@ func (h *StayHistory) window(c Caller, q StayListQuery, loc *time.Location) (tim
 	if last.Sub(first) > maxHistoryRangeDays*24*time.Hour {
 		return time.Time{}, time.Time{}, stay.NewValidationError([]stay.FieldError{{Path: "to", Code: stay.CodeMax}})
 	}
-	if c.Role == access.RoleReceptionist && first.Before(today.AddDate(0, 0, -defaultFrontDeskHistoryDays)) {
+	if c.Role == access.RoleReceptionist && first.Before(today.AddDate(0, 0, -frontDeskDays)) {
 		return time.Time{}, time.Time{}, stay.NewValidationError([]stay.FieldError{{Path: historyDayField(q), Code: stay.CodeMin}})
 	}
 	return first, last.AddDate(0, 0, 1), nil

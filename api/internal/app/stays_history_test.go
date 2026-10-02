@@ -19,6 +19,7 @@ type fakeHistoryRepo struct {
 }
 
 func (r *fakeHistoryRepo) Timezone(context.Context, Tx) (string, error)      { return zoneName, nil }
+func (r *fakeHistoryRepo) FrontDeskDays(context.Context, Tx) (int, error)    { return 7, nil }
 func (r *fakeHistoryRepo) BuildingIDs(context.Context, Tx) ([]string, error) { return r.buildings, nil }
 func (r *fakeHistoryRepo) Stays(_ context.Context, _ Tx, f StayFilter) ([]StayListRow, error) {
 	r.got = f

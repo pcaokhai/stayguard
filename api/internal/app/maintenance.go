@@ -59,8 +59,13 @@ type Maintenance struct {
 	alerts AlertWriter
 	ids    IDGenerator
 	clock  Clock
+	// expenses is optional (nil posts nothing): a ticket that is DONE posts its cost as a MAINTENANCE expense (docs/15 rule 8).
+	expenses ExpenseLedger
 	guard
 }
+
+// WithExpenses posts the cost of a finished ticket to the expense ledger.
+func (m *Maintenance) WithExpenses(l ExpenseLedger) *Maintenance { m.expenses = l; return m }
 
 func NewMaintenance(uow UnitOfWork, repo TicketRepo, levels BuildingLevels, idem IdempotencyStore, audit AuditWriter,
 	alerts AlertWriter, ids IDGenerator, clock Clock) *Maintenance {
@@ -265,6 +270,11 @@ func (m *Maintenance) UpdateTicket(ctx context.Context, c Caller, id string, in 
 		if err := m.repo.Update(ctx, tx, ch); err != nil {
 			return fmt.Errorf("update ticket: %w", err)
 		}
+		if ch.Status == ticket.Done {
+			if err := m.postCost(ctx, tx, c, rec, ch); err != nil {
+				return err
+			}
+		}
 		action := auditTicketUpdate
 		if ch.Status == ticket.Done {
 			action = auditTicketDone
@@ -277,6 +287,27 @@ func (m *Maintenance) UpdateTicket(ctx context.Context, c Caller, id string, in 
 		return err
 	})
 	return out, err
+}
+
+// postCost posts the finished ticket's cost as a MAINTENANCE expense of the month it was completed in. A ticket with no
+// cost posts nothing; posting twice is harmless because the ticket is the reference.
+func (m *Maintenance) postCost(ctx context.Context, tx Tx, c Caller, rec TicketRecord, ch TicketChange) error {
+	total := ticket.Total(ch.PartsCost, ch.LabourCost)
+	if m.expenses == nil || total == nil || *total == 0 || ch.CompletedAt == nil {
+		return nil
+	}
+	loc, err := loadZone(ctx, tx, m.repo)
+	if err != nil {
+		return err
+	}
+	at := ch.CompletedAt.In(loc)
+	day := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
+	e := AutoExpense{ID: m.ids.New(expenseIDPrefix), Source: "MAINTENANCE", RefID: rec.ID, Category: "MAINTENANCE", Month: at.Format("2006-01"),
+		Amount: *total, PaidOn: &day, Note: rec.Code, CreatedBy: c.UserID}
+	if err := m.expenses.PostAuto(ctx, tx, e); err != nil {
+		return fmt.Errorf("post maintenance cost: %w", err)
+	}
+	return nil
 }
 
 func checkTicketUpdate(in UpdateTicketInput) error {

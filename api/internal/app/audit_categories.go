@@ -6,7 +6,7 @@ import "strings"
 // The prefixes do not overlap, so the category of an action and the filter for a category agree.
 // A new audit action needs a prefix here; until then it shows under RATES_SETTINGS and no category filter finds it.
 var auditCategories = []struct{ prefix, category string }{
-	{"payment.", "MONEY"}, {"invoice.", "MONEY"}, {"stay.checked_out", "MONEY"}, {"stay.extras_added", "MONEY"},
+	{"payment.", "MONEY"}, {"expense.", "MONEY"}, {"payroll.", "MONEY"}, {"invoice.", "MONEY"}, {"stay.checked_out", "MONEY"}, {"stay.extras_added", "MONEY"},
 	{"stay.check_in", "STAY_TIME"}, {"stay.moved", "STAY_TIME"},
 	{"shift.", "SHIFT"},
 	{"stock.", "STOCK"}, {"service.", "STOCK"},

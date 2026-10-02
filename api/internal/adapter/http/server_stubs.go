@@ -32,6 +32,7 @@ type Server struct {
 	monitor      MonitorService
 	maintenance  MaintenanceService
 	roster       RosterService
+	finance      FinanceService
 	staff        StaffService
 	bank         BankService
 	setup        SetupService
@@ -65,23 +66,11 @@ func (Server) ReceiveBankWebhook(context.Context, gen.ReceiveBankWebhookRequestO
 	return nil, errNotImplemented
 }
 
-func (Server) CreateExpense(context.Context, gen.CreateExpenseRequestObject) (gen.CreateExpenseResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) DeleteExpense(context.Context, gen.DeleteExpenseRequestObject) (gen.DeleteExpenseResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) DeleteGuestIdNumber(context.Context, gen.DeleteGuestIdNumberRequestObject) (gen.DeleteGuestIdNumberResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) DeleteGuestIdPhoto(context.Context, gen.DeleteGuestIdPhotoRequestObject) (gen.DeleteGuestIdPhotoResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetExpenseMonth(context.Context, gen.GetExpenseMonthRequestObject) (gen.GetExpenseMonthResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -93,31 +82,11 @@ func (Server) GetGuestIdRecord(context.Context, gen.GetGuestIdRecordRequestObjec
 	return nil, errNotImplemented
 }
 
-func (Server) GetIncomeCostReport(context.Context, gen.GetIncomeCostReportRequestObject) (gen.GetIncomeCostReportResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetPayroll(context.Context, gen.GetPayrollRequestObject) (gen.GetPayrollResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject) (gen.MarkPayrollPaidResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) RevealGuestIdNumber(context.Context, gen.RevealGuestIdNumberRequestObject) (gen.RevealGuestIdNumberResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) SetGuestIdNumber(context.Context, gen.SetGuestIdNumberRequestObject) (gen.SetGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateExpense(context.Context, gen.UpdateExpenseRequestObject) (gen.UpdateExpenseResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdatePayrollLine(context.Context, gen.UpdatePayrollLineRequestObject) (gen.UpdatePayrollLineResponseObject, error) {
 	return nil, errNotImplemented
 }
 

@@ -17,7 +17,7 @@ import (
 var _ gen.StrictServerInterface = (*Server)(nil)
 
 func TestUnimplementedOperation_Returns501Problem_SG002_AC2(t *testing.T) {
-	rec := do(newTestRouter(&bytes.Buffer{}), "GET", "/v1/owner/reports/income-costs?from=2026-01&to=2026-02", "Bearer "+goodToken)
+	rec := do(newTestRouter(&bytes.Buffer{}), "GET", "/v1/owner/stays/st_x/guest-id", "Bearer "+goodToken)
 
 	if rec.Code != 501 || rec.Header().Get("Content-Type") != "application/problem+json" {
 		t.Fatalf("code=%d ct=%q", rec.Code, rec.Header().Get("Content-Type"))

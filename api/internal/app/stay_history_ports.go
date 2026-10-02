@@ -54,6 +54,8 @@ type ReceiptRecord struct {
 // StayHistoryRepo filters by the tenant of the Tx.
 type StayHistoryRepo interface {
 	Timezone(ctx context.Context, tx Tx) (string, error)
+	// FrontDeskDays is the property setting: how many days back a receptionist may look.
+	FrontDeskDays(ctx context.Context, tx Tx) (int, error)
 	BuildingIDs(ctx context.Context, tx Tx) ([]string, error)
 	Stays(ctx context.Context, tx Tx, f StayFilter) ([]StayListRow, error)
 	// StayBuilding reports the building of a stay; false when the stay is unknown.

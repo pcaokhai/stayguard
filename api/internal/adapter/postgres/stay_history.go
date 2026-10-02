@@ -136,3 +136,12 @@ func (StayHistoryRepo) Receipt(ctx context.Context, tx app.Tx, invoiceID string)
 	}
 	return rec, true, nil
 }
+
+func (StayHistoryRepo) FrontDeskDays(ctx context.Context, tx app.Tx) (int, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := sqlcgen.New(t).GetFrontDeskHistoryDays(ctx, t.tenant)
+	return int(n), wrap("select front desk history days", err)
+}

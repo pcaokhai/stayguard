@@ -41,6 +41,14 @@ type deps struct {
 	monitor      monitorOps
 	maintenance  *app.Maintenance
 	roster       *app.Rosters
+	finance      financeOps
+}
+
+// financeOps is payroll, expenses and the report behind one handler dependency.
+type financeOps struct {
+	*app.Payroll
+	*app.Expenses
+	*app.Reports
 }
 
 // monitorOps is the owner monitoring reads and the link of an unmatched transfer behind one handler dependency.
@@ -107,7 +115,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		auth:         auth,
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		bank:         bank,
-		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}).WithAlerts(postgres.AlertWriter{}),
+		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}).WithAlerts(postgres.AlertWriter{}).WithExpenses(postgres.FinanceRepo{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,
@@ -117,6 +125,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		monitor:      monitorOps{newMonitor(uow, clock.System{}), payments},
 		maintenance:  newMaintenance(uow, idem, audit, clock.System{}),
 		roster:       newRosters(uow, idem, audit, clock.System{}),
+		finance:      newFinance(uow, idem, audit, clock.System{}),
 		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}).WithMonitor(postgres.MonitorRepo{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.Stored{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
@@ -242,9 +251,21 @@ func newInstaller(cfg config.Config, pool *pgxpool.Pool, clk app.Clock) (*app.In
 }
 
 func newMaintenance(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Maintenance {
-	return app.NewMaintenance(uow, postgres.TicketRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
+	return app.NewMaintenance(uow, postgres.TicketRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk).
+		WithExpenses(postgres.FinanceRepo{})
 }
 
 func newRosters(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Rosters {
 	return app.NewRosters(uow, postgres.RosterRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
+}
+
+// newFinance builds payroll, expenses and the report. The same repository is the ledger that other use cases post
+// automatic expense lines to.
+func newFinance(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) financeOps {
+	repo, levels, id := postgres.FinanceRepo{}, permissions.Stored{}, ids.New(clk.Now)
+	return financeOps{
+		Payroll:  app.NewPayroll(uow, repo, postgres.RosterRepo{}, repo, levels, idem, audit, id, clk),
+		Expenses: app.NewExpenses(uow, repo, levels, idem, audit, id, clk),
+		Reports:  app.NewReports(uow, repo, repo, levels, clk),
+	}
 }

@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getFrontDeskHistoryDays = `-- name: GetFrontDeskHistoryDays :one
+SELECT coalesce(min(front_desk_history_days), 7)::int AS days FROM app.properties WHERE tenant_id = $1
+`
+
+func (q *Queries) GetFrontDeskHistoryDays(ctx context.Context, tenantID string) (int32, error) {
+	row := q.db.QueryRow(ctx, getFrontDeskHistoryDays, tenantID)
+	var days int32
+	err := row.Scan(&days)
+	return days, err
+}
+
 const getReceiptInvoice = `-- name: GetReceiptInvoice :one
 SELECT iv.id, iv.stay_id, iv.bill_code, iv.quote, u.building_id, u.code AS room_code, s.check_in_at, s.check_out_at,
        coalesce((SELECT p.name FROM app.properties p WHERE p.tenant_id = iv.tenant_id ORDER BY p.created_at, p.id LIMIT 1), '')::text AS property_name

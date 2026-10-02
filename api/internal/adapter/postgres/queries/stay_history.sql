@@ -124,3 +124,6 @@ SELECT p.id, p.method, coalesce(p.received_amount, p.amount) AS amount, p.paid_a
 FROM app.payments p
 WHERE p.tenant_id = @tenant_id AND p.invoice_id = @invoice_id AND p.status = 'PAID' AND p.paid_at IS NOT NULL
 ORDER BY p.paid_at, p.id;
+
+-- name: GetFrontDeskHistoryDays :one
+SELECT coalesce(min(front_desk_history_days), 7)::int AS days FROM app.properties WHERE tenant_id = @tenant_id;

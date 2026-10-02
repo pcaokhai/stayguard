@@ -162,7 +162,7 @@ Tests (required): SG-805 AC1–AC5, including a log-capture test proving no numb
 #### [x] F-A3 Roster and leave (API-2) — migration 0019
 `getRoster`, `putRoster`, `copyRosterWeek`, `listLeaveRequests`, `approveLeave`, `declineLeave`, `getMyRoster`, `listMyLeaveRequests`, `createLeaveRequest`, `cancelMyLeave`; scheduled shift used when a shift opens.
 
-#### [ ] F-A4 Finance (API-2) — migration 0020
+#### [x] F-A4 Finance (API-2) — migration 0020
 `getPayroll`, `updatePayrollLine`, `markPayrollPaid`, `getExpenseMonth`, `createExpense`, `updateExpense`, `deleteExpense`, `getIncomeCostReport`; automatic expense lines from payroll, tickets (DONE) and stock (IN); monthly recurring copy job.
 Tests (required): payroll per pay type with the rounding rule; report totals reconcile with paid invoices and expense lines.
 

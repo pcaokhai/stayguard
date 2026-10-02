@@ -81,6 +81,23 @@ type AppCashEntry struct {
 	CreatedAt   pgtype.Timestamptz
 }
 
+type AppExpense struct {
+	ID                string
+	TenantID          string
+	Month             string
+	Category          string
+	Amount            int64
+	PaidOn            pgtype.Date
+	Note              pgtype.Text
+	Recurring         bool
+	Source            string
+	RefID             pgtype.Text
+	RootID            pgtype.Text
+	AttachmentAssetID pgtype.Text
+	CreatedBy         pgtype.Text
+	CreatedAt         pgtype.Timestamptz
+}
+
 type AppFloor struct {
 	ID         string
 	TenantID   string
@@ -174,6 +191,19 @@ type AppPaymentEvent struct {
 	ReceivedAt    pgtype.Timestamptz
 }
 
+type AppPayrollLine struct {
+	TenantID  string
+	UserID    string
+	Month     string
+	Bonus     int64
+	Deduction int64
+	Note      pgtype.Text
+	Status    string
+	Frozen    []byte
+	PaidAt    pgtype.Timestamptz
+	PaidBy    pgtype.Text
+}
+
 type AppPinCredential struct {
 	TenantID         string
 	UserID           string
@@ -197,6 +227,12 @@ type AppProperty struct {
 	QrExpiryMinutes      int32
 	IDRetentionDays      int32
 	FrontDeskHistoryDays int32
+}
+
+type AppRecurringRun struct {
+	TenantID string
+	Month    string
+	RanAt    pgtype.Timestamptz
 }
 
 type AppRosterAssignment struct {

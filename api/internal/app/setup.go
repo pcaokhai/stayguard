@@ -53,7 +53,12 @@ type Setup struct {
 	authz access.Authorizer
 	// alerts is optional: without it a stocktake raises no alert.
 	alerts AlertWriter
+	// expenses is optional: without it buying stock in posts no COST_OF_GOODS expense (F-A4).
+	expenses ExpenseLedger
 }
+
+// WithExpenses posts the cost of stock bought in (an IN movement) to the expense ledger.
+func (s *Setup) WithExpenses(l ExpenseLedger) *Setup { s.expenses = l; return s }
 
 func NewSetup(uow UnitOfWork, repo SetupRepo, idem IdempotencyStore, audit AuditWriter, ids IDGenerator, clock Clock) *Setup {
 	return &Setup{uow: uow, repo: repo, idem: idem, audit: audit, ids: ids, clock: clock}
@@ -900,7 +905,30 @@ func (s *Setup) restock(ctx context.Context, tx Tx, c Caller, code string, quant
 		return ServiceItem{}, err
 	}
 	item.LatestUnitCost = &unitCost
+	if err = s.postStockCost(ctx, tx, c, m, item.Code, quantity*unitCost); err != nil {
+		return ServiceItem{}, err
+	}
 	return item, s.record(ctx, tx, c, "STOCK_IN", "service", item.ID, map[string]any{"quantity": quantity})
+}
+
+// postStockCost posts what a restock cost as a COST_OF_GOODS expense of the month it was bought in. The movement is the
+// reference, so a retry cannot post it twice. Nothing is posted for a free restock.
+func (s *Setup) postStockCost(ctx context.Context, tx Tx, c Caller, m StockMovement, itemCode string, amount int64) error {
+	if s.expenses == nil || amount <= 0 {
+		return nil
+	}
+	loc, err := loadZone(ctx, tx, s.repo)
+	if err != nil {
+		return err
+	}
+	at := m.At.In(loc)
+	day := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
+	e := AutoExpense{ID: s.ids.New(expenseIDPrefix), Source: "STOCK", RefID: m.ID, Category: "COST_OF_GOODS", Month: at.Format("2006-01"), Amount: amount,
+		PaidOn: &day, Note: itemCode, CreatedBy: c.UserID}
+	if err := s.expenses.PostAuto(ctx, tx, e); err != nil {
+		return fmt.Errorf("post stock cost: %w", err)
+	}
+	return nil
 }
 
 const maxStock = 100_000_000

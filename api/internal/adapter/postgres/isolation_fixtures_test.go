@@ -42,6 +42,9 @@ var isolationFixtures = []fixture{
 	{"maintenance_tickets", `INSERT INTO app.maintenance_tickets (id, tenant_id, code, unit_id, category, description, reported_at) VALUES ($2::text || '_mt', $1::text, 'BT-001', $2::text || '_un', 'TV', 'd', now())`},
 	{"roster_assignments", `INSERT INTO app.roster_assignments (tenant_id, user_id, work_date, shift) VALUES ($1::text, $2::text || '_u', '2026-10-05', 'MORNING')`},
 	{"leave_requests", `INSERT INTO app.leave_requests (id, tenant_id, user_id, from_date, to_date, kind, created_at) VALUES ($2::text || '_lv', $1::text, $2::text || '_u', '2026-10-05', '2026-10-06', 'PAID', now())`},
+	{"expenses", `INSERT INTO app.expenses (id, tenant_id, month, category, amount, source) VALUES ($2::text || '_ex', $1::text, '2026-10', 'RENT', 1, 'MANUAL')`},
+	{"payroll_lines", `INSERT INTO app.payroll_lines (tenant_id, user_id, month) VALUES ($1::text, $2::text || '_u', '2026-10')`},
+	{"recurring_runs", `INSERT INTO app.recurring_runs (tenant_id, month) SELECT $1::text, '2026-10' WHERE $2::text <> ''`},
 	{"audit_logs", `INSERT INTO app.audit_logs (id, tenant_id, action, entity_type, entity_id) VALUES ($2::text || '_au', $1::text, 'a', 'e', $2::text)`},
 	{"idempotency_keys", `INSERT INTO app.idempotency_keys (tenant_id, route, key, request_hash, expires_at) VALUES ($1::text, 'r', $2::text, 'h', now() + interval '1 hour')`},
 }
