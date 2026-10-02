@@ -157,7 +157,7 @@ export function CheckoutView() {
                     : t("checkout.cash")}
                 </span>
                 <span className="text-[13px] font-normal text-muted-foreground">
-                  {t("checkout.cashSub")}
+                  {t(q.refundDue > 0 ? "checkout.refundSub" : "checkout.cashSub")}
                 </span>
               </Button>
             </div>

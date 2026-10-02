@@ -101,7 +101,8 @@
     "failed": "Could not create the payment. Please try again.",
     "preparing": "Finalising the invoice…",
     "in": "In",
-    "refund": "Refund to guest {amount} (cash)"
+    "refund": "Refund to guest {amount} (cash)",
+    "refundSub": "Deducted from the end-of-shift cash count"
   },
   "bill": {
     "FIRST_HOUR": "First hour",

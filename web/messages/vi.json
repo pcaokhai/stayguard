@@ -101,7 +101,8 @@
     "failed": "Không tạo được thanh toán. Vui lòng thử lại.",
     "preparing": "Đang chốt hóa đơn…",
     "in": "Vào",
-    "refund": "Hoàn lại khách {amount} (tiền mặt)"
+    "refund": "Hoàn lại khách {amount} (tiền mặt)",
+    "refundSub": "Trừ vào tiền mặt cuối ca"
   },
   "bill": {
     "FIRST_HOUR": "Giờ đầu",
