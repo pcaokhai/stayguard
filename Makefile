@@ -91,7 +91,7 @@ test-api-int:
 smoke:
 	scripts/smoke.sh
 
-# Backup round trip against a local MinIO bucket: backup, list, restore into a scratch database, compare row counts (scripts/backup-test.sh).
+# Backup round trip against rclone's built-in S3 server: backup, list, restore into a scratch database, compare row counts (scripts/backup-test.sh).
 backup-test:
 	scripts/backup-test.sh
 

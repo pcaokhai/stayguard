@@ -2,7 +2,7 @@
 
 Production runs on one VPS with Docker: PostgreSQL, the API (which also serves the web app) and Caddy for automatic HTTPS.
 The files: `compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`. (`compose.yaml` and
-`compose.demo.override.yaml`, `compose.smoke.override.yaml` and `compose.rehearse.yaml` are for local use only; `compose.yaml` also has the MinIO test target under profile `backup`.)
+`compose.demo.override.yaml`, `compose.smoke.override.yaml` and `compose.rehearse.yaml` are for local use only; `compose.yaml` also has a local S3 test target under profile `backup`.)
 
 What the production stack guarantees: `DEMO_MODE=0`; the API connects as `stayguard_app`, a non-superuser role that owns
 nothing and cannot bypass row-level security (`ALLOW_PRIVILEGED_DB` is never set for it); the database port is not
@@ -69,10 +69,10 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
 ## Rehearsal on your own machine (SePay and Cloudflare tunnel)
 
 `make rehearse` runs this same production stack locally before you touch a VPS: `compose.prod.yaml` plus `compose.rehearse.yaml`,
-`DEMO_MODE` off, the non-superuser database role, a MinIO backup bucket, and plain HTTP on `127.0.0.1:18090` (Caddy is left out; set
+`DEMO_MODE` off, the non-superuser database role, and plain HTTP on `127.0.0.1:18090` (Caddy is left out; set
 `REHEARSE_PORT` to change the port). It imports a fake guesthouse (`rehearse`) with the installer commands, sets the SePay secret, and
-prints once: the owner and receptionist one-time PINs, the exact webhook path, the secret and the tunnel command. It ends with one
-backup to the MinIO bucket (`backup ok`). Needs docker, python3 and openssl; the first build takes a few minutes.
+prints once: the owner and receptionist one-time PINs, the exact webhook path, the secret and the tunnel command. It starts only the api (which serves the web app), PostgreSQL and the `jobs` service, and pulls nothing from quay.io. With
+`REHEARSE_BACKUP=1` it also takes one backup to rclone's built-in S3 server (`backup ok`). Needs docker, python3 and openssl; the first build takes a few minutes.
 
 ```
 make rehearse                                  # prints the PINs and the webhook path once
@@ -84,11 +84,12 @@ In SePay set the webhook URL to `https://<tunnel-host>` plus the printed path, a
 `REHEARSE_BANK_BIN=970436 REHEARSE_ACCOUNT_NO=... REHEARSE_ACCOUNT_NAME=... make rehearse`. The secrets live in `deploy/.env.rehearse`
 (git-ignored) so a restart keeps the key that matches the data. Running it again after the guesthouse exists stops at the import:
 `make rehearse-down` deletes the containers, volumes, bucket, secrets file and local dumps, and the next `make rehearse` starts clean.
-Never put real guest data in it. Without Docker Hub or quay access, `EXTERNAL_S3=1 BACKUP_S3_ENDPOINT=...` skips MinIO.
+Never put real guest data in it. To rehearse the backup against a real bucket, set the `BACKUP_S3_*` variables for it and run
+`REHEARSE_BACKUP=1 EXTERNAL_S3=1 make rehearse`.
 
 ## Backup storage (S3-compatible)
 
-`backup.sh` and `restore-rehearsal.sh` need an S3-compatible bucket: AWS S3, Cloudflare R2, Backblaze B2, Wasabi, MinIO. Create a
+`backup.sh` and `restore-rehearsal.sh` need an S3-compatible bucket: AWS S3, Cloudflare R2, Backblaze B2, Wasabi. Create a
 bucket and an access key limited to it, and set in `deploy/.env.prod` (placeholders are in `deploy/.env.example`):
 
 ```
@@ -96,7 +97,7 @@ BACKUP_S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com   # the provider's 
 BACKUP_S3_BUCKET=stayguard-backups
 BACKUP_S3_ACCESS_KEY=...
 BACKUP_S3_SECRET_KEY=...
-BACKUP_S3_PROVIDER=Other        # AWS for AWS S3, Cloudflare for R2, Other for B2, Wasabi, MinIO
+BACKUP_S3_PROVIDER=Other        # AWS for AWS S3, Cloudflare for R2, Other for B2, Wasabi
 BACKUP_S3_REGION=               # AWS only, e.g. eu-central-1
 BACKUP_S3_PREFIX=               # optional folder inside the bucket
 ```
@@ -107,10 +108,13 @@ with the same settings. Prefer a bucket with versioning or object lock so a mist
 The dump holds guest names and phones in the clear, so keep the bucket private. To encrypt it as well, configure an rclone
 `crypt` remote yourself (`rclone config`) and set `BACKUP_REMOTE=thatremote:folder` instead of the `BACKUP_S3_*` settings.
 
-**Try it locally first:** `make backup-test` starts a throwaway database and a MinIO bucket (compose profile `backup`), imports a test
-guesthouse, takes a backup, lists it, restores it into a scratch database and checks that every table has the same row count.
-If your network cannot pull the MinIO images (`quay.io/minio/...`), set `MINIO_IMAGE` and `MINIO_MC_IMAGE`, or point at any S3
-server with `EXTERNAL_S3=1 BACKUP_S3_ENDPOINT=http://localhost:PORT make backup-test` (the bucket `stayguard-backups` must exist).
+**Try it locally first:** `make backup-test` starts a throwaway database and rclone's built-in S3 server (`rclone serve s3`, the official
+`rclone/rclone` image from Docker Hub; compose profile `backup`), imports a test guesthouse, takes a backup, lists it, restores it into a
+scratch database and checks that every table has the same row count. Nothing is pulled from quay.io.
+
+**Test a real bucket** (Cloudflare R2, Backblaze B2, AWS S3) with the same rclone configuration the server will use: put its
+`BACKUP_S3_*` settings in the environment (endpoint, bucket, keys, `BACKUP_S3_PROVIDER`; the bucket must exist) and run
+`EXTERNAL_S3=1 make backup-test`, or `REHEARSE_BACKUP=1 EXTERNAL_S3=1 make rehearse` for the production stack.
 
 ## Update and roll back
 

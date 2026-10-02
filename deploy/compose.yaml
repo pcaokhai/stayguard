@@ -33,30 +33,18 @@ services:
       - "8080:8080"
     restart: "no"
 
-  # Backup target for local testing only (`make backup-test`): an S3-compatible store with one bucket created on start.
-  # Not started by `make up`; enable it with `--profile backup`. Images: MINIO_IMAGE and MINIO_MC_IMAGE override the defaults. The keys come from the environment (see deploy/.env.example).
-  minio:
+  # Backup target for local testing only (`make backup-test`): rclone's own S3 server from the official rclone image on Docker Hub,
+  # one bucket (a folder) made on start, data kept in the container. Not started by `make up`; enable it with `--profile backup`.
+  # The keys come from the environment (see deploy/.env.example).
+  s3:
     profiles: ["backup"]
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:latest}
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: ${BACKUP_S3_ACCESS_KEY:-stayguard-local}
-      MINIO_ROOT_PASSWORD: ${BACKUP_S3_SECRET_KEY:-stayguard-local-secret}
-    ports:
-      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
-      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
-  minio-init:
-    profiles: ["backup"]
-    image: ${MINIO_MC_IMAGE:-quay.io/minio/mc:latest}
-    restart: "no"
-    depends_on:
-      - minio
+    image: rclone/rclone:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - mkdir -p "/data/$$BUCKET" && exec rclone serve s3 /data --addr :9000 --auth-key "$$ACCESS_KEY,$$SECRET_KEY"
     environment:
       ACCESS_KEY: ${BACKUP_S3_ACCESS_KEY:-stayguard-local}
       SECRET_KEY: ${BACKUP_S3_SECRET_KEY:-stayguard-local-secret}
       BUCKET: ${BACKUP_S3_BUCKET:-stayguard-backups}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        until mc alias set local http://minio:9000 "$$ACCESS_KEY" "$$SECRET_KEY" >/dev/null 2>&1; do sleep 1; done
-        mc mb --ignore-existing "local/$$BUCKET"
+    ports:
+      - "127.0.0.1:${BACKUP_S3_PORT:-9000}:9000"

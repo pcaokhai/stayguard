@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
-# `make rehearse`: the production compose on this machine (DEMO_MODE off, non-superuser DB role, MinIO backup target), plain HTTP on
+# `make rehearse`: the production compose on this machine (DEMO_MODE off, non-superuser DB role), plain HTTP on
 # 127.0.0.1:$REHEARSE_PORT (default 18090) for a Cloudflare tunnel, with a fake test guesthouse imported through the installer
 # commands. Prints the sign-in codes, the one-time PINs and the webhook path ONCE: they are not stored anywhere readable later.
 #   make rehearse-down          stop and delete everything (database, bucket, secrets file)
 #   REHEARSE_PORT=18090         the local port
 #   SEPAY_SECRET=...            the secret SePay signs with (else a random one is made and printed once)
 #   REHEARSE_ACCOUNT_NO / REHEARSE_BANK_BIN / REHEARSE_ACCOUNT_NAME   receiving account for the QR (else a fake one)
-#   EXTERNAL_S3=1               skip MinIO and use the S3 server already at BACKUP_S3_ENDPOINT
+#   REHEARSE_BACKUP=1           also take one backup, to rclone's built-in S3 server (official rclone image), or with EXTERNAL_S3=1
+#                               to the real bucket at BACKUP_S3_ENDPOINT (BACKUP_S3_* set as in deploy/.env.example)
 # Needs docker, python3, openssl. Never use it for real guest data.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PORT="${REHEARSE_PORT:-18090}"
-export REHEARSE_PORT="$PORT" REHEARSE_MINIO_PORT="${REHEARSE_MINIO_PORT:-19100}"
+export REHEARSE_PORT="$PORT" REHEARSE_S3_PORT="${REHEARSE_S3_PORT:-19100}"
 ENV_FILE="deploy/.env.rehearse" # git-ignored (.env.*); generated once so the key matches the data volume
 CODE="rehearse"
 COMPOSE=(docker compose -p stayguard-rehearse -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "$ENV_FILE" --profile backup)
 
-if [ ! -f "$ENV_FILE" ]; then
+if [ ! -s "$ENV_FILE" ]; then
 	umask 077
 	cat >"$ENV_FILE" <<ENV
 POSTGRES_PASSWORD=$(openssl rand -hex 16)
@@ -32,12 +33,14 @@ ENV
 fi
 set -a; . "$ENV_FILE"; set +a
 
-if [ "${EXTERNAL_S3:-0}" = 1 ]; then
-	: "${BACKUP_S3_ENDPOINT:?EXTERNAL_S3=1 needs BACKUP_S3_ENDPOINT}"
-	services=(db api jobs)
-else
-	export BACKUP_S3_ENDPOINT="http://localhost:$REHEARSE_MINIO_PORT" BACKUP_S3_PROVIDER=Minio BACKUP_S3_REGION=us-east-1
-	services=(db api jobs minio minio-init)
+services=(db api jobs)
+if [ "${REHEARSE_BACKUP:-0}" = 1 ]; then
+	if [ "${EXTERNAL_S3:-0}" = 1 ]; then
+		: "${BACKUP_S3_ENDPOINT:?EXTERNAL_S3=1 needs BACKUP_S3_ENDPOINT}"
+	else
+		export BACKUP_S3_ENDPOINT="http://localhost:$REHEARSE_S3_PORT" BACKUP_S3_PROVIDER=Other BACKUP_S3_REGION=us-east-1
+		services+=(s3)
+	fi
 fi
 
 echo "== starting the production stack (first build takes a few minutes)"
@@ -98,5 +101,7 @@ Stop and wipe      make rehearse-down
 
 OUT
 
-echo "== backup check (MinIO)"
-ENV_FILE="$ENV_FILE" STAYGUARD_COMPOSE="${COMPOSE[*]}" BACKUP_DIR="$PWD/deploy/.rehearse-backups" deploy/backup.sh
+if [ "${REHEARSE_BACKUP:-0}" = 1 ]; then
+	echo "== backup check"
+	ENV_FILE="$ENV_FILE" STAYGUARD_COMPOSE="${COMPOSE[*]}" BACKUP_DIR="$PWD/deploy/.rehearse-backups" deploy/backup.sh
+fi

@@ -1,37 +1,23 @@
-# Rehearsal overlay (see `make rehearse`): the production stack on this machine, in plain HTTP on one fixed local port, with a MinIO
-# backup target. Same images, same non-superuser database role, DEMO_MODE off. Caddy is left out (profile "tls", never started), so a
-# Cloudflare tunnel (or any proxy on this machine) points at http://localhost:${REHEARSE_PORT:-18090}. Local only.
+# Rehearsal overlay (see `make rehearse`): the production stack on this machine, in plain HTTP on one fixed local port. Same images,
+# same non-superuser database role, DEMO_MODE off. Caddy is left out (profile "tls", never started), so a Cloudflare tunnel (or any
+# proxy on this machine) points at http://localhost:${REHEARSE_PORT:-18090}. The web app is served by the api container. Local only.
 services:
   caddy:
     profiles: ["tls"]
   api:
     ports:
       - "127.0.0.1:${REHEARSE_PORT:-18090}:8080"
-  minio:
+  # Optional backup target (REHEARSE_BACKUP=1): rclone's own S3 server from the official rclone image on Docker Hub. Nothing is
+  # pulled from quay.io. The bucket is a folder made on start; the data lives in the container and goes with `make rehearse-down`.
+  s3:
     profiles: ["backup"]
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:latest}
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: ${BACKUP_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${BACKUP_S3_SECRET_KEY}
-    volumes:
-      - miniodata:/data
-    ports:
-      - "127.0.0.1:${REHEARSE_MINIO_PORT:-19100}:9000"
-  minio-init:
-    profiles: ["backup"]
-    image: ${MINIO_MC_IMAGE:-quay.io/minio/mc:latest}
-    restart: "no"
-    depends_on:
-      - minio
+    image: rclone/rclone:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - mkdir -p "/data/$$BUCKET" && exec rclone serve s3 /data --addr :9000 --auth-key "$$ACCESS_KEY,$$SECRET_KEY"
     environment:
       ACCESS_KEY: ${BACKUP_S3_ACCESS_KEY}
       SECRET_KEY: ${BACKUP_S3_SECRET_KEY}
       BUCKET: ${BACKUP_S3_BUCKET}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        until mc alias set local http://minio:9000 "$$ACCESS_KEY" "$$SECRET_KEY" >/dev/null 2>&1; do sleep 1; done
-        mc mb --ignore-existing "local/$$BUCKET"
-volumes:
-  miniodata:
+    ports:
+      - "127.0.0.1:${REHEARSE_S3_PORT:-19100}:9000"

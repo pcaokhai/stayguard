@@ -107,7 +107,7 @@ npm run dev
 | Format | `make fmt` | |
 | Contract checks | `make contracts` | Spectral lint, oasdiff against `main`, schema compile, pricing vectors |
 | Money-path smoke test | `make smoke` | builds its own stack (project `stayguard-smoke`, port 18080, so a `make up` stack can keep running), creates a test guesthouse with the installer commands, then drives the phone UI with Playwright: sign in, check in, extras, check out, pay by a signed SePay-style webhook, clean, close the shift, owner sees the revenue. Needs Docker, `npm ci` in `web/`, `python3`. `KEEP=1` leaves the stack up; `REUSE=1` runs again on it (about 15 s) |
-| Backup round trip | `make backup-test` | local MinIO bucket: backup, list, restore into a scratch database, compare row counts (deploy/README.md, "Backup storage") |
+| Backup round trip | `make backup-test` | local S3 server (`rclone serve s3`): backup, list, restore into a scratch database, compare row counts (deploy/README.md, "Backup storage") |
 | Web production build | `cd web && npm run build` | also run once with `NEXT_PUBLIC_MOCK=1` to check mock mode |
 
 Tests are required for pricing, check-out and invoice, payments and settlement, tenant scoping, sign-in and roles (see `CLAUDE.md` section 4). Everything else is checked by build, typecheck, lint and the manual flow below.
