@@ -748,7 +748,102 @@ const reportMonths = (from: string, to: string) => {
   return out;
 };
 
+// Roster and leave (boards LichCa, LichCaPC). The pattern fills any week asked for; edits live in `rosterEdits`.
+const PATTERN: Record<string, ("MORNING" | "AFTERNOON" | "NIGHT")[]> = {
+  "u-fd": ["MORNING", "MORNING", "MORNING", "MORNING", "MORNING"],
+  "u-hoa": ["AFTERNOON", "AFTERNOON", "AFTERNOON", "AFTERNOON", "AFTERNOON"],
+  "u-minh": ["NIGHT", "NIGHT", "NIGHT", "NIGHT", "NIGHT", "NIGHT"],
+  "u-lan": ["MORNING", "MORNING", "MORNING", "MORNING", "MORNING", "MORNING", "MORNING"],
+  "u-mai": ["MORNING", "MORNING", "MORNING", "MORNING", "MORNING"],
+  "u-tung": ["NIGHT", "NIGHT", "NIGHT", "NIGHT", "NIGHT", "NIGHT"],
+};
+const rosterKey = (a: { userId: string; date: string; shift: string }) =>
+  `${a.userId}|${a.date}|${a.shift}`;
+const rosterSet = new Set<string>();
+const rosterRemoved = new Set<string>();
+const dayAdd = (d: string, n: number) => {
+  const x = new Date(`${d}T12:00:00`);
+  x.setDate(x.getDate() + n);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+};
+const rosterFor = (from: string, to: string) => {
+  const out: { userId: string; date: string; shift: string }[] = [];
+  for (let d = from; d <= to; d = dayAdd(d, 1)) {
+    const dow = (new Date(`${d}T12:00:00`).getDay() + 6) % 7;
+    for (const [userId, shifts] of Object.entries(PATTERN)) {
+      const shift = shifts[dow];
+      if (shift && !rosterRemoved.has(rosterKey({ userId, date: d, shift })))
+        out.push({ userId, date: d, shift });
+    }
+  }
+  for (const k of rosterSet) {
+    const [userId, date, shift] = k.split("|");
+    if (date >= from && date <= to) out.push({ userId, date, shift });
+  }
+  return out;
+};
+const leaveRequests = [
+  {
+    id: "lv1",
+    userId: "u-hoa",
+    userName: "Chị Hoa",
+    fromDate: dayAdd(at(0, 12, 0).slice(0, 10), 1),
+    toDate: dayAdd(at(0, 12, 0).slice(0, 10), 1),
+    shift: "AFTERNOON",
+    kind: "PAID",
+    reason: "Việc gia đình",
+    coverUserId: "u-minh",
+    status: "PENDING",
+    declineReason: null,
+    createdAt: at(1, 9, 0),
+    decidedAt: null,
+  },
+];
+
 export const ownerHandlers = [
+  http.get("*/v1/owner/roster", ({ request }) => {
+    const p = new URL(request.url).searchParams;
+    const from = p.get("from") ?? "";
+    const to = p.get("to") ?? "";
+    return json({
+      from,
+      to,
+      assignments: rosterFor(from, to),
+      leave: leaveRequests,
+      gaps: [{ date: dayAdd(from, 6), shift: "AFTERNOON" }],
+    });
+  }),
+  http.put("*/v1/owner/roster", async ({ request }) => {
+    const b = (await request.json()) as {
+      set: { userId: string; date: string; shift: string }[];
+      remove: { userId: string; date: string; shift: string }[];
+    };
+    b.set.forEach((a) => {
+      rosterRemoved.delete(rosterKey(a));
+      rosterSet.add(rosterKey(a));
+    });
+    b.remove.forEach((a) => {
+      rosterSet.delete(rosterKey(a));
+      rosterRemoved.add(rosterKey(a));
+    });
+    return json({ from: "", to: "", assignments: [], leave: [], gaps: [] });
+  }),
+  http.post("*/v1/owner/roster/copy-week", () =>
+    json({ from: "", to: "", assignments: [], leave: [] }),
+  ),
+  http.get("*/v1/owner/leave-requests", () =>
+    json({ items: leaveRequests.filter((l) => l.status === "PENDING") }),
+  ),
+  http.post("*/v1/owner/leave-requests/:id/approve", ({ params }) => {
+    const l = leaveRequests.find((x) => x.id === params.id);
+    if (l) l.status = "APPROVED";
+    return json(l);
+  }),
+  http.post("*/v1/owner/leave-requests/:id/decline", ({ params }) => {
+    const l = leaveRequests.find((x) => x.id === params.id);
+    if (l) l.status = "DECLINED";
+    return json(l);
+  }),
   http.get("*/v1/owner/maintenance-tickets", () => json({ items: tickets })),
   http.get("*/v1/owner/maintenance-tickets/:id", ({ params }) =>
     json(tickets.find((x) => x.id === params.id)),

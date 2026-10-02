@@ -40,6 +40,7 @@ const ROUTES = [
   "/owner/expenses",
   "/owner/payroll",
   "/owner/reports",
+  "/owner/roster",
   "/owner/stays",
   "/owner/stay?id=s2",
   "/owner/shifts",

@@ -179,7 +179,7 @@ Boards: ChiTietMatHang, ChiTietMatHangPC, NhapThemHang, NhapThemHangPC, XoaMatHa
 #### [x] F-W4 Maintenance and finance pages (WEB-2)
 Boards: BaoTri, BaoTriPC, BaoTriChiTiet, BaoTriChiTietPC, ChiPhi, ChiPhiPC, ThemChiPhi, ThemChiPhiPC, BangLuongPC, BaoCao, BaoCaoPC. Charts with shadcn Chart (Recharts), bars grow on load.
 
-#### [ ] F-W5 Roster for the owner, final language sweep (WEB-2)
+#### [x] F-W5 Roster for the owner, final language sweep (WEB-2)
 Boards: LichCa, LichCaPC. Then open every route in `/en` and `/vi` at 390 and 1280 px and fix any text that overflows or is missing.
 
 ### Gate 2 (hours 44–48)
