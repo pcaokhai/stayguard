@@ -41,6 +41,10 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 
 SePay's signature covers a timestamp and the server accepts it within `SEPAY_TIMESTAMP_TOLERANCE` of its own clock (default `300s`, the window SePay documents). The log line `sepay webhook rejected: timestamp outside tolerance` carries a running count (`rejected_for_age_total`), the tenant and the skew in seconds, never the payload. If it appears for real transfers: first check the server clock (`timedatectl`, NTP), then widen the window in `deploy/.env.prod`, for example `SEPAY_TIMESTAMP_TOLERANCE=900s` (up to `24h`), and restart the API. A wider window only lets an old signed delivery be replayed for longer: duplicates are still dropped, because every event is deduplicated on SePay's transaction id.
 
+## The data encryption key (back it up separately, never rotate it casually)
+
+`DATA_ENCRYPTION_KEY` protects PIN hashes (as a pepper), guest ID data, bank accounts and the SePay secret. Keep a copy of it **apart from the database backups** (a password manager, not the backup bucket). If the database is restored or reused with a different key, every PIN looks wrong (PIN_INVALID) and encrypted data cannot be read. The server stores a fingerprint of the key on first start and refuses to boot against a different one with `key fingerprint mismatch`: restore the original key. Never rotate the key without a re-encryption job (none exists yet).
+
 ## Rules
 
 - The secret is write-only: no command or screen prints it back.

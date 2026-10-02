@@ -72,6 +72,10 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 	if err != nil {
 		return deps{}, fmt.Errorf("database: %w", err)
 	}
+	if err = postgres.CheckKeyFingerprint(ctx, pool, crypto.KeyFingerprint(cfg.DataEncryptionKey)); err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	uow := postgres.NewUnitOfWork(pool)
 	idem, audit := postgres.NewIdempotencyStore(cfg.IdempotencyTTL), postgres.NewAuditWriter()
 	stays, err := newStays(cfg, uow, idem, audit, clock.System{})
