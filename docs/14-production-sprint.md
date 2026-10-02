@@ -127,7 +127,7 @@ Boards: NhanPhong, NhanPhongPC, ChiTiet, ThemDichVu, ThemDichVuPC, SuaGio, Chuye
 #### [x] L-W4 Shift and history (WEB-1)
 Boards: ChiTrongCa, ChiTrongCaPC, GiaoCa, GiaoCaPC, LichSuLuotO, LichSuLeTanPC. Date bar with previous and next day, calendar popover, Today and Yesterday; ID columns (all "No" until F-A2).
 
-#### [ ] L-W5 Cleaning and reports (WEB-1)
+#### [x] L-W5 Cleaning and reports (WEB-1)
 Boards: PhongCanDon, PhongCanDonPC, BuongPhongP, PhongCanDonBP, BaoHuHong, BaoPhongDung. Cleaned card slides out, counter ticks down, toast; optimistic update with rollback on error.
 
 #### [x] L-W6 Owner shell, overview, alerts, activity log (WEB-2)

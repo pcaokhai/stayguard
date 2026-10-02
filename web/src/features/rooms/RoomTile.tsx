@@ -31,7 +31,7 @@ export function hrefFor(room: Room): string | null {
   if (room.status === "VACANT") return lp(`/checkin?room=${room.id}`);
   if ((room.status === "OCCUPIED" || room.status === "OVERDUE") && room.activeStay)
     return lp(`/stay?id=${room.activeStay.id}`);
-  if (room.status === "TO_CLEAN") return lp("/housekeeping");
+  if (room.status === "TO_CLEAN") return lp(`/clean?room=${room.id}`);
   return null;
 }
 

@@ -165,6 +165,28 @@ const USERS: Record<string, { name: string; role: string }> = {
 };
 let wrongPins = 0;
 
+// Housekeeping list as in the boards: five rooms to clean (longest wait first) and eight done today.
+const task = (id: string, room: string, building: string, waiting: number, done = false) => ({
+  id,
+  roomId: room,
+  roomCode: room,
+  buildingId: building,
+  status: done ? "DONE" : "OPEN",
+  createdAt: ago(waiting),
+  completedAt: done ? ago(waiting - 20) : null,
+  waitingMinutes: waiting,
+});
+const hkTasks = [
+  task("h1", "B104", "B", 135),
+  task("h2", "A103", "A", 55),
+  task("h3", "B206", "B", 45),
+  task("h4", "A302", "A", 35),
+  task("h5", "A101", "A", 4),
+  ...["A102", "A104", "A201", "A204", "B101", "B103", "B205", "B207"].map((r, i) =>
+    task(`d${i}`, r, r[0], 300 + i * 20, true),
+  ),
+];
+
 const SHIFT = {
   id: "sh1",
   userId: "u1",
@@ -607,29 +629,29 @@ export const demoHandlers = [
     paid = true;
     return json({});
   }),
-  http.get("*/v1/housekeeping/tasks", () =>
-    json({
-      items: [
-        {
-          id: "h1",
-          roomId: "A103",
-          roomCode: "A103",
-          buildingId: "A",
-          status: "OPEN",
-          createdAt: ago(60),
-        },
-        {
-          id: "h2",
-          roomId: "B104",
-          roomCode: "B104",
-          buildingId: "B",
-          status: "OPEN",
-          createdAt: ago(130),
-        },
-      ],
-    }),
+  http.get("*/v1/housekeeping/tasks", () => json({ items: hkTasks })),
+  http.post("*/v1/housekeeping/tasks/:id/complete", ({ params }) => {
+    const task = hkTasks.find((x) => x.id === params.id);
+    if (task) Object.assign(task, { status: "DONE", completedAt: ago(0) });
+    return json(task ?? {});
+  }),
+  http.post("*/v1/rooms/:id/damage-reports", () =>
+    json(
+      {
+        id: "mt1",
+        roomCode: "A103",
+        status: "OPEN",
+        category: "HOT_WATER",
+        description: "x",
+        severity: "STILL_RENTABLE",
+        createdAt: ago(0),
+      },
+      201,
+    ),
   ),
-  http.post("*/v1/housekeeping/tasks/:id/complete", () => json({})),
+  http.post("*/v1/rooms/:id/usage-reports", () =>
+    json({ id: "al1", kind: "ROOM_USED", createdAt: ago(0) }, 201),
+  ),
   http.get("*/v1/owner/overview", () =>
     json({
       date: new Date().toISOString().slice(0, 10),

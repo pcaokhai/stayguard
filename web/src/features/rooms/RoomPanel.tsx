@@ -133,7 +133,9 @@ function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
             className="mt-2"
             disabled={!task}
             loading={done.isPending}
-            onClick={() => task && done.mutate({ taskId: task.id, key: key.current })}
+            onClick={() =>
+              task && done.mutate({ taskId: task.id, key: key.current, roomCode: room.code })
+            }
           >
             {t("panel.markClean")}
           </Button>
