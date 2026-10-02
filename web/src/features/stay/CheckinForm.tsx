@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { newIdempotencyKey } from "../../lib/api";
-import { lp } from "../../lib/locale";
+import { localized, lp } from "../../lib/locale";
 import { parseVnd } from "../../lib/money";
 import { t } from "../../lib/t";
 import { useBuildings } from "../rooms/hooks";
@@ -80,7 +80,9 @@ export function CheckinForm() {
       <main className="mx-auto flex w-full max-w-[480px] flex-col">
         <TopBar
           title={`${t("stay.checkinTitle")} ${room.data?.code ?? ""}`}
-          subtitle={[building?.name, room.data?.unitType.name.vi].filter(Boolean).join(" · ")}
+          subtitle={[building?.name, room.data && localized(room.data.unitType.name)]
+            .filter(Boolean)
+            .join(" · ")}
           back="/rooms"
         />
         <Form {...form}>

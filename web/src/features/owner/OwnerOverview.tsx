@@ -101,7 +101,7 @@ export function OwnerOverview() {
             ))}
           </Card>
           <Button asChild size="lg" className="mt-auto">
-            <Link href={lp("/rooms")}>{t("owner.toRooms")}</Link>
+            <Link href={lp("/owner/rooms")}>{t("owner.toRooms")}</Link>
           </Button>
         </div>
       </main>

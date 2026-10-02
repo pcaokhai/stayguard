@@ -117,7 +117,7 @@ Tests: role and building checks; lock refused with a guest.
 Boards: DangNhap, DangNhapPC, DoiPin, KhoaTaiKhoan, TaiKhoan. PIN with InputOTP; lockout countdown; must-change flow; the demo role picker shows only when demo mode is on. Motion: field error shake, button press.
 Verify UI; wrong PIN five times on mocks shows the locked screen.
 
-#### [ ] L-W2 Room maps (WEB-1)
+#### [x] L-W2 Room maps (WEB-1)
 Boards: Main, SoDoMayTinh, SoDoPhongTab, SoDoPhongChu, SoDoPhongChuPC. Building chips with sliding selection, status counters with rolling numbers, tile status cross-fade and pulse, desktop and tablet side panel, ID indicator chips in the panel, tapping TO_CLEAN opens cleaning. Owner variant has no End shift or Payout.
 
 #### [ ] L-W3 Stay flows (WEB-1)

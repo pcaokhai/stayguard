@@ -13,7 +13,7 @@ import { STATUS } from "../rooms/status";
 import { ExtrasSheet } from "./ExtrasSheet";
 import { useRoom, useStay } from "./hooks";
 import { rentalLabel } from "./labels";
-import { lp } from "../../lib/locale";
+import { localized, lp } from "../../lib/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,11 @@ export function StayDetail() {
       <main className="mx-auto flex w-full max-w-[480px] flex-col">
         <TopBar
           title={`${t("stay.roomTitle")} ${s.roomCode}`}
-          subtitle={[building?.name, room.data?.unitType.name.vi, rentalLabel(s.rentalType)]
+          subtitle={[
+            building?.name,
+            room.data && localized(room.data.unitType.name),
+            rentalLabel(s.rentalType),
+          ]
             .filter(Boolean)
             .join(" · ")}
           back="/rooms"
@@ -92,7 +96,7 @@ export function StayDetail() {
             {s.extras.map((x) => (
               <p key={x.serviceCode} className={row}>
                 <span>
-                  {x.name.vi} × {x.quantity}
+                  {localized(x.name)} × {x.quantity}
                 </span>
                 <span>{formatVnd(x.amount)}</span>
               </p>

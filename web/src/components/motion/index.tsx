@@ -81,16 +81,15 @@ export function SuccessTick({ className }: { className?: string }) {
   );
 }
 
-// One-time scale 1 -> 1.04 -> 1; change `trigger` to run it again.
+// One-time scale 1 -> 1.04 -> 1 each time `trigger` increases; 0 means no pulse yet.
 export function Pulse({
   trigger,
   ...props
-}: ComponentProps<typeof motion.div> & { trigger?: unknown }) {
+}: ComponentProps<typeof motion.div> & { trigger: number }) {
   return (
     <motion.div
-      key={String(trigger)}
-      initial={{ scale: 1 }}
-      animate={{ scale: [1, 1.04, 1] }}
+      key={trigger}
+      animate={trigger ? { scale: [1, 1.04, 1] } : undefined}
       transition={{ duration: duration.slow }}
       {...props}
     />

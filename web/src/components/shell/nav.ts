@@ -26,13 +26,13 @@ type Role = components["schemas"]["Role"];
 export type NavItem = { label: MessageKey; href: string; icon: LucideIcon };
 
 // Navigation shows only pages that exist (docs/14 W0): add a path here when its task is merged.
-const READY = new Set<string>(["/owner", "/rooms", "/housekeeping", "/account"]);
+const READY = new Set<string>(["/owner", "/rooms", "/owner/rooms", "/housekeeping", "/account"]);
 export const isReady = (href: string) => READY.has(href);
 export const visible = (items: NavItem[]) => items.filter((i) => READY.has(i.href));
 
 const OWNER_TABS: NavItem[] = [
   { label: "nav.overview", href: "/owner", icon: Home },
-  { label: "nav.rooms", href: "/rooms", icon: Building2 },
+  { label: "nav.rooms", href: "/owner/rooms", icon: Building2 },
   { label: "nav.payments", href: "/owner/payments", icon: List },
   { label: "nav.alerts", href: "/owner/alerts", icon: Bell },
 ];
@@ -54,7 +54,7 @@ export const OWNER_GROUPS: { label: MessageKey; items: NavItem[] }[] = [
   {
     label: "nav.monitor",
     items: [
-      { label: "nav.roomMap", href: "/rooms", icon: Building2 },
+      { label: "nav.roomMap", href: "/owner/rooms", icon: Building2 },
       { label: "nav.alerts", href: "/owner/alerts", icon: Bell },
       { label: "nav.payments", href: "/owner/payments", icon: List },
       { label: "nav.stays", href: "/owner/stays", icon: BedDouble },

@@ -4,6 +4,8 @@ import { expect, test } from "@playwright/test";
 const ROUTES = [
   "",
   "/rooms",
+  "/owner/rooms",
+  "/rooms?room=A101",
   "/checkin?room=A102",
   "/stay?id=stay-1",
   "/checkout?stay=stay-1",

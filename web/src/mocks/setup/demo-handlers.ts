@@ -5,46 +5,75 @@ import { loadSession } from "../../lib/session";
 // against the designs. Amounts are fixtures here; the real API computes them (pricing domain).
 type Status = "VACANT" | "OCCUPIED" | "OVERDUE" | "TO_CLEAN" | "MAINTENANCE";
 const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
-const PLAN = [
+type BuildingId = "A" | "B" | "C" | "D";
+// Building A matches the design boards (A101 .. A306); the others are generated from a short pattern.
+const A_PLAN: [Status, number?][] = [
+  ["OCCUPIED", 155],
+  ["VACANT"],
+  ["TO_CLEAN"],
+  ["OCCUPIED", 300],
+  ["VACANT"],
+  ["VACANT"],
+  ["OVERDUE", 120],
+  ["OCCUPIED", 50],
+  ["VACANT"],
+  ["VACANT"],
+  ["MAINTENANCE"],
+  ["OCCUPIED", 80],
+  ["VACANT"],
+  ["TO_CLEAN"],
+  ["OCCUPIED", 15],
+  ["VACANT"],
+  ["OCCUPIED", 400],
+  ["VACANT"],
+];
+const PATTERN: Status[] = [
+  "VACANT",
   "OCCUPIED",
   "VACANT",
   "TO_CLEAN",
+  "VACANT",
   "OCCUPIED",
-  "VACANT",
-  "VACANT",
-  "OVERDUE",
-  "OCCUPIED",
-  "VACANT",
   "VACANT",
   "MAINTENANCE",
-  "OCCUPIED",
-] as Status[];
+];
+const SIZE: Record<BuildingId, number> = { A: 18, B: 17, C: 12, D: 10 };
+const plan = (b: BuildingId): [Status, number?][] =>
+  b === "A"
+    ? A_PLAN
+    : Array.from({ length: SIZE[b] }, (_, i) => [PATTERN[i % PATTERN.length], 45 + i * 7]);
+const codeOf = (b: BuildingId, i: number) =>
+  `${b}${Math.floor(i / 6) + 1}${String((i % 6) + 1).padStart(2, "0")}`;
 
-const rooms = (b: "A" | "B") =>
-  PLAN.map((status, i) => ({
-    id: `${b}${101 + i}`,
-    code: `${b}${101 + i}`,
-    buildingId: b,
-    floor: 1 + Math.floor(i / 6),
-    unitType: {
-      code: i > 8 ? "VIP" : "STD",
-      name: { vi: i > 8 ? "VIP" : "Phòng thường", en: i > 8 ? "VIP" : "Standard" },
-    },
-    status,
-    note: status === "MAINTENANCE" ? "Hỏng điều hòa" : null,
-    activeStay:
-      status === "OCCUPIED" || status === "OVERDUE"
+const rooms = (b: BuildingId) =>
+  plan(b).map(([status, minutes], i) => {
+    const code = codeOf(b, i);
+    const staying = status === "OCCUPIED" || status === "OVERDUE";
+    const vip = i >= 12 && b === "A";
+    return {
+      id: code,
+      code,
+      buildingId: b,
+      floor: 1 + Math.floor(i / 6),
+      unitType: {
+        code: vip ? "VIP" : "STD",
+        name: { vi: vip ? "VIP" : "Phòng thường", en: vip ? "VIP" : "Standard" },
+      },
+      status,
+      note: status === "MAINTENANCE" ? "Hỏng điều hòa" : null,
+      activeStay: staying
         ? {
-            id: "stay-1",
-            rentalType: "HOURLY",
-            checkInAt: ago(155),
+            id: code === "A101" ? "stay-1" : `stay-${code}`,
+            rentalType: (minutes ?? 0) > 240 ? "DAILY" : "HOURLY",
+            checkInAt: ago(minutes ?? 60),
             guestName: "Anh Tuấn",
-            elapsedMinutes: 155,
+            elapsedMinutes: minutes ?? 60,
             runningTotal: 140000,
           }
         : null,
-  }));
-const counts = (b: "A" | "B") => {
+    };
+  });
+const counts = (b: BuildingId) => {
   const r = rooms(b);
   const n = (s: Status) => r.filter((x) => x.status === s).length;
   return {
@@ -81,6 +110,7 @@ const stay = () => ({
   guestName: "Anh Tuấn",
   guestPhone: "0901 234 567",
   idNumberMasked: null,
+  guestId: { hasIdNumber: true, hasFrontPhoto: true, hasBackPhoto: false },
   deposit: 100000,
   pricingVersion: 1,
   quote: quote(),
@@ -236,17 +266,23 @@ export const demoHandlers = [
   ),
   http.get("*/v1/buildings", () =>
     json({
-      items: [
-        { id: "A", code: "A", name: "Tòa A", level: "EDIT", counts: counts("A") },
-        { id: "B", code: "B", name: "Tòa B", level: "VIEW", counts: counts("B") },
-      ],
+      items: (["A", "B", "C", "D"] as const).map((id) => ({
+        id,
+        code: id,
+        name: `Tòa ${id}`,
+        level: id === "B" ? "VIEW" : "EDIT",
+        counts: counts(id),
+      })),
     }),
   ),
   http.get("*/v1/buildings/:id/rooms", ({ params }) =>
-    json({ items: rooms(params.id as "A" | "B") }),
+    json({ items: rooms(params.id as BuildingId) }),
   ),
   http.get("*/v1/rooms/:id", ({ params }) =>
-    json(rooms("A").find((r) => r.id === params.id) ?? rooms("A")[0]),
+    json(
+      (["A", "B", "C", "D"] as const).flatMap(rooms).find((r) => r.id === params.id) ??
+        rooms("A")[0],
+    ),
   ),
   http.get("*/v1/services", () =>
     json({

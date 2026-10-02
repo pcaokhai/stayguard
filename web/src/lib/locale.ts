@@ -11,3 +11,6 @@ export const getLocale = () => current;
 
 // "/rooms?b=1" -> "/vi/rooms?b=1"
 export const lp = (path: string) => `/${current}${path === "/" ? "" : path}`;
+
+// Picks the route language from a { vi, en } text the API returns (unit types, services).
+export const localized = (text: { vi: string; en: string }) => text[current];

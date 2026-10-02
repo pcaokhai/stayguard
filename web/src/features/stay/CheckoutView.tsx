@@ -10,7 +10,7 @@ import { t } from "../../lib/t";
 import { formatClock } from "../../lib/time";
 import { useCheckout, useCreatePayment, useStay } from "./hooks";
 import { billLineLabel } from "./labels";
-import { lp } from "../../lib/locale";
+import { localized, lp } from "../../lib/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -81,7 +81,7 @@ export function CheckoutView() {
             {stay.data?.extras.map((x) => (
               <p key={x.serviceCode} className={row}>
                 <span>
-                  {x.name.vi} × {x.quantity}
+                  {localized(x.name)} × {x.quantity}
                 </span>
                 <span>{formatVnd(x.amount)}</span>
               </p>

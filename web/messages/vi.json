@@ -31,7 +31,14 @@
     "roleRECEPTIONIST": "Lễ tân",
     "roleHOUSEKEEPING": "Buồng phòng",
     "hourUnit": "g",
-    "buildings": "Tòa nhà"
+    "buildings": "Tòa nhà",
+    "title": "Sơ đồ phòng",
+    "ownerSub": "Chủ nhà nghỉ · toàn quyền mọi tòa",
+    "ownerNote": "Chủ thao tác được như lễ tân (nhận phòng, trả phòng, dọn phòng) nhưng không có ca nên không có Kết ca hay Chi tiền.",
+    "pickRoom": "Chọn một phòng để xem chi tiết.",
+    "vacantSub": "Phòng trống, sẵn sàng nhận khách.",
+    "cleanSub": "Khách vừa trả. Dọn xong thì bấm bên dưới.",
+    "maintenanceSub": "Phòng đang bảo trì."
   },
   "stay": {
     "back": "Quay lại",
@@ -250,5 +257,26 @@
     "endShiftSub": "Đếm tiền và bàn giao",
     "signOut": "Đăng xuất",
     "signOutNote": "Đăng xuất không kết thúc ca. Nhớ kết ca trước khi về."
+  },
+  "panel": {
+    "room": "Phòng {code}",
+    "guest": "Khách",
+    "stayedSince": "Đã ở từ {time}",
+    "roomCharge": "Tiền phòng",
+    "extras": "Dịch vụ",
+    "deposit": "Đã cọc",
+    "balanceDue": "Còn phải thu",
+    "refundDue": "Cần hoàn lại",
+    "addExtras": "+ Thêm dịch vụ",
+    "checkout": "Trả phòng",
+    "checkin": "Nhận phòng",
+    "markClean": "Dọn xong",
+    "cleanFailed": "Không đánh dấu được. Thử lại.",
+    "idNumber": "Có số CCCD",
+    "noIdNumber": "Chưa có số CCCD",
+    "frontPhoto": "Có ảnh mặt trước",
+    "noFrontPhoto": "Chưa có mặt trước",
+    "backPhoto": "Có ảnh mặt sau",
+    "noBackPhoto": "Chưa có mặt sau"
   }
 }

@@ -31,7 +31,14 @@
     "roleRECEPTIONIST": "Front desk",
     "roleHOUSEKEEPING": "Housekeeping",
     "hourUnit": "h",
-    "buildings": "Buildings"
+    "buildings": "Buildings",
+    "title": "Room map",
+    "ownerSub": "Owner · full access to all buildings",
+    "ownerNote": "The owner can act like the front desk (check in, check out, clean) but has no shift, so there is no End shift or Payout.",
+    "pickRoom": "Select a room to see its details.",
+    "vacantSub": "Vacant and ready for a guest.",
+    "cleanSub": "The guest just left. Tap below when it is cleaned.",
+    "maintenanceSub": "This room is in maintenance."
   },
   "stay": {
     "back": "Back",
@@ -250,5 +257,26 @@
     "endShiftSub": "Count cash and hand over",
     "signOut": "Sign out",
     "signOutNote": "Signing out does not end your shift. Close the shift before leaving."
+  },
+  "panel": {
+    "room": "Room {code}",
+    "guest": "Guest",
+    "stayedSince": "In room since {time}",
+    "roomCharge": "Room charge",
+    "extras": "Extras",
+    "deposit": "Deposit paid",
+    "balanceDue": "Balance due",
+    "refundDue": "Refund due",
+    "addExtras": "+ Add extras",
+    "checkout": "Check out",
+    "checkin": "Check in",
+    "markClean": "Mark cleaned",
+    "cleanFailed": "Could not mark it. Try again.",
+    "idNumber": "ID number on file",
+    "noIdNumber": "No ID number",
+    "frontPhoto": "Front photo on file",
+    "noFrontPhoto": "No front photo",
+    "backPhoto": "Back photo on file",
+    "noBackPhoto": "No back photo"
   }
 }

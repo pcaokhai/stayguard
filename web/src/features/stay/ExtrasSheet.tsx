@@ -6,6 +6,7 @@ import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { newIdempotencyKey } from "../../lib/api";
+import { localized } from "../../lib/locale";
 import { formatVnd } from "../../lib/money";
 import { t, tf } from "../../lib/t";
 import { useAddExtras, useServices } from "./hooks";
@@ -41,7 +42,7 @@ export function ExtrasSheet({
           <li key={s.code}>
             <Card className="flex-row items-center justify-between gap-3 p-3.5 shadow-none">
               <div>
-                <p className="font-semibold">{s.name.vi}</p>
+                <p className="font-semibold">{localized(s.name)}</p>
                 <p className="text-[13px] text-muted-foreground">
                   {formatVnd(s.price)} · {tf("extras.stock", { n: s.stock })}
                 </p>
