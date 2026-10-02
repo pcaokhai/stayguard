@@ -25,7 +25,7 @@ import { newIdempotencyKey } from "../../lib/api";
 import { lp } from "../../lib/locale";
 import { t, tf, type MessageKey } from "../../lib/t";
 import { useRoom } from "../stay/hooks";
-import { useReportDamage } from "./hooks";
+import { RoomOccupiedError, useReportDamage } from "./hooks";
 
 const CATEGORIES = [
   "AIR_CONDITIONER",
@@ -171,7 +171,7 @@ export function DamageView() {
             </p>
             {report.isError && (
               <p role="alert" className="text-sm font-semibold text-warn">
-                {report.error.message.includes(" ") ? report.error.message : t("damage.failed")}
+                {t(report.error instanceof RoomOccupiedError ? "damage.occupied" : "damage.failed")}
               </p>
             )}
             <Button type="submit" size="lg" className="mt-auto" loading={report.isPending}>

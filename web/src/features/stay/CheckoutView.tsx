@@ -129,6 +129,7 @@ export function CheckoutView() {
                 type="button"
                 variant="outline"
                 loading={pay.isPending}
+                disabled={q.balanceDue === 0}
                 onClick={() => choose("TRANSFER")}
                 className={`${option} border-2 border-primary`}
               >

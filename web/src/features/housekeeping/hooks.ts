@@ -52,6 +52,9 @@ export function useCompleteTask() {
   });
 }
 
+// 409 ROOM_OCCUPIED: a guest is in the room, so it cannot be locked.
+export class RoomOccupiedError extends Error {}
+
 export function useReportDamage(roomId: string) {
   return useMutation({
     mutationFn: async ({ body, key }: { body: Schemas["DamageReportRequest"]; key: string }) => {
@@ -59,7 +62,7 @@ export function useReportDamage(roomId: string) {
         params: { path: { roomId }, header: idempotencyHeader(key) },
         body,
       });
-      if (response.status === 409) throw new Error(t("damage.occupied"));
+      if (response.status === 409) throw new RoomOccupiedError();
       if (error || !data) throw new Error("reportDamage failed");
       return data;
     },
