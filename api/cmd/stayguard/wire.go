@@ -39,6 +39,7 @@ type deps struct {
 	shifts       *app.Shifts
 	monitor      monitorOps
 	maintenance  *app.Maintenance
+	roster       *app.Rosters
 }
 
 // monitorOps is the owner monitoring reads and the link of an unmatched transfer behind one handler dependency.
@@ -113,6 +114,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		shifts:       shifts,
 		monitor:      monitorOps{newMonitor(uow, clock.System{}), payments},
 		maintenance:  newMaintenance(uow, idem, audit, clock.System{}),
+		roster:       newRosters(uow, idem, audit, clock.System{}),
 		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}).WithMonitor(postgres.MonitorRepo{}),
 		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.Stored{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
@@ -239,4 +241,8 @@ func newInstaller(cfg config.Config, pool *pgxpool.Pool, clk app.Clock) (*app.In
 
 func newMaintenance(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Maintenance {
 	return app.NewMaintenance(uow, postgres.TicketRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
+}
+
+func newRosters(uow app.UnitOfWork, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Rosters {
+	return app.NewRosters(uow, postgres.RosterRepo{}, permissions.Stored{}, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk)
 }

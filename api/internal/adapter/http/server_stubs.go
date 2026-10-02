@@ -31,6 +31,7 @@ type Server struct {
 	shifts       ShiftService
 	monitor      MonitorService
 	maintenance  MaintenanceService
+	roster       RosterService
 	staff        StaffService
 	bank         BankService
 }
@@ -63,18 +64,6 @@ func (Server) ReceiveBankWebhook(context.Context, gen.ReceiveBankWebhookRequestO
 	return nil, errNotImplemented
 }
 
-func (Server) ApproveLeave(context.Context, gen.ApproveLeaveRequestObject) (gen.ApproveLeaveResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CancelMyLeave(context.Context, gen.CancelMyLeaveRequestObject) (gen.CancelMyLeaveResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CopyRosterWeek(context.Context, gen.CopyRosterWeekRequestObject) (gen.CopyRosterWeekResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) CreateBuilding(context.Context, gen.CreateBuildingRequestObject) (gen.CreateBuildingResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -87,10 +76,6 @@ func (Server) CreateFloor(context.Context, gen.CreateFloorRequestObject) (gen.Cr
 	return nil, errNotImplemented
 }
 
-func (Server) CreateLeaveRequest(context.Context, gen.CreateLeaveRequestRequestObject) (gen.CreateLeaveRequestResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) CreateRooms(context.Context, gen.CreateRoomsRequestObject) (gen.CreateRoomsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -100,10 +85,6 @@ func (Server) CreateService(context.Context, gen.CreateServiceRequestObject) (ge
 }
 
 func (Server) CreateStocktake(context.Context, gen.CreateStocktakeRequestObject) (gen.CreateStocktakeResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) DeclineLeave(context.Context, gen.DeclineLeaveRequestObject) (gen.DeclineLeaveResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -135,23 +116,7 @@ func (Server) GetIncomeCostReport(context.Context, gen.GetIncomeCostReportReques
 	return nil, errNotImplemented
 }
 
-func (Server) GetMyRoster(context.Context, gen.GetMyRosterRequestObject) (gen.GetMyRosterResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetPayroll(context.Context, gen.GetPayrollRequestObject) (gen.GetPayrollResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) GetRoster(context.Context, gen.GetRosterRequestObject) (gen.GetRosterResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListLeaveRequests(context.Context, gen.ListLeaveRequestsRequestObject) (gen.ListLeaveRequestsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListMyLeaveRequests(context.Context, gen.ListMyLeaveRequestsRequestObject) (gen.ListMyLeaveRequestsResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -168,10 +133,6 @@ func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject)
 }
 
 func (Server) PreviewPrice(context.Context, gen.PreviewPriceRequestObject) (gen.PreviewPriceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) PutRoster(context.Context, gen.PutRosterRequestObject) (gen.PutRosterResponseObject, error) {
 	return nil, errNotImplemented
 }
 

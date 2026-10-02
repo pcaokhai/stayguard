@@ -163,6 +163,12 @@ func mapStayError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusConflict, "Conflict", "INSUFFICIENT_STOCK")
 	case errors.Is(err, stay.ErrNotActive):
 		writeProblem(w, http.StatusConflict, "Conflict", "STAY_NOT_ACTIVE")
+	case errors.Is(err, app.ErrLeaveConflict):
+		writeProblem(w, http.StatusConflict, "Conflict", "LEAVE_CONFLICT")
+	case errors.Is(err, app.ErrLeaveState):
+		writeProblem(w, http.StatusConflict, "Conflict", "LEAVE_STATE")
+	case errors.Is(err, app.ErrRosterNotEmpty):
+		writeProblem(w, http.StatusConflict, "Conflict", "ROSTER_NOT_EMPTY")
 	case errors.Is(err, app.ErrRoomOccupied):
 		writeProblem(w, http.StatusConflict, "Conflict", "ROOM_OCCUPIED")
 	case errors.Is(err, app.ErrTicketDone):

@@ -215,3 +215,13 @@ func (r ShiftRepo) HasOpenShift(ctx context.Context, tx app.Tx, userID string) (
 	_, ok, err := r.LockOpen(ctx, tx, userID)
 	return ok, err
 }
+
+func (ShiftRepo) Scheduled(ctx context.Context, tx app.Tx, userID string, day time.Time) ([]string, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	codes, err := sqlcgen.New(t).ListScheduledShifts(ctx, sqlcgen.ListScheduledShiftsParams{TenantID: t.tenant, UserID: userID,
+		Day: pgtype.Date{Time: day, Valid: true}})
+	return codes, wrap("list scheduled shifts", err)
+}

@@ -206,5 +206,12 @@ func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
 	for _, t := range tickets {
 		out.Attention = append(out.Attention, AttentionItem{Kind: "TICKET_OPEN", Ref: t.ID, RoomCode: t.RoomCode})
 	}
+	leave, err := o.monitor.PendingLeave(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("pending leave: %w", err)
+	}
+	for _, l := range leave {
+		out.Attention = append(out.Attention, AttentionItem{Kind: "LEAVE_PENDING", Ref: l.ID})
+	}
 	return nil
 }

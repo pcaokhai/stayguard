@@ -12,7 +12,7 @@ var auditCategories = []struct{ prefix, category string }{
 	{"stock.", "STOCK"}, {"service.", "STOCK"},
 	{"room.cleaned", "MAINTENANCE"}, {"ticket.", "MAINTENANCE"}, {"damage.", "MAINTENANCE"},
 	{"staff.", "ACCESS_STAFF"}, {"user.", "ACCESS_STAFF"}, {"pin.", "ACCESS_STAFF"}, {"auth.", "ACCESS_STAFF"},
-	{"permission.", "ACCESS_STAFF"}, {"ACCOUNT_LOCKED", "ACCESS_STAFF"},
+	{"permission.", "ACCESS_STAFF"}, {"roster.", "ACCESS_STAFF"}, {"leave.", "ACCESS_STAFF"}, {"ACCOUNT_LOCKED", "ACCESS_STAFF"},
 	{"rate.", "RATES_SETTINGS"}, {"settings.", "RATES_SETTINGS"}, {"property.", "RATES_SETTINGS"}, {"building.", "RATES_SETTINGS"},
 	{"floor.", "RATES_SETTINGS"}, {"room.created", "RATES_SETTINGS"}, {"room.updated", "RATES_SETTINGS"},
 	{"sepay.", "INSTALLER"}, {"bank.", "INSTALLER"}, {"tenant.", "INSTALLER"},

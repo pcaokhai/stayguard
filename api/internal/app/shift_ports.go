@@ -68,6 +68,8 @@ type ClosedFilter struct {
 type ShiftRepo interface {
 	Timezone(ctx context.Context, tx Tx) (string, error)
 	BuildingIDs(ctx context.Context, tx Tx) ([]string, error)
+	// Scheduled lists the roster shifts of a person on a day (tenant-local calendar day at midnight UTC), in day order.
+	Scheduled(ctx context.Context, tx Tx, userID string, day time.Time) ([]string, error)
 	// LockOpen takes the row lock of the user's open shift; false when there is none.
 	LockOpen(ctx context.Context, tx Tx, userID string) (ShiftRecord, bool, error)
 	// Open inserts an open shift; it reports false when the user already has one (a race that was lost).

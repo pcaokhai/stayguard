@@ -133,3 +133,19 @@ func (MonitorRepo) OpenTickets(ctx context.Context, tx app.Tx) ([]app.OpenTicket
 	}
 	return out, nil
 }
+
+func (MonitorRepo) PendingLeave(ctx context.Context, tx app.Tx) ([]app.PendingLeave, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListPendingLeave(ctx, t.tenant)
+	if err != nil {
+		return nil, wrap("list pending leave", err)
+	}
+	out := make([]app.PendingLeave, len(rows))
+	for i, r := range rows {
+		out[i] = app.PendingLeave{ID: r.ID, UserName: r.UserName}
+	}
+	return out, nil
+}

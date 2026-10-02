@@ -58,6 +58,9 @@ type AuditFilter struct {
 // OpenTicket is a maintenance ticket that is not DONE.
 type OpenTicket struct{ ID, RoomCode string }
 
+// PendingLeave is a leave request waiting for the owner.
+type PendingLeave struct{ ID, UserName string }
+
 type LongToClean struct {
 	RoomCode string
 	Since    time.Time
@@ -73,4 +76,5 @@ type MonitorRepo interface {
 	AuditLogs(ctx context.Context, tx Tx, f AuditFilter) ([]AuditRow, error)
 	LongToClean(ctx context.Context, tx Tx, before time.Time) ([]LongToClean, error)
 	OpenTickets(ctx context.Context, tx Tx) ([]OpenTicket, error)
+	PendingLeave(ctx context.Context, tx Tx) ([]PendingLeave, error)
 }

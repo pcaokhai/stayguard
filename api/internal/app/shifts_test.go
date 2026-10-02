@@ -12,6 +12,7 @@ import (
 )
 
 type fakeShiftRepo struct {
+	rostered  []string
 	shifts    []*ShiftRecord
 	entries   map[string][]CashEntry
 	lastFloat int64
@@ -20,6 +21,9 @@ type fakeShiftRepo struct {
 func (r *fakeShiftRepo) Timezone(context.Context, Tx) (string, error) { return zoneName, nil }
 func (r *fakeShiftRepo) BuildingIDs(context.Context, Tx) ([]string, error) {
 	return []string{bldgA}, nil
+}
+func (r *fakeShiftRepo) Scheduled(context.Context, Tx, string, time.Time) ([]string, error) {
+	return r.rostered, nil
 }
 func (r *fakeShiftRepo) LockOpen(_ context.Context, _ Tx, userID string) (ShiftRecord, bool, error) {
 	for _, s := range r.shifts {
@@ -267,5 +271,25 @@ func TestShift_ReviewIsForClosedShiftsOfTheOwner_SG503(t *testing.T) {
 	}
 	if _, err := e.s.Review(ctx, e.lan, id); !errors.Is(err, access.ErrRoleForbidden) {
 		t.Fatalf("receptionist: %v", err)
+	}
+}
+
+// F-A3: the shift code of a new shift is the one the roster gives the person.
+func TestShift_OpensWithTheRosteredShift_FA3(t *testing.T) {
+	// t0 is 10:04 in Ho Chi Minh, which the hour calls MORNING.
+	for name, c := range map[string]struct {
+		rostered []string
+		want     string
+	}{
+		"nobody rostered":       {nil, shift.Morning},
+		"rostered for the hour": {[]string{shift.Morning, shift.Afternoon}, shift.Morning},
+		"rostered for another":  {[]string{shift.Afternoon}, shift.Afternoon},
+	} {
+		e := newShiftEnv(0)
+		e.repo.rostered = c.rostered
+		e.record(t, shift.Payment, 1000)
+		if got := e.repo.shifts[0].Code; got != c.want {
+			t.Errorf("%s: %s, want %s", name, got, c.want)
+		}
 	}
 }

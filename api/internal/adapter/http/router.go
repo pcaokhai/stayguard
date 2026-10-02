@@ -81,6 +81,8 @@ type Options struct {
 	Monitor MonitorService
 	// Maintenance serves damage reports, tickets and unused-room reports (no flag).
 	Maintenance MaintenanceService
+	// Roster serves the duty roster and leave requests (no flag).
+	Roster RosterService
 }
 
 func NewRouter(log *slog.Logger, o Options) http.Handler {
@@ -88,7 +90,7 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 	useBaseMiddleware(r, log)
 	r.Use(clientIP(o.TrustProxy, o.ProxyHops))
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance).WithRoster(o.Roster), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

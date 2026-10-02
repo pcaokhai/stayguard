@@ -111,6 +111,23 @@ type AppInvoice struct {
 	PaidAt    pgtype.Timestamptz
 }
 
+type AppLeaveRequest struct {
+	ID            string
+	TenantID      string
+	UserID        string
+	FromDate      pgtype.Date
+	ToDate        pgtype.Date
+	Shift         pgtype.Text
+	Kind          string
+	Reason        pgtype.Text
+	CoverUserID   pgtype.Text
+	Status        string
+	DeclineReason pgtype.Text
+	CreatedAt     pgtype.Timestamptz
+	DecidedAt     pgtype.Timestamptz
+	DecidedBy     pgtype.Text
+}
+
 type AppMaintenanceTicket struct {
 	ID             string
 	TenantID       string
@@ -179,6 +196,15 @@ type AppProperty struct {
 	QrExpiryMinutes      int32
 	IDRetentionDays      int32
 	FrontDeskHistoryDays int32
+}
+
+type AppRosterAssignment struct {
+	TenantID  string
+	UserID    string
+	WorkDate  pgtype.Date
+	Shift     string
+	CreatedBy pgtype.Text
+	CreatedAt pgtype.Timestamptz
 }
 
 type AppService struct {

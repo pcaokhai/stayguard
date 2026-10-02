@@ -159,7 +159,7 @@ Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, To
 `setGuestIdNumber`, `uploadGuestIdPhoto`, `getGuestIdRecord`, `revealGuestIdNumber`, `getGuestIdPhoto`, `deleteGuestIdPhoto`, `deleteGuestIdNumber`; `createStay` accepts `idConsent`; indicators on stays and lists; daily retention job; separate repository so front-desk queries cannot read the data.
 Tests (required): SG-805 AC1–AC5, including a log-capture test proving no number or image bytes reach logs.
 
-#### [ ] F-A3 Roster and leave (API-2) — migration 0019
+#### [x] F-A3 Roster and leave (API-2) — migration 0019
 `getRoster`, `putRoster`, `copyRosterWeek`, `listLeaveRequests`, `approveLeave`, `declineLeave`, `getMyRoster`, `listMyLeaveRequests`, `createLeaveRequest`, `cancelMyLeave`; scheduled shift used when a shift opens.
 
 #### [ ] F-A4 Finance (API-2) — migration 0020

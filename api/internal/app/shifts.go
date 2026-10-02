@@ -139,7 +139,11 @@ func (s *Shifts) ensureOpen(ctx context.Context, tx Tx, c Caller, now time.Time)
 	if err != nil {
 		return ShiftRecord{}, fmt.Errorf("last float: %w", err)
 	}
-	n := NewShift{ID: s.ids.New(shiftIDPrefix), UserID: c.UserID, Code: shift.CodeFor(now.In(loc)), OpenedAt: now, OpeningFloat: float}
+	code, err := s.shiftCode(ctx, tx, c.UserID, now.In(loc))
+	if err != nil {
+		return ShiftRecord{}, err
+	}
+	n := NewShift{ID: s.ids.New(shiftIDPrefix), UserID: c.UserID, Code: code, OpenedAt: now, OpeningFloat: float}
 	if _, err := s.repo.Open(ctx, tx, n); err != nil {
 		return ShiftRecord{}, fmt.Errorf("open shift: %w", err)
 	}
@@ -147,6 +151,26 @@ func (s *Shifts) ensureOpen(ctx context.Context, tx Tx, c Caller, now time.Time)
 		return ShiftRecord{}, fmt.Errorf("open shift after insert (found %v): %w", ok, err)
 	}
 	return sh, nil
+}
+
+// shiftCode is the roster shift the person is on now: the one matching the hour when they are rostered for it, else
+// the first they are rostered for that day, else the one the hour says (a person nobody rostered still opens a shift).
+func (s *Shifts) shiftCode(ctx context.Context, tx Tx, userID string, at time.Time) (string, error) {
+	hour := shift.CodeFor(at)
+	day := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
+	rostered, err := s.repo.Scheduled(ctx, tx, userID, day)
+	if err != nil {
+		return "", fmt.Errorf("scheduled shifts: %w", err)
+	}
+	for _, code := range rostered {
+		if code == hour {
+			return hour, nil
+		}
+	}
+	if len(rostered) > 0 {
+		return rostered[0], nil
+	}
+	return hour, nil
 }
 
 // maxEditable is the maximum building level of the caller (the rule for shift operations).
