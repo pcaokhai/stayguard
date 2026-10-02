@@ -62,3 +62,29 @@ ALTER FUNCTION app.tenants_with_expired_guest_ids(timestamptz) OWNER TO stayguar
 INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, consent_at)
 SELECT tenant_id, id, id_number_enc, check_in_at FROM app.stays WHERE id_number_enc IS NOT NULL;
 ALTER TABLE app.stays DROP COLUMN id_number_enc;
+
+-- Daily jobs (guest ID retention, later recurring expenses and leave status) visit every tenant, one normal tenant-scoped
+-- transaction each. The only cross-tenant read is this function: it returns tenant ids and nothing else, and only the
+-- application role may call it. It works under any table owner: the policy below lets rows through only while the
+-- definer function is running (current_user differs from session_user there), so the application role cannot
+-- switch it on itself.
+CREATE FUNCTION app.job_scan() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$ SELECT nullif(current_setting('app.job_scan', true), '') $$;
+
+CREATE POLICY tenants_job_scan ON app.tenants FOR SELECT
+    USING (app.current_tenant() IS NULL AND app.job_scan() = 'on' AND current_user <> session_user);
+
+-- +goose StatementBegin
+CREATE FUNCTION app.job_tenant_ids() RETURNS SETOF text
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, app
+    AS $$
+BEGIN
+    PERFORM set_config('app.job_scan', 'on', true);
+    RETURN QUERY SELECT t.id FROM app.tenants t ORDER BY t.id;
+    PERFORM set_config('app.job_scan', '', true);
+END
+$$;
+-- +goose StatementEnd
+REVOKE ALL ON FUNCTION app.job_tenant_ids() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.job_tenant_ids() TO stayguard_app;

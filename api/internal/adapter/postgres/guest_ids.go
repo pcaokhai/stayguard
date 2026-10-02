@@ -153,14 +153,14 @@ func (GuestIDRepo) DeleteAll(ctx context.Context, tx app.Tx, stayID string) erro
 	return wrap("delete guest id", q.DeleteGuestIDRow(ctx, sqlcgen.DeleteGuestIDRowParams{TenantID: t.tenant, StayID: stayID}))
 }
 
-// TenantsDue lists the tenants with guest ID data past retention through a narrow database function that returns
-// tenant ids only (the application role has no cross-tenant read); the deletion then runs per tenant under RLS.
-func TenantsDue(ctx context.Context, q interface {
+// TenantIDs lists every tenant id through app.job_tenant_ids(), the one narrow cross-tenant read, so a job can open a
+// normal tenant-scoped transaction per tenant. It returns ids only.
+func TenantIDs(ctx context.Context, pool interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-}, now time.Time) ([]string, error) {
-	rows, err := q.Query(ctx, `SELECT app.tenants_with_expired_guest_ids($1)`, now)
+}) ([]string, error) {
+	rows, err := pool.Query(ctx, `SELECT app.job_tenant_ids()`)
 	if err != nil {
-		return nil, wrap("select tenants with expired guest ids", err)
+		return nil, wrap("list tenants for jobs", err)
 	}
 	defer rows.Close()
 	var out []string

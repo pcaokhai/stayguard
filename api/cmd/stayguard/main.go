@@ -42,10 +42,10 @@ func run() error {
 		defer stop()
 		return runInstallerCLI(ctx, os.Args[1:])
 	}
-	if len(os.Args) > 1 && os.Args[1] == "guest-id" {
+	if len(os.Args) > 1 && os.Args[1] == "jobs" {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		return runRetentionCLI(ctx, os.Args[1:])
+		return runJobsCLI(ctx, os.Args[1:])
 	}
 	load := config.Load
 	isMigrate := len(os.Args) > 1 && os.Args[1] == migrateCommand

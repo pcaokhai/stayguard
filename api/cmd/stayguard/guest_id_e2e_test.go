@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
-	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
@@ -319,7 +318,7 @@ func TestGuestID_Retention_SG805_AC5(t *testing.T) {
 		t.Fatalf("setup: %d rows", left())
 	}
 	var buf bytes.Buffer
-	if err := purgeTenants(context.Background(), e.guestIDs(), []string{staffTenant}, e.start, &buf); err != nil {
+	if err := runJobs(context.Background(), e.jobs(), []string{staffTenant}, e.start, &buf); err != nil {
 		t.Fatal(err)
 	}
 	if n := e.count(`SELECT count(*) FROM app.guest_ids WHERE stay_id = $1`, stays["old"]) + e.count(`SELECT count(*) FROM app.guest_id_photos WHERE stay_id = $1`, stays["old"]); n != 0 {
@@ -335,7 +334,7 @@ func TestGuestID_Retention_SG805_AC5(t *testing.T) {
 	if r := e.patch("/v1/owner/property", owner, map[string]any{"idRetentionDays": 10}); r.status != 200 {
 		t.Fatalf("property: %d %v", r.status, r.body)
 	}
-	if err := purgeTenants(context.Background(), e.guestIDs(), []string{staffTenant}, e.start, &buf); err != nil {
+	if err := runJobs(context.Background(), e.jobs(), []string{staffTenant}, e.start, &buf); err != nil {
 		t.Fatal(err)
 	}
 	if left() != 2 { // only the active stay keeps its number and photo
@@ -343,11 +342,11 @@ func TestGuestID_Retention_SG805_AC5(t *testing.T) {
 	}
 }
 
-func (e *env) guestIDs() *app.GuestIDs {
+func (e *env) jobs() []tenantJob {
 	e.t.Helper()
-	g, err := newGuestIDs(config.Config{DataEncryptionKey: testDataKey}, postgres.NewUnitOfWork(e.pool), postgres.NewAuditWriter(), e.clock)
+	j, err := jobRegistry(config.Config{DataEncryptionKey: testDataKey}, jobDeps{uow: postgres.NewUnitOfWork(e.pool)})
 	if err != nil {
 		e.t.Fatal(err)
 	}
-	return g
+	return j
 }

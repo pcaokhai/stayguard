@@ -29,7 +29,13 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 
 - `TRUST_PROXY=1` and `TRUSTED_PROXY_HOPS=1` in `deploy/.env.prod`: one Caddy in front, the app port closed to the internet (see `deploy/README.md`). Without them every sign-in shares the proxy's address and the per-IP limit locks everyone out together.
 
-- Guest ID retention (docs/15 rule 25): a daily timer runs `stayguard guest-id retention` with only `DATABASE_URL` in its environment. It prints counts only. Check its first run in the journal.
+- Daily jobs (guest ID retention today; more later): one cron line on the server, with `DATABASE_URL` and `DATA_ENCRYPTION_KEY` as the app uses (no other database login):
+
+  ```
+  15 3 * * * stayguard cd /srv/stayguard && docker compose --env-file deploy/.env.prod exec -T api stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
+  ```
+
+  It prints counts only. Check the first night's run in the log.
 
 ## Rules
 
