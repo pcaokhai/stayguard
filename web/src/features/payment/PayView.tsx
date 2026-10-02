@@ -12,6 +12,7 @@ import { QueryError } from "@/components/StateView";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buzz } from "../../lib/haptics";
 import { newIdempotencyKey } from "../../lib/api";
 import { lp } from "../../lib/locale";
 import { formatVnd } from "../../lib/money";
@@ -42,7 +43,7 @@ export function PayView() {
   // On PAID the QR shrinks and fades first, then the Paid screen takes over (docs/16 §5).
   useEffect(() => {
     if (!paid) return;
-    navigator.vibrate?.(15);
+    buzz();
     const timer = setTimeout(
       () => router.replace(lp(`/paid?payment=${id}&room=${roomId ?? ""}`)),
       PAID_EXIT_MS,

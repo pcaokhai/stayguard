@@ -9,6 +9,7 @@ import { AppFrame } from "@/components/shell/AppFrame";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { localized, lp } from "../../lib/locale";
+import { buzz } from "../../lib/haptics";
 import { formatVnd } from "../../lib/money";
 import { t, tf, type MessageKey } from "../../lib/t";
 import { clockLocale } from "../../lib/time";
@@ -29,7 +30,7 @@ export function PaidView() {
   const room = useRoom(roomId).data;
   const building = useBuildings().data?.find((b) => b.id === room?.buildingId);
   useEffect(() => {
-    if (p?.method === "CASH") navigator.vibrate?.(15); // transfers already buzzed on the QR screen
+    if (p?.method === "CASH") buzz();
   }, [p?.method]);
   if (!p) return null;
   const paidAt = p.paidAt
