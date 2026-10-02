@@ -248,8 +248,9 @@ function Expired({ p }: { p: Payment }) {
 // The bank reported less than the bill. Nobody can mark it paid by hand (CLAUDE.md §4 rule 4).
 function Mismatch({ p }: { p: Payment }) {
   const { start, create } = useNewPayment(p.invoiceId);
+  // The API starts the next payment for the whole invoice and gives no remaining balance, so the
+  // screen shows what the bank reported and offers a new QR or cash; it never subtracts amounts itself.
   const received = p.receivedAmount ?? 0;
-  const remaining = p.amount - received; // a shortfall of two server amounts, not a price
   return (
     <div className="flex flex-1 flex-col gap-4 px-5 pb-8 lg:pb-0">
       <Headline
@@ -271,10 +272,6 @@ function Mismatch({ p }: { p: Payment }) {
           </span>
           <span>{formatVnd(received)}</span>
         </p>
-        <p className={`${row} border-t border-border pt-2.5`}>
-          <span className="text-muted-foreground">{t("pay.remaining")}</span>
-          <b className="text-warn-ink">{formatVnd(remaining)}</b>
-        </p>
         {p.transactionId && (
           <p className={row}>
             <span className="text-muted-foreground">{t("pay.txnId")}</span>
@@ -284,7 +281,7 @@ function Mismatch({ p }: { p: Payment }) {
       </Card>
       <Button size="lg" loading={create.isPending} onClick={() => start("TRANSFER", p.id)}>
         <QrCode aria-hidden="true" />
-        {tf("pay.qrRemaining", { amount: formatVnd(remaining) })}
+        {t("pay.newQr")}
       </Button>
       <Button
         size="lg"
@@ -293,7 +290,7 @@ function Mismatch({ p }: { p: Payment }) {
         onClick={() => start("CASH", p.id)}
       >
         <Banknote aria-hidden="true" />
-        {tf("pay.cashRemaining", { amount: formatVnd(remaining) })}
+        {t("pay.takeCash")}
       </Button>
       {create.isError && (
         <p role="alert" className="text-sm text-warn">
