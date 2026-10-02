@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres/sqlcgen"
 	"github.com/pcaokhai/stayguard/api/internal/app"
@@ -18,12 +20,13 @@ type ServiceRepo struct{}
 
 var _ app.ServiceRepo = ServiceRepo{}
 
-func (ServiceRepo) List(ctx context.Context, tx app.Tx) ([]app.Service, error) {
+func (ServiceRepo) List(ctx context.Context, tx app.Tx, includeOffSale bool, since time.Time) ([]app.Service, error) {
 	t, err := pgTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := sqlcgen.New(t).ListServices(ctx, t.tenant)
+	rows, err := sqlcgen.New(t).ListServices(ctx, sqlcgen.ListServicesParams{TenantID: t.tenant, IncludeOffSale: includeOffSale,
+		Since: pgtype.Timestamptz{Time: since, Valid: true}})
 	if err != nil {
 		return nil, wrap("select services", err)
 	}
@@ -33,9 +36,24 @@ func (ServiceRepo) List(ctx context.Context, tx app.Tx) ([]app.Service, error) {
 		if err != nil {
 			return nil, err
 		}
-		out[i] = row.Service
+		s := row.Service
+		s.Unit, s.LowStockAt, s.OnSale, s.SoldLast7Days = r.Unit, int(r.LowStockAt), r.OnSale, r.SoldRecent
+		if r.LatestUnitCost.Valid {
+			s.LatestUnitCost = &r.LatestUnitCost.Int64
+		}
+		out[i] = s
 	}
 	return out, nil
+}
+
+// RecordSale writes the SALE movement beside a guarded decrement.
+func (ServiceRepo) RecordSale(ctx context.Context, tx app.Tx, movementID, serviceID string, qty int64, stayID, actorID string, at time.Time) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("record sale", sqlcgen.New(t).InsertSaleMovement(ctx, sqlcgen.InsertSaleMovementParams{ID: movementID, TenantID: t.tenant,
+		ServiceID: serviceID, Qty: int32(qty), ActorID: text(&actorID), CreatedAt: pgtype.Timestamptz{Time: at, Valid: true}, StayID: stayID})) //nolint:gosec // an extra quantity is small
 }
 
 func (ServiceRepo) ByCodes(ctx context.Context, tx app.Tx, codes []string) ([]app.ServiceRow, error) {

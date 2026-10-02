@@ -51,6 +51,8 @@ type Setup struct {
 	ids   IDGenerator
 	clock Clock
 	authz access.Authorizer
+	// alerts is optional: without it a stocktake raises no alert.
+	alerts AlertWriter
 }
 
 func NewSetup(uow UnitOfWork, repo SetupRepo, idem IdempotencyStore, audit AuditWriter, ids IDGenerator, clock Clock) *Setup {

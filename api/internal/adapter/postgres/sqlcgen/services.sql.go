@@ -7,6 +7,8 @@ package sqlcgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const decrementServiceStock = `-- name: DecrementServiceStock :one
@@ -31,23 +33,37 @@ func (q *Queries) DecrementServiceStock(ctx context.Context, arg DecrementServic
 
 const listServices = `-- name: ListServices :many
 
-SELECT id, code, name, price, stock
-FROM app.services
-WHERE tenant_id = $1 AND on_sale
-ORDER BY code
+SELECT s.id, s.code, s.name, s.price, s.stock, s.unit, s.low_stock_at, s.on_sale, s.latest_unit_cost,
+       COALESCE((SELECT sum(x.quantity) FROM app.stay_extras x
+                 WHERE x.tenant_id = s.tenant_id AND x.service_id = s.id AND x.created_at >= $1), 0)::bigint AS sold_recent
+FROM app.services s
+WHERE s.tenant_id = $2 AND (s.on_sale OR $3::boolean)
+ORDER BY s.code
 `
 
+type ListServicesParams struct {
+	Since          pgtype.Timestamptz
+	TenantID       string
+	IncludeOffSale bool
+}
+
 type ListServicesRow struct {
-	ID    string
-	Code  string
-	Name  []byte
-	Price int64
-	Stock int64
+	ID             string
+	Code           string
+	Name           []byte
+	Price          int64
+	Stock          int64
+	Unit           string
+	LowStockAt     int32
+	OnSale         bool
+	LatestUnitCost pgtype.Int8
+	SoldRecent     int64
 }
 
 // Every query filters by tenant explicitly; RLS is the second guard (ADR-005).
-func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]ListServicesRow, error) {
-	rows, err := q.db.Query(ctx, listServices, tenantID)
+// The front desk sees items on sale; the owner and manager see everything. soldLast7Days counts extras added in the window.
+func (q *Queries) ListServices(ctx context.Context, arg ListServicesParams) ([]ListServicesRow, error) {
+	rows, err := q.db.Query(ctx, listServices, arg.Since, arg.TenantID, arg.IncludeOffSale)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +77,11 @@ func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]ListServ
 			&i.Name,
 			&i.Price,
 			&i.Stock,
+			&i.Unit,
+			&i.LowStockAt,
+			&i.OnSale,
+			&i.LatestUnitCost,
+			&i.SoldRecent,
 		); err != nil {
 			return nil, err
 		}

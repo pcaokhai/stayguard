@@ -77,3 +77,30 @@ VALUES (@id, @tenant_id, @service_id, @kind, @quantity, sqlc.narg(unit_cost), sq
 -- Stock changes only here and in DecrementServiceStock, each with a movement row beside it.
 UPDATE app.services SET stock = stock + @qty, latest_unit_cost = COALESCE(sqlc.narg(unit_cost), latest_unit_cost)
 WHERE tenant_id = @tenant_id AND id = @id RETURNING stock;
+
+-- name: ListStockMovements :many
+SELECT m.id, m.kind, m.quantity, m.unit_cost, m.ref, m.created_at, COALESCE(u.name, '') AS actor_name
+FROM app.stock_movements m
+LEFT JOIN app.users u ON u.tenant_id = m.tenant_id AND u.id = m.actor_id
+WHERE m.tenant_id = @tenant_id AND m.service_id = @service_id
+  AND (sqlc.narg(kind)::text IS NULL OR m.kind = sqlc.narg(kind))
+  AND (sqlc.narg(before_at)::timestamptz IS NULL OR (m.created_at, m.id) < (sqlc.narg(before_at)::timestamptz, sqlc.narg(before_id)::text))
+ORDER BY m.created_at DESC, m.id DESC
+LIMIT @page_size;
+
+-- name: ServiceHasSales :one
+SELECT EXISTS (SELECT 1 FROM app.stay_extras WHERE tenant_id = @tenant_id AND service_id = @service_id);
+
+-- name: DeleteServiceItem :exec
+DELETE FROM app.services WHERE tenant_id = @tenant_id AND id = @id;
+
+-- name: InsertSaleMovement :exec
+-- A sale is one movement beside the guarded decrement: the room code and the person who added the extra.
+INSERT INTO app.stock_movements (id, tenant_id, service_id, kind, quantity, ref, actor_id, created_at)
+SELECT @id, @tenant_id, @service_id, 'SALE', (0 - @qty::int), u.code, sqlc.narg(actor_id), @created_at
+FROM app.stays s JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
+WHERE s.tenant_id = @tenant_id AND s.id = @stay_id;
+
+-- name: InsertStocktake :exec
+INSERT INTO app.stocktakes (id, tenant_id, actor_id, note, value_difference, created_at)
+VALUES (@id, @tenant_id, sqlc.narg(actor_id), sqlc.narg(note), @value_difference, @created_at);

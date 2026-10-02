@@ -152,7 +152,7 @@ Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, To
 
 ### Fast-follow (hours 24–44)
 
-#### [ ] F-A1 Stock complete (API-1) — migration 0017
+#### [x] F-A1 Stock complete (API-1) — migration 0017
 `listStockMovements`, `removeService` (stop selling when sold), `createStocktake` with alerts; `soldLast7Days`, `latestUnitCost` on services.
 
 #### [ ] F-A2 Guest ID (API-1) — migration 0018

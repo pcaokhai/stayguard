@@ -319,6 +319,15 @@ type AppStockMovement struct {
 	CreatedAt pgtype.Timestamptz
 }
 
+type AppStocktake struct {
+	ID              string
+	TenantID        string
+	ActorID         pgtype.Text
+	Note            pgtype.Text
+	ValueDifference int64
+	CreatedAt       pgtype.Timestamptz
+}
+
 type AppTenant struct {
 	ID               string
 	Name             string

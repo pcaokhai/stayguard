@@ -320,3 +320,52 @@ func (SetupRepo) InsertMovement(ctx context.Context, tx app.Tx, m app.StockMovem
 		ServiceID: m.ServiceID, Kind: m.Kind, Quantity: int32(m.Quantity), UnitCost: nullInt8(m.UnitCost), Ref: text(m.Ref), ActorID: text(m.ActorID), //nolint:gosec // bounded by maxRestock
 		CreatedAt: pgtype.Timestamptz{Time: m.At, Valid: true}}))
 }
+
+func (SetupRepo) Movements(ctx context.Context, tx app.Tx, serviceID string, kind *string, after *app.MovementCursor, limit int) ([]app.MovementRow, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	p := sqlcgen.ListStockMovementsParams{TenantID: t.tenant, ServiceID: serviceID, Kind: text(kind), PageSize: int32(limit)} //nolint:gosec // a page size is a small constant
+	if after != nil {
+		p.BeforeAt, p.BeforeID = pgtype.Timestamptz{Time: after.At, Valid: true}, pgtype.Text{String: after.ID, Valid: true}
+	}
+	rows, err := sqlcgen.New(t).ListStockMovements(ctx, p)
+	if err != nil {
+		return nil, wrap("list stock movements", err)
+	}
+	out := make([]app.MovementRow, len(rows))
+	for i, r := range rows {
+		out[i] = app.MovementRow{ID: r.ID, Kind: r.Kind, Quantity: int64(r.Quantity), Ref: textPtr(r.Ref), At: r.CreatedAt.Time, ActorName: r.ActorName}
+		if r.UnitCost.Valid {
+			out[i].UnitCost = &r.UnitCost.Int64
+		}
+	}
+	return out, nil
+}
+
+func (SetupRepo) ServiceHasSales(ctx context.Context, tx app.Tx, serviceID string) (bool, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return false, err
+	}
+	ok, err := sqlcgen.New(t).ServiceHasSales(ctx, sqlcgen.ServiceHasSalesParams{TenantID: t.tenant, ServiceID: serviceID})
+	return ok, wrap("service has sales", err)
+}
+
+func (SetupRepo) DeleteService(ctx context.Context, tx app.Tx, serviceID string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("delete service", sqlcgen.New(t).DeleteServiceItem(ctx, sqlcgen.DeleteServiceItemParams{TenantID: t.tenant, ID: serviceID}))
+}
+
+func (SetupRepo) InsertStocktake(ctx context.Context, tx app.Tx, id, actorID string, note *string, valueDifference int64, at time.Time) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("insert stocktake", sqlcgen.New(t).InsertStocktake(ctx, sqlcgen.InsertStocktakeParams{ID: id, TenantID: t.tenant, ActorID: text(&actorID),
+		Note: text(note), ValueDifference: valueDifference, CreatedAt: pgtype.Timestamptz{Time: at, Valid: true}}))
+}

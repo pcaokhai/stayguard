@@ -71,6 +71,20 @@ func (q *Queries) BuildingStatusCounts(ctx context.Context, arg BuildingStatusCo
 	return items, nil
 }
 
+const deleteServiceItem = `-- name: DeleteServiceItem :exec
+DELETE FROM app.services WHERE tenant_id = $1 AND id = $2
+`
+
+type DeleteServiceItemParams struct {
+	TenantID string
+	ID       string
+}
+
+func (q *Queries) DeleteServiceItem(ctx context.Context, arg DeleteServiceItemParams) error {
+	_, err := q.db.Exec(ctx, deleteServiceItem, arg.TenantID, arg.ID)
+	return err
+}
+
 const existingRoomCodes = `-- name: ExistingRoomCodes :many
 SELECT code FROM app.units WHERE tenant_id = $1 AND code = ANY($2::text[])
 `
@@ -259,6 +273,37 @@ func (q *Queries) InsertRoom(ctx context.Context, arg InsertRoomParams) error {
 	return err
 }
 
+const insertSaleMovement = `-- name: InsertSaleMovement :exec
+INSERT INTO app.stock_movements (id, tenant_id, service_id, kind, quantity, ref, actor_id, created_at)
+SELECT $1, $2, $3, 'SALE', (0 - $4::int), u.code, $5, $6
+FROM app.stays s JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
+WHERE s.tenant_id = $2 AND s.id = $7
+`
+
+type InsertSaleMovementParams struct {
+	ID        string
+	TenantID  string
+	ServiceID string
+	Qty       int32
+	ActorID   pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	StayID    string
+}
+
+// A sale is one movement beside the guarded decrement: the room code and the person who added the extra.
+func (q *Queries) InsertSaleMovement(ctx context.Context, arg InsertSaleMovementParams) error {
+	_, err := q.db.Exec(ctx, insertSaleMovement,
+		arg.ID,
+		arg.TenantID,
+		arg.ServiceID,
+		arg.Qty,
+		arg.ActorID,
+		arg.CreatedAt,
+		arg.StayID,
+	)
+	return err
+}
+
 const insertServiceItem = `-- name: InsertServiceItem :exec
 INSERT INTO app.services (id, tenant_id, code, name, price, stock, unit, low_stock_at, on_sale, latest_unit_cost)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -323,6 +368,97 @@ func (q *Queries) InsertStockMovement(ctx context.Context, arg InsertStockMoveme
 		arg.CreatedAt,
 	)
 	return err
+}
+
+const insertStocktake = `-- name: InsertStocktake :exec
+INSERT INTO app.stocktakes (id, tenant_id, actor_id, note, value_difference, created_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertStocktakeParams struct {
+	ID              string
+	TenantID        string
+	ActorID         pgtype.Text
+	Note            pgtype.Text
+	ValueDifference int64
+	CreatedAt       pgtype.Timestamptz
+}
+
+func (q *Queries) InsertStocktake(ctx context.Context, arg InsertStocktakeParams) error {
+	_, err := q.db.Exec(ctx, insertStocktake,
+		arg.ID,
+		arg.TenantID,
+		arg.ActorID,
+		arg.Note,
+		arg.ValueDifference,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const listStockMovements = `-- name: ListStockMovements :many
+SELECT m.id, m.kind, m.quantity, m.unit_cost, m.ref, m.created_at, COALESCE(u.name, '') AS actor_name
+FROM app.stock_movements m
+LEFT JOIN app.users u ON u.tenant_id = m.tenant_id AND u.id = m.actor_id
+WHERE m.tenant_id = $1 AND m.service_id = $2
+  AND ($3::text IS NULL OR m.kind = $3)
+  AND ($4::timestamptz IS NULL OR (m.created_at, m.id) < ($4::timestamptz, $5::text))
+ORDER BY m.created_at DESC, m.id DESC
+LIMIT $6
+`
+
+type ListStockMovementsParams struct {
+	TenantID  string
+	ServiceID string
+	Kind      pgtype.Text
+	BeforeAt  pgtype.Timestamptz
+	BeforeID  pgtype.Text
+	PageSize  int32
+}
+
+type ListStockMovementsRow struct {
+	ID        string
+	Kind      string
+	Quantity  int32
+	UnitCost  pgtype.Int8
+	Ref       pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	ActorName string
+}
+
+func (q *Queries) ListStockMovements(ctx context.Context, arg ListStockMovementsParams) ([]ListStockMovementsRow, error) {
+	rows, err := q.db.Query(ctx, listStockMovements,
+		arg.TenantID,
+		arg.ServiceID,
+		arg.Kind,
+		arg.BeforeAt,
+		arg.BeforeID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStockMovementsRow
+	for rows.Next() {
+		var i ListStockMovementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Quantity,
+			&i.UnitCost,
+			&i.Ref,
+			&i.CreatedAt,
+			&i.ActorName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUnitTypes = `-- name: ListUnitTypes :many
@@ -444,6 +580,22 @@ type ServiceCodeTakenParams struct {
 
 func (q *Queries) ServiceCodeTaken(ctx context.Context, arg ServiceCodeTakenParams) (bool, error) {
 	row := q.db.QueryRow(ctx, serviceCodeTaken, arg.TenantID, arg.Code)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const serviceHasSales = `-- name: ServiceHasSales :one
+SELECT EXISTS (SELECT 1 FROM app.stay_extras WHERE tenant_id = $1 AND service_id = $2)
+`
+
+type ServiceHasSalesParams struct {
+	TenantID  string
+	ServiceID string
+}
+
+func (q *Queries) ServiceHasSales(ctx context.Context, arg ServiceHasSalesParams) (bool, error) {
+	row := q.db.QueryRow(ctx, serviceHasSales, arg.TenantID, arg.ServiceID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err

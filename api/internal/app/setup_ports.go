@@ -101,4 +101,26 @@ type SetupRepo interface {
 	// AddStock adds (or with a negative qty removes) stock; unitCost, when set, becomes the latest cost. Returns the new stock.
 	AddStock(ctx context.Context, tx Tx, serviceID string, qty int64, unitCost *int64) (int64, error)
 	InsertMovement(ctx context.Context, tx Tx, m StockMovement) error
+	// Movements is a page of an item's history, newest first, starting after the cursor.
+	Movements(ctx context.Context, tx Tx, serviceID string, kind *string, after *MovementCursor, limit int) ([]MovementRow, error)
+	ServiceHasSales(ctx context.Context, tx Tx, serviceID string) (bool, error)
+	// DeleteService removes an item that was never sold, with its movements.
+	DeleteService(ctx context.Context, tx Tx, serviceID string) error
+	InsertStocktake(ctx context.Context, tx Tx, id, actorID string, note *string, valueDifference int64, at time.Time) error
+}
+
+// MovementCursor is the position after the last row of a page.
+type MovementCursor struct {
+	At time.Time
+	ID string
+}
+
+// MovementRow is one history line with the name of whoever caused it.
+type MovementRow struct {
+	ID, Kind  string
+	Quantity  int64
+	UnitCost  *int64
+	Ref       *string
+	At        time.Time
+	ActorName string
 }

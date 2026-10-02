@@ -22,6 +22,9 @@ type SetupService interface {
 	CreateService(ctx context.Context, c app.Caller, key string, in app.ServiceInput) (app.ServiceItem, error)
 	UpdateService(ctx context.Context, c app.Caller, code string, p app.ServicePatch) (app.ServiceItem, error)
 	RestockService(ctx context.Context, c app.Caller, key, code string, quantity, unitCost int64) (app.ServiceItem, error)
+	ListMovements(ctx context.Context, c app.Caller, code string, kind, cursor *string) ([]app.MovementRow, string, error)
+	RemoveService(ctx context.Context, c app.Caller, key, code string) (string, error)
+	CreateStocktake(ctx context.Context, c app.Caller, key string, lines []app.StocktakeLine, note *string) (app.StocktakeResult, error)
 }
 
 // WithSetup adds the setup use cases; the router always sets them.
@@ -267,4 +270,70 @@ func (s Server) RestockService(ctx context.Context, req gen.RestockServiceReques
 		return nil, err
 	}
 	return gen.RestockService200JSONResponse(toServiceItem(v)), nil
+}
+
+func (s Server) ListStockMovements(ctx context.Context, req gen.ListStockMovementsRequestObject) (gen.ListStockMovementsResponseObject, error) {
+	c, err := callerOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, next, err := s.setup.ListMovements(ctx, c, req.ServiceCode, req.Params.Kind, req.Params.Cursor)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]gen.StockMovement, len(rows))
+	for i, r := range rows {
+		items[i] = gen.StockMovement{At: r.At, Kind: gen.StockMovementKind(r.Kind), Quantity: int(r.Quantity), Ref: r.Ref, UnitCost: r.UnitCost, ActorName: r.ActorName}
+	}
+	out := gen.ListStockMovements200JSONResponse{Items: items}
+	if next != "" {
+		out.NextCursor = &next
+	}
+	return out, nil
+}
+
+func (s Server) RemoveService(ctx context.Context, req gen.RemoveServiceRequestObject) (gen.RemoveServiceResponseObject, error) {
+	c, err := callerOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.setup.RemoveService(ctx, c, req.Params.IdempotencyKey.String(), req.ServiceCode)
+	if err != nil {
+		return nil, err
+	}
+	return gen.RemoveService200JSONResponse{Result: gen.RemoveServiceResultResult(result)}, nil
+}
+
+func (s Server) CreateStocktake(ctx context.Context, req gen.CreateStocktakeRequestObject) (gen.CreateStocktakeResponseObject, error) {
+	c, err := callerOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if req.Body == nil {
+		return nil, &app.ValidationError{Field: "body", Reason: "required"}
+	}
+	lines := make([]app.StocktakeLine, len(req.Body.Lines))
+	for i, l := range req.Body.Lines {
+		lines[i] = app.StocktakeLine{ServiceCode: l.ServiceCode, Counted: int64(l.Counted)}
+	}
+	r, err := s.setup.CreateStocktake(ctx, c, req.Params.IdempotencyKey.String(), lines, req.Body.Note)
+	if err != nil {
+		return nil, err
+	}
+	out := gen.StocktakeResult{Id: r.ID, ValueDifference: int(r.ValueDifference)}
+	for _, d := range r.Differences {
+		out.Differences = append(out.Differences, struct {
+			Counted     int    `json:"counted"`
+			ServiceCode string `json:"serviceCode"`
+			System      int    `json:"system"`
+		}{Counted: int(d.Counted), ServiceCode: d.ServiceCode, System: int(d.System)})
+	}
+	if out.Differences == nil {
+		out.Differences = []struct {
+			Counted     int    `json:"counted"`
+			ServiceCode string `json:"serviceCode"`
+			System      int    `json:"system"`
+		}{}
+	}
+	return gen.CreateStocktake201JSONResponse(out), nil
 }

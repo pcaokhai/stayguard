@@ -153,6 +153,9 @@ func (b *Billing) take(ctx context.Context, tx Tx, c Caller, stayID string, line
 		if err != nil {
 			return nil, fmt.Errorf("take stock: %w", err) // keeps stay.ErrInsufficientStock visible to errors.Is
 		}
+		if err = b.services.RecordSale(ctx, tx, b.ids.New("sm"), svc.ID, qty, stayID, c.UserID, now); err != nil {
+			return nil, fmt.Errorf("record sale: %w", err)
+		}
 		amount, err := money.Mul(money.Vnd(unit), qty)
 		if err != nil {
 			return nil, fmt.Errorf("extra amount: %w", err)

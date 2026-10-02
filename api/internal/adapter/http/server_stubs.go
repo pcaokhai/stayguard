@@ -69,10 +69,6 @@ func (Server) CreateExpense(context.Context, gen.CreateExpenseRequestObject) (ge
 	return nil, errNotImplemented
 }
 
-func (Server) CreateStocktake(context.Context, gen.CreateStocktakeRequestObject) (gen.CreateStocktakeResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) DeleteExpense(context.Context, gen.DeleteExpenseRequestObject) (gen.DeleteExpenseResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -105,15 +101,7 @@ func (Server) GetPayroll(context.Context, gen.GetPayrollRequestObject) (gen.GetP
 	return nil, errNotImplemented
 }
 
-func (Server) ListStockMovements(context.Context, gen.ListStockMovementsRequestObject) (gen.ListStockMovementsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject) (gen.MarkPayrollPaidResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) RemoveService(context.Context, gen.RemoveServiceRequestObject) (gen.RemoveServiceResponseObject, error) {
 	return nil, errNotImplemented
 }
 

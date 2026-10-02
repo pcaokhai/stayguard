@@ -107,7 +107,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		auth:         auth,
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		bank:         bank,
-		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}),
+		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}).WithAlerts(postgres.AlertWriter{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,

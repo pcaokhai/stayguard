@@ -23,11 +23,12 @@ type fakeServiceRepo struct {
 	rows     map[string]map[string]ServiceRow
 	calls    int
 	decOrder []string
+	sales    []string
 	// livePrice replaces the price at decrement time, after ByCodes has read the old one.
 	livePrice map[string]int64
 }
 
-func (r *fakeServiceRepo) List(_ context.Context, tx Tx) ([]Service, error) {
+func (r *fakeServiceRepo) List(_ context.Context, tx Tx, _ bool, _ time.Time) ([]Service, error) {
 	r.calls++
 	var out []Service
 	for _, row := range r.rows[tx.TenantID()] {
@@ -64,6 +65,11 @@ func (r *fakeServiceRepo) DecrementStock(_ context.Context, tx Tx, id string, qt
 	r.rows[tx.TenantID()][id] = row
 	r.decOrder = append(r.decOrder, row.Code)
 	return row.Price, nil
+}
+
+func (r *fakeServiceRepo) RecordSale(_ context.Context, _ Tx, _, serviceID string, qty int64, stayID, _ string, _ time.Time) error {
+	r.sales = append(r.sales, fmt.Sprintf("%s:%d:%s", serviceID, qty, stayID))
+	return nil
 }
 
 func (r *fakeServiceRepo) stock(tenant, id string) int64 { return r.rows[tenant][id].Stock }

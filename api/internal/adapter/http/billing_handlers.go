@@ -63,6 +63,10 @@ func toServices(svcs []app.Service) []gen.Service {
 	out := make([]gen.Service, len(svcs))
 	for i, s := range svcs {
 		out[i] = gen.Service{Code: s.Code, Name: gen.LocalizedText{Vi: s.Name.VI, En: s.Name.EN}, Price: s.Price, Stock: int(s.Stock)}
+		if s.Unit != "" { // the owner's view of the catalogue
+			sold := int(s.SoldLast7Days)
+			out[i].Unit, out[i].LowStockAt, out[i].OnSale, out[i].LatestUnitCost, out[i].SoldLast7Days = &s.Unit, &s.LowStockAt, &s.OnSale, s.LatestUnitCost, &sold
+		}
 	}
 	return out
 }

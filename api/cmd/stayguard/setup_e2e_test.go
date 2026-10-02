@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 )
 
 func (e *env) ownerSetup() string {
@@ -283,10 +284,165 @@ func TestSetupItemsAndStock_SG1004(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM app.stock_movements WHERE kind = 'IN' AND unit_cost = 6500 AND actor_id = 'us_owner'`); n != 1 {
 		t.Fatal("the IN movement keeps cost and actor")
 	}
-	// The front desk no longer sees an item that is not on sale.
+	// The owner still sees the item, marked off sale.
+	seen := false
 	for _, it := range items(e.call("GET", "/v1/services", token, nil)) {
 		if it["code"] == "SPRING_WATER" {
-			t.Fatal("an item that is not on sale must not be offered at the desk")
+			seen = it["onSale"] == false
 		}
+	}
+	if !seen {
+		t.Fatal("the owner's catalogue shows items that are off sale")
+	}
+}
+
+// SG-1004 AC3-5: sales and counts are movements too, the history pages, stocktakes alert the owner,
+// and an item with sales is stopped, never deleted.
+func TestStockMovementsStocktakeAndRemove_SG1004(t *testing.T) {
+	e := newEnv(t)
+	owner := e.ownerSetup()
+	e.clock.step = time.Second // every movement gets its own instant, so "newest first" is well defined
+	mk := func(name string, qty int) string {
+		st, raw := e.send("POST", "/v1/owner/services", owner, newKey(), map[string]any{"name": map[string]any{"vi": name, "en": name}, "price": 10000, "unitCost": 6000, "openingQuantity": qty, "unit": "pcs", "lowStockAt": 2})
+		if st != 201 {
+			t.Fatalf("create %s: %d %s", name, st, raw)
+		}
+		return parse(raw)["code"].(string)
+	}
+	water, spare := mk("Water", 24), mk("Spare", 5)
+
+	// A sale is a movement with the room code and the person.
+	st, raw := e.checkIn(owner, 1, newKey(), stayBody(nil))
+	stayID := parse(raw)["id"].(string)
+	if st != 201 {
+		t.Fatalf("check-in: %d", st)
+	}
+	if st, raw = e.send("POST", "/v1/stays/"+stayID+"/extras", owner, newKey(), map[string]any{"items": []map[string]any{{"serviceCode": water, "quantity": 2}}}); st != 200 {
+		t.Fatalf("extras: %d %s", st, raw)
+	}
+	for i := 0; i < 60; i++ {
+		e.send("POST", "/v1/owner/services/"+water+"/restock", owner, newKey(), map[string]any{"quantity": 1, "unitCost": 6000 + i})
+	}
+	if n := e.count(`SELECT count(*) FROM app.stock_movements WHERE kind = 'SALE' AND quantity = -2 AND ref = 'R1' AND actor_id = 'us_owner'`); n != 1 {
+		t.Fatalf("sale movement: %d", n)
+	}
+	if n := e.count(`SELECT count(*) FROM app.services s WHERE s.code = $1 AND s.stock = (SELECT sum(quantity) FROM app.stock_movements m WHERE m.service_id = s.id)`, water); n != 1 {
+		t.Fatal("stock must equal the sum of its movements")
+	}
+
+	// History: newest first, 50 per page, a cursor for the rest, no row twice, and a kind filter.
+	page1 := e.call("GET", "/v1/owner/services/"+water+"/movements", owner, nil)
+	cursor, _ := page1.body["nextCursor"].(string)
+	if page1.status != 200 || len(items(page1)) != 50 || cursor == "" || items(page1)[0]["kind"] != "IN" || items(page1)[0]["actorName"] == "" {
+		t.Fatalf("page 1: %d %v", page1.status, page1.body["nextCursor"])
+	}
+	page2 := e.call("GET", "/v1/owner/services/"+water+"/movements?cursor="+cursor, owner, nil)
+	if page2.status != 200 || len(items(page2)) != 12 || page2.body["nextCursor"] != nil {
+		t.Fatalf("page 2: %d n=%d", page2.status, len(items(page2)))
+	}
+	if last := items(page2)[11]; last["kind"] != "OPENING" || last["quantity"] != float64(24) {
+		t.Fatalf("the opening movement ends the history: %v", last)
+	}
+	if only := e.call("GET", "/v1/owner/services/"+water+"/movements?kind=SALE", owner, nil); len(items(only)) != 1 || items(only)[0]["ref"] != "R1" {
+		t.Fatalf("kind filter: %v", only.body)
+	}
+	if bad := e.call("GET", "/v1/owner/services/"+water+"/movements?kind=NOPE", owner, nil); bad.status != 422 {
+		t.Fatalf("unknown kind: %d", bad.status)
+	}
+	if bad := e.call("GET", "/v1/owner/services/"+water+"/movements?cursor=garbage", owner, nil); bad.status != 422 {
+		t.Fatalf("bad cursor: %d", bad.status)
+	}
+	if nf := e.call("GET", "/v1/owner/services/NOPE/movements", owner, nil); nf.status != 404 {
+		t.Fatalf("unknown item: %d", nf.status)
+	}
+
+	// Catalogue for the owner: cost and 7-day sales; the front desk sees neither.
+	var ownerView map[string]any
+	for _, it := range items(e.call("GET", "/v1/services", owner, nil)) {
+		if it["code"] == water {
+			ownerView = it
+		}
+	}
+	if ownerView["soldLast7Days"] != float64(2) || ownerView["latestUnitCost"] != float64(6059) || ownerView["onSale"] != true {
+		t.Fatalf("owner catalogue: %v", ownerView)
+	}
+
+	// Stocktake by a receptionist with EDIT on a building; housekeeping may not.
+	id, one := e.addStaff(owner, newKey(), "linh")
+	e.settle("linh", one, "260814")
+	desk := e.signIn("linh", "260814").str("accessToken")
+	_ = id
+	for _, it := range items(e.call("GET", "/v1/services", desk, nil)) {
+		if _, has := it["latestUnitCost"]; has || it["soldLast7Days"] != nil {
+			t.Fatalf("the desk must not see costs: %v", it)
+		}
+	}
+	system := e.count(`SELECT stock FROM app.services WHERE code = $1`, water)
+	key := newKey()
+	body := map[string]any{"lines": []map[string]any{{"serviceCode": water, "counted": system - 3}, {"serviceCode": spare, "counted": 5}}, "note": "Friday count"}
+	st, raw = e.send("POST", "/v1/stocktakes", desk, key, body)
+	res := parse(raw)
+	diffs, _ := res["differences"].([]any)
+	if st != 201 || len(diffs) != 1 || diffs[0].(map[string]any)["serviceCode"] != water || diffs[0].(map[string]any)["system"] != float64(system) || res["valueDifference"] != float64(-3*6059) {
+		t.Fatalf("stocktake: %d %s", st, raw)
+	}
+	if st, raw = e.send("POST", "/v1/stocktakes", desk, key, body); st != 201 || parse(raw)["id"] != res["id"] || e.count(`SELECT count(*) FROM app.stock_movements WHERE kind = 'COUNT'`) != 1 {
+		t.Fatalf("replay must not count twice: %d %s", st, raw)
+	}
+	if n := e.count(`SELECT count(*) FROM app.services WHERE code = $1 AND stock = $2`, water, system-3); n != 1 {
+		t.Fatal("stock must be the counted quantity")
+	}
+	if n := e.count(`SELECT count(*) FROM app.alerts WHERE kind = 'STOCKTAKE_DIFFERENCE' AND amount = $1`, 3*6059); n != 1 {
+		t.Fatal("the owner is alerted of the difference")
+	}
+	if n := e.count(`SELECT count(*) FROM app.stock_movements WHERE kind = 'COUNT' AND quantity = -3 AND ref = $1`, res["id"]); n != 1 {
+		t.Fatal("COUNT movement refers to the stocktake")
+	}
+	// A count that matches the system changes nothing and raises nothing.
+	if st, raw = e.send("POST", "/v1/stocktakes", desk, newKey(), map[string]any{"lines": []map[string]any{{"serviceCode": spare, "counted": 5}}}); st != 201 || len(parse(raw)["differences"].([]any)) != 0 {
+		t.Fatalf("no difference: %d %s", st, raw)
+	}
+	if n := e.count(`SELECT count(*) FROM app.alerts WHERE kind = 'STOCKTAKE_DIFFERENCE'`); n != 1 {
+		t.Fatalf("alerts: %d", n)
+	}
+	for name, b := range map[string]map[string]any{
+		"unknown": {"lines": []map[string]any{{"serviceCode": "NOPE", "counted": 1}}},
+		"twice":   {"lines": []map[string]any{{"serviceCode": water, "counted": 1}, {"serviceCode": water, "counted": 2}}},
+		"empty":   {"lines": []map[string]any{}},
+	} {
+		if st, _ = e.send("POST", "/v1/stocktakes", desk, newKey(), b); st != 422 {
+			t.Errorf("%s: %d", name, st)
+		}
+	}
+
+	// Remove: an item with sales stops selling and stays; one never sold is deleted with its history.
+	rk := newKey()
+	defer func() {
+		for _, it := range items(e.call("GET", "/v1/services", desk, nil)) {
+			if it["code"] == water {
+				t.Error("an item that is not on sale must not be offered at the desk")
+			}
+		}
+	}()
+	if st, raw = e.send("POST", "/v1/owner/services/"+water+"/remove", owner, rk, nil); st != 200 || parse(raw)["result"] != "STOPPED_SELLING" {
+		t.Fatalf("remove sold: %d %s", st, raw)
+	}
+	if st, raw = e.send("POST", "/v1/owner/services/"+water+"/remove", owner, rk, nil); st != 200 || parse(raw)["result"] != "STOPPED_SELLING" {
+		t.Fatalf("replay: %d %s", st, raw)
+	}
+	if n := e.count(`SELECT count(*) FROM app.services WHERE code = $1 AND NOT on_sale`, water); n != 1 {
+		t.Fatal("the sold item stays, off sale")
+	}
+	if st, raw = e.send("POST", "/v1/owner/services/"+spare+"/remove", owner, newKey(), nil); st != 200 || parse(raw)["result"] != "DELETED" {
+		t.Fatalf("remove unsold: %d %s", st, raw)
+	}
+	if n := e.count(`SELECT count(*) FROM app.services WHERE code = $1`, spare) + e.count(`SELECT count(*) FROM app.stock_movements m WHERE NOT EXISTS (SELECT 1 FROM app.services s WHERE s.id = m.service_id)`); n != 0 {
+		t.Fatalf("the item and its movements are gone: %d", n)
+	}
+	if st, _ = e.send("POST", "/v1/owner/services/NOPE/remove", owner, newKey(), nil); st != 404 {
+		t.Fatalf("unknown item: %d", st)
+	}
+	if st, _ = e.send("POST", "/v1/owner/services/"+water+"/remove", desk, newKey(), nil); st != 403 {
+		t.Fatalf("the desk cannot remove items: %d", st)
 	}
 }

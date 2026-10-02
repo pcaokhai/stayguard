@@ -66,7 +66,7 @@ func wantRLSViolation(t testing.TB, what string, err error) {
 }
 
 // appendOnly tables give the app role no UPDATE or DELETE grant.
-var appendOnly = map[string]bool{"audit_logs": true, "stock_movements": true}
+var appendOnly = map[string]bool{"audit_logs": true, "stock_movements": true, "stocktakes": true}
 
 // wantUntouched requires zero rows touched and no error. On an append-only table the app role holds no
 // UPDATE or DELETE grant, so there the statement must fail with a privilege error (proves the grant is absent) instead.

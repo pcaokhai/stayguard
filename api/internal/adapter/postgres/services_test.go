@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -39,7 +40,7 @@ func TestServicesRepo_SG205_AC1(t *testing.T) {
 	repo := ServiceRepo{}
 
 	_ = inTx(ctx, t, uow, svcTenantA, func(tx app.Tx) error {
-		list, err := repo.List(ctx, tx)
+		list, err := repo.List(ctx, tx, true, time.Time{})
 		if err != nil || len(list) != 3 || list[0].Code != "BEER" || list[1].Code != "TOWEL" || list[2].Code != "WATER" {
 			t.Fatalf("list = %+v err=%v", list, err)
 		}
@@ -116,7 +117,7 @@ func assertStockRace(ctx context.Context, t *testing.T, uow *UnitOfWork, owner *
 
 func assertServicesInvisible(ctx context.Context, t *testing.T, repo ServiceRepo, tx app.Tx) {
 	t.Helper()
-	if list, err := repo.List(ctx, tx); err != nil || len(list) != 0 {
+	if list, err := repo.List(ctx, tx, true, time.Time{}); err != nil || len(list) != 0 {
 		t.Errorf("foreign list = %+v err=%v", list, err)
 	}
 	if rows, err := repo.ByCodes(ctx, tx, []string{"WATER"}); err != nil || len(rows) != 0 {
