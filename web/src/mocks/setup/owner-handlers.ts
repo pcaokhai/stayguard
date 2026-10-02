@@ -381,7 +381,248 @@ const ROLE: Record<string, string> = {
   MANAGER: "MANAGER",
 };
 
+// Settings: property and bank accounts, rate plans, items (boards CaiDat*, BangGia*, DichVuKho*, ThemMatHang*).
+let property = {
+  guesthouseCode: "NNDEMO",
+  name: "Nhà nghỉ Demo",
+  address: "12 Lê Lợi, Đà Lạt",
+  phone: "0263 3 123 456",
+  qrExpiryMinutes: 30,
+  idRetentionDays: 30,
+  frontDeskHistoryDays: 7,
+};
+const banks = [
+  {
+    id: "ba1",
+    bankBin: "970436",
+    bankName: "Vietcombank",
+    accountNoMasked: "•••• 6789",
+    accountName: "NHA NGHI DEMO",
+    isDefault: true,
+    sepayStatus: "CONNECTED",
+    lastWebhookAt: at(0, 14, 1),
+  },
+  {
+    id: "ba2",
+    bankBin: "970407",
+    bankName: "Techcombank",
+    accountNoMasked: "•••• 2468",
+    accountName: "NHA NGHI DEMO",
+    isDefault: false,
+    sepayStatus: "PENDING",
+    lastWebhookAt: null,
+  },
+];
+const plan = (first: number, extra: number, night: number, daily: number) => ({
+  version: 1,
+  graceMinutes: 15,
+  hourly: { firstHour: first, extraHour: extra },
+  overnight: { price: night, windowStart: "21:00", windowEnd: "12:00" },
+  daily: { price: daily, windowStart: "14:00", windowEnd: "12:00" },
+});
+const unitTypes = [
+  {
+    code: "STD",
+    name: { vi: "Phòng thường", en: "Standard" },
+    ratePlan: plan(80000, 20000, 200000, 300000),
+    updatedAt: at(2, 9, 0),
+  },
+  {
+    code: "VIP",
+    name: { vi: "VIP", en: "VIP" },
+    ratePlan: plan(120000, 30000, 300000, 450000),
+    updatedAt: at(2, 9, 0),
+  },
+];
+const items = [
+  {
+    code: "WATER",
+    name: { vi: "Nước suối", en: "Still water" },
+    price: 10000,
+    stock: 46,
+    unit: "chai",
+    lowStockAt: 10,
+    onSale: true,
+    latestUnitCost: 6000,
+    soldLast7Days: 38,
+  },
+  {
+    code: "SODA",
+    name: { vi: "Nước ngọt", en: "Soft drink" },
+    price: 15000,
+    stock: 30,
+    unit: "lon",
+    lowStockAt: 10,
+    onSale: true,
+    latestUnitCost: 9000,
+    soldLast7Days: 22,
+  },
+  {
+    code: "BEER",
+    name: { vi: "Bia lon", en: "Canned beer" },
+    price: 20000,
+    stock: 24,
+    unit: "lon",
+    lowStockAt: 10,
+    onSale: true,
+    latestUnitCost: 14000,
+    soldLast7Days: 27,
+  },
+  {
+    code: "NOODLE",
+    name: { vi: "Mì ly", en: "Cup noodles" },
+    price: 15000,
+    stock: 18,
+    unit: "ly",
+    lowStockAt: 6,
+    onSale: true,
+    latestUnitCost: 9000,
+    soldLast7Days: 12,
+  },
+  {
+    code: "TOWEL",
+    name: { vi: "Khăn tắm thêm", en: "Extra bath towel" },
+    price: 10000,
+    stock: 3,
+    unit: "cái",
+    lowStockAt: 5,
+    onSale: true,
+    latestUnitCost: 6000,
+    soldLast7Days: 6,
+  },
+];
+// Mirrors the server's pricing only enough to make the preview move; the real endpoint uses domain/pricing.
+const previewTotal = (b: {
+  rentalType: string;
+  checkIn: string;
+  checkOut: string;
+  ratePlan: ReturnType<typeof plan>;
+}) => {
+  const mins = (Date.parse(b.checkOut) - Date.parse(b.checkIn)) / 60000;
+  const p = b.ratePlan;
+  if (b.rentalType === "OVERNIGHT") return p.overnight.price;
+  const extra = Math.max(0, Math.ceil((mins - 60 - p.graceMinutes) / 60));
+  return Math.min(p.hourly.firstHour + extra * p.hourly.extraHour, p.daily.price);
+};
+
 export const ownerHandlers = [
+  http.get("*/v1/owner/property", () => json(property)),
+  http.patch("*/v1/owner/property", async ({ request }) => {
+    property = { ...property, ...((await request.json()) as object) };
+    return json(property);
+  }),
+  http.get("*/v1/owner/bank-accounts", () => json({ items: banks })),
+  http.post("*/v1/owner/bank-accounts", async ({ request }) => {
+    const b = (await request.json()) as {
+      bankBin: string;
+      ownerPin: string;
+      accountNo: string;
+      accountName: string;
+    };
+    if (b.ownerPin !== "482915") return json({ code: "INVALID_PIN" }, 422);
+    const acc = {
+      id: `ba${banks.length + 1}`,
+      bankBin: b.bankBin,
+      bankName: "Ngân hàng",
+      accountNoMasked: `•••• ${b.accountNo.slice(-4)}`,
+      accountName: b.accountName,
+      isDefault: false,
+      sepayStatus: "PENDING",
+      lastWebhookAt: null,
+    };
+    banks.push(acc);
+    return json(acc, 201);
+  }),
+  http.post("*/v1/owner/bank-accounts/:id/make-default", async ({ params, request }) => {
+    if (((await request.json()) as { ownerPin: string }).ownerPin !== "482915")
+      return json({}, 422);
+    banks.forEach((a) => (a.isDefault = a.id === params.id));
+    return json(banks.find((a) => a.id === params.id));
+  }),
+  http.post("*/v1/owner/bank-accounts/:id/remove", async ({ params, request }) => {
+    if (((await request.json()) as { ownerPin: string }).ownerPin !== "482915")
+      return json({}, 422);
+    const i = banks.findIndex((a) => a.id === params.id);
+    if (banks[i]?.isDefault) return json({}, 409);
+    if (i >= 0) banks.splice(i, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.get("*/v1/owner/sepay-status", () =>
+    json({ status: "CONNECTED", lastWebhookAt: at(0, 14, 1), signatureValid: true }),
+  ),
+  http.get("*/v1/owner/rate-plans", () => json({ items: unitTypes })),
+  http.put("*/v1/owner/unit-types/:code/rate-plan", async ({ params, request }) => {
+    const u = unitTypes.find((x) => x.code === params.code);
+    if (!u) return json({}, 404);
+    u.ratePlan = {
+      ...u.ratePlan,
+      ...((await request.json()) as object),
+      version: u.ratePlan.version + 1,
+    };
+    u.updatedAt = new Date().toISOString();
+    return json(u);
+  }),
+  http.post("*/v1/owner/rate-plans/preview", async ({ request }) => {
+    const total = previewTotal((await request.json()) as Parameters<typeof previewTotal>[0]);
+    return json({
+      asOf: new Date().toISOString(),
+      stayAmount: total,
+      extrasAmount: 0,
+      total,
+      depositPaid: 0,
+      balanceDue: total,
+      refundDue: 0,
+      capped: false,
+      lines: [],
+    });
+  }),
+  http.get("*/v1/services", () => json({ items })),
+  http.post("*/v1/owner/services", async ({ request }) => {
+    const b = (await request.json()) as {
+      name: { vi: string; en: string };
+      price: number;
+      unitCost: number;
+      openingQuantity: number;
+      unit: string;
+      lowStockAt: number;
+      onSale?: boolean;
+    };
+    const item = {
+      code: `ITEM${items.length + 1}`,
+      name: b.name,
+      price: b.price,
+      stock: b.openingQuantity,
+      unit: b.unit,
+      lowStockAt: b.lowStockAt,
+      onSale: b.onSale ?? true,
+      latestUnitCost: b.unitCost,
+      soldLast7Days: 0,
+    };
+    items.push(item);
+    return json(item, 201);
+  }),
+  http.patch("*/v1/owner/services/:code", async ({ params, request }) => {
+    const it = items.find((x) => x.code === params.code);
+    if (!it) return json({}, 404);
+    Object.assign(it, await request.json());
+    return json(it);
+  }),
+  http.post("*/v1/owner/buildings", async () =>
+    json(
+      {
+        id: "E",
+        code: "E",
+        name: "Tòa E",
+        level: "EDIT",
+        counts: { vacant: 15, occupied: 0, overdue: 0, toClean: 0, maintenance: 0 },
+      },
+      201,
+    ),
+  ),
+  http.patch("*/v1/owner/buildings/:id", () => json({})),
+  http.post("*/v1/owner/buildings/:id/floors", () => json({ items: [] }, 201)),
+  http.post("*/v1/owner/rooms", () => json({ items: [] }, 201)),
+  http.patch("*/v1/owner/rooms/:id", () => json({})),
   http.get("*/v1/owner/staff", () => json({ items: roster.filter((s) => s.status !== "REMOVED") })),
   http.post("*/v1/owner/staff", async ({ request }) => {
     const b = (await request.json()) as Record<string, unknown> & {

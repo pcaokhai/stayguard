@@ -139,7 +139,7 @@ Boards: GiaoDichPC, LichSuGiaoDich, GanPhieu, GanPhieuPC, LichSuLuotOPC, ChiTiet
 #### [x] L-W8 People (WEB-2)
 Boards: NhanVien, NhanVienPC, ThemNhanVien, ThemNhanVienPC, PinMotLan, PinMotLanPC, XoaNhanVien, XoaNhanVienPC, PhanQuyen, PhanQuyenPC. One-time PIN shown once with copy button and a 24 h countdown.
 
-#### [ ] L-W9 Settings (WEB-2)
+#### [x] L-W9 Settings (WEB-2)
 Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, ToaPhong, ToaPhongPC, ThemPhong, ThemTang, ThemToa, SuaPhong, BangGia, BangGiaPC, DichVuKho, DichVuKhoPC, ThemMatHang, ThemMatHangPC, SuaMatHang, SuaMatHangPC. Rate editor shows `previewPrice` live (debounced 300 ms).
 
 ### Gate 1 — go-live (hours 20–24)

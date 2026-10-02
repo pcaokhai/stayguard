@@ -55,6 +55,7 @@ const rooms = (b: BuildingId) =>
       code,
       buildingId: b,
       floor: 1 + Math.floor(i / 6),
+      floorId: `${b}-F${1 + Math.floor(i / 6)}`,
       unitType: {
         code: vip ? "VIP" : "STD",
         name: { vi: vip ? "VIP" : "Phòng thường", en: vip ? "VIP" : "Standard" },
