@@ -28,14 +28,15 @@ type Server struct {
 	owner        OwnerService
 	auth         AuthService
 	stayOps      StayOpsService
+	staff        StaffService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
 // checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
 func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
-	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService, owner OwnerService, auth AuthService) Server {
+	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService, owner OwnerService, auth AuthService, staff StaffService) Server {
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
-		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner, auth: auth}
+		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner, auth: auth, staff: staff}
 }
 
 // WithStayOps adds the stay history and correction use cases (editCheckInTime, moveStay, listStays,
@@ -51,14 +52,6 @@ func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.
 }
 
 func (Server) GetShiftReview(context.Context, gen.GetShiftReviewRequestObject) (gen.GetShiftReviewResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ListStaffPermissions(context.Context, gen.ListStaffPermissionsRequestObject) (gen.ListStaffPermissionsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) SetBuildingPermission(context.Context, gen.SetBuildingPermissionRequestObject) (gen.SetBuildingPermissionResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -123,10 +116,6 @@ func (Server) CreateRooms(context.Context, gen.CreateRoomsRequestObject) (gen.Cr
 }
 
 func (Server) CreateService(context.Context, gen.CreateServiceRequestObject) (gen.CreateServiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreateStaff(context.Context, gen.CreateStaffRequestObject) (gen.CreateStaffResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -222,10 +211,6 @@ func (Server) ListRatePlans(context.Context, gen.ListRatePlansRequestObject) (ge
 	return nil, errNotImplemented
 }
 
-func (Server) ListStaff(context.Context, gen.ListStaffRequestObject) (gen.ListStaffResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListStockMovements(context.Context, gen.ListStockMovementsRequestObject) (gen.ListStockMovementsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -235,10 +220,6 @@ func (Server) ListTickets(context.Context, gen.ListTicketsRequestObject) (gen.Li
 }
 
 func (Server) ListTransactions(context.Context, gen.ListTransactionsRequestObject) (gen.ListTransactionsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) LockStaff(context.Context, gen.LockStaffRequestObject) (gen.LockStaffResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -274,15 +255,7 @@ func (Server) RemoveService(context.Context, gen.RemoveServiceRequestObject) (ge
 	return nil, errNotImplemented
 }
 
-func (Server) RemoveStaff(context.Context, gen.RemoveStaffRequestObject) (gen.RemoveStaffResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ReportDamage(context.Context, gen.ReportDamageRequestObject) (gen.ReportDamageResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ResetStaffPin(context.Context, gen.ResetStaffPinRequestObject) (gen.ResetStaffPinResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -295,10 +268,6 @@ func (Server) RevealGuestIdNumber(context.Context, gen.RevealGuestIdNumberReques
 }
 
 func (Server) SetGuestIdNumber(context.Context, gen.SetGuestIdNumberRequestObject) (gen.SetGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UnlockStaff(context.Context, gen.UnlockStaffRequestObject) (gen.UnlockStaffResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -327,10 +296,6 @@ func (Server) UpdateRoom(context.Context, gen.UpdateRoomRequestObject) (gen.Upda
 }
 
 func (Server) UpdateService(context.Context, gen.UpdateServiceRequestObject) (gen.UpdateServiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateStaff(context.Context, gen.UpdateStaffRequestObject) (gen.UpdateStaffResponseObject, error) {
 	return nil, errNotImplemented
 }
 

@@ -191,18 +191,8 @@ func (a *Auth) ChangePin(ctx context.Context, c Caller, current, next string) er
 	var outcome error
 	err = a.sessions.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
 		now := a.sessions.clock.Now()
-		st, ok, err := a.repo.PinState(ctx, tx, c.UserID)
-		if err != nil || !ok {
-			outcome = errOr(err, ErrPinInvalid)
-			return nil
-		}
-		if st.LockedUntil != nil && now.Before(*st.LockedUntil) {
-			outcome = &AccountLockedError{Until: *st.LockedUntil}
-			return nil
-		}
-		if !a.hasher.Verify(st.Hash, current) {
-			outcome = a.recordWrongPin(ctx, tx, c.UserID, st, now)
-			return nil
+		if outcome = a.checkPin(ctx, tx, c.UserID, current, now); outcome != nil {
+			return pinFailureOrErr(outcome) // a wrong PIN commits its count
 		}
 		if err = a.repo.SetPin(ctx, tx, c.UserID, hash, false, nil, now); err != nil {
 			return err
@@ -210,4 +200,31 @@ func (a *Auth) ChangePin(ctx context.Context, c Caller, current, next string) er
 		return a.repo.DeleteOtherSessions(ctx, tx, c.UserID, c.SessionHash)
 	})
 	return errOr(err, outcome)
+}
+
+// checkPin verifies a user's PIN inside tx. It returns nil, ErrPinInvalid or AccountLockedError (the failure
+// is counted, and the caller must commit the transaction to keep the count), or an infrastructure error.
+func (a *Auth) checkPin(ctx context.Context, tx Tx, userID, pin string, now time.Time) error {
+	st, ok, err := a.repo.PinState(ctx, tx, userID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrPinInvalid
+	}
+	if st.LockedUntil != nil && now.Before(*st.LockedUntil) {
+		return &AccountLockedError{Until: *st.LockedUntil}
+	}
+	if !a.hasher.Verify(st.Hash, pin) {
+		return a.recordWrongPin(ctx, tx, userID, st, now)
+	}
+	return nil
+}
+
+// pinFailureOrErr is nil for a counted PIN failure (commit it) and the error itself otherwise (roll back).
+func pinFailureOrErr(err error) error {
+	if errors.Is(err, ErrPinInvalid) || isLocked(err) {
+		return nil
+	}
+	return err
 }

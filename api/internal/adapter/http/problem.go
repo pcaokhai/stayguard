@@ -106,6 +106,10 @@ func mapSessionError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusTooManyRequests, "Too Many Requests", "RATE_LIMITED")
 	case errors.Is(err, app.ErrPinChangeRequired):
 		writeProblem(w, http.StatusForbidden, "Forbidden", "PIN_CHANGE_REQUIRED")
+	case errors.Is(err, app.ErrOwnerPinInvalid):
+		writeProblem(w, http.StatusForbidden, "Forbidden", "OWNER_PIN_INVALID")
+	case errors.Is(err, app.ErrShiftOpen):
+		writeProblem(w, http.StatusConflict, "Conflict", "SHIFT_OPEN")
 	case errors.Is(err, app.ErrPinTooSimple):
 		writeProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "PIN_TOO_SIMPLE")
 	case errors.Is(err, app.ErrDemoDisabled):

@@ -106,9 +106,14 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	if err != nil {
 		t.Fatalf("stay ops: %v", err)
 	}
+	auth, err := newAuth(sessions, pool, postgres.NewAuditWriter(), clk)
+	if err != nil {
+		t.Fatalf("auth: %v", err)
+	}
 	logs := &syncBuffer{}
 	h := httpadapter.NewRouter(slog.New(slog.NewJSONHandler(logs, nil)), httpadapter.Options{
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
+		Auth: auth, Staff: newStaff(uow, auth, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk),
 		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true, Payments: payments, StayOps: stayOps,
 		Owner:        app.NewOwner(uow, postgres.OwnerRepo{}, mk(uow, clk), clk),
 		Housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, postgres.NewAuditWriter(), ids.New(clk.Now), clk),

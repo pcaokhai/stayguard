@@ -53,4 +53,8 @@ type IdentityRepo interface {
 	TenantInfo(ctx context.Context, tx Tx) (TenantInfo, error)
 	BuildingIDs(ctx context.Context, tx Tx) ([]string, error)
 	SetLocale(ctx context.Context, tx Tx, userID, locale string) error
+	// UserBuildingLevels is the stored level per building of one user (a missing building is NONE).
+	UserBuildingLevels(ctx context.Context, tx Tx, userID string) (map[string]access.Level, error)
+	// GrantAllBuildings gives a demo user a level on every building of the tenant.
+	GrantAllBuildings(ctx context.Context, tx Tx, userID string, level access.Level) error
 }

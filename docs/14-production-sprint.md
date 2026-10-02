@@ -85,7 +85,7 @@ Verify: build, lint, `npx playwright test e2e/layout.spec.ts`, agent-browser sho
 `signIn`, `signOut`, `changeMyPin`; users get `app_access`, `status`; `pin_credentials` (slow hash, failed count, `locked_until`, `must_change`); `tenants.guesthouse_code`. Lockout after 5 wrong PINs for 15 minutes plus ACCOUNT_LOCKED alert (write it to `audit_logs` until L-B1 adds alerts, then switch). Rate limit per IP and per guesthouse code. Demo sessions unchanged behind DEMO_MODE.
 Tests (required): SG-701 AC1–AC5, tenant A user cannot sign in to tenant B.
 
-#### [ ] L-A2 Staff, roles and building access (API-1) — migration 0010
+#### [x] L-A2 Staff, roles and building access (API-1) — migration 0010
 `listStaff`, `createStaff`, `updateStaff`, `resetStaffPin`, `lockStaff`, `unlockStaff`, `removeStaff` (owner PIN, 409 SHIFT_OPEN once L-B2 exists), `listStaffPermissions`, `setBuildingPermission`; `staff_profiles` with position and contract; building access table replaces `permissions.Derived`; MANAGER exclusions from docs/15 §2.
 Tests (required): one table test over every operation × role (OWNER, MANAGER, RECEPTIONIST, HOUSEKEEPING) asserting allow or 403; building VIEW vs EDIT on a write.
 

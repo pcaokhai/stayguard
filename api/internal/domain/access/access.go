@@ -47,7 +47,18 @@ func ParseLevel(s string) (Level, error) {
 	return NONE, fmt.Errorf("unknown access level %q", s)
 }
 
-func (l Level) valid() bool { return l >= NONE && l <= EDIT }
+// Valid reports whether l is one of NONE, VIEW and EDIT.
+func (l Level) Valid() bool { return l >= NONE && l <= EDIT }
+
+func (l Level) String() string {
+	switch l {
+	case VIEW:
+		return "VIEW"
+	case EDIT:
+		return "EDIT"
+	}
+	return "NONE"
+}
 
 // EffectiveLevel gives the owner implicit EDIT on every building (docs/04 section 2.3).
 func EffectiveLevel(role Role, stored Level) Level {
@@ -88,10 +99,9 @@ var (
 )
 
 var (
-	anyRole = []Role{RoleOwner, RoleManager, RoleReceptionist, RoleHousekeeping}
-	front   = []Role{RoleOwner, RoleManager, RoleReceptionist}
-	owner   = []Role{RoleOwner}
-	// ownerManager: owner and the optional manager (docs/15 §2).
+	anyRole      = []Role{RoleOwner, RoleManager, RoleReceptionist, RoleHousekeeping}
+	front        = []Role{RoleOwner, RoleManager, RoleReceptionist}
+	owner        = []Role{RoleOwner}
 	ownerManager = []Role{RoleOwner, RoleManager}
 )
 
@@ -135,77 +145,77 @@ var rules = map[string]rule{
 	"setBuildingPermission": {roles: owner, scope: ScopeOwnerOnly},
 	"getShiftReview":        {roles: owner, scope: ScopeOwnerOnly},
 
-	// Contract 1.1.0 operations (A0). Placeholder: owner only, no building check, until the task that builds the operation sets its real rule.
-	"changeMyPin":              {roles: anyRole, scope: ScopeNone},
-	"signOut":                  {roles: anyRole, scope: ScopeNone},
+	// Contract 1.1.0 operations, from x-access: OWNER, OWNER_OR_MANAGER (role only), ANY and ANY_STAFF (own data), then building rules.
 	"listStaff":                {roles: owner, scope: ScopeOwnerOnly},
 	"createStaff":              {roles: owner, scope: ScopeOwnerOnly},
 	"updateStaff":              {roles: owner, scope: ScopeOwnerOnly},
-	"resetStaffPin":            {roles: owner, scope: ScopeOwnerOnly},
-	"lockStaff":                {roles: owner, scope: ScopeOwnerOnly},
-	"unlockStaff":              {roles: owner, scope: ScopeOwnerOnly},
 	"removeStaff":              {roles: owner, scope: ScopeOwnerOnly},
-	"getRoster":                {roles: owner, scope: ScopeOwnerOnly},
-	"putRoster":                {roles: owner, scope: ScopeOwnerOnly},
-	"copyRosterWeek":           {roles: owner, scope: ScopeOwnerOnly},
-	"listLeaveRequests":        {roles: owner, scope: ScopeOwnerOnly},
-	"approveLeave":             {roles: owner, scope: ScopeOwnerOnly},
-	"declineLeave":             {roles: owner, scope: ScopeOwnerOnly},
-	"getMyRoster":              {roles: owner, scope: ScopeOwnerOnly},
-	"listMyLeaveRequests":      {roles: owner, scope: ScopeOwnerOnly},
-	"createLeaveRequest":       {roles: owner, scope: ScopeOwnerOnly},
-	"cancelMyLeave":            {roles: owner, scope: ScopeOwnerOnly},
 	"getPayroll":               {roles: owner, scope: ScopeOwnerOnly},
 	"updatePayrollLine":        {roles: owner, scope: ScopeOwnerOnly},
 	"markPayrollPaid":          {roles: owner, scope: ScopeOwnerOnly},
-	"reportDamage":             {roles: owner, scope: ScopeOwnerOnly},
-	"listTickets":              {roles: owner, scope: ScopeOwnerOnly},
-	"getTicket":                {roles: owner, scope: ScopeOwnerOnly},
-	"updateTicket":             {roles: owner, scope: ScopeOwnerOnly},
 	"getExpenseMonth":          {roles: owner, scope: ScopeOwnerOnly},
 	"createExpense":            {roles: owner, scope: ScopeOwnerOnly},
 	"updateExpense":            {roles: owner, scope: ScopeOwnerOnly},
 	"deleteExpense":            {roles: owner, scope: ScopeOwnerOnly},
 	"getIncomeCostReport":      {roles: owner, scope: ScopeOwnerOnly},
-	"getProperty":              {roles: owner, scope: ScopeOwnerOnly},
 	"updateProperty":           {roles: owner, scope: ScopeOwnerOnly},
 	"listBankAccounts":         {roles: owner, scope: ScopeOwnerOnly},
 	"createBankAccount":        {roles: owner, scope: ScopeOwnerOnly},
 	"makeDefaultBankAccount":   {roles: owner, scope: ScopeOwnerOnly},
 	"removeBankAccount":        {roles: owner, scope: ScopeOwnerOnly},
-	"getSepayStatus":           {roles: owner, scope: ScopeOwnerOnly},
 	"createBuilding":           {roles: owner, scope: ScopeOwnerOnly},
 	"updateBuilding":           {roles: owner, scope: ScopeOwnerOnly},
 	"createFloor":              {roles: owner, scope: ScopeOwnerOnly},
 	"createRooms":              {roles: owner, scope: ScopeOwnerOnly},
-	"updateRoom":               {roles: owner, scope: ScopeOwnerOnly},
-	"listRatePlans":            {roles: owner, scope: ScopeOwnerOnly},
 	"updateRatePlan":           {roles: owner, scope: ScopeOwnerOnly},
-	"previewPrice":             {roles: owner, scope: ScopeOwnerOnly},
-	"createService":            {roles: owner, scope: ScopeOwnerOnly},
-	"updateService":            {roles: owner, scope: ScopeOwnerOnly},
-	"restockService":           {roles: owner, scope: ScopeOwnerOnly},
-	"listStockMovements":       {roles: owner, scope: ScopeOwnerOnly},
 	"removeService":            {roles: owner, scope: ScopeOwnerOnly},
-	"createStocktake":          {roles: owner, scope: ScopeOwnerOnly},
+	"linkTransferToInvoice":    {roles: owner, scope: ScopeOwnerOnly},
+	"listAuditLogs":            {roles: owner, scope: ScopeOwnerOnly},
+	"resetStaffPin":            {roles: ownerManager, scope: ScopeNone},
+	"lockStaff":                {roles: ownerManager, scope: ScopeNone},
+	"unlockStaff":              {roles: ownerManager, scope: ScopeNone},
+	"getRoster":                {roles: ownerManager, scope: ScopeNone},
+	"putRoster":                {roles: ownerManager, scope: ScopeNone},
+	"copyRosterWeek":           {roles: ownerManager, scope: ScopeNone},
+	"listLeaveRequests":        {roles: ownerManager, scope: ScopeNone},
+	"approveLeave":             {roles: ownerManager, scope: ScopeNone},
+	"declineLeave":             {roles: ownerManager, scope: ScopeNone},
+	"listTickets":              {roles: ownerManager, scope: ScopeNone},
+	"getTicket":                {roles: ownerManager, scope: ScopeNone},
+	"updateTicket":             {roles: ownerManager, scope: ScopeNone},
+	"getProperty":              {roles: ownerManager, scope: ScopeNone},
+	"getSepayStatus":           {roles: ownerManager, scope: ScopeNone},
+	"updateRoom":               {roles: ownerManager, scope: ScopeNone},
+	"listRatePlans":            {roles: ownerManager, scope: ScopeNone},
+	"previewPrice":             {roles: ownerManager, scope: ScopeNone},
+	"createService":            {roles: ownerManager, scope: ScopeNone},
+	"updateService":            {roles: ownerManager, scope: ScopeNone},
+	"restockService":           {roles: ownerManager, scope: ScopeNone},
+	"listStockMovements":       {roles: ownerManager, scope: ScopeNone},
+	"getStayTimeline":          {roles: ownerManager, scope: ScopeNone},
+	"listTransactions":         {roles: ownerManager, scope: ScopeNone},
+	"listAlerts":               {roles: ownerManager, scope: ScopeNone},
+	"markAlertRead":            {roles: ownerManager, scope: ScopeNone},
+	"listClosedShifts":         {roles: ownerManager, scope: ScopeNone},
+	"getGuestIdRecord":         {roles: ownerManager, scope: ScopeNone},
+	"revealGuestIdNumber":      {roles: ownerManager, scope: ScopeNone},
+	"getGuestIdPhoto":          {roles: ownerManager, scope: ScopeNone},
+	"deleteGuestIdPhoto":       {roles: ownerManager, scope: ScopeNone},
+	"deleteGuestIdNumber":      {roles: ownerManager, scope: ScopeNone},
+	"getMyRoster":              {roles: anyRole, scope: ScopeNone},
+	"listMyLeaveRequests":      {roles: anyRole, scope: ScopeNone},
+	"createLeaveRequest":       {roles: anyRole, scope: ScopeNone},
+	"cancelMyLeave":            {roles: anyRole, scope: ScopeNone},
+	"signOut":                  {roles: anyRole, scope: ScopeNone},
+	"changeMyPin":              {roles: anyRole, scope: ScopeNone},
+	"reportDamage":             {roles: anyRole, min: EDIT, scope: ScopeBuilding},
 	"editCheckInTime":          {roles: front, min: EDIT, scope: ScopeBuilding},
 	"moveStay":                 {roles: front, min: EDIT, scope: ScopeBuilding},
-	"listStays":                {roles: front, scope: ScopeFilter},
-	"getStayTimeline":          {roles: ownerManager, scope: ScopeOwnerOnly},
+	"setGuestIdNumber":         {roles: front, min: EDIT, scope: ScopeBuilding},
+	"uploadGuestIdPhoto":       {roles: front, min: EDIT, scope: ScopeBuilding},
 	"getReceipt":               {roles: front, min: VIEW, scope: ScopeBuilding},
-	"listTransactions":         {roles: owner, scope: ScopeOwnerOnly},
-	"linkTransferToInvoice":    {roles: owner, scope: ScopeOwnerOnly},
-	"listAlerts":               {roles: owner, scope: ScopeOwnerOnly},
-	"markAlertRead":            {roles: owner, scope: ScopeOwnerOnly},
-	"listAuditLogs":            {roles: owner, scope: ScopeOwnerOnly},
-	"listClosedShifts":         {roles: owner, scope: ScopeOwnerOnly},
-	"setGuestIdNumber":         {roles: owner, scope: ScopeOwnerOnly},
-	"uploadGuestIdPhoto":       {roles: owner, scope: ScopeOwnerOnly},
-	"getGuestIdRecord":         {roles: owner, scope: ScopeOwnerOnly},
-	"revealGuestIdNumber":      {roles: owner, scope: ScopeOwnerOnly},
-	"getGuestIdPhoto":          {roles: owner, scope: ScopeOwnerOnly},
-	"deleteGuestIdPhoto":       {roles: owner, scope: ScopeOwnerOnly},
-	"deleteGuestIdNumber":      {roles: owner, scope: ScopeOwnerOnly},
+	"listStays":                {roles: front, scope: ScopeFilter},
+	"createStocktake":          {roles: front, min: EDIT, scope: ScopeAnyEditable},
 	"signIn":                   {scope: ScopePublic},
 	"receiveBankWebhookLegacy": {scope: ScopePublic},
 }
@@ -230,7 +240,7 @@ func (Authorizer) Check(op string, role Role, level Level) error {
 	if r.scope != ScopeBuilding && r.scope != ScopeAnyEditable {
 		return nil
 	}
-	if !level.valid() || level < r.min {
+	if !level.Valid() || level < r.min {
 		return fmt.Errorf("%w: %s", ErrBuildingForbidden, op)
 	}
 	return nil

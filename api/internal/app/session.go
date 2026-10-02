@@ -148,6 +148,10 @@ func (s *Sessions) userFor(ctx context.Context, tx Tx, role access.Role, locale 
 		return u, err
 	}
 	u, err := s.repo.CreateUser(ctx, tx, s.ids.New(userPrefix), strings.ToLower(string(role)), role, locale)
+	if err == nil && role != access.RoleOwner {
+		// Demo staff act in every building, so the role picker keeps working (the owner has implicit EDIT).
+		err = s.repo.GrantAllBuildings(ctx, tx, u.ID, access.EDIT)
+	}
 	if !errors.Is(err, ErrConflict) {
 		return u, err
 	}
@@ -196,8 +200,12 @@ func (s *Sessions) Authenticate(ctx context.Context, token string) (Caller, erro
 		if !ok || u.Blocked {
 			return ErrUnauthenticated
 		}
+		levels, err := s.repo.UserBuildingLevels(ctx, tx, u.ID)
+		if err != nil {
+			return err
+		}
 		c = Caller{TenantID: ref.TenantID, UserID: u.ID, Role: u.Role, Locale: u.Locale,
-			SessionHash: HashToken(token), PinChangeRequired: u.MustChangePin}
+			SessionHash: HashToken(token), PinChangeRequired: u.MustChangePin, Levels: levels}
 		return nil
 	})
 	return c, err
@@ -229,8 +237,7 @@ func (s *Sessions) Me(ctx context.Context, c Caller) (MeView, error) {
 		}
 		v.User, v.BuildingAccess = u, map[string]access.Level{}
 		for _, id := range ids {
-			// FAST MODE (P5): staff act in every building; SG-501 replaces EDIT with the stored building permission.
-			v.BuildingAccess[id] = access.EffectiveLevel(u.Role, access.EDIT)
+			v.BuildingAccess[id] = access.EffectiveLevel(u.Role, c.Levels[id])
 		}
 		return nil
 	})

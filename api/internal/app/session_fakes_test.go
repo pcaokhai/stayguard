@@ -64,6 +64,7 @@ type fakeRepo struct {
 	locale        string
 	trialNow      time.Time
 	tenantExpires time.Time
+	granted       []string // users given EDIT on every building
 }
 
 func newFakeRepo() *fakeRepo {
@@ -126,5 +127,14 @@ func (r *fakeRepo) BuildingIDs(context.Context, Tx) ([]string, error) {
 func (r *fakeRepo) SetLocale(_ context.Context, _ Tx, _ string, locale string) error {
 	r.calls++
 	r.locale = locale
+	return nil
+}
+
+func (r *fakeRepo) UserBuildingLevels(context.Context, Tx, string) (map[string]access.Level, error) {
+	return nil, nil
+}
+
+func (r *fakeRepo) GrantAllBuildings(_ context.Context, _ Tx, userID string, _ access.Level) error {
+	r.granted = append(r.granted, userID)
 	return nil
 }

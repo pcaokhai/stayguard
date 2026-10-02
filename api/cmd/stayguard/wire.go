@@ -27,6 +27,7 @@ type deps struct {
 	probe        app.ReadinessProbe
 	sessions     *app.Sessions
 	auth         *app.Auth
+	staff        *app.Staff
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -84,13 +85,14 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool:         pool,
 		sessions:     sessions,
 		auth:         auth,
+		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,
 		payments:     payments,
 		stayOps:      stayOps,
 		owner:        app.NewOwner(uow, postgres.OwnerRepo{}, rooms, clock.System{}),
-		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, audit, ids.New(clock.System{}.Now), clock.System{}),
+		housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.Stored{}, audit, ids.New(clock.System{}.Now), clock.System{}),
 		uow:          uow,
 		idem:         idem,
 		audit:        audit,
@@ -119,7 +121,7 @@ func newSessionsWith(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, 
 // newRooms builds the room map read use cases. Derived permissions (SG-102 rule) are temporary until
 // SG-501 stores levels; the quoter prices from each stay's own rate plan snapshot.
 func newRooms(uow app.UnitOfWork, clk app.Clock) *app.Rooms {
-	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.RoleBased{}, pricing.Quoter{}, clk)
+	return app.NewRooms(uow, postgres.RoomRepo{}, permissions.Stored{}, pricing.Quoter{}, clk)
 }
 
 // newStays builds the check-in use cases. The encryptor takes its key from the validated config;
@@ -129,7 +131,7 @@ func newStays(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore, 
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewStays(uow, postgres.StayRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+	return app.NewStays(uow, postgres.StayRepo{}, permissions.Stored{}, enc, idem, audit, ids.New(clk.Now), clk), nil
 }
 
 // newBilling builds the extras and check-out use cases. It takes the same encryptor as check-in because
@@ -139,7 +141,7 @@ func newBilling(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.RoleBased{}, enc, idem, audit,
+	return app.NewBilling(uow, postgres.BillingRepo{}, postgres.ServiceRepo{}, permissions.Stored{}, enc, idem, audit,
 		ids.New(clk.Now), clk), nil
 }
 
@@ -149,7 +151,7 @@ func newPayments(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStor
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	p := app.NewPayments(uow, postgres.PaymentRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk)
+	p := app.NewPayments(uow, postgres.PaymentRepo{}, permissions.Stored{}, enc, idem, audit, ids.New(clk.Now), clk)
 	return p.WithAlerts(postgres.AlertWriter{}), nil
 }
 
@@ -159,7 +161,7 @@ func newStayOps(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 	if err != nil {
 		return stayOps{}, fmt.Errorf("data encryption key: %w", err)
 	}
-	levels := permissions.RoleBased{}
+	levels := permissions.Stored{}
 	return stayOps{
 		StayEdits:   app.NewStayEdits(uow, postgres.StayEditRepo{}, levels, enc, idem, audit, postgres.AlertWriter{}, ids.New(clk.Now), clk),
 		StayHistory: app.NewStayHistory(uow, postgres.StayHistoryRepo{}, levels, clk),
@@ -177,4 +179,14 @@ const (
 func newAuth(sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
 	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.PinHasher{}, audit,
 		ratelimit.New(signInPerIP, signInRateEvery, clk.Now), ratelimit.New(signInPerCode, signInRateEvery, clk.Now))
+}
+
+// noOpenShifts stands in until shifts exist (L-B2), whose repository replaces it so removeStaff can answer SHIFT_OPEN.
+type noOpenShifts struct{}
+
+func (noOpenShifts) HasOpenShift(context.Context, app.Tx, string) (bool, error) { return false, nil }
+
+// newStaff builds the staff use cases; noOpenShifts is replaced when shifts exist.
+func newStaff(uow app.UnitOfWork, auth *app.Auth, idem app.IdempotencyStore, audit app.AuditWriter, clk app.Clock) *app.Staff {
+	return app.NewStaff(uow, postgres.StaffRepo{}, auth, postgres.NewAuthRepo(), crypto.PinGenerator{}, idem, audit, noOpenShifts{}, ids.New(clk.Now), clk)
 }

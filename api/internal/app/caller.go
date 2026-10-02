@@ -15,6 +15,9 @@ type Caller struct {
 	SessionHash string
 	// PinChangeRequired is true until a one-time PIN is replaced.
 	PinChangeRequired bool
+	// Levels are the stored building levels of the user, read on every request so a change applies
+	// at once. The owner's implicit EDIT is added by permissions.Stored, not stored here.
+	Levels map[string]access.Level
 }
 
 type callerKey struct{}

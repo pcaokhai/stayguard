@@ -174,3 +174,33 @@ func ownTx(tx app.Tx, id string) (Tx, error) {
 	}
 	return t, nil
 }
+
+func (IdentityRepo) UserBuildingLevels(ctx context.Context, tx app.Tx, userID string) (map[string]access.Level, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListUserBuildingLevels(ctx, sqlcgen.ListUserBuildingLevelsParams{TenantID: t.tenant, UserID: userID})
+	if err != nil {
+		return nil, wrap("select building levels", err)
+	}
+	out := make(map[string]access.Level, len(rows))
+	for _, r := range rows {
+		l, err := access.ParseLevel(r.Level)
+		if err != nil {
+			return nil, wrap("building level", err)
+		}
+		out[r.BuildingID] = l
+	}
+	return out, nil
+}
+
+func (IdentityRepo) GrantAllBuildings(ctx context.Context, tx app.Tx, userID string, level access.Level) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("grant all buildings", sqlcgen.New(t).GrantAllBuildings(ctx, sqlcgen.GrantAllBuildingsParams{
+		UserID: userID, Level: level.String(), TenantID: t.tenant,
+	}))
+}

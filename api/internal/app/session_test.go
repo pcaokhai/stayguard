@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -192,13 +193,14 @@ func TestMe_SG102_AC3(t *testing.T) {
 	r.rep.usersByID["us1"] = User{ID: "us1", Name: "Ann", Role: access.RoleReceptionist, Locale: "en"}
 	r.rep.info = TenantInfo{ID: "tn1", Name: "Demo", Timezone: "Asia/Ho_Chi_Minh", Currency: "VND"}
 	r.rep.buildings = []string{"b1", "b2"}
-	c := Caller{TenantID: "tn1", UserID: "us1", Role: access.RoleReceptionist, Locale: "en"}
+	c := Caller{TenantID: "tn1", UserID: "us1", Role: access.RoleReceptionist, Locale: "en",
+		Levels: map[string]access.Level{"b1": access.EDIT, "b2": access.VIEW}}
 	me, err := r.s.Me(context.Background(), c)
 	if err != nil || me.User.ID != "us1" || me.Tenant.Currency != "VND" {
 		t.Fatalf("me = %+v %v", me, err)
 	}
-	if me.BuildingAccess["b1"] != access.EDIT || me.BuildingAccess["b2"] != access.EDIT {
-		t.Fatalf("FAST MODE: staff act in every building: %+v", me.BuildingAccess)
+	if me.BuildingAccess["b1"] != access.EDIT || me.BuildingAccess["b2"] != access.VIEW {
+		t.Fatalf("staff get their stored level per building: %+v", me.BuildingAccess)
 	}
 	c.Role = access.RoleOwner
 	r.rep.usersByID["us1"] = User{ID: "us1", Role: access.RoleOwner}
@@ -224,7 +226,7 @@ func TestCallerContext_SG102_AC4(t *testing.T) {
 		t.Fatal("empty context has no caller")
 	}
 	want := Caller{TenantID: "tn1", UserID: "us1", Role: access.RoleOwner, Locale: "vi"}
-	if got, ok := CallerFrom(WithCaller(context.Background(), want)); !ok || got != want {
+	if got, ok := CallerFrom(WithCaller(context.Background(), want)); !ok || !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v %v", got, ok)
 	}
 }
@@ -283,5 +285,14 @@ func TestCreateDemoConflictTwice_SG102_AC1(t *testing.T) {
 	r.rep.conflictOnce, r.rep.hideWinner = true, true
 	if _, err := r.s.CreateDemo(context.Background(), access.RoleOwner, "vi", ""); !errors.Is(err, ErrConflict) {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestCreateDemo_StaffRolesGetEveryBuilding_SG501(t *testing.T) {
+	for role, want := range map[access.Role]int{access.RoleOwner: 0, access.RoleReceptionist: 1, access.RoleHousekeeping: 1} {
+		r := newRig(true)
+		if _, err := r.s.CreateDemo(context.Background(), role, "vi", ""); err != nil || len(r.rep.granted) != want {
+			t.Errorf("%s: granted=%v err=%v", role, r.rep.granted, err)
+		}
 	}
 }

@@ -44,6 +44,14 @@ type AppBuilding struct {
 	Name       string
 }
 
+type AppBuildingPermission struct {
+	TenantID   string
+	UserID     string
+	BuildingID string
+	Level      string
+	UpdatedAt  pgtype.Timestamptz
+}
+
 type AppFloor struct {
 	ID         string
 	TenantID   string
@@ -134,6 +142,20 @@ type AppSession struct {
 	UserID    string
 	ExpiresAt pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
+}
+
+type AppStaffProfile struct {
+	TenantID        string
+	UserID          string
+	Phone           pgtype.Text
+	Position        string
+	PayType         string
+	Rate            int64
+	FixedAllowance  int64
+	StandardShifts  int32
+	StartDate       pgtype.Date
+	AnnualLeaveDays int32
+	CreatedAt       pgtype.Timestamptz
 }
 
 type AppStay struct {
