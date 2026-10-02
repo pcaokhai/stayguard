@@ -24,6 +24,8 @@ const ROUTES = [
   "/owner/alerts",
   "/owner/activity",
   "/owner/transactions",
+  "/owner/staff",
+  "/owner/access",
   "/owner/stays",
   "/owner/stay?id=s2",
   "/owner/shifts",

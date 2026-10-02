@@ -136,7 +136,7 @@ Boards: TongQuan (phone), TongQuanTab, TongQuanPC, CanhBao, CanhBaoPC, NhatKy, N
 #### [x] L-W7 Money and shifts for the owner (WEB-2)
 Boards: GiaoDichPC, LichSuGiaoDich, GanPhieu, GanPhieuPC, LichSuLuotOPC, ChiTietLuotO, ChiTietLuotOPC (ID block hidden until F-W1), DanhSachCa, DoiSoatCa, DoiSoatCaPC. Tables with TanStack Table, sticky first column, cards on phone.
 
-#### [ ] L-W8 People (WEB-2)
+#### [x] L-W8 People (WEB-2)
 Boards: NhanVien, NhanVienPC, ThemNhanVien, ThemNhanVienPC, PinMotLan, PinMotLanPC, XoaNhanVien, XoaNhanVienPC, PhanQuyen, PhanQuyenPC. One-time PIN shown once with copy button and a 24 h countdown.
 
 #### [ ] L-W9 Settings (WEB-2)

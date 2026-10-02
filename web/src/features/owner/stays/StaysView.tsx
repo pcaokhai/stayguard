@@ -120,7 +120,12 @@ export function StaysView() {
   return (
     <AppFrame tabs={false}>
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 pb-10 lg:px-3">
-        <TopBar title={t("ownerStays.title")} subtitle={t("ownerStays.sub")} back="/owner" right={csv} />
+        <TopBar
+          title={t("ownerStays.title")}
+          subtitle={t("ownerStays.sub")}
+          back="/owner"
+          right={csv}
+        />
         <div className="flex flex-col gap-3 px-5">
           <div className="flex items-center gap-2">
             <Button

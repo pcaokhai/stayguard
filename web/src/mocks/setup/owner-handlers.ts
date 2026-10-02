@@ -257,7 +257,207 @@ const review = (id: string) => {
   };
 };
 
+// Staff, one-time PINs and building access (boards NhanVien*, ThemNhanVien*, PinMotLan*, PhanQuyen*).
+type MockStaff = {
+  id: string;
+  name: string;
+  phone: string | null;
+  position: string;
+  appAccess: string;
+  username: string | null;
+  status: "ACTIVE" | "LOCKED" | "REMOVED";
+  lockedUntil: string | null;
+  lastActivityAt: string | null;
+  contract: Record<string, unknown>;
+  buildingAccess: { buildingId: string; level: string }[];
+};
+const contract = (rate: number) => ({
+  payType: "MONTHLY",
+  rate,
+  fixedAllowance: 600000,
+  standardShifts: 26,
+  startDate: "2026-01-01",
+  annualLeaveDays: 12,
+});
+const roster: MockStaff[] = [
+  {
+    id: "u-fd",
+    name: "Lễ tân demo",
+    phone: null,
+    position: "FRONT_DESK",
+    appAccess: "RECEPTIONIST",
+    username: "frontdesk",
+    status: "ACTIVE",
+    lockedUntil: null,
+    lastActivityAt: at(0, 7, 58),
+    contract: contract(5500000),
+    buildingAccess: [
+      { buildingId: "A", level: "EDIT" },
+      { buildingId: "B", level: "VIEW" },
+    ],
+  },
+  {
+    id: "u-hoa",
+    name: "Chị Hoa",
+    phone: null,
+    position: "FRONT_DESK",
+    appAccess: "RECEPTIONIST",
+    username: "hoa",
+    status: "ACTIVE",
+    lockedUntil: null,
+    lastActivityAt: at(0, 13, 2),
+    contract: contract(5500000),
+    buildingAccess: [
+      { buildingId: "A", level: "NONE" },
+      { buildingId: "B", level: "EDIT" },
+    ],
+  },
+  {
+    id: "u-minh",
+    name: "Anh Minh",
+    phone: null,
+    position: "FRONT_DESK",
+    appAccess: "RECEPTIONIST",
+    username: "minh",
+    status: "LOCKED",
+    lockedUntil: at(-1, 11, 35),
+    lastActivityAt: at(1, 11, 20),
+    contract: contract(5500000),
+    buildingAccess: [
+      { buildingId: "A", level: "EDIT" },
+      { buildingId: "B", level: "EDIT" },
+    ],
+  },
+  {
+    id: "u-lan",
+    name: "Chị Lan",
+    phone: null,
+    position: "HOUSEKEEPING",
+    appAccess: "HOUSEKEEPING",
+    username: "lan",
+    status: "ACTIVE",
+    lockedUntil: null,
+    lastActivityAt: at(0, 8, 30),
+    contract: contract(5000000),
+    buildingAccess: [
+      { buildingId: "A", level: "EDIT" },
+      { buildingId: "B", level: "EDIT" },
+    ],
+  },
+  {
+    id: "u-mai",
+    name: "Chị Mai",
+    phone: null,
+    position: "MANAGER",
+    appAccess: "MANAGER",
+    username: "mai",
+    status: "ACTIVE",
+    lockedUntil: null,
+    lastActivityAt: at(0, 9, 10),
+    contract: contract(9000000),
+    buildingAccess: [
+      { buildingId: "A", level: "EDIT" },
+      { buildingId: "B", level: "EDIT" },
+    ],
+  },
+  {
+    id: "u-tung",
+    name: "Anh Tùng",
+    phone: "0903456456",
+    position: "SECURITY",
+    appAccess: "NONE",
+    username: null,
+    status: "ACTIVE",
+    lockedUntil: null,
+    lastActivityAt: null,
+    contract: contract(5500000),
+    buildingAccess: [],
+  },
+];
+const pinExpiry = () => new Date(Date.now() + 24 * 3600_000).toISOString();
+const ROLE: Record<string, string> = {
+  RECEPTIONIST: "RECEPTIONIST",
+  HOUSEKEEPING: "HOUSEKEEPING",
+  MANAGER: "MANAGER",
+};
+
 export const ownerHandlers = [
+  http.get("*/v1/owner/staff", () => json({ items: roster.filter((s) => s.status !== "REMOVED") })),
+  http.post("*/v1/owner/staff", async ({ request }) => {
+    const b = (await request.json()) as Record<string, unknown> & {
+      name: string;
+      username?: string | null;
+      appAccess: string;
+    };
+    if (roster.some((s) => s.username && s.username === b.username))
+      return json({ code: "CONFLICT" }, 409);
+    const staff = {
+      id: `u-${roster.length + 1}`,
+      phone: null,
+      lockedUntil: null,
+      lastActivityAt: null,
+      status: "ACTIVE",
+      buildingAccess: [],
+      username: null,
+      ...b,
+    } as unknown as MockStaff;
+    roster.push(staff);
+    return json(
+      {
+        staff,
+        oneTimePin: b.appAccess === "NONE" ? null : { pin: "482917", expiresAt: pinExpiry() },
+      },
+      201,
+    );
+  }),
+  http.patch("*/v1/owner/staff/:id", async ({ params, request }) => {
+    const s = roster.find((x) => x.id === params.id);
+    if (!s) return json({}, 404);
+    Object.assign(s, await request.json());
+    return json(s);
+  }),
+  http.post("*/v1/owner/staff/:id/pin-reset", () =>
+    json({ pin: "739104", expiresAt: pinExpiry() }),
+  ),
+  http.post("*/v1/owner/staff/:id/lock", ({ params }) => {
+    const s = roster.find((x) => x.id === params.id);
+    if (s) Object.assign(s, { status: "LOCKED", lockedUntil: pinExpiry() });
+    return json(s);
+  }),
+  http.post("*/v1/owner/staff/:id/unlock", ({ params }) => {
+    const s = roster.find((x) => x.id === params.id);
+    if (s) Object.assign(s, { status: "ACTIVE", lockedUntil: null });
+    return json(s);
+  }),
+  http.post("*/v1/owner/staff/:id/remove", async ({ params, request }) => {
+    const b = (await request.json()) as { ownerPin: string };
+    if (b.ownerPin !== "482915") return json({ code: "INVALID_PIN" }, 422);
+    const s = roster.find((x) => x.id === params.id);
+    if (s) s.status = "REMOVED";
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.get("*/v1/owner/staff-permissions", () =>
+    json({
+      items: roster
+        .filter((s) => s.status !== "REMOVED" && s.appAccess !== "NONE")
+        .map((s) => ({
+          userId: s.id,
+          name: s.name,
+          role: ROLE[s.appAccess],
+          access: s.buildingAccess,
+        })),
+    }),
+  ),
+  http.put("*/v1/owner/staff/:id/building-permissions/:building", async ({ params, request }) => {
+    const s = roster.find((x) => x.id === params.id);
+    const { level } = (await request.json()) as { level: string };
+    if (s) {
+      const hit = s.buildingAccess.find((a) => a.buildingId === params.building);
+      if (hit) hit.level = level;
+      else s.buildingAccess.push({ buildingId: String(params.building), level });
+    }
+    return json({ buildingId: params.building, level });
+  }),
   http.get("*/v1/owner/transactions", ({ request }) => {
     const q = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
     return json({

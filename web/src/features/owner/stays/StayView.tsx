@@ -97,7 +97,11 @@ export function StayView() {
       <h2 className={heading}>{t("ownerStays.bill")}</h2>
       <dl className="text-[15px]">
         {q.lines.map((l) => (
-          <Row key={l.code} k={t(`ownerStays.line.${l.code}` as MessageKey)} v={formatVnd(l.amount)} />
+          <Row
+            key={l.code}
+            k={t(`ownerStays.line.${l.code}` as MessageKey)}
+            v={formatVnd(l.amount)}
+          />
         ))}
         {s.extras.map((x) => (
           <Row
@@ -118,7 +122,10 @@ export function StayView() {
     <AppFrame tabs={false}>
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 pb-10 lg:px-3">
         <TopBar
-          title={tf("ownerStays.detailTitle", { room: s.roomCode, date: formatDayMonth(s.checkInAt) })}
+          title={tf("ownerStays.detailTitle", {
+            room: s.roomCode,
+            date: formatDayMonth(s.checkInAt),
+          })}
           subtitle={
             edits
               ? tf("ownerStays.detailSub", { rental, n: edits })
