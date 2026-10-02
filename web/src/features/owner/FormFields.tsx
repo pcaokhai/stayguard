@@ -14,8 +14,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { t, type MessageKey } from "@/lib/t";
+import { cn } from "@/lib/utils";
 
-export const inputClass = "h-12 rounded-[10px] bg-card text-[15px]";
+export const inputClass = "h-12 min-w-0 rounded-[10px] bg-card text-[15px]";
 
 // Right sheet; full width on phones (the designs' phone pages), 520 px from md.
 export function FormSheet({
@@ -73,7 +74,7 @@ export function TextField<T extends FieldValues>({
       control={control}
       name={name}
       render={({ field, fieldState }) => (
-        <FormItem className={className}>
+        <FormItem className={cn("min-w-0 grid-cols-[minmax(0,1fr)]", className)}>
           <FormLabel className="text-[13px] font-bold">{label}</FormLabel>
           <div className="relative">
             <FormControl>

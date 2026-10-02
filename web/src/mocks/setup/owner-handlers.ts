@@ -505,7 +505,347 @@ const previewTotal = (b: {
   return Math.min(p.hourly.firstHour + extra * p.hourly.extraHour, p.daily.price);
 };
 
+// Maintenance, expenses, payroll and the income report (boards BaoTri*, ChiPhi*, BangLuongPC, BaoCao*).
+const tickets = [
+  {
+    id: "tk1",
+    code: "BT-031",
+    roomId: "A205",
+    roomCode: "A205",
+    category: "AIR_CONDITIONER",
+    description: "Điều hòa không lạnh: bật 30 phút vẫn không lạnh, có tiếng kêu",
+    status: "IN_REPAIR",
+    roomLocked: true,
+    reportedBy: "Chị Lan",
+    reportedAt: at(3, 10, 40),
+    expectedDoneOn: "2026-10-02",
+    partsCost: 1200000,
+    labourCost: 600000,
+    totalCost: 1800000,
+    repairer: "Thợ điện lạnh",
+    completedAt: null,
+  },
+  {
+    id: "tk2",
+    code: "BT-032",
+    roomId: "B104",
+    roomCode: "B104",
+    category: "PLUMBING",
+    description: "Vòi sen rò nước",
+    status: "NEW",
+    roomLocked: false,
+    reportedBy: "Chị Lan",
+    reportedAt: at(2, 9, 0),
+    expectedDoneOn: null,
+    partsCost: null,
+    labourCost: null,
+    totalCost: null,
+    repairer: null,
+    completedAt: null,
+  },
+  {
+    id: "tk3",
+    code: "BT-033",
+    roomId: "A302",
+    roomCode: "A302",
+    category: "MISSING_ITEMS",
+    description: "Thiếu 1 khăn tắm",
+    status: "NEW",
+    roomLocked: false,
+    reportedBy: "Lễ tân demo",
+    reportedAt: at(2, 14, 0),
+    expectedDoneOn: null,
+    partsCost: null,
+    labourCost: null,
+    totalCost: null,
+    repairer: null,
+    completedAt: null,
+  },
+  {
+    id: "tk4",
+    code: "BT-028",
+    roomId: "C201",
+    roomCode: "C201",
+    category: "POWER_LIGHTS",
+    description: "Bóng đèn hỏng",
+    status: "DONE",
+    roomLocked: false,
+    reportedBy: "Anh Minh",
+    reportedAt: at(5, 8, 0),
+    expectedDoneOn: "2026-09-27",
+    partsCost: 50000,
+    labourCost: 0,
+    totalCost: 50000,
+    repairer: "Bác Tư",
+    completedAt: at(0, 8, 0),
+  },
+  {
+    id: "tk5",
+    code: "BT-025",
+    roomId: "A104",
+    roomCode: "A104",
+    category: "DOOR_LOCK",
+    description: "Khóa cửa kẹt",
+    status: "DONE",
+    roomLocked: false,
+    reportedBy: "Chị Hoa",
+    reportedAt: at(7, 9, 0),
+    expectedDoneOn: "2026-09-26",
+    partsCost: 300000,
+    labourCost: 200000,
+    totalCost: 500000,
+    repairer: "Thợ khóa",
+    completedAt: at(0, 9, 0),
+  },
+];
+const EXP_CATS: [string, number, string][] = [
+  ["STAFF_PAY", 44420000, "PAYROLL"],
+  ["RENT", 15000000, "RECURRING"],
+  ["ELECTRICITY", 6800000, "MANUAL"],
+  ["LAUNDRY", 3400000, "MANUAL"],
+  ["MAINTENANCE", 2350000, "MAINTENANCE"],
+  ["SUPPLIES", 2100000, "MANUAL"],
+  ["COST_OF_GOODS", 1900000, "STOCK"],
+  ["TAX_FEES", 1500000, "RECURRING"],
+  ["WATER", 1200000, "MANUAL"],
+  ["INTERNET_TV", 600000, "RECURRING"],
+  ["PAYMENT_FEES", 200000, "RECURRING"],
+  ["OTHER", 300000, "MANUAL"],
+];
+const expenseItems = (month: string) =>
+  EXP_CATS.map(([category, amount, source], i) => ({
+    id: `ex${i}`,
+    category,
+    amount,
+    month,
+    paidOn: null,
+    note: source === "MANUAL" ? "Hóa đơn tháng" : null,
+    recurring: source === "RECURRING",
+    source,
+  }));
+const payrollLines = [
+  {
+    userId: "u-fd",
+    name: "Lễ tân demo",
+    position: "FRONT_DESK",
+    payType: "MONTHLY",
+    rate: 6000000,
+    shiftsWorked: 26,
+    standardShifts: 26,
+    leaveDays: 0,
+    earnedPay: 6000000,
+    allowance: 500000,
+    bonus: 300000,
+    deduction: 0,
+    net: 6800000,
+    note: null,
+    status: "UNPAID",
+  },
+  {
+    userId: "u-hoa",
+    name: "Chị Hoa",
+    position: "FRONT_DESK",
+    payType: "MONTHLY",
+    rate: 6000000,
+    shiftsWorked: 25,
+    standardShifts: 26,
+    leaveDays: 1,
+    earnedPay: 6000000,
+    allowance: 500000,
+    bonus: 0,
+    deduction: 0,
+    net: 6500000,
+    note: null,
+    status: "UNPAID",
+  },
+  {
+    userId: "u-minh",
+    name: "Anh Minh",
+    position: "FRONT_DESK",
+    payType: "PER_SHIFT",
+    rate: 260000,
+    shiftsWorked: 24,
+    leaveDays: 0,
+    earnedPay: 6240000,
+    allowance: 300000,
+    bonus: 0,
+    deduction: 0,
+    net: 6540000,
+    note: null,
+    status: "UNPAID",
+  },
+  {
+    userId: "u-lan",
+    name: "Chị Lan",
+    position: "HOUSEKEEPING",
+    payType: "MONTHLY",
+    rate: 5000000,
+    shiftsWorked: 26,
+    standardShifts: 26,
+    leaveDays: 0,
+    earnedPay: 5000000,
+    allowance: 400000,
+    bonus: 200000,
+    deduction: 0,
+    net: 5600000,
+    note: null,
+    status: "UNPAID",
+  },
+  {
+    userId: "u-mai",
+    name: "Chị Mai",
+    position: "MANAGER",
+    payType: "MONTHLY",
+    rate: 9000000,
+    shiftsWorked: 22,
+    standardShifts: 22,
+    leaveDays: 0,
+    earnedPay: 9000000,
+    allowance: 1000000,
+    bonus: 0,
+    deduction: 0,
+    net: 10000000,
+    note: null,
+    status: "UNPAID",
+  },
+  {
+    userId: "u-tung",
+    name: "Anh Tùng",
+    position: "SECURITY",
+    payType: "MONTHLY",
+    rate: 5500000,
+    shiftsWorked: 26,
+    standardShifts: 26,
+    leaveDays: 0,
+    earnedPay: 5500000,
+    allowance: 600000,
+    bonus: 0,
+    deduction: 0,
+    net: 6100000,
+    note: null,
+    status: "UNPAID",
+  },
+];
+const reportMonths = (from: string, to: string) => {
+  const out: { month: string; revenue: number; expenses: number }[] = [];
+  const base = [
+    [120900000, 76600000],
+    [122400000, 74300000],
+    [128600000, 79770000],
+  ];
+  let [y, m] = from.split("-").map(Number);
+  let i = 0;
+  while (`${y}-${String(m).padStart(2, "0")}` <= to && out.length < 24) {
+    const [revenue, expenses] = base[i % 3];
+    out.push({ month: `${y}-${String(m).padStart(2, "0")}`, revenue, expenses });
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    i += 1;
+  }
+  return out;
+};
+
 export const ownerHandlers = [
+  http.get("*/v1/owner/maintenance-tickets", () => json({ items: tickets })),
+  http.get("*/v1/owner/maintenance-tickets/:id", ({ params }) =>
+    json(tickets.find((x) => x.id === params.id)),
+  ),
+  http.patch("*/v1/owner/maintenance-tickets/:id", async ({ params, request }) => {
+    const tk = tickets.find((x) => x.id === params.id);
+    if (!tk) return json({}, 404);
+    const b = (await request.json()) as Record<string, unknown> & {
+      partsCost?: number | null;
+      labourCost?: number | null;
+    };
+    Object.assign(tk, b);
+    tk.totalCost =
+      b.partsCost != null || b.labourCost != null
+        ? (b.partsCost ?? 0) + (b.labourCost ?? 0)
+        : tk.totalCost;
+    if (b.status === "DONE") tk.completedAt = new Date().toISOString();
+    return json(tk);
+  }),
+  http.get("*/v1/owner/expenses", ({ request }) => {
+    const month = new URL(request.url).searchParams.get("month") ?? "2026-09";
+    return json({
+      month,
+      categories: EXP_CATS.map(([category, amount, source]) => ({ category, amount, source })),
+      items: expenseItems(month),
+      total: 79770000,
+      revenue: 128600000,
+    });
+  }),
+  http.post("*/v1/owner/expenses", async ({ request }) =>
+    json({ id: "ex-new", source: "MANUAL", ...((await request.json()) as object) }, 201),
+  ),
+  http.patch("*/v1/owner/expenses/:id", async ({ params, request }) =>
+    json({ id: params.id, source: "MANUAL", ...((await request.json()) as object) }),
+  ),
+  http.delete("*/v1/owner/expenses/:id", () => new HttpResponse(null, { status: 204 })),
+  http.get("*/v1/owner/payroll/:month", ({ params }) =>
+    json({
+      month: params.month,
+      lines: payrollLines,
+      totalNet: payrollLines.reduce((n, l) => n + l.net, 0),
+    }),
+  ),
+  http.patch("*/v1/owner/payroll/:month/lines/:userId", async ({ params, request }) => {
+    const l = payrollLines.find((x) => x.userId === params.userId);
+    if (!l) return json({}, 404);
+    const b = (await request.json()) as { bonus?: number; deduction?: number };
+    Object.assign(l, b);
+    l.net = l.earnedPay + l.allowance + l.bonus - l.deduction;
+    return json(l);
+  }),
+  http.post("*/v1/owner/payroll/:month/mark-paid", ({ params }) => {
+    payrollLines.forEach((l) => (l.status = "PAID"));
+    return json({
+      month: params.month,
+      lines: payrollLines,
+      totalNet: payrollLines.reduce((n, l) => n + l.net, 0),
+    });
+  }),
+  http.get("*/v1/owner/reports/income-costs", ({ request }) => {
+    const p = new URL(request.url).searchParams;
+    const months = reportMonths(p.get("from") ?? "2026-07", p.get("to") ?? "2026-09");
+    const revenue = months.reduce((n, m) => n + m.revenue, 0);
+    const expenses = months.reduce((n, m) => n + m.expenses, 0);
+    const k = revenue / 371900000;
+    const share = (rows: [string, number][]) =>
+      rows.map(([key, amount]) => ({ key, amount: Math.round(amount * k) }));
+    return json({
+      from: p.get("from"),
+      to: p.get("to"),
+      revenue,
+      expenses,
+      profit: revenue - expenses,
+      marginPct: revenue ? ((revenue - expenses) / revenue) * 100 : 0,
+      occupancyPct: 68,
+      months,
+      expensesByCategory: EXP_CATS.map(([key, amount]) => ({
+        key,
+        amount: Math.round(amount * (expenses / 79770000)),
+      })),
+      revenueByRentalType: share([
+        ["HOURLY", 167800000],
+        ["OVERNIGHT", 119300000],
+        ["DAILY", 84800000],
+      ]),
+      revenueByBuilding: share([
+        ["A", 156200000],
+        ["B", 111600000],
+        ["C", 66900000],
+        ["D", 37200000],
+      ]),
+      revenueByMethod: share([
+        ["TRANSFER", 256600000],
+        ["CASH", 115300000],
+      ]),
+    });
+  }),
   http.get("*/v1/owner/services/:code/movements", ({ request }) => {
     const kind = new URL(request.url).searchParams.get("kind");
     const all = [

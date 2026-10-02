@@ -174,7 +174,7 @@ Boards: LichCuaToi, XinNghi, NghiCuaToi, HuyNghi, LichNghiLeTanPC.
 #### [x] F-W3 Stock pages (WEB-2)
 Boards: ChiTietMatHang, ChiTietMatHangPC, NhapThemHang, NhapThemHangPC, XoaMatHangPC, KiemKho, KiemKhoPC.
 
-#### [ ] F-W4 Maintenance and finance pages (WEB-2)
+#### [x] F-W4 Maintenance and finance pages (WEB-2)
 Boards: BaoTri, BaoTriPC, BaoTriChiTiet, BaoTriChiTietPC, ChiPhi, ChiPhiPC, ThemChiPhi, ThemChiPhiPC, BangLuongPC, BaoCao, BaoCaoPC. Charts with shadcn Chart (Recharts), bars grow on load.
 
 #### [ ] F-W5 Roster for the owner, final language sweep (WEB-2)
