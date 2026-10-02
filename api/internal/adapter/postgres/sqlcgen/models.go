@@ -447,3 +447,9 @@ type AppUser struct {
 	Status    string
 	Username  pgtype.Text
 }
+
+type KeyFingerprint struct {
+	ID          bool
+	Fingerprint string
+	CreatedAt   pgtype.Timestamptz
+}

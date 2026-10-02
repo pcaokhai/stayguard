@@ -12,3 +12,7 @@ Normative interfaces. SHIP MODE: change `openapi.yaml` on `main` with `make gen`
 | `fixtures/demo-tenant-seed.json` | Sample tenant for trials; test data only |
 
 Rule: a new pricing rule means a new vector first.
+
+## Accepted breaking changes
+
+`oasdiff-ignore.txt` lists breaking changes the owner accepted (one reason line above each entry); `make contracts` ignores exactly those and nothing else.

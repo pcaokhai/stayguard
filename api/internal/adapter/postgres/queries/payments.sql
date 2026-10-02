@@ -98,3 +98,19 @@ WHERE tenant_id = @tenant_id AND invoice_id = @invoice_id AND result = 'PARTIAL'
 -- A partial transfer: the pending payment records how much the bank has sent so far and stays PENDING.
 UPDATE app.payments SET received_amount = @received_amount
 WHERE tenant_id = @tenant_id AND id = @payment_id AND method = 'TRANSFER' AND status = 'PENDING';
+
+-- name: ListStalePartials :many
+-- Open invoices that received bank money (PARTIAL events) whose first such event is older than @before and that have no
+-- PAYMENT_PARTIAL alert yet (the bill code is unique per tenant).
+SELECT iv.id AS invoice_id, iv.bill_code, iv.stay_id, un.code AS room_code,
+       coalesce((iv.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due,
+       sum(pe.amount)::bigint AS received, min(pe.received_at)::timestamptz AS first_at
+FROM app.invoices iv
+JOIN app.payment_events pe ON pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN'
+  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.kind = 'PAYMENT_PARTIAL' AND a.details->>'billCode' = iv.bill_code)
+GROUP BY iv.id, iv.bill_code, iv.stay_id, un.code, iv.quote
+HAVING min(pe.received_at) <= @before::timestamptz
+ORDER BY min(pe.received_at), iv.id;

@@ -263,3 +263,20 @@ func (PaymentRepo) SetTransferReceived(ctx context.Context, tx app.Tx, paymentID
 	}
 	return nil
 }
+
+func (PaymentRepo) StalePartials(ctx context.Context, tx app.Tx, before time.Time) ([]app.StalePartial, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListStalePartials(ctx, sqlcgen.ListStalePartialsParams{TenantID: t.tenant, Before: ts(before)})
+	if err != nil {
+		return nil, wrap("list stale partials", err)
+	}
+	out := make([]app.StalePartial, len(rows))
+	for i, r := range rows {
+		out[i] = app.StalePartial{InvoiceID: r.InvoiceID, BillCode: r.BillCode, StayID: r.StayID, RoomCode: r.RoomCode,
+			Received: r.Received, Remaining: max(r.BalanceDue-r.Received, 0), FirstAt: r.FirstAt.Time.UTC()}
+	}
+	return out, nil
+}

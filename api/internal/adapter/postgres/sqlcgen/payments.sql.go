@@ -262,6 +262,66 @@ func (q *Queries) ListPendingTransfers(ctx context.Context, tenantID string) ([]
 	return items, nil
 }
 
+const listStalePartials = `-- name: ListStalePartials :many
+SELECT iv.id AS invoice_id, iv.bill_code, iv.stay_id, un.code AS room_code,
+       coalesce((iv.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due,
+       sum(pe.amount)::bigint AS received, min(pe.received_at)::timestamptz AS first_at
+FROM app.invoices iv
+JOIN app.payment_events pe ON pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = $1 AND iv.status = 'OPEN'
+  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.kind = 'PAYMENT_PARTIAL' AND a.details->>'billCode' = iv.bill_code)
+GROUP BY iv.id, iv.bill_code, iv.stay_id, un.code, iv.quote
+HAVING min(pe.received_at) <= $2::timestamptz
+ORDER BY min(pe.received_at), iv.id
+`
+
+type ListStalePartialsParams struct {
+	TenantID string
+	Before   pgtype.Timestamptz
+}
+
+type ListStalePartialsRow struct {
+	InvoiceID  string
+	BillCode   string
+	StayID     string
+	RoomCode   string
+	BalanceDue int64
+	Received   int64
+	FirstAt    pgtype.Timestamptz
+}
+
+// Open invoices that received bank money (PARTIAL events) whose first such event is older than @before and that have no
+// PAYMENT_PARTIAL alert yet (the bill code is unique per tenant).
+func (q *Queries) ListStalePartials(ctx context.Context, arg ListStalePartialsParams) ([]ListStalePartialsRow, error) {
+	rows, err := q.db.Query(ctx, listStalePartials, arg.TenantID, arg.Before)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStalePartialsRow
+	for rows.Next() {
+		var i ListStalePartialsRow
+		if err := rows.Scan(
+			&i.InvoiceID,
+			&i.BillCode,
+			&i.StayID,
+			&i.RoomCode,
+			&i.BalanceDue,
+			&i.Received,
+			&i.FirstAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockInvoiceForPayment = `-- name: LockInvoiceForPayment :one
 
 SELECT i.id, i.status, i.bill_code, i.stay_id, i.quote, u.building_id

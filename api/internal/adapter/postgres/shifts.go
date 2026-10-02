@@ -225,3 +225,21 @@ func (ShiftRepo) Scheduled(ctx context.Context, tx app.Tx, userID string, day ti
 		Day: pgtype.Date{Time: day, Valid: true}})
 	return codes, wrap("list scheduled shifts", err)
 }
+
+func (ShiftRepo) UnpaidInvoices(ctx context.Context, tx app.Tx, from, to time.Time) ([]app.InvoiceCandidate, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListShiftUnpaidInvoices(ctx, sqlcgen.ListShiftUnpaidInvoicesParams{TenantID: t.tenant, FromAt: ts(from), ToAt: ts(to)})
+	if err != nil {
+		return nil, wrap("list shift unpaid invoices", err)
+	}
+	out := make([]app.InvoiceCandidate, len(rows))
+	for i, r := range rows {
+		paid := r.Deposit + r.Reported
+		out[i] = app.InvoiceCandidate{InvoiceID: r.ID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
+			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0)}
+	}
+	return out, nil
+}

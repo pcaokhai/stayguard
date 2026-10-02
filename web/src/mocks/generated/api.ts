@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.1.0
+ * OpenAPI spec version: 1.2.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -150,6 +150,7 @@ export const AlertKind = {
   LEAVE_REQUESTED: 'LEAVE_REQUESTED',
   OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
+  PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
   SEPAY_UPDATED: 'SEPAY_UPDATED',
   STAY_TIME_EDITED: 'STAY_TIME_EDITED',
   STOCKTAKE_DIFFERENCE: 'STOCKTAKE_DIFFERENCE',
@@ -525,6 +526,7 @@ export const AttentionItemKind = {
   LONG_TO_CLEAN: 'LONG_TO_CLEAN',
   OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
+  PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
   UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
   CASH_SHORT: 'CASH_SHORT',
   LEAVE_PENDING: 'LEAVE_PENDING',
@@ -569,6 +571,17 @@ export const ShiftStatus = {
   CLOSED: 'CLOSED',
 } as const;
 
+export interface InvoiceCandidate {
+  invoiceId: string;
+  billCode: string;
+  roomCode: string;
+  guestName: string;
+  checkedOutAt: string;
+  total: Vnd;
+  paid: Vnd;
+  balance: Vnd;
+}
+
 export interface Shift {
   id: string;
   userId: string;
@@ -583,6 +596,8 @@ export interface Shift {
   expectedCash: Vnd;
   transfersReceived: Vnd;
   buildingIds: string[];
+  /** The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason. */
+  unpaidInvoices: InvoiceCandidate[];
 }
 
 export type CashCountDenomination = typeof CashCountDenomination[keyof typeof CashCountDenomination];
@@ -616,7 +631,7 @@ export interface CashPayoutRequest {
 export interface CloseShiftRequest {
   counts: CashCount[];
   /**
-     * Required when counted cash differs from expected cash
+     * Required when counted cash differs from expected cash, or when the shift has invoices that are not fully paid
      * @maxLength 500
      * @nullable
      */
@@ -1477,17 +1492,6 @@ export interface EditCheckInRequest {
 export interface MoveStayRequest {
   toRoomId: string;
   rentalType: RentalType;
-}
-
-export interface InvoiceCandidate {
-  invoiceId: string;
-  billCode: string;
-  roomCode: string;
-  guestName: string;
-  checkedOutAt: string;
-  total: Vnd;
-  paid: Vnd;
-  balance: Vnd;
 }
 
 export type StayListItemState = typeof StayListItemState[keyof typeof StayListItemState];
@@ -3491,7 +3495,7 @@ export const getCloseShiftUrl = () => {
 }
 
 /**
- * A reason is required when counted cash differs from expected cash. Figures lock on close.
+ * A reason is required when counted cash differs from expected cash, or when the shift still lists invoices that are not fully paid (Shift.unpaidInvoices). Figures lock on close.
  * @summary Close the caller's shift with a counted cash total
  */
 export const closeShift = async (closeShiftRequest: CloseShiftRequest, options?: RequestInit): Promise<closeShiftResponse> => {

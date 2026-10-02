@@ -425,7 +425,7 @@ export interface paths {
         put?: never;
         /**
          * Close the caller's shift with a counted cash total
-         * @description A reason is required when counted cash differs from expected cash. Figures lock on close.
+         * @description A reason is required when counted cash differs from expected cash, or when the shift still lists invoices that are not fully paid (Shift.unpaidInvoices). Figures lock on close.
          */
         post: operations["closeShift"];
         delete?: never;
@@ -1713,7 +1713,7 @@ export interface components {
         /** @enum {string} */
         PaymentStatus: "PENDING" | "PAID" | "EXPIRED" | "MISMATCH";
         /** @enum {string} */
-        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "OVERPAID" | "PAYMENT_MISMATCH" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
+        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
         CreateDemoSessionRequest: {
             role: components["schemas"]["Role"];
             locale: components["schemas"]["Locale"];
@@ -2007,6 +2007,8 @@ export interface components {
             expectedCash: components["schemas"]["Vnd"];
             transfersReceived: components["schemas"]["Vnd"];
             buildingIds: string[];
+            /** @description The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason. */
+            unpaidInvoices: components["schemas"]["InvoiceCandidate"][];
         };
         CashCount: {
             /** @enum {integer} */
@@ -2019,7 +2021,7 @@ export interface components {
         };
         CloseShiftRequest: {
             counts: components["schemas"]["CashCount"][];
-            /** @description Required when counted cash differs from expected cash */
+            /** @description Required when counted cash differs from expected cash, or when the shift has invoices that are not fully paid */
             reason?: string | null;
             handoverToUserId?: string | null;
             floatLeft: components["schemas"]["Vnd"];
@@ -2601,7 +2603,7 @@ export interface components {
         };
         AttentionItem: {
             /** @enum {string} */
-            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "OVERPAID" | "PAYMENT_MISMATCH" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
+            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
             ref: string;
             roomCode?: string | null;
             minutes?: number | null;

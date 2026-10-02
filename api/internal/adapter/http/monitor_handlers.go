@@ -145,10 +145,14 @@ func (s Server) ListInvoices(ctx context.Context, req gen.ListInvoicesRequestObj
 	if err != nil {
 		return nil, err
 	}
+	return gen.ListInvoices200JSONResponse{Items: toInvoiceCandidates(rows)}, nil
+}
+
+func toInvoiceCandidates(rows []app.InvoiceCandidate) []gen.InvoiceCandidate {
 	items := make([]gen.InvoiceCandidate, len(rows))
 	for i, r := range rows {
 		items[i] = gen.InvoiceCandidate{InvoiceId: r.InvoiceID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
 			CheckedOutAt: r.CheckedOutAt, Total: r.Total, Paid: r.Paid, Balance: r.Balance}
 	}
-	return gen.ListInvoices200JSONResponse{Items: items}, nil
+	return items
 }

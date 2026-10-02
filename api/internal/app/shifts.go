@@ -37,6 +37,8 @@ type ShiftView struct {
 	CashOut, ExpectedCash        int64
 	TransfersReceived            int64
 	BuildingIDs                  []string
+	// UnpaidInvoices are the shift's invoices that are not fully paid, with what is left to pay.
+	UnpaidInvoices []InvoiceCandidate
 }
 
 type CashPaymentRow struct {
@@ -228,10 +230,14 @@ func (s *Shifts) view(ctx context.Context, tx Tx, sh ShiftRecord, now time.Time,
 	if err != nil {
 		return ShiftView{}, fmt.Errorf("transfers: %w", err)
 	}
+	unpaid, err := s.repo.UnpaidInvoices(ctx, tx, sh.OpenedAt, until)
+	if err != nil {
+		return ShiftView{}, fmt.Errorf("unpaid invoices: %w", err)
+	}
 	if buildings == nil {
 		buildings = []string{}
 	}
-	return ShiftView{ID: sh.ID, UserID: sh.UserID, UserName: sh.UserName, Status: sh.Status, OpenedAt: sh.OpenedAt.UTC(),
+	return ShiftView{UnpaidInvoices: unpaid, ID: sh.ID, UserID: sh.UserID, UserName: sh.UserName, Status: sh.Status, OpenedAt: sh.OpenedAt.UTC(),
 		ClosedAt: utcPtr(sh.ClosedAt), OpeningFloat: sh.OpeningFloat, CashIn: in, CashOut: out, ExpectedCash: expected,
 		TransfersReceived: transfers, BuildingIDs: buildings}, nil
 }
@@ -413,7 +419,11 @@ func (s *Shifts) closeLocked(ctx context.Context, tx Tx, c Caller, in CloseShift
 	if err != nil {
 		return ShiftReview{}, err
 	}
-	if errs := shift.CheckClose(counted, v.ExpectedCash, in.FloatLeft, in.Reason); len(errs) > 0 {
+	errs := shift.CheckClose(counted, v.ExpectedCash, in.FloatLeft, in.Reason)
+	if len(v.UnpaidInvoices) > 0 && strings.TrimSpace(in.Reason) == "" && counted == v.ExpectedCash { // the cash difference already asked for a reason
+		errs = append(errs, shift.FieldError{Path: "reason", Code: "REQUIRED"})
+	}
+	if len(errs) > 0 {
 		return ShiftReview{}, shiftErrors(errs)
 	}
 	diff := counted - v.ExpectedCash

@@ -49,9 +49,9 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
    ```
    Then `... run --rm api sepay webhook --tenant CODE`, `... exec api sepay set-secret --tenant CODE` (hidden prompt) and
    `... exec api sepay status --tenant CODE`. Give staff their one-time PINs.
-10. **Daily jobs** (guest ID retention, recurring expenses): one cron line for the `stayguard` user, `crontab -e`:
+10. **Jobs** (partial-transfer alerts after 15 minutes, guest ID retention, recurring expenses; all safe to repeat, run every 5 minutes): one cron line for the `stayguard` user, `crontab -e`:
     ```
-    15 3 * * * cd /srv/stayguard && docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod exec -T api /app/stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
+    */5 * * * * cd /srv/stayguard && docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod exec -T api /app/stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
     ```
     Make the log writable once: `sudo touch /var/log/stayguard-jobs.log && sudo chown stayguard: /var/log/stayguard-jobs.log`.
 11. **Backups**: the dumps go to S3-compatible storage at a different provider than the server (see "Backup storage" below). Put the

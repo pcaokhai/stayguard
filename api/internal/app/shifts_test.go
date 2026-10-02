@@ -16,6 +16,7 @@ type fakeShiftRepo struct {
 	shifts    []*ShiftRecord
 	entries   map[string][]CashEntry
 	lastFloat int64
+	unpaid    []InvoiceCandidate
 }
 
 func (r *fakeShiftRepo) Timezone(context.Context, Tx) (string, error) { return zoneName, nil }
@@ -60,6 +61,9 @@ func (r *fakeShiftRepo) Cash(_ context.Context, _ Tx, id string) (int64, int64, 
 }
 func (r *fakeShiftRepo) Transfers(context.Context, Tx, time.Time, time.Time) (int64, error) {
 	return 0, nil
+}
+func (r *fakeShiftRepo) UnpaidInvoices(context.Context, Tx, time.Time, time.Time) ([]InvoiceCandidate, error) {
+	return r.unpaid, nil
 }
 func (r *fakeShiftRepo) Close(_ context.Context, _ Tx, c ShiftClose) error {
 	for _, s := range r.shifts {
@@ -291,5 +295,29 @@ func TestShift_OpensWithTheRosteredShift_FA3(t *testing.T) {
 		if got := e.repo.shifts[0].Code; got != c.want {
 			t.Errorf("%s: %s, want %s", name, got, c.want)
 		}
+	}
+}
+
+// Anti-loss: a shift with invoices not fully paid lists them with what is left, and closing needs a reason even when the cash matches.
+func TestShift_CloseWithUnpaidInvoicesNeedsReason_FU(t *testing.T) {
+	e := newShiftEnv(100_000)
+	e.drawer(t)
+	e.repo.unpaid = []InvoiceCandidate{{InvoiceID: "iv_1", BillCode: "PH1002A101", RoomCode: "A101", Total: 180_000, Paid: 100_000, Balance: 80_000}}
+	ctx := context.Background()
+	v, err := e.s.Current(ctx, e.lan)
+	if err != nil || len(v.UnpaidInvoices) != 1 || v.UnpaidInvoices[0].Balance != 80_000 {
+		t.Fatalf("the shift lists the unpaid invoice with its remaining amount: %+v %v", v.UnpaidInvoices, err)
+	}
+	in := CloseShiftInput{Counts: counts520(), FloatLeft: 0}
+	if _, err := e.s.Close(ctx, e.lan, "k-nr", in); !isValidation(err, "reason") {
+		t.Fatalf("closing with unpaid invoices and no reason: %v", err)
+	}
+	in.Reason = "guest will transfer the rest tomorrow"
+	r, err := e.s.Close(ctx, e.lan, "k-r", in)
+	if err != nil || r.Shift.Status != "CLOSED" || len(r.Shift.UnpaidInvoices) != 1 {
+		t.Fatalf("closing with a reason: %+v %v", r.Shift, err)
+	}
+	if len(e.alerts.raised) != 0 {
+		t.Fatalf("matching cash raises no cash alert: %+v", e.alerts.raised)
 	}
 }

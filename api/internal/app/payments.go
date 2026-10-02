@@ -445,3 +445,29 @@ func (p *Payments) auditPayment(ctx context.Context, tx Tx, actor, action, payme
 	}
 	return nil
 }
+
+// partialAlertAfter is how long bank money may sit on an invoice that is still not fully paid before the owner is told.
+const partialAlertAfter = 15 * time.Minute
+
+// RaisePartialAlerts (a job, run every few minutes) raises one PAYMENT_PARTIAL alert for each invoice that received bank money
+// but is still not fully paid 15 minutes after the first partial event. It returns how many it raised.
+func (p *Payments) RaisePartialAlerts(ctx context.Context, tenantID string, now time.Time) (int, error) {
+	n := 0
+	err := p.uow.Do(ctx, tenantID, func(ctx context.Context, tx Tx) error {
+		list, err := p.repo.StalePartials(ctx, tx, now.Add(-partialAlertAfter))
+		if err != nil {
+			return fmt.Errorf("stale partials: %w", err)
+		}
+		for _, sp := range list {
+			a := AlertDraft{Kind: AlertPaymentPartial, RoomCode: sp.RoomCode, StayID: sp.StayID, Amount: &sp.Remaining,
+				Details: map[string]string{"billCode": sp.BillCode, "received": strconv.FormatInt(sp.Received, 10),
+					"remaining": strconv.FormatInt(sp.Remaining, 10), "since": sp.FirstAt.Format(time.RFC3339)}}
+			if err := p.raise(ctx, tx, a); err != nil {
+				return err
+			}
+			n++
+		}
+		return nil
+	})
+	return n, err
+}

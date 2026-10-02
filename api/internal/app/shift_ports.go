@@ -79,6 +79,8 @@ type ShiftRepo interface {
 	AddEntry(ctx context.Context, tx Tx, e CashEntry) error
 	Cash(ctx context.Context, tx Tx, shiftID string) (in, out int64, err error)
 	Transfers(ctx context.Context, tx Tx, from, to time.Time) (int64, error)
+	// UnpaidInvoices lists the invoices not fully paid that belong to the window: checked out in it, or with bank money that arrived in it.
+	UnpaidInvoices(ctx context.Context, tx Tx, from, to time.Time) ([]InvoiceCandidate, error)
 	// Close returns ErrShiftNotOpen when the shift was not open: the backstop.
 	Close(ctx context.Context, tx Tx, c ShiftClose) error
 	ByID(ctx context.Context, tx Tx, shiftID string) (ShiftRecord, bool, error)

@@ -35,7 +35,9 @@ base_file() {
 breaking() {
   local base; base=$(base_file)
   if [ -z "$base" ]; then echo "notice: no base contract on main, skipping oasdiff"; return 0; fi
-  go run "github.com/oasdiff/oasdiff@$OASDIFF_VERSION" breaking "$base" "$dir/openapi.yaml" --fail-on ERR
+  # contracts/oasdiff-ignore.txt lists the breaking changes the owner accepted, each with its reason; nothing else is ignored.
+  local ignore=(); [ -f "$dir/oasdiff-ignore.txt" ] && ignore=(--err-ignore "$dir/oasdiff-ignore.txt")
+  go run "github.com/oasdiff/oasdiff@$OASDIFF_VERSION" breaking "$base" "$dir/openapi.yaml" --fail-on ERR "${ignore[@]+"${ignore[@]}"}"
 }
 
 schemas() { node scripts/schema-compile.mjs "$dir"; }

@@ -105,7 +105,7 @@ func (s Server) ListClosedShifts(ctx context.Context, req gen.ListClosedShiftsRe
 func toShift(v app.ShiftView) gen.Shift {
 	return gen.Shift{Id: v.ID, UserId: v.UserID, UserName: v.UserName, Status: gen.ShiftStatus(v.Status), OpenedAt: v.OpenedAt,
 		ClosedAt: v.ClosedAt, OpeningFloat: v.OpeningFloat, CashIn: v.CashIn, CashOut: v.CashOut, ExpectedCash: v.ExpectedCash,
-		TransfersReceived: v.TransfersReceived, BuildingIds: v.BuildingIDs}
+		TransfersReceived: v.TransfersReceived, BuildingIds: v.BuildingIDs, UnpaidInvoices: toInvoiceCandidates(v.UnpaidInvoices)}
 }
 
 func toShiftReview(r app.ShiftReview) gen.ShiftReview {

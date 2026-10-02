@@ -52,7 +52,8 @@ export function ShiftView() {
 
   const counted = DENOMINATIONS.reduce((sum, d) => sum + d * (qty[d] ?? 0), 0);
   const diff = s ? counted - s.expectedCash : 0;
-  const needsReason = diff !== 0;
+  const unpaid = s?.unpaidInvoices ?? [];
+  const needsReason = diff !== 0 || unpaid.length > 0; // the server asks for a reason while invoices are not fully paid
   const floatValue = floatLeft === undefined ? (s?.openingFloat ?? 0) : parseVnd(floatLeft);
   const ready = !!s && (!needsReason || reason.trim().length >= 3);
   const step = (d: number, by: number) =>
@@ -180,6 +181,27 @@ export function ShiftView() {
                       })}
                 </p>
               </div>
+              {unpaid.length > 0 && (
+                <div
+                  role="status"
+                  className="rounded-xl border border-warn-line bg-warn-bg p-3.5 text-warn-ink"
+                >
+                  <p className="text-xs font-bold uppercase tracking-wide">
+                    {t("shift.unpaidTitle")}
+                  </p>
+                  <ul className="mt-1 flex flex-col gap-0.5 text-sm font-semibold">
+                    {unpaid.map((i) => (
+                      <li key={i.invoiceId}>
+                        {tf("shift.unpaidRow", {
+                          room: i.roomCode,
+                          bill: i.billCode,
+                          amount: formatVnd(i.balance),
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <label className="flex flex-col gap-1.5 text-sm font-bold">
                 {t("shift.reason")}
                 <Textarea

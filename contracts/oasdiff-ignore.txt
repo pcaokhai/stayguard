@@ -1,0 +1,19 @@
+# Accepted breaking changes for oasdiff (make contracts, --err-ignore). One reason line above each entry; every other check stays strict.
+# Format: METHOD /path <start of the oasdiff message>. Remove an entry once main contains the change.
+
+# OVERPAID alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/alerts added the new `OVERPAID` enum value to the `items/items/kind` response property for the response status `200`
+# OVERPAID alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/overview added the new `OVERPAID` enum value to the `alerts/items/kind` response property for the response status `200`
+# OVERPAID alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/overview added the new `OVERPAID` enum value to the `attention/items/kind` response property for the response status `200`
+# OVERPAID alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+POST /v1/rooms/{roomId}/usage-reports added the new `OVERPAID` enum value to the `kind` response property for the response status `201`
+# PAYMENT_PARTIAL alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/alerts added the new `PAYMENT_PARTIAL` enum value to the `items/items/kind` response property for the response status `200`
+# PAYMENT_PARTIAL alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/overview added the new `PAYMENT_PARTIAL` enum value to the `alerts/items/kind` response property for the response status `200`
+# PAYMENT_PARTIAL alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+GET /v1/owner/overview added the new `PAYMENT_PARTIAL` enum value to the `attention/items/kind` response property for the response status `200`
+# PAYMENT_PARTIAL alert kind (1.2.0): the web is the only client and ships in the same commit; Khai accepted it.
+POST /v1/rooms/{roomId}/usage-reports added the new `PAYMENT_PARTIAL` enum value to the `kind` response property for the response status `201`

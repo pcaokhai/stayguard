@@ -297,6 +297,73 @@ func (q *Queries) ListShiftCashIn(ctx context.Context, arg ListShiftCashInParams
 	return items, nil
 }
 
+const listShiftUnpaidInvoices = `-- name: ListShiftUnpaidInvoices :many
+SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       (coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
+                  WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)
+        + coalesce((SELECT sum(pe.amount) FROM app.payment_events pe
+                    WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0))::bigint AS reported
+FROM app.invoices iv
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = $1 AND iv.status = 'OPEN' AND s.check_out_at IS NOT NULL
+  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
+  AND ((iv.created_at >= $2 AND iv.created_at <= $3)
+       OR EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id
+                  AND pe.result = 'PARTIAL' AND pe.received_at >= $2 AND pe.received_at <= $3))
+ORDER BY s.check_out_at DESC, iv.id DESC
+LIMIT 200
+`
+
+type ListShiftUnpaidInvoicesParams struct {
+	TenantID string
+	FromAt   pgtype.Timestamptz
+	ToAt     pgtype.Timestamptz
+}
+
+type ListShiftUnpaidInvoicesRow struct {
+	ID         string
+	BillCode   string
+	RoomCode   string
+	GuestName  string
+	CheckOutAt pgtype.Timestamptz
+	Total      int64
+	Deposit    int64
+	Reported   int64
+}
+
+// Invoices not fully paid that belong to a shift: checked out during it, or with bank money that arrived during it.
+// Same figures as ListUnpaidInvoices (the owner's list): paid is the deposit plus reported bank money.
+func (q *Queries) ListShiftUnpaidInvoices(ctx context.Context, arg ListShiftUnpaidInvoicesParams) ([]ListShiftUnpaidInvoicesRow, error) {
+	rows, err := q.db.Query(ctx, listShiftUnpaidInvoices, arg.TenantID, arg.FromAt, arg.ToAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListShiftUnpaidInvoicesRow
+	for rows.Next() {
+		var i ListShiftUnpaidInvoicesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.BillCode,
+			&i.RoomCode,
+			&i.GuestName,
+			&i.CheckOutAt,
+			&i.Total,
+			&i.Deposit,
+			&i.Reported,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockOpenShift = `-- name: LockOpenShift :one
 SELECT s.id, s.user_id, u.name AS user_name, s.status, s.shift_code, s.opened_at, s.closed_at, s.opening_float
 FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.user_id

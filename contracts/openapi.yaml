@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.1.0
+  version: 1.2.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -660,7 +660,7 @@ paths:
       - Shifts
       operationId: closeShift
       summary: Close the caller's shift with a counted cash total
-      description: A reason is required when counted cash differs from expected cash. Figures lock on close.
+      description: A reason is required when counted cash differs from expected cash, or when the shift still lists invoices that are not fully paid (Shift.unpaidInvoices). Figures lock on close.
       x-story: SG-503
       x-access: EDIT
       parameters:
@@ -3541,6 +3541,7 @@ components:
       - LEAVE_REQUESTED
       - OVERPAID
       - PAYMENT_MISMATCH
+      - PAYMENT_PARTIAL
       - SEPAY_UPDATED
       - STAY_TIME_EDITED
       - STOCKTAKE_DIFFERENCE
@@ -4283,6 +4284,7 @@ components:
       - expectedCash
       - transfersReceived
       - buildingIds
+      - unpaidInvoices
       properties:
         id:
           type: string
@@ -4317,6 +4319,11 @@ components:
           type: array
           items:
             type: string
+        unpaidInvoices:
+          description: The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason.
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceCandidate'
     CashCount:
       type: object
       additionalProperties: false
@@ -4366,7 +4373,7 @@ components:
           - string
           - 'null'
           maxLength: 500
-          description: Required when counted cash differs from expected cash
+          description: Required when counted cash differs from expected cash, or when the shift has invoices that are not fully paid
         handoverToUserId:
           type:
           - string
@@ -5874,6 +5881,7 @@ components:
           - LONG_TO_CLEAN
           - OVERPAID
           - PAYMENT_MISMATCH
+          - PAYMENT_PARTIAL
           - UNMATCHED_TRANSFER
           - CASH_SHORT
           - LEAVE_PENDING

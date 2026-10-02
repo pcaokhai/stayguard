@@ -15,7 +15,7 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
 )
 
-const jobsUsage = "usage: stayguard jobs run   (daily, from cron; needs DATABASE_URL and DATA_ENCRYPTION_KEY)"
+const jobsUsage = "usage: stayguard jobs run   (every 5 minutes, from cron; needs DATABASE_URL and DATA_ENCRYPTION_KEY)"
 
 // tenantJob is one daily task. It runs once per tenant, inside that tenant's own scope, and returns how many things it
 // changed. Leave-to-TAKEN needs no job: TAKEN is derived when leave is read.
@@ -34,7 +34,12 @@ func jobRegistry(cfg config.Config, uowDeps jobDeps) ([]tenantJob, error) {
 		return nil, err
 	}
 	e := newFinance(uowDeps.uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clock.System{}).Expenses
+	pay, err := newPayments(cfg, uowDeps.uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clock.System{})
+	if err != nil {
+		return nil, err
+	}
 	return []tenantJob{
+		{name: "partial-transfer-alerts", run: pay.RaisePartialAlerts},
 		{name: "guest-id-retention", run: g.Purge},
 		{name: "recurring-expenses", run: e.CopyRecurring},
 	}, nil

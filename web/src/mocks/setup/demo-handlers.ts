@@ -262,6 +262,7 @@ const SHIFT = {
   expectedCash: 1750000,
   transfersReceived: 2180000,
   buildingIds: ["A"],
+  unpaidInvoices: [],
 };
 const id = (num: boolean, front: boolean, back: boolean) => ({
   hasIdNumber: num,

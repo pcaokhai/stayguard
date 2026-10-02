@@ -32,7 +32,7 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 - Daily jobs (guest ID retention today; more later): one cron line on the server, with `DATABASE_URL` and `DATA_ENCRYPTION_KEY` as the app uses (no other database login):
 
   ```
-  15 3 * * * stayguard cd /srv/stayguard && docker compose --env-file deploy/.env.prod exec -T api stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
+  */5 * * * * stayguard cd /srv/stayguard && docker compose --env-file deploy/.env.prod exec -T api stayguard jobs run >> /var/log/stayguard-jobs.log 2>&1
   ```
 
   It prints counts only. Check the first night's run in the log.

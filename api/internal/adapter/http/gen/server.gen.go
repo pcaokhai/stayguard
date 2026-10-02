@@ -28,6 +28,7 @@ const (
 	AlertKindLEAVEREQUESTED      AlertKind = "LEAVE_REQUESTED"
 	AlertKindOVERPAID            AlertKind = "OVERPAID"
 	AlertKindPAYMENTMISMATCH     AlertKind = "PAYMENT_MISMATCH"
+	AlertKindPAYMENTPARTIAL      AlertKind = "PAYMENT_PARTIAL"
 	AlertKindSEPAYUPDATED        AlertKind = "SEPAY_UPDATED"
 	AlertKindSTAYTIMEEDITED      AlertKind = "STAY_TIME_EDITED"
 	AlertKindSTOCKTAKEDIFFERENCE AlertKind = "STOCKTAKE_DIFFERENCE"
@@ -51,6 +52,8 @@ func (e AlertKind) Valid() bool {
 	case AlertKindOVERPAID:
 		return true
 	case AlertKindPAYMENTMISMATCH:
+		return true
+	case AlertKindPAYMENTPARTIAL:
 		return true
 	case AlertKindSEPAYUPDATED:
 		return true
@@ -99,6 +102,7 @@ const (
 	AttentionItemKindOVERDUEROOM       AttentionItemKind = "OVERDUE_ROOM"
 	AttentionItemKindOVERPAID          AttentionItemKind = "OVERPAID"
 	AttentionItemKindPAYMENTMISMATCH   AttentionItemKind = "PAYMENT_MISMATCH"
+	AttentionItemKindPAYMENTPARTIAL    AttentionItemKind = "PAYMENT_PARTIAL"
 	AttentionItemKindTICKETOPEN        AttentionItemKind = "TICKET_OPEN"
 	AttentionItemKindUNMATCHEDTRANSFER AttentionItemKind = "UNMATCHED_TRANSFER"
 )
@@ -117,6 +121,8 @@ func (e AttentionItemKind) Valid() bool {
 	case AttentionItemKindOVERPAID:
 		return true
 	case AttentionItemKindPAYMENTMISMATCH:
+		return true
+	case AttentionItemKindPAYMENTPARTIAL:
 		return true
 	case AttentionItemKindTICKETOPEN:
 		return true
@@ -1297,7 +1303,7 @@ type CloseShiftRequest struct {
 	FloatLeft        Vnd     `json:"floatLeft"`
 	HandoverToUserId *string `json:"handoverToUserId,omitempty"`
 
-	// Reason Required when counted cash differs from expected cash
+	// Reason Required when counted cash differs from expected cash, or when the shift has invoices that are not fully paid
 	Reason *string `json:"reason,omitempty"`
 }
 
@@ -2129,9 +2135,12 @@ type Shift struct {
 	Status       ShiftStatus `json:"status"`
 
 	// TransfersReceived Whole Vietnamese dong
-	TransfersReceived Vnd    `json:"transfersReceived"`
-	UserId            string `json:"userId"`
-	UserName          string `json:"userName"`
+	TransfersReceived Vnd `json:"transfersReceived"`
+
+	// UnpaidInvoices The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason.
+	UnpaidInvoices []InvoiceCandidate `json:"unpaidInvoices"`
+	UserId         string             `json:"userId"`
+	UserName       string             `json:"userName"`
 }
 
 // ShiftStatus defines model for Shift.Status.

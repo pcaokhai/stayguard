@@ -80,6 +80,9 @@ type PaymentRepo interface {
 	SetEventMatched(ctx context.Context, tx Tx, ev PaymentEvent, invoiceID, result string) error
 	// SettleInvoiceEvents turns the PARTIAL events of a paid invoice into SETTLED.
 	SettleInvoiceEvents(ctx context.Context, tx Tx, invoiceID string) error
+	// StalePartials lists open invoices with bank money whose first partial event is at or before the cutoff and that
+	// have no PAYMENT_PARTIAL alert yet.
+	StalePartials(ctx context.Context, tx Tx, before time.Time) ([]StalePartial, error)
 	// SetTransferReceived records the cumulative bank money on a pending transfer; it stays PENDING.
 	SetTransferReceived(ctx context.Context, tx Tx, paymentID string, received int64) error
 	// SettleTransfer and MarkMismatch return ErrPaymentNotPending when no pending transfer was updated.
@@ -90,4 +93,11 @@ type PaymentRepo interface {
 	// DefaultBankAccount is the tenant's default, SePay-connected receiving account (empty id when there is none):
 	// the one account a QR may pay.
 	DefaultBankAccount(ctx context.Context, tx Tx) (id string, enc []byte, err error)
+}
+
+// StalePartial is an invoice that got part of its money and is still not paid.
+type StalePartial struct {
+	InvoiceID, BillCode, StayID, RoomCode string
+	Received, Remaining                   int64
+	FirstAt                               time.Time
 }

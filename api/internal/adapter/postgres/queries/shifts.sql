@@ -68,3 +68,23 @@ WHERE s.tenant_id = @tenant_id AND s.status = 'CLOSED'
   AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (s.closed_at, s.id) < (sqlc.narg(cursor_at)::timestamptz, sqlc.narg(cursor_id)::text))
 ORDER BY s.closed_at DESC, s.id DESC
 LIMIT @row_limit;
+
+-- name: ListShiftUnpaidInvoices :many
+-- Invoices not fully paid that belong to a shift: checked out during it, or with bank money that arrived during it.
+-- Same figures as ListUnpaidInvoices (the owner's list): paid is the deposit plus reported bank money.
+SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       (coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
+                  WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)
+        + coalesce((SELECT sum(pe.amount) FROM app.payment_events pe
+                    WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0))::bigint AS reported
+FROM app.invoices iv
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND s.check_out_at IS NOT NULL
+  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
+  AND ((iv.created_at >= @from_at AND iv.created_at <= @to_at)
+       OR EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id
+                  AND pe.result = 'PARTIAL' AND pe.received_at >= @from_at AND pe.received_at <= @to_at))
+ORDER BY s.check_out_at DESC, iv.id DESC
+LIMIT 200;
