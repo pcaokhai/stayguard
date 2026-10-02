@@ -48,7 +48,8 @@ export const roomOrShift = (a: Alert) => a.roomCode || a.details?.shiftName || "
 export function alertHref(a: Alert): string {
   if (a.stayId) return `/stay?id=${encodeURIComponent(a.stayId)}`;
   if (a.shiftId) return `/owner/shift?id=${encodeURIComponent(a.shiftId)}`;
-  if (a.kind === "PAYMENT_MISMATCH" || a.kind === "UNMATCHED_TRANSFER") return "/owner/payments";
+  if (a.kind === "PAYMENT_MISMATCH" || a.kind === "UNMATCHED_TRANSFER")
+    return "/owner/transactions";
   if (a.roomCode) return `/owner/rooms?room=${encodeURIComponent(a.roomCode)}`;
   return "/owner/rooms";
 }

@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { lp } from "@/lib/locale";
 import { t } from "@/lib/t";
+import { cn } from "@/lib/utils";
 
 // Sub-pages and flows: back, title, optional right slot. On phones this page has no tab bar.
 export function TopBar({
@@ -24,7 +25,10 @@ export function TopBar({
         <Link
           href={lp(back)}
           aria-label={t("stay.back")}
-          className="flex size-11 shrink-0 items-center justify-center rounded-full"
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full",
+            back.startsWith("/owner") && "lg:hidden",
+          )}
         >
           <ChevronLeft className="size-6" aria-hidden="true" />
         </Link>

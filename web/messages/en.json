@@ -271,7 +271,8 @@
     "rates": "Rates",
     "signOut": "Sign out",
     "menu": "Menu",
-    "close": "Close"
+    "close": "Close",
+    "payroll": "Payroll"
   },
   "auth": {
     "title": "Sign in",

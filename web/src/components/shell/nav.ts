@@ -10,6 +10,7 @@ import {
   List,
   Package,
   Receipt,
+  Wallet,
   Shield,
   Tag,
   TriangleAlert,
@@ -37,6 +38,20 @@ const READY = new Set<string>([
   "/shift",
   "/owner/alerts",
   "/owner/activity",
+  "/owner/transactions",
+  "/owner/stays",
+  "/owner/shifts",
+  "/owner/reports",
+  "/owner/expenses",
+  "/owner/payroll",
+  "/owner/maintenance",
+  "/owner/items",
+  "/owner/staff",
+  "/owner/roster",
+  "/owner/access",
+  "/owner/property",
+  "/owner/buildings",
+  "/owner/rates",
 ]);
 export const isReady = (href: string) => READY.has(href);
 export const visible = (items: NavItem[]) => items.filter((i) => READY.has(i.href));
@@ -44,7 +59,7 @@ export const visible = (items: NavItem[]) => items.filter((i) => READY.has(i.hre
 const OWNER_TABS: NavItem[] = [
   { label: "nav.overview", href: "/owner", icon: Home },
   { label: "nav.rooms", href: "/owner/rooms", icon: Building2 },
-  { label: "nav.payments", href: "/owner/payments", icon: List },
+  { label: "nav.payments", href: "/owner/transactions", icon: List },
   { label: "nav.alerts", href: "/owner/alerts", icon: Bell },
 ];
 const DESK_TABS: NavItem[] = [
@@ -67,7 +82,7 @@ export const OWNER_GROUPS: { label: MessageKey; items: NavItem[] }[] = [
     items: [
       { label: "nav.roomMap", href: "/owner/rooms", icon: Building2 },
       { label: "nav.alerts", href: "/owner/alerts", icon: Bell },
-      { label: "nav.payments", href: "/owner/payments", icon: List },
+      { label: "nav.payments", href: "/owner/transactions", icon: List },
       { label: "nav.stays", href: "/owner/stays", icon: BedDouble },
       { label: "nav.shiftReview", href: "/owner/shifts", icon: Banknote },
       { label: "nav.activity", href: "/owner/activity", icon: Clock },
@@ -78,13 +93,14 @@ export const OWNER_GROUPS: { label: MessageKey; items: NavItem[] }[] = [
     items: [
       { label: "nav.reports", href: "/owner/reports", icon: BarChart3 },
       { label: "nav.expenses", href: "/owner/expenses", icon: Receipt },
+      { label: "nav.payroll", href: "/owner/payroll", icon: Wallet },
     ],
   },
   {
     label: "nav.operations",
     items: [
       { label: "nav.maintenance", href: "/owner/maintenance", icon: TriangleAlert },
-      { label: "nav.extras", href: "/owner/extras", icon: Package },
+      { label: "nav.extras", href: "/owner/items", icon: Package },
     ],
   },
   {

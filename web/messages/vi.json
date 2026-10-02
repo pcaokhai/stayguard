@@ -271,7 +271,8 @@
     "rates": "Bảng giá",
     "signOut": "Đăng xuất",
     "menu": "Menu",
-    "close": "Đóng"
+    "close": "Đóng",
+    "payroll": "Bảng lương"
   },
   "auth": {
     "title": "Đăng nhập",

@@ -26,7 +26,7 @@ const link = "text-sm font-bold text-primary underline underline-offset-2";
 // Phone shortcut chips: only pages that exist show up.
 const SHORTCUTS = [
   { label: "owner.shortcutMap", href: "/owner/rooms" },
-  { label: "nav.payments", href: "/owner/payments" },
+  { label: "nav.payments", href: "/owner/transactions" },
   { label: "nav.reports", href: "/owner/reports" },
   { label: "nav.staff", href: "/owner/staff" },
   { label: "nav.roster", href: "/owner/roster" },
@@ -199,8 +199,8 @@ export function OwnerOverview() {
           <Card className="gap-1 order-3 self-start p-5 shadow-none">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className={heading}>{t("owner.latest")}</h2>
-              {isReady("/owner/payments") && (
-                <Link href={lp("/owner/payments")} className={link}>
+              {isReady("/owner/transactions") && (
+                <Link href={lp("/owner/transactions")} className={link}>
                   {t("owner.seeAll")}
                 </Link>
               )}
