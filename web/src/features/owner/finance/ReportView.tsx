@@ -25,6 +25,7 @@ import { lp } from "@/lib/locale";
 import { formatVnd } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
+import { useBuildings } from "../../rooms/hooks";
 import { useReport, type IncomeCostReport } from "./hooks";
 import { addMonths, isMonth, monthLabel, thisMonth } from "./month";
 
@@ -111,6 +112,9 @@ export function ReportView() {
   )?.[0];
   const options = Array.from({ length: 24 }, (_, i) => addMonths(thisMonth(), -i));
   const d = q.data;
+  const buildings = useBuildings().data ?? [];
+  // The report keys buildings by id or code; show the code either way.
+  const buildingCode = (k: string) => buildings.find((b) => b.id === k || b.code === k)?.code ?? k;
 
   if (q.isError)
     return (
@@ -261,7 +265,7 @@ export function ReportView() {
                   <h2 className={heading}>{t("report.byBuilding")}</h2>
                   <Bars
                     rows={d.revenueByBuilding}
-                    label={(k) => tf("report.building", { code: k })}
+                    label={(k) => tf("report.building", { code: buildingCode(k) })}
                   />
                 </Card>
                 <Card className="gap-2 p-5 shadow-none">

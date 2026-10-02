@@ -17,6 +17,7 @@ import { formatVnd, parseVnd, vndNumber } from "@/lib/money";
 import { t, tf } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { formatDayMonth } from "../format";
+import { useIsOwner } from "../role";
 import { useDebounced } from "../useDebounced";
 import {
   useRatePlans,
@@ -164,6 +165,7 @@ function Editor({
 
 export function RatesView() {
   const q = useRatePlans();
+  const owner = useIsOwner();
   const save = useSaveRatePlan();
   // Edits sit on top of what the server sent; nothing is copied into state until the user types.
   const [edits, setEdits] = useState<Record<string, Draft>>({});
@@ -197,16 +199,17 @@ export function RatesView() {
       toast.error(t("rates.saveFailed"));
     }
   };
-  const saveBtn = (cls: string) => (
-    <Button
-      size="lg"
-      className={cls}
-      disabled={!allValid || save.isPending}
-      onClick={() => void saveAll()}
-    >
-      {t("rates.save")}
-    </Button>
-  );
+  const saveBtn = (cls: string) =>
+    owner && (
+      <Button
+        size="lg"
+        className={cls}
+        disabled={!allValid || save.isPending}
+        onClick={() => void saveAll()}
+      >
+        {t("rates.save")}
+      </Button>
+    );
 
   return (
     <AppFrame tabs={false}>

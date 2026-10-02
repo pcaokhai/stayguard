@@ -14,6 +14,7 @@ import { formatVnd } from "@/lib/money";
 import { t, tf } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useIsOwner } from "../role";
 import { ItemForm } from "./ItemForm";
 import { RemoveItemDialog } from "./RemoveItemDialog";
 import { useItems, type Service } from "./hooks";
@@ -33,6 +34,7 @@ const Stock = ({ s }: { s: Service }) => (
 );
 
 export function ItemsView() {
+  const owner = useIsOwner();
   const q = useItems();
   const [form, setForm] = useState<{ item?: Service } | null>(null);
   const [removing, setRemoving] = useState<Service | null>(null);
@@ -148,15 +150,17 @@ export function ItemsView() {
                             <Button asChild variant="outline" size="lg" className="font-bold">
                               <Link href={detailHref(s)}>{t("items.manage")}</Link>
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="icon-lg"
-                              aria-label={`${t("stock.remove")} ${localized(s.name)}`}
-                              className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                              onClick={() => setRemoving(s)}
-                            >
-                              <Trash2 aria-hidden="true" />
-                            </Button>
+                            {owner && (
+                              <Button
+                                variant="outline"
+                                size="icon-lg"
+                                aria-label={`${t("stock.remove")} ${localized(s.name)}`}
+                                className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                                onClick={() => setRemoving(s)}
+                              >
+                                <Trash2 aria-hidden="true" />
+                              </Button>
+                            )}
                           </span>
                         </td>
                       </tr>

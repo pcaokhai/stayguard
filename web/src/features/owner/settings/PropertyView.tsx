@@ -17,6 +17,7 @@ import { Form } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { t, tf } from "@/lib/t";
 import { clockOf, formatDayMonth } from "../format";
+import { useIsOwner } from "../role";
 import { OwnerPinDialog } from "../OwnerPinDialog";
 import { TextField } from "../FormFields";
 import { BankSheet } from "./BankSheet";
@@ -52,7 +53,8 @@ type Pending = { kind: "default" | "remove"; account: BankAccount } | null;
 
 export function PropertyView() {
   const property = useProperty();
-  const banks = useBankAccounts();
+  const owner = useIsOwner();
+  const banks = useBankAccounts(owner);
   const sepay = useSepayStatus();
   const update = useUpdateProperty();
   const makeDefault = useMakeDefaultBank();
@@ -86,7 +88,7 @@ export function PropertyView() {
     });
   }, [p, form]);
 
-  if (property.isError || banks.isError)
+  if (property.isError || (owner && banks.isError))
     return (
       <AppFrame tabs={false}>
         <QueryError onRetry={() => void Promise.all([property.refetch(), banks.refetch()])} />
@@ -135,17 +137,18 @@ export function PropertyView() {
     else removeBank.mutate(vars, done(t("property.removed")));
   };
 
-  const saveButton = (cls: string) => (
-    <Button
-      type="submit"
-      form="property-form"
-      size="lg"
-      className={cls}
-      disabled={update.isPending}
-    >
-      {t("property.saveChanges")}
-    </Button>
-  );
+  const saveButton = (cls: string) =>
+    owner && (
+      <Button
+        type="submit"
+        form="property-form"
+        size="lg"
+        className={cls}
+        disabled={update.isPending}
+      >
+        {t("property.saveChanges")}
+      </Button>
+    );
 
   const bankCard = (a: BankAccount) => (
     <Card key={a.id} className="gap-2 p-4 shadow-none">
@@ -250,24 +253,26 @@ export function PropertyView() {
             </Form>
 
             <div className="flex flex-col gap-3 max-lg:order-first lg:order-2">
-              <Card className="gap-3 p-5 shadow-none">
-                <h2 className={heading}>{t("property.banks")}</h2>
-                {banks.isLoading && <Skeleton className="h-28 rounded-card" />}
-                {banks.data?.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("property.noBanks")}</p>
-                )}
-                {banks.data?.map(bankCard)}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-dashed font-bold"
-                  onClick={() => setAdding(true)}
-                >
-                  <Plus aria-hidden="true" />
-                  {t("property.add")}
-                </Button>
-                <p className="text-[12px] text-muted-foreground">{t("property.bankNote")}</p>
-              </Card>
+              {owner && (
+                <Card className="gap-3 p-5 shadow-none">
+                  <h2 className={heading}>{t("property.banks")}</h2>
+                  {banks.isLoading && <Skeleton className="h-28 rounded-card" />}
+                  {banks.data?.length === 0 && (
+                    <p className="text-sm text-muted-foreground">{t("property.noBanks")}</p>
+                  )}
+                  {banks.data?.map(bankCard)}
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-dashed font-bold"
+                    onClick={() => setAdding(true)}
+                  >
+                    <Plus aria-hidden="true" />
+                    {t("property.add")}
+                  </Button>
+                  <p className="text-[12px] text-muted-foreground">{t("property.bankNote")}</p>
+                </Card>
+              )}
               <Card className="gap-2 p-5 shadow-none">
                 <h2 className={heading}>{t("property.sepay")}</h2>
                 <div className="flex items-center justify-between">

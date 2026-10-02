@@ -18,6 +18,7 @@ import { formatVnd } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { clockOf, formatDayMonth } from "../format";
+import { useIsOwner } from "../role";
 import { ItemForm } from "./ItemForm";
 import { RemoveItemDialog } from "./RemoveItemDialog";
 import { RestockSheet } from "./RestockSheet";
@@ -81,6 +82,7 @@ function Kpi({
 
 // Manage one item (boards ChiTietMatHang*): numbers, details, stock history, stop selling or remove.
 export function ItemView() {
+  const owner = useIsOwner();
   const code = useSearchParams().get("code");
   const router = useRouter();
   const items = useItems();
@@ -332,15 +334,17 @@ export function ItemView() {
               >
                 {t("stock.stopSelling")}
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-destructive/40 font-bold text-destructive hover:bg-destructive/10"
-                onClick={() => setDialog("remove")}
-              >
-                <Trash2 aria-hidden="true" />
-                {t("stock.remove")}
-              </Button>
+              {owner && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-destructive/40 font-bold text-destructive hover:bg-destructive/10"
+                  onClick={() => setDialog("remove")}
+                >
+                  <Trash2 aria-hidden="true" />
+                  {t("stock.remove")}
+                </Button>
+              )}
             </div>
           </Card>
         </FadeIn>

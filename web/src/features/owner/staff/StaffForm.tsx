@@ -280,7 +280,7 @@ export function StaffForm({
                 {buildings.map((b) => (
                   <div key={b.id} className="flex items-center gap-3">
                     <span className="w-[72px] text-[14px] font-bold">
-                      {tf("staff.form.building", { code: b.id })}
+                      {tf("staff.form.building", { code: b.code })}
                     </span>
                     <ToggleGroup
                       type="single"

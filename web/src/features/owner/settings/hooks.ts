@@ -32,9 +32,10 @@ export function useUpdateProperty() {
   });
 }
 
-export function useBankAccounts() {
+export function useBankAccounts(enabled = true) {
   return useQuery({
     queryKey: ["bank-accounts"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/owner/bank-accounts");
       if (error || !data) throw new Error("listBankAccounts failed");

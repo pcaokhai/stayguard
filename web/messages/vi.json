@@ -38,7 +38,8 @@
     "pickRoom": "Chọn một phòng để xem chi tiết.",
     "vacantSub": "Phòng trống, sẵn sàng nhận khách.",
     "cleanSub": "Khách vừa trả. Dọn xong thì bấm bên dưới.",
-    "maintenanceSub": "Phòng đang bảo trì."
+    "maintenanceSub": "Phòng đang bảo trì.",
+    "roleMANAGER": "Quản lý nhà nghỉ"
   },
   "stay": {
     "back": "Quay lại",

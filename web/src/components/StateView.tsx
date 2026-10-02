@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Check, Lock, RefreshCw, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion";
+import { api } from "@/lib/api";
 import { lp } from "@/lib/locale";
 import { t } from "@/lib/t";
 import { cn } from "@/lib/utils";
@@ -111,8 +112,35 @@ export function EmptyState({
   );
 }
 
-// Picks the offline or server variant for a failed query.
+// A 403 from the API (role not allowed) is remembered until a later call succeeds, so a failed page can
+// show KhongCoQuyen instead of "server error" without every query carrying its status.
+let forbidden = false;
+const listeners = new Set<() => void>();
+if (typeof window !== "undefined") {
+  api.use({
+    onResponse({ response }) {
+      const next = response.status === 403 ? true : response.ok ? false : forbidden;
+      if (next !== forbidden) {
+        forbidden = next;
+        listeners.forEach((l) => l());
+      }
+      return response;
+    },
+  });
+}
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => listeners.delete(l);
+};
+
+// Picks the forbidden, offline or server variant for a failed query.
 export function QueryError({ onRetry }: { onRetry: () => void }) {
+  const denied = useSyncExternalStore(
+    subscribe,
+    () => forbidden,
+    () => false,
+  );
+  if (denied) return <ForbiddenState />;
   const offline = typeof navigator !== "undefined" && !navigator.onLine;
   return offline ? <OfflineState onRetry={onRetry} /> : <ServerErrorState onRetry={onRetry} />;
 }

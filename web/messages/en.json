@@ -38,7 +38,8 @@
     "pickRoom": "Select a room to see its details.",
     "vacantSub": "Vacant and ready for a guest.",
     "cleanSub": "The guest just left. Tap below when it is cleaned.",
-    "maintenanceSub": "This room is in maintenance."
+    "maintenanceSub": "This room is in maintenance.",
+    "roleMANAGER": "Guesthouse manager"
   },
   "stay": {
     "back": "Back",

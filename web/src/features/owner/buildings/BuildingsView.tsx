@@ -17,6 +17,7 @@ import { localized } from "@/lib/locale";
 import { t, tf } from "@/lib/t";
 import { useBuildings, useRooms } from "../../rooms/hooks";
 import { STATUS } from "../../rooms/status";
+import { useIsOwner } from "../role";
 import { useRatePlans } from "../rates/hooks";
 import { codeRange } from "./codes";
 import { BuildingForm, BuildingNameForm, FloorForm, RoomEditForm, RoomsForm } from "./forms";
@@ -37,6 +38,7 @@ const RoomStatus = ({ r }: { r: Room }) => (
 
 export function BuildingsView() {
   const wide = useMediaQuery("(min-width: 768px)");
+  const owner = useIsOwner();
   const buildings = useBuildings();
   const types = useRatePlans();
   const [id, setId] = useState<string>();
@@ -82,18 +84,19 @@ export function BuildingsView() {
     </button>
   );
 
-  const addRoomsBtn = (cls: string) => (
-    <Button
-      variant="outline"
-      size="lg"
-      className={cls}
-      disabled={!floors.length}
-      onClick={() => setDialog({ kind: "rooms", floor: floors[floors.length - 1] })}
-    >
-      <Plus aria-hidden="true" />
-      {t("buildings.addRooms")}
-    </Button>
-  );
+  const addRoomsBtn = (cls: string) =>
+    owner && (
+      <Button
+        variant="outline"
+        size="lg"
+        className={cls}
+        disabled={!floors.length}
+        onClick={() => setDialog({ kind: "rooms", floor: floors[floors.length - 1] })}
+      >
+        <Plus aria-hidden="true" />
+        {t("buildings.addRooms")}
+      </Button>
+    );
 
   return (
     <AppFrame tabs={false}>
@@ -108,16 +111,18 @@ export function BuildingsView() {
           back="/owner/settings"
           right={
             <span className="flex gap-2">
-              <Button
-                variant="outline"
-                size="lg"
-                className="font-bold"
-                onClick={() => setDialog({ kind: "building" })}
-              >
-                <Plus aria-hidden="true" />
-                <span className="md:hidden">{t("buildings.addBuilding")}</span>
-                <span className="hidden md:inline">{t("buildings.addBuildingLong")}</span>
-              </Button>
+              {owner && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="font-bold"
+                  onClick={() => setDialog({ kind: "building" })}
+                >
+                  <Plus aria-hidden="true" />
+                  <span className="md:hidden">{t("buildings.addBuilding")}</span>
+                  <span className="hidden md:inline">{t("buildings.addBuildingLong")}</span>
+                </Button>
+              )}
               <span className="hidden md:block">
                 {addRoomsBtn(
                   "border-0 bg-primary font-bold text-primary-foreground hover:bg-primary/90",
@@ -182,13 +187,15 @@ export function BuildingsView() {
                     f: floors.length,
                     r: all.length,
                   })}
-                  <button
-                    type="button"
-                    className="font-bold text-primary underline underline-offset-2"
-                    onClick={() => setDialog({ kind: "buildingName" })}
-                  >
-                    {t("buildings.editBuilding")}
-                  </button>
+                  {owner && (
+                    <button
+                      type="button"
+                      className="font-bold text-primary underline underline-offset-2"
+                      onClick={() => setDialog({ kind: "buildingName" })}
+                    >
+                      {t("buildings.editBuilding")}
+                    </button>
+                  )}
                 </p>
                 {rooms.isLoading && <Skeleton className="h-40 rounded-card" />}
                 {floors.map((n, i) => {
@@ -210,29 +217,33 @@ export function BuildingsView() {
                           </span>
                         </summary>
                         {here.map(roomRow)}
-                        <button
-                          type="button"
-                          onClick={() => setDialog({ kind: "rooms", floor: n })}
-                          className="flex min-h-[52px] w-full items-center gap-2 border-t border-border px-4 text-[14px] font-bold text-primary"
-                        >
-                          <Plus className="size-4" aria-hidden="true" />
-                          {tf("buildings.addToFloor", { n })}
-                        </button>
+                        {owner && (
+                          <button
+                            type="button"
+                            onClick={() => setDialog({ kind: "rooms", floor: n })}
+                            className="flex min-h-[52px] w-full items-center gap-2 border-t border-border px-4 text-[14px] font-bold text-primary"
+                          >
+                            <Plus className="size-4" aria-hidden="true" />
+                            {tf("buildings.addToFloor", { n })}
+                          </button>
+                        )}
                       </details>
                     </Card>
                   );
                 })}
                 <div className="grid grid-cols-2 gap-2">
                   {addRoomsBtn("font-bold")}
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-dashed font-bold"
-                    onClick={() => setDialog({ kind: "floor" })}
-                  >
-                    <Plus aria-hidden="true" />
-                    {t("buildings.addFloor")}
-                  </Button>
+                  {owner && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="border-dashed font-bold"
+                      onClick={() => setDialog({ kind: "floor" })}
+                    >
+                      <Plus aria-hidden="true" />
+                      {t("buildings.addFloor")}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -297,15 +308,17 @@ export function BuildingsView() {
                       f: floors.length,
                     })}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-dashed font-bold"
-                    onClick={() => setDialog({ kind: "floor" })}
-                  >
-                    <Plus aria-hidden="true" />
-                    {t("buildings.addFloor")}
-                  </Button>
+                  {owner && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="border-dashed font-bold"
+                      onClick={() => setDialog({ kind: "floor" })}
+                    >
+                      <Plus aria-hidden="true" />
+                      {t("buildings.addFloor")}
+                    </Button>
+                  )}
                 </div>
               </FadeIn>
               <p className="text-[13px] text-muted-foreground md:hidden">{t("buildings.foot")}</p>

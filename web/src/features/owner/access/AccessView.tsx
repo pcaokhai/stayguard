@@ -57,7 +57,7 @@ export function AccessView() {
       type="single"
       value={level(p.access, b.id)}
       onValueChange={(v) => v && change(p.userId, b.id, v as Level)}
-      aria-label={`${p.name} · ${tf("access.building", { code: b.id })}`}
+      aria-label={`${p.name} · ${tf("access.building", { code: b.code })}`}
       className="gap-0 rounded-card bg-secondary p-1"
     >
       {LEVELS.map((l) => (
@@ -123,7 +123,7 @@ export function AccessView() {
                 {bs.map((b) => (
                   <div key={b.id} className="flex items-center gap-3">
                     <span className="w-[64px] shrink-0 whitespace-nowrap text-[15px] font-bold">
-                      {tf("access.buildingShort", { code: b.id })}
+                      {tf("access.buildingShort", { code: b.code })}
                     </span>
                     <div className="flex-1">{segmented(p, b)}</div>
                   </div>
@@ -146,7 +146,7 @@ export function AccessView() {
                       </th>
                       {bs.map((b) => (
                         <th key={b.id} scope="col" className="px-3 font-bold">
-                          {tf("access.building", { code: b.id })}
+                          {tf("access.building", { code: b.code })}
                         </th>
                       ))}
                     </tr>
