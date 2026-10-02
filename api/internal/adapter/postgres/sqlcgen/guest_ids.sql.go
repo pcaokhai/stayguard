@@ -74,21 +74,21 @@ func (q *Queries) DeleteGuestPhotosOfStay(ctx context.Context, arg DeleteGuestPh
 	return err
 }
 
-const ensureGuestConsent = `-- name: EnsureGuestConsent :exec
-INSERT INTO app.guest_ids (tenant_id, stay_id, consent_at, consent_by)
+const ensureGuestRecord = `-- name: EnsureGuestRecord :exec
+INSERT INTO app.guest_ids (tenant_id, stay_id, collected_at, collected_by)
 VALUES ($1, $2, $3, $4)
 ON CONFLICT (tenant_id, stay_id) DO NOTHING
 `
 
-type EnsureGuestConsentParams struct {
+type EnsureGuestRecordParams struct {
 	TenantID string
 	StayID   string
 	At       pgtype.Timestamptz
 	By       pgtype.Text
 }
 
-func (q *Queries) EnsureGuestConsent(ctx context.Context, arg EnsureGuestConsentParams) error {
-	_, err := q.db.Exec(ctx, ensureGuestConsent,
+func (q *Queries) EnsureGuestRecord(ctx context.Context, arg EnsureGuestRecordParams) error {
+	_, err := q.db.Exec(ctx, ensureGuestRecord,
 		arg.TenantID,
 		arg.StayID,
 		arg.At,
@@ -131,7 +131,7 @@ func (q *Queries) ExpiredGuestIDStays(ctx context.Context, arg ExpiredGuestIDSta
 }
 
 const getGuestIDRow = `-- name: GetGuestIDRow :one
-SELECT number_enc, consent_at FROM app.guest_ids WHERE tenant_id = $1 AND stay_id = $2
+SELECT number_enc, collected_at FROM app.guest_ids WHERE tenant_id = $1 AND stay_id = $2
 `
 
 type GetGuestIDRowParams struct {
@@ -140,14 +140,14 @@ type GetGuestIDRowParams struct {
 }
 
 type GetGuestIDRowRow struct {
-	NumberEnc []byte
-	ConsentAt pgtype.Timestamptz
+	NumberEnc   []byte
+	CollectedAt pgtype.Timestamptz
 }
 
 func (q *Queries) GetGuestIDRow(ctx context.Context, arg GetGuestIDRowParams) (GetGuestIDRowRow, error) {
 	row := q.db.QueryRow(ctx, getGuestIDRow, arg.TenantID, arg.StayID)
 	var i GetGuestIDRowRow
-	err := row.Scan(&i.NumberEnc, &i.ConsentAt)
+	err := row.Scan(&i.NumberEnc, &i.CollectedAt)
 	return i, err
 }
 
@@ -258,7 +258,7 @@ func (q *Queries) ListGuestPhotoMeta(ctx context.Context, arg ListGuestPhotoMeta
 }
 
 const upsertGuestNumber = `-- name: UpsertGuestNumber :exec
-INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, consent_at, consent_by)
+INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, collected_at, collected_by)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (tenant_id, stay_id) DO UPDATE SET number_enc = EXCLUDED.number_enc
 `

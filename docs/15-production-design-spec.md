@@ -73,11 +73,11 @@ Finance
 Bank and SePay
 19. The owner can add and remove receiving accounts. QR always uses the default account; an account can become default only after the installer connects SePay for it. The default account cannot be removed.
 Guest ID (optional)
-21. At check-in the front desk may record the guest's national ID (CCCD) number and photos of the front and back. All three are optional; storing any of them requires ticking "guest agrees". Photos can be added or retaken while the stay is active or up to 24 hours after check-out.
+21. At check-in the front desk records the guest's national ID (CCCD) number and photos of the front and back, because guesthouses must declare their guests' stays (the stay-declaration duty). This is a legal obligation, not consent: no tick box and no consent text; each record states its legal basis `STAY_DECLARATION`. The fields stay technically optional so a check-in is never blocked. Photos can be added or retaken while the stay is active or up to 24 hours after check-out.
 22. After saving, the front desk and housekeeping can never read the number or photos again. Their screens only show indicators: "ID number on file", "front photo on file", "back photo on file" (or missing).
 23. Only OWNER and MANAGER can see them. The number is masked by default (first 3 and last 3 digits) with a Show button; photos open in a viewer with Download and Delete. Every reveal, view, download and delete writes a GUEST_ID audit entry.
 24. Photos are stripped of metadata, re-encoded, encrypted at rest and streamed only through the API with `Cache-Control: no-store` (no public or pre-signed links). Numbers are encrypted like other personal data.
-25. Guest ID data is deleted automatically N days after check-out (property setting, default 30). Check the current Vietnamese personal-data protection rules and the stay-declaration requirements before go-live; the consent text and retention default may need to change.
+25. Guest ID data is deleted automatically N days after check-out (property setting, default 30; the daily `stayguard jobs run`). The retention period is the owner's setting within the stay-declaration duty; keep it no longer than that duty requires.
 
 20. SePay webhook path is per tenant (`/v1/webhooks/bank/{hookId}`). Secrets are written only through the installer CLI over SSH (docs/runbooks/sepay-handover.md). No screen or endpoint shows or edits a secret.
 
@@ -141,4 +141,4 @@ Detailed stories are in docs/06 (E7 to E13). Suggested order, each a vertical sl
 - Q-03 Recurring expense amounts that vary (electricity) are always manual; confirm.
 - Q-04 Whether managers may enter maintenance costs.
 - Q-05 Receipt printer model (58 or 80 mm) for print CSS.
-- Q-06 Guest ID: final consent wording and retention period after checking current personal-data rules.
+- ~~Q-06 Guest ID: consent wording and retention~~ Answered (owner): the ID is collected under the stay-declaration legal obligation, so there is no consent step; the legal basis is recorded on each record and the default retention stays 30 days (adjustable by the owner).

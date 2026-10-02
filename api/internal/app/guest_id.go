@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
-	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
 const (
@@ -51,11 +50,11 @@ type GuestPhotoMeta struct {
 	UploadedBy string
 }
 
-// GuestIDRow is what is stored for a stay: the encrypted number (nil when none), the consent and photo metadata.
+// GuestIDRow is what is stored for a stay: the encrypted number (nil when none), the collection record and photo metadata.
 type GuestIDRow struct {
-	NumberEnc []byte
-	ConsentAt time.Time
-	Photos    []GuestPhotoMeta
+	NumberEnc   []byte
+	CollectedAt time.Time
+	Photos      []GuestPhotoMeta
 }
 
 // GuestIDRepo is the only door to guest ID data. Photos go in and out as ciphertext.
@@ -63,7 +62,7 @@ type GuestIDRepo interface {
 	// Stay locks the stay row; false when unknown.
 	Stay(ctx context.Context, tx Tx, stayID string) (GuestIDStay, bool, error)
 	SetNumber(ctx context.Context, tx Tx, stayID string, enc []byte, at time.Time, by string) error
-	EnsureConsent(ctx context.Context, tx Tx, stayID string, at time.Time, by string) error
+	EnsureRecord(ctx context.Context, tx Tx, stayID string, at time.Time, by string) error
 	Record(ctx context.Context, tx Tx, stayID string) (GuestIDRow, bool, error)
 	ClearNumber(ctx context.Context, tx Tx, stayID string) (bool, error)
 	PutPhoto(ctx context.Context, tx Tx, stayID, side string, enc []byte, size int, at time.Time, by string) error
@@ -174,13 +173,13 @@ func indicatorsOf(r GuestIDRow, ok bool) GuestIDIndicators {
 	return out
 }
 
-// SetNumber stores or replaces the number, encrypted, with the guest's consent. It returns indicators only.
-func (g *GuestIDs) SetNumber(ctx context.Context, c Caller, stayID, idNumber string, consent bool) (GuestIDIndicators, error) {
+// legalBasis says why guest ID data is kept: the duty to declare stays, not consent.
+const legalBasis = "STAY_DECLARATION"
+
+// SetNumber stores or replaces the number, encrypted. It returns indicators only.
+func (g *GuestIDs) SetNumber(ctx context.Context, c Caller, stayID, idNumber string) (GuestIDIndicators, error) {
 	if err := g.authz.Check("setGuestIdNumber", c.Role, access.EDIT); err != nil {
 		return GuestIDIndicators{}, err
-	}
-	if !consent {
-		return GuestIDIndicators{}, stay.NewValidationError([]stay.FieldError{{Path: "consent", Code: stay.CodeIDConsentRequired}})
 	}
 	idNumber = strings.TrimSpace(idNumber)
 	if !validIDNumber(idNumber) {
@@ -212,9 +211,8 @@ func (g *GuestIDs) SetNumber(ctx context.Context, c Caller, stayID, idNumber str
 	return out, err
 }
 
-// UploadPhoto stores a sanitized, encrypted photo. Consent must be on file (from check-in or setGuestIdNumber) or
-// given with this upload.
-func (g *GuestIDs) UploadPhoto(ctx context.Context, c Caller, stayID, side string, raw []byte, consent bool) (GuestIDIndicators, error) {
+// UploadPhoto stores a sanitized, encrypted photo.
+func (g *GuestIDs) UploadPhoto(ctx context.Context, c Caller, stayID, side string, raw []byte) (GuestIDIndicators, error) {
 	if err := g.authz.Check("uploadGuestIdPhoto", c.Role, access.EDIT); err != nil {
 		return GuestIDIndicators{}, err
 	}
@@ -237,17 +235,8 @@ func (g *GuestIDs) UploadPhoto(ctx context.Context, c Caller, stayID, side strin
 		if err = g.editable(st); err != nil {
 			return err
 		}
-		_, ok, err := g.repo.Record(ctx, tx, stayID)
-		if err != nil {
+		if err = g.repo.EnsureRecord(ctx, tx, stayID, g.clock.Now(), c.UserID); err != nil {
 			return err
-		}
-		if !ok {
-			if !consent {
-				return stay.NewValidationError([]stay.FieldError{{Path: "consent", Code: stay.CodeIDConsentRequired}})
-			}
-			if err = g.repo.EnsureConsent(ctx, tx, stayID, g.clock.Now(), c.UserID); err != nil {
-				return err
-			}
 		}
 		enc, err := g.enc.Encrypt(c.TenantID, photoField(stayID, side), clean)
 		if err != nil {
@@ -270,7 +259,8 @@ func (g *GuestIDs) UploadPhoto(ctx context.Context, c Caller, stayID, side strin
 type GuestIDRecordView struct {
 	Indicators     GuestIDIndicators
 	IDNumberMasked *string
-	ConsentAt      *time.Time
+	LegalBasis     string
+	CollectedAt    *time.Time
 	DeleteAfter    *time.Time
 	Photos         []GuestPhotoMeta
 }
@@ -299,7 +289,7 @@ func (g *GuestIDs) Record(ctx context.Context, c Caller, stayID string) (GuestID
 		if !ok {
 			return nil
 		}
-		out.ConsentAt, out.Photos = &row.ConsentAt, row.Photos
+		out.LegalBasis, out.CollectedAt, out.Photos = legalBasis, &row.CollectedAt, row.Photos
 		if len(row.NumberEnc) > 0 {
 			plain, err := g.enc.Decrypt(c.TenantID, idField(stayID), row.NumberEnc)
 			if err != nil {

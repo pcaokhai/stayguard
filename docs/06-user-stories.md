@@ -330,7 +330,7 @@ Lane API+WEB · 3 pts · Screens: P37, P47, P48, P49, PC Dọn phòng
 
 ### SG-805 Guest ID capture and protected viewing
 Lane API+WEB · 5 pts · Screens: Demo 2, PC Nhận phòng, Demo 3, Sơ đồ máy tính, P42, PC Chi tiết lượt ở, P59, PC Xem ảnh CCCD
-1. Check-in and setGuestIdNumber store the number encrypted only with consent (422 ID_CONSENT_REQUIRED otherwise); uploadGuestIdPhoto accepts JPEG or PNG up to 5 MB, strips metadata, re-encodes and encrypts.
+1. Check-in and setGuestIdNumber store the number encrypted (collected under the stay-declaration duty: no consent is asked); uploadGuestIdPhoto accepts JPEG or PNG up to 5 MB, strips metadata, re-encodes and encrypts.
 2. Every stay response to RECEPTIONIST or HOUSEKEEPING contains only `guestId` indicators; no field, log line or error ever contains the number or an image (log capture test and contract test).
 3. getGuestIdRecord returns the masked number and photo metadata to OWNER and MANAGER only (403 for other roles, table test).
 4. revealGuestIdNumber, getGuestIdPhoto (view and download) and both deletes write GUEST_ID audit entries; responses carry `Cache-Control: no-store`; photos are never served by a public or pre-signed URL.

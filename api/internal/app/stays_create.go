@@ -33,7 +33,6 @@ var ErrInvalidIdempotencyKey = errors.New("invalid idempotency key")
 type CreateStayInput struct {
 	RentalType, GuestName, GuestPhone string
 	IDNumber                          *string
-	IDConsent                         *bool // the guest agrees to the ID number being stored
 	Deposit                           int64
 }
 
@@ -63,9 +62,6 @@ func validateCreate(in CreateStayInput) (checkInRequest, error) {
 	rental, err := pricing.ParseRentalType(in.RentalType)
 	if err != nil { // the parser echoes the value; keep it out of the error
 		return checkInRequest{}, fmt.Errorf("check-in input: %w", pricing.ErrUnknownRentalType)
-	}
-	if g.IDNumber != "" && (in.IDConsent == nil || !*in.IDConsent) {
-		return checkInRequest{}, fmt.Errorf("check-in input: %w", stay.NewValidationError([]stay.FieldError{{Path: "idConsent", Code: stay.CodeIDConsentRequired}}))
 	}
 	return checkInRequest{rental: rental, guest: g, deposit: d.Int64()}, nil
 }
@@ -145,9 +141,8 @@ func (s *Stays) requestHash(tenantID string, in CreateStayInput) string {
 		GuestName     string `json:"guestName"`
 		GuestPhone    string `json:"guestPhone"`
 		IDFingerprint string `json:"idNumberFingerprint"`
-		IDConsent     bool   `json:"idConsent"`
 		Deposit       int64  `json:"deposit"`
-	}{in.RentalType, in.GuestName, in.GuestPhone, fp, in.IDConsent != nil && *in.IDConsent, in.Deposit}) // plain fields only: cannot fail
+	}{in.RentalType, in.GuestName, in.GuestPhone, fp, in.Deposit}) // plain fields only: cannot fail
 	return RequestHash(body)
 }
 

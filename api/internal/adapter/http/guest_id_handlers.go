@@ -24,8 +24,8 @@ const (
 
 // GuestIDService is the guest ID surface the handlers need.
 type GuestIDService interface {
-	SetNumber(ctx context.Context, c app.Caller, stayID, idNumber string, consent bool) (app.GuestIDIndicators, error)
-	UploadPhoto(ctx context.Context, c app.Caller, stayID, side string, raw []byte, consent bool) (app.GuestIDIndicators, error)
+	SetNumber(ctx context.Context, c app.Caller, stayID, idNumber string) (app.GuestIDIndicators, error)
+	UploadPhoto(ctx context.Context, c app.Caller, stayID, side string, raw []byte) (app.GuestIDIndicators, error)
 	Record(ctx context.Context, c app.Caller, stayID string) (app.GuestIDRecordView, error)
 	Reveal(ctx context.Context, c app.Caller, stayID string) (string, error)
 	Photo(ctx context.Context, c app.Caller, stayID, side string, download bool) ([]byte, error)
@@ -48,18 +48,18 @@ func (s Server) SetGuestIdNumber(ctx context.Context, req gen.SetGuestIdNumberRe
 	if req.Body == nil || req.Body.IdNumber == nil {
 		return nil, &app.ValidationError{Field: "idNumber", Reason: "required"}
 	}
-	ind, err := s.guestIDs.SetNumber(ctx, c, req.StayId, *req.Body.IdNumber, bool(req.Body.Consent))
+	ind, err := s.guestIDs.SetNumber(ctx, c, req.StayId, *req.Body.IdNumber)
 	if err != nil {
 		return nil, err
 	}
 	return gen.SetGuestIdNumber200JSONResponse(toIndicators(ind)), nil
 }
 
-// readPhotoForm takes the file and the optional consent flag out of the multipart body. The file is read with a hard
+// readPhotoForm takes the file out of the multipart body (a legacy consent field is ignored). The file is read with a hard
 // cap so an endless upload cannot fill memory; it is never logged or echoed.
-func readPhotoForm(mr *multipart.Reader) (file []byte, consent bool, err error) {
+func readPhotoForm(mr *multipart.Reader) (file []byte, err error) {
 	if mr == nil {
-		return nil, false, &app.ValidationError{Field: "file", Reason: "required"}
+		return nil, &app.ValidationError{Field: "file", Reason: "required"}
 	}
 	for {
 		part, perr := mr.NextPart()
@@ -67,27 +67,24 @@ func readPhotoForm(mr *multipart.Reader) (file []byte, consent bool, err error) 
 			break
 		}
 		if perr != nil {
-			return nil, false, bodyError(perr)
+			return nil, bodyError(perr)
 		}
 		switch part.FormName() {
 		case "file":
 			b, rerr := io.ReadAll(io.LimitReader(part, maxPhotoBytes+1))
 			if rerr != nil {
-				return nil, false, bodyError(rerr)
+				return nil, bodyError(rerr)
 			}
 			if len(b) > maxPhotoBytes {
-				return nil, false, app.ErrPhotoTooLarge
+				return nil, app.ErrPhotoTooLarge
 			}
 			file = b
-		case "consent":
-			b, _ := io.ReadAll(io.LimitReader(part, 8))
-			consent = strings.EqualFold(strings.TrimSpace(string(b)), "true")
 		}
 	}
 	if file == nil {
-		return nil, false, &app.ValidationError{Field: "file", Reason: "required"}
+		return nil, &app.ValidationError{Field: "file", Reason: "required"}
 	}
-	return file, consent, nil
+	return file, nil
 }
 
 // bodyError says too large when the body cap fired and "cannot read" otherwise.
@@ -104,11 +101,11 @@ func (s Server) UploadGuestIdPhoto(ctx context.Context, req gen.UploadGuestIdPho
 	if err != nil {
 		return nil, err
 	}
-	file, consent, err := readPhotoForm(req.Body)
+	file, err := readPhotoForm(req.Body)
 	if err != nil {
 		return nil, err
 	}
-	ind, err := s.guestIDs.UploadPhoto(ctx, c, req.StayId, string(req.Side), file, consent)
+	ind, err := s.guestIDs.UploadPhoto(ctx, c, req.StayId, string(req.Side), file)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +121,11 @@ func (s Server) GetGuestIdRecord(ctx context.Context, req gen.GetGuestIdRecordRe
 	if err != nil {
 		return nil, err
 	}
-	out := gen.GuestIdRecord{Indicators: toIndicators(v.Indicators), IdNumberMasked: v.IDNumberMasked, ConsentAt: v.ConsentAt}
+	out := gen.GuestIdRecord{Indicators: toIndicators(v.Indicators), IdNumberMasked: v.IDNumberMasked, CollectedAt: v.CollectedAt}
+	if v.LegalBasis != "" {
+		lb := gen.GuestIdRecordLegalBasis(v.LegalBasis)
+		out.LegalBasis = &lb
+	}
 	if v.DeleteAfter != nil {
 		out.DeleteAfter = &openapi_types.Date{Time: *v.DeleteAfter}
 	}

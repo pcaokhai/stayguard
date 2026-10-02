@@ -3094,7 +3094,6 @@ paths:
               additionalProperties: false
               required:
               - idNumber
-              - consent
               properties:
                 idNumber:
                   type: string
@@ -3102,7 +3101,8 @@ paths:
                   writeOnly: true
                 consent:
                   type: boolean
-                  const: true
+                  deprecated: true
+                  description: Ignored. The ID is collected under the stay-declaration duty, not by consent.
       responses:
         '200':
           description: Indicators only
@@ -3142,7 +3142,7 @@ paths:
           - BACK
       - *id008
       description: JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while
-        the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+        the stay is ACTIVE or within 24 h after check-out. The ID is collected under the stay-declaration duty; no consent is asked.
       requestBody:
         required: true
         content:
@@ -3812,7 +3812,8 @@ components:
           $ref: '#/components/schemas/Vnd'
         idConsent:
           type: boolean
-          description: Required true when idNumber is given
+          deprecated: true
+          description: Ignored. The ID is collected under the stay-declaration duty, not by consent.
     BillLine:
       type: object
       required:
@@ -5988,11 +5989,23 @@ components:
           oneOf:
           - $ref: '#/components/schemas/IdPhotoMeta'
           - type: 'null'
+        legalBasis:
+          type: string
+          enum:
+          - STAY_DECLARATION
+          description: Why the ID is kept (the duty to declare stays)
+        collectedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
         consentAt:
           type:
           - string
           - 'null'
           format: date-time
+          deprecated: true
+          description: Never set; replaced by legalBasis and collectedAt.
         deleteAfter:
           type:
           - string

@@ -209,7 +209,7 @@ Advance bookings, OTA sync, e-invoices, automatic stay declaration, OCR of ID ca
 
 - Four parallel sessions are the plan's engine; one long stall on API-1 (sign-in or SePay) delays go-live. Mitigation: the go-live minimum in §4.
 - SePay activation and bank linking depend on the provider; start S0 now. Code is testable in Test mode without real money.
-- Guest ID is personal data: F-A2 must not ship until SG-805 tests pass and the consent wording (docs/15 Q-06) is confirmed.
+- Guest ID is personal data: F-A2 must not ship until SG-805 tests pass and the legal basis (docs/15 Q-06, answered: stay declaration) is confirmed.
 - 121 boards in 48 hours is only possible because components come from libraries; accept small spacing differences, never wrong data or missing states.
 
 ## 9. Session prompts

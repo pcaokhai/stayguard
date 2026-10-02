@@ -23,14 +23,14 @@ func (r *fakeGuestRepo) Stay(context.Context, Tx, string) (GuestIDStay, bool, er
 }
 func (r *fakeGuestRepo) SetNumber(_ context.Context, _ Tx, _ string, enc []byte, at time.Time, _ string) error {
 	if r.row == nil {
-		r.row = &GuestIDRow{ConsentAt: at}
+		r.row = &GuestIDRow{CollectedAt: at}
 	}
 	r.row.NumberEnc = enc
 	return nil
 }
-func (r *fakeGuestRepo) EnsureConsent(_ context.Context, _ Tx, _ string, at time.Time, _ string) error {
+func (r *fakeGuestRepo) EnsureRecord(_ context.Context, _ Tx, _ string, at time.Time, _ string) error {
 	if r.row == nil {
-		r.row = &GuestIDRow{ConsentAt: at}
+		r.row = &GuestIDRow{CollectedAt: at}
 	}
 	return nil
 }
@@ -109,10 +109,10 @@ func callerOf(role access.Role) Caller {
 func TestGuestIDOperationsByRole_SG805_AC3(t *testing.T) {
 	r := newGuestRig(map[string]access.Level{"b1": access.EDIT})
 	ctx := context.Background()
-	if _, err := r.g.SetNumber(ctx, callerOf(access.RoleReceptionist), "st1", "079203001234", true); err != nil {
+	if _, err := r.g.SetNumber(ctx, callerOf(access.RoleReceptionist), "st1", "079203001234"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.g.UploadPhoto(ctx, callerOf(access.RoleReceptionist), "st1", "FRONT", []byte("img"), true); err != nil {
+	if _, err := r.g.UploadPhoto(ctx, callerOf(access.RoleReceptionist), "st1", "FRONT", []byte("img")); err != nil {
 		t.Fatal(err)
 	}
 	reads := map[string]func(Caller) error{
@@ -121,9 +121,9 @@ func TestGuestIDOperationsByRole_SG805_AC3(t *testing.T) {
 		"photo":  func(c Caller) error { _, err := r.g.Photo(ctx, c, "st1", "FRONT", false); return err },
 	}
 	writes := map[string]func(Caller) error{
-		"set": func(c Caller) error { _, err := r.g.SetNumber(ctx, c, "st1", "079203001234", true); return err },
+		"set": func(c Caller) error { _, err := r.g.SetNumber(ctx, c, "st1", "079203001234"); return err },
 		"upload": func(c Caller) error {
-			_, err := r.g.UploadPhoto(ctx, c, "st1", "BACK", []byte("img"), true)
+			_, err := r.g.UploadPhoto(ctx, c, "st1", "BACK", []byte("img"))
 			return err
 		},
 	}
@@ -147,7 +147,7 @@ func TestGuestIDOperationsByRole_SG805_AC3(t *testing.T) {
 func TestGuestID_MaskedRecordNeverHoldsTheNumber_SG805(t *testing.T) {
 	r := newGuestRig(map[string]access.Level{"b1": access.EDIT})
 	ctx := context.Background()
-	if _, err := r.g.SetNumber(ctx, callerOf(access.RoleOwner), "st1", "079203001234", true); err != nil {
+	if _, err := r.g.SetNumber(ctx, callerOf(access.RoleOwner), "st1", "079203001234"); err != nil {
 		t.Fatal(err)
 	}
 	r.g.levels.(*fakeLevels).levels["b1"] = access.VIEW // a manager who can only view the building
@@ -175,48 +175,47 @@ func TestGuestID_CiphertextBoundToStayAndField_SG805(t *testing.T) {
 	r := newGuestRig(map[string]access.Level{"b1": access.EDIT})
 	ctx := context.Background()
 	owner := callerOf(access.RoleOwner)
-	_, _ = r.g.SetNumber(ctx, owner, "st1", "079203001234", true)
+	_, _ = r.g.SetNumber(ctx, owner, "st1", "079203001234")
 	r.repo.stay.ID = "st2"
 	if _, err := r.g.Reveal(ctx, owner, "st2"); err == nil || strings.Contains(err.Error(), "079203001234") {
 		t.Fatalf("a number moved to another stay must fail to open: %v", err)
 	}
 }
 
-func TestGuestID_ConsentAndWindow_SG805_AC1(t *testing.T) {
+func TestGuestID_NoConsentAsked_WindowApplies_SG805_AC1(t *testing.T) {
 	r := newGuestRig(map[string]access.Level{"b1": access.EDIT})
 	ctx := context.Background()
 	desk := callerOf(access.RoleReceptionist)
 	desk.Levels = map[string]access.Level{"b1": access.EDIT}
-	if _, err := r.g.SetNumber(ctx, desk, "st1", "079203001234", false); err == nil || r.repo.row != nil {
-		t.Fatalf("no consent, nothing stored: %v", err)
+	// The ID is collected under the stay-declaration duty: a photo or number needs no consent and starts the record.
+	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x")); err != nil || r.repo.row == nil || string(r.repo.photos["FRONT"]) == "clean:x" {
+		t.Fatalf("photo without any consent, stored encrypted: %v", err)
 	}
-	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x"), false); err == nil || r.repo.photos != nil {
-		t.Fatalf("a photo without consent on file: %v", err)
+	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "BACK", []byte("x")); err != nil {
+		t.Fatalf("second photo: %v", err)
 	}
-	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x"), true); err != nil || string(r.repo.photos["FRONT"]) == "clean:x" {
-		t.Fatalf("with consent, stored encrypted: %v", err)
-	}
-	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "BACK", []byte("x"), false); err != nil {
-		t.Fatalf("consent already on file: %v", err)
+	v, err := r.g.Record(ctx, callerOf(access.RoleOwner), "st1")
+	if err != nil || v.LegalBasis != "STAY_DECLARATION" || v.CollectedAt == nil {
+		t.Fatalf("record carries its legal basis: %+v %v", v, err)
 	}
 	// Checked out: open for 24 hours, closed after.
 	out := t0.Add(-23 * time.Hour)
 	r.repo.stay.Status, r.repo.stay.CheckOutAt = "CHECKED_OUT", &out
-	if _, err := r.g.SetNumber(ctx, desk, "st1", "079203001234", true); err != nil {
+	if _, err := r.g.SetNumber(ctx, desk, "st1", "079203001234"); err != nil {
 		t.Fatalf("23 hours after check-out: %v", err)
 	}
 	out = t0.Add(-25 * time.Hour)
-	if _, err := r.g.SetNumber(ctx, desk, "st1", "079203001234", true); !errors.Is(err, ErrGuestIDClosed) {
+	if _, err := r.g.SetNumber(ctx, desk, "st1", "079203001234"); !errors.Is(err, ErrGuestIDClosed) {
 		t.Fatalf("25 hours after check-out: %v", err)
 	}
 	r.g.sanitizer = fakeSanitizer{err: ErrPhotoInvalid}
 	r.repo.stay.Status, r.repo.stay.CheckOutAt = "ACTIVE", nil
 	var ve *ValidationError
-	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x"), true); !errors.As(err, &ve) {
+	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x")); !errors.As(err, &ve) {
 		t.Fatalf("undecodable image: %v", err)
 	}
 	r.g.sanitizer = fakeSanitizer{err: ErrPhotoTooLarge}
-	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x"), true); !errors.Is(err, ErrPhotoTooLarge) {
+	if _, err := r.g.UploadPhoto(ctx, desk, "st1", "FRONT", []byte("x")); !errors.Is(err, ErrPhotoTooLarge) {
 		t.Fatalf("too large: %v", err)
 	}
 }

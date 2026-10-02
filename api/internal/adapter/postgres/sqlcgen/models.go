@@ -107,12 +107,13 @@ type AppFloor struct {
 }
 
 type AppGuestID struct {
-	TenantID  string
-	StayID    string
-	NumberEnc []byte
-	ConsentAt pgtype.Timestamptz
-	ConsentBy pgtype.Text
-	CreatedAt pgtype.Timestamptz
+	TenantID    string
+	StayID      string
+	NumberEnc   []byte
+	CollectedAt pgtype.Timestamptz
+	CollectedBy pgtype.Text
+	CreatedAt   pgtype.Timestamptz
+	LegalBasis  string
 }
 
 type AppGuestIDPhoto struct {

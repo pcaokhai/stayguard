@@ -376,6 +376,21 @@ func (e ExpenseSource) Valid() bool {
 	}
 }
 
+// Defines values for GuestIdRecordLegalBasis.
+const (
+	STAYDECLARATION GuestIdRecordLegalBasis = "STAY_DECLARATION"
+)
+
+// Valid indicates whether the value is a known member of the GuestIdRecordLegalBasis enum.
+func (e GuestIdRecordLegalBasis) Valid() bool {
+	switch e {
+	case STAYDECLARATION:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HousekeepingTaskStatus.
 const (
 	HousekeepingTaskStatusDONE HousekeepingTaskStatus = "DONE"
@@ -1069,21 +1084,6 @@ func (e ListTransactionsParamsFilter) Valid() bool {
 	}
 }
 
-// Defines values for SetGuestIdNumberJSONBodyConsent.
-const (
-	True SetGuestIdNumberJSONBodyConsent = true
-)
-
-// Valid indicates whether the value is a known member of the SetGuestIdNumberJSONBodyConsent enum.
-func (e SetGuestIdNumberJSONBodyConsent) Valid() bool {
-	switch e {
-	case True:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for UploadGuestIdPhotoParamsSide.
 const (
 	UploadGuestIdPhotoParamsSideBACK  UploadGuestIdPhotoParamsSide = "BACK"
@@ -1440,7 +1440,8 @@ type CreateStayRequest struct {
 	GuestName  string `json:"guestName"`
 	GuestPhone string `json:"guestPhone"`
 
-	// IdConsent Required true when idNumber is given
+	// IdConsent Ignored. The ID is collected under the stay-declaration duty, not by consent.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	IdConsent *bool `json:"idConsent,omitempty"`
 
 	// IdNumber Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING
@@ -1537,7 +1538,11 @@ type GuestIdIndicators struct {
 
 // GuestIdRecord defines model for GuestIdRecord.
 type GuestIdRecord struct {
-	Back        *IdPhotoMeta        `json:"back"`
+	Back        *IdPhotoMeta `json:"back"`
+	CollectedAt *time.Time   `json:"collectedAt,omitempty"`
+
+	// ConsentAt Never set; replaced by legalBasis and collectedAt.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ConsentAt   *time.Time          `json:"consentAt,omitempty"`
 	DeleteAfter *openapi_types.Date `json:"deleteAfter"`
 	Front       *IdPhotoMeta        `json:"front"`
@@ -1545,7 +1550,13 @@ type GuestIdRecord struct {
 	// IdNumberMasked First 3 and last 3 digits only
 	IdNumberMasked *string           `json:"idNumberMasked"`
 	Indicators     GuestIdIndicators `json:"indicators"`
+
+	// LegalBasis Why the ID is kept (the duty to declare stays)
+	LegalBasis *GuestIdRecordLegalBasis `json:"legalBasis,omitempty"`
 }
+
+// GuestIdRecordLegalBasis Why the ID is kept (the duty to declare stays)
+type GuestIdRecordLegalBasis string
 
 // HousekeepingTask defines model for HousekeepingTask.
 type HousekeepingTask struct {
@@ -2798,8 +2809,10 @@ type AddStayExtrasParams struct {
 
 // SetGuestIdNumberJSONBody defines parameters for SetGuestIdNumber.
 type SetGuestIdNumberJSONBody struct {
-	Consent  SetGuestIdNumberJSONBodyConsent `json:"consent"`
-	IdNumber *string                         `json:"idNumber,omitempty"`
+	// Consent Ignored. The ID is collected under the stay-declaration duty, not by consent.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Consent  *bool   `json:"consent,omitempty"`
+	IdNumber *string `json:"idNumber,omitempty"`
 }
 
 // SetGuestIdNumberParams defines parameters for SetGuestIdNumber.
@@ -2807,9 +2820,6 @@ type SetGuestIdNumberParams struct {
 	// IdempotencyKey Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
-
-// SetGuestIdNumberJSONBodyConsent defines parameters for SetGuestIdNumber.
-type SetGuestIdNumberJSONBodyConsent bool
 
 // UploadGuestIdPhotoMultipartBody defines parameters for UploadGuestIdPhoto.
 type UploadGuestIdPhotoMultipartBody struct {

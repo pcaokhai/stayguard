@@ -16,7 +16,7 @@ func TestNoPersonalDataInLogs_SG205_AC2(t *testing.T) {
 	tenant, token := a.str("tenantId"), a.str("accessToken")
 	e.seedStayTenant(tenant, 1)
 	e.seedServices(tenant, 1)
-	id := e.openStay(token, 1, map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker, "idConsent": true})
+	id := e.openStay(token, 1, map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker})
 
 	steps := []struct {
 		name string

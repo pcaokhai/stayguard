@@ -59,9 +59,6 @@ const (
 	minMaskTailLen = 8
 )
 
-// CodeIDConsentRequired: an ID number or photo needs the guest's agreement (docs/15 rule 21).
-const CodeIDConsentRequired = "ID_CONSENT_REQUIRED"
-
 // FieldError never carries the offending value: it can quote client data.
 type FieldError struct {
 	Path string

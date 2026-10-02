@@ -14,7 +14,7 @@ func TestIdNumberE2E_SG203_AC4(t *testing.T) {
 	a := e.demo("OWNER", "vi", "")
 	tenant, token := a.str("tenantId"), a.str("accessToken")
 	e.seedStayTenant(tenant, 2)
-	body := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker, "idConsent": true})
+	body := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker})
 
 	var ids []string
 	for room := 1; room <= 2; room++ {
@@ -66,12 +66,12 @@ func TestNoPersonalDataInLogs_SG203_AC4(t *testing.T) {
 	// A unit type whose stored plan is corrupt: check-in fails on the server side (500).
 	e.exec(`INSERT INTO app.unit_types (id, tenant_id, code, name, rate_plan, rate_plan_version) VALUES ('ut_bad', $1, 'BAD', '{"vi":"x","en":"x"}', '{}', 1)`, tenant)
 	e.exec(`UPDATE app.units SET unit_type_id = 'ut_bad' WHERE id = $1`, roomID(2))
-	personal := map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker, "idConsent": true}
+	personal := map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker}
 
 	if st, raw := e.checkIn(token, 1, newKey(), stayBody(personal)); st != 201 {
 		t.Fatalf("success path: %d %s", st, raw)
 	}
-	bad := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": "12", "idNumber": idMarker, "idConsent": true})
+	bad := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": "12", "idNumber": idMarker})
 	if st, _ := e.checkIn(token, 1, newKey(), bad); st != 422 {
 		t.Fatalf("validation path: %d", st)
 	}

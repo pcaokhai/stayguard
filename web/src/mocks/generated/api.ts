@@ -283,7 +283,10 @@ export interface CreateStayRequest {
      */
   idNumber?: string | null;
   deposit: Vnd;
-  /** Required true when idNumber is given */
+  /**
+     * Ignored. The ID is collected under the stay-declaration duty, not by consent.
+     * @deprecated
+     */
   idConsent?: boolean;
 }
 
@@ -1642,6 +1645,16 @@ export interface IdPhotoMeta {
   bytes?: number;
 }
 
+/**
+ * Why the ID is kept (the duty to declare stays)
+ */
+export type GuestIdRecordLegalBasis = typeof GuestIdRecordLegalBasis[keyof typeof GuestIdRecordLegalBasis];
+
+
+export const GuestIdRecordLegalBasis = {
+  STAY_DECLARATION: 'STAY_DECLARATION',
+} as const;
+
 export interface GuestIdRecord {
   indicators: GuestIdIndicators;
   /**
@@ -1651,7 +1664,15 @@ export interface GuestIdRecord {
   idNumberMasked: string | null;
   front: IdPhotoMeta | null;
   back: IdPhotoMeta | null;
+  /** Why the ID is kept (the duty to declare stays) */
+  legalBasis?: GuestIdRecordLegalBasis;
   /** @nullable */
+  collectedAt?: string | null;
+  /**
+     * Never set; replaced by legalBasis and collectedAt.
+     * @deprecated
+     * @nullable
+     */
   consentAt?: string | null;
   /** @nullable */
   deleteAfter: string | null;
@@ -1963,7 +1984,11 @@ export type ReceiveBankWebhook200 = {
 export type SetGuestIdNumberBody = {
   /** @pattern ^[0-9]{9,12}$ */
   idNumber: string;
-  consent: true;
+  /**
+     * Ignored. The ID is collected under the stay-declaration duty, not by consent.
+     * @deprecated
+     */
+  consent?: boolean;
 };
 
 export type UploadGuestIdPhotoBody = {
@@ -8627,7 +8652,7 @@ export const getUploadGuestIdPhotoUrl = (stayId: string,
 }
 
 /**
- * JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+ * JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. The ID is collected under the stay-declaration duty; no consent is asked.
  * @summary Upload or replace an ID photo (front desk cannot read it back)
  */
 export const uploadGuestIdPhoto = async (stayId: string,

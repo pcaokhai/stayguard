@@ -19,7 +19,7 @@ type GuestIDRepo struct{}
 
 var _ app.GuestIDRepo = GuestIDRepo{}
 
-// putNumber stores a ciphertext and the consent that came with it (check-in).
+// putNumber stores a ciphertext and the collection record that came with it (check-in).
 func (GuestIDRepo) putNumber(ctx context.Context, t Tx, stayID string, enc []byte, at time.Time, by string) error {
 	return wrap("store guest id number", sqlcgen.New(t).UpsertGuestNumber(ctx, sqlcgen.UpsertGuestNumberParams{
 		TenantID: t.tenant, StayID: stayID, NumberEnc: enc, At: pgtype.Timestamptz{Time: at, Valid: true}, By: optText(by)}))
@@ -48,12 +48,12 @@ func (g GuestIDRepo) SetNumber(ctx context.Context, tx app.Tx, stayID string, en
 	return g.putNumber(ctx, t, stayID, enc, at, by)
 }
 
-func (GuestIDRepo) EnsureConsent(ctx context.Context, tx app.Tx, stayID string, at time.Time, by string) error {
+func (GuestIDRepo) EnsureRecord(ctx context.Context, tx app.Tx, stayID string, at time.Time, by string) error {
 	t, err := pgTx(tx)
 	if err != nil {
 		return err
 	}
-	return wrap("store guest id consent", sqlcgen.New(t).EnsureGuestConsent(ctx, sqlcgen.EnsureGuestConsentParams{
+	return wrap("store guest id record", sqlcgen.New(t).EnsureGuestRecord(ctx, sqlcgen.EnsureGuestRecordParams{
 		TenantID: t.tenant, StayID: stayID, At: pgtype.Timestamptz{Time: at, Valid: true}, By: optText(by)}))
 }
 
@@ -74,7 +74,7 @@ func (GuestIDRepo) Record(ctx context.Context, tx app.Tx, stayID string) (app.Gu
 	if err != nil {
 		return app.GuestIDRow{}, false, wrap("list guest id photos", err)
 	}
-	out := app.GuestIDRow{NumberEnc: r.NumberEnc, ConsentAt: r.ConsentAt.Time}
+	out := app.GuestIDRow{NumberEnc: r.NumberEnc, CollectedAt: r.CollectedAt.Time}
 	for _, p := range photos {
 		out.Photos = append(out.Photos, app.GuestPhotoMeta{Side: p.Side, Bytes: int(p.Bytes), UploadedAt: p.UploadedAt.Time, UploadedBy: p.UploadedBy})
 	}

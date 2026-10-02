@@ -72,7 +72,7 @@ func (StayRepo) InsertStay(ctx context.Context, tx app.Tx, s app.NewStay) error 
 	if err != nil {
 		return insertFailure(err)
 	}
-	if len(s.IDNumberEnc) > 0 { // consent was ticked at check-in (the use case refuses the number without it)
+	if len(s.IDNumberEnc) > 0 { // collected at check-in under the stay-declaration duty
 		return GuestIDRepo{}.putNumber(ctx, t, s.ID, s.IDNumberEnc, s.CheckInAt, s.CreatedBy)
 	}
 	return nil

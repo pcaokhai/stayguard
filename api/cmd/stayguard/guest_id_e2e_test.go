@@ -46,7 +46,7 @@ func photoJPEG(t *testing.T, w, h int) []byte {
 	return append(append(append([]byte{}, raw[:2]...), app1...), raw[2:]...)
 }
 
-func (e *env) upload(token, stayID, side string, file []byte, contentType string, consent *bool) (int, http.Header, []byte) {
+func (e *env) upload(token, stayID, side string, file []byte, contentType string) (int, http.Header, []byte) {
 	e.t.Helper()
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
@@ -55,9 +55,6 @@ func (e *env) upload(token, stayID, side string, file []byte, contentType string
 	h.Set("Content-Type", contentType)
 	part, _ := mw.CreatePart(h)
 	_, _ = part.Write(file)
-	if consent != nil {
-		_ = mw.WriteField("consent", map[bool]string{true: "true", false: "false"}[*consent])
-	}
 	_ = mw.Close()
 	req, _ := http.NewRequest("PUT", e.srv.URL+"/v1/stays/"+stayID+"/guest-id/photos/"+side, &body)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -102,30 +99,26 @@ func (e *env) roleToken(owner, username, access, position, level string) string 
 // SG-805 AC1-AC4 on the real stack.
 func TestGuestID_Lifecycle_SG805(t *testing.T) {
 	e := newEnv(t)
-	owner := e.ownerSetup()
+	owner := e.ownerSetupRooms(3)
 	desk := e.roleToken(owner, "linh", "RECEPTIONIST", "FRONT_DESK", "EDIT")
 	viewer := e.roleToken(owner, "viewer", "RECEPTIONIST", "FRONT_DESK", "VIEW")
 	clean := e.roleToken(owner, "hana", "HOUSEKEEPING", "HOUSEKEEPING", "EDIT")
 	mgr := e.roleToken(owner, "mai2", "MANAGER", "MANAGER", "VIEW")
-	yes := true
 
-	// AC1: the number needs consent, at check-in and later.
-	st, raw := e.checkIn(desk, 1, newKey(), stayBody(map[string]any{"idNumber": gidNumber}))
-	if st != 422 || !strings.Contains(string(raw), "ID_CONSENT_REQUIRED") {
-		t.Fatalf("check-in without consent: %d %s", st, raw)
-	}
-	st, raw = e.checkIn(desk, 1, newKey(), stayBody(nil))
+	// AC1: no consent is asked; the ID is collected under the stay-declaration duty, at check-in and later.
+	st, raw := e.checkIn(desk, 1, newKey(), stayBody(nil))
 	stayID := parse(raw)["id"].(string)
 	if st != 201 || parse(raw)["guestId"].(map[string]any)["hasIdNumber"] != false {
 		t.Fatalf("check-in without a number: %d %s", st, raw)
 	}
-	if st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": gidNumber, "consent": false}); st != 422 {
-		t.Fatalf("set without consent: %d %s", st, raw)
+	st, raw = e.checkIn(desk, 2, newKey(), stayBody(map[string]any{"idNumber": gidNumber}))
+	if st != 201 || parse(raw)["guestId"].(map[string]any)["hasIdNumber"] != true {
+		t.Fatalf("check-in with a number and no consent field: %d %s", st, raw)
 	}
-	if st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": "12ab", "consent": true}); st != 422 {
+	if st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": "12ab"}); st != 422 {
 		t.Fatalf("bad number: %d %s", st, raw)
 	}
-	st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": gidNumber, "consent": true})
+	st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": gidNumber})
 	if st != 200 || parse(raw)["hasIdNumber"] != true || strings.Contains(string(raw), gidNumber) {
 		t.Fatalf("set number: %d %s", st, raw)
 	}
@@ -134,15 +127,15 @@ func TestGuestID_Lifecycle_SG805(t *testing.T) {
 		t.Fatalf("the number must be stored encrypted: %v", err)
 	}
 
-	// Photos: consent is on file; EXIF is stripped, the image is re-encoded and stored encrypted.
+	// Photos: EXIF is stripped, the image is re-encoded and stored encrypted.
 	src := photoJPEG(t, 64, 40)
-	st, _, raw = e.upload(desk, stayID, "FRONT", src, "image/jpeg", nil)
+	st, _, raw = e.upload(desk, stayID, "FRONT", src, "image/jpeg")
 	if st != 200 || parse(raw)["hasFrontPhoto"] != true || parse(raw)["hasBackPhoto"] != false || parse(raw)["hasIdNumber"] != true {
 		t.Fatalf("upload: %d %s", st, raw)
 	}
 	var pngBuf bytes.Buffer
 	_ = png.Encode(&pngBuf, image.NewRGBA(image.Rect(0, 0, 10, 10)))
-	if st, _, raw = e.upload(desk, stayID, "BACK", pngBuf.Bytes(), "image/png", nil); st != 200 || parse(raw)["hasBackPhoto"] != true {
+	if st, _, raw = e.upload(desk, stayID, "BACK", pngBuf.Bytes(), "image/png"); st != 200 || parse(raw)["hasBackPhoto"] != true {
 		t.Fatalf("png upload: %d %s", st, raw)
 	}
 	var enc []byte
@@ -150,23 +143,23 @@ func TestGuestID_Lifecycle_SG805(t *testing.T) {
 	if len(enc) == 0 || bytes.Contains(enc, []byte(gidMarker)) || bytes.HasPrefix(enc, []byte{0xFF, 0xD8}) {
 		t.Fatal("the photo must be stored encrypted")
 	}
-	if st, _, _ = e.upload(desk, stayID, "FRONT", []byte("GIF89a not an image"), "image/gif", nil); st != 415 {
+	if st, _, _ = e.upload(desk, stayID, "FRONT", []byte("GIF89a not an image"), "image/gif"); st != 415 {
 		t.Fatalf("unsupported media: %d", st)
 	}
-	if st, _, raw = e.upload(desk, stayID, "FRONT", make([]byte, 5<<20+10), "image/jpeg", nil); st != 413 || !strings.Contains(string(raw), "PHOTO_TOO_LARGE") {
+	if st, _, raw = e.upload(desk, stayID, "FRONT", make([]byte, 5<<20+10), "image/jpeg"); st != 413 || !strings.Contains(string(raw), "PHOTO_TOO_LARGE") {
 		t.Fatalf("too large: %d %s", st, raw)
 	}
-	if st, _, _ = e.upload(desk, stayID, "FRONT", append([]byte{0xFF, 0xD8, 0xFF, 0xE0}, make([]byte, 30)...), "image/jpeg", nil); st != 422 {
+	if st, _, _ = e.upload(desk, stayID, "FRONT", append([]byte{0xFF, 0xD8, 0xFF, 0xE0}, make([]byte, 30)...), "image/jpeg"); st != 422 {
 		t.Fatalf("broken image: %d", st)
 	}
-	// A photo for a stay with no consent on file needs the consent flag.
-	st, raw = e.checkIn(desk, 2, newKey(), stayBody(nil))
+	// A photo needs no consent either; the old consent field, if sent, is ignored.
+	st, raw = e.checkIn(desk, 3, newKey(), stayBody(nil))
 	other := parse(raw)["id"].(string)
-	if st, _, _ = e.upload(desk, other, "FRONT", src, "image/jpeg", nil); st != 422 {
-		t.Fatalf("photo without consent: %d", st)
+	if st, _, _ = e.upload(desk, other, "FRONT", src, "image/jpeg"); st != 200 {
+		t.Fatalf("photo: %d", st)
 	}
-	if st, _, _ = e.upload(desk, other, "FRONT", src, "image/jpeg", &yes); st != 200 {
-		t.Fatalf("photo with consent: %d", st)
+	if st, raw = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", desk, newKey(), map[string]any{"idNumber": gidNumber, "consent": false}); st != 200 {
+		t.Fatalf("legacy consent:false is ignored: %d %s", st, raw)
 	}
 
 	// AC2: front desk and housekeeping see indicators only, everywhere a stay appears.
@@ -196,7 +189,7 @@ func TestGuestID_Lifecycle_SG805(t *testing.T) {
 	for _, tc := range []struct{ name, token string }{{"owner", owner}, {"manager", mgr}} {
 		st, _, body := e.raw("GET", path, tc.token)
 		rec := parse(body)
-		if st != 200 || rec["idNumberMasked"] != "079******234" || rec["front"] == nil || rec["back"] == nil || rec["consentAt"] == nil || rec["deleteAfter"] != nil || strings.Contains(string(body), gidNumber) {
+		if st != 200 || rec["idNumberMasked"] != "079******234" || rec["front"] == nil || rec["back"] == nil || rec["collectedAt"] == nil || rec["legalBasis"] != "STAY_DECLARATION" || rec["consentAt"] != nil || rec["deleteAfter"] != nil || strings.Contains(string(body), gidNumber) {
 			t.Errorf("%s record: %d %s", tc.name, st, body)
 		}
 	}
@@ -209,10 +202,10 @@ func TestGuestID_Lifecycle_SG805(t *testing.T) {
 		t.Errorf("unknown stay: %d", st)
 	}
 	// A receptionist who may only view the building cannot add ID data.
-	if st, _ = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", viewer, newKey(), map[string]any{"idNumber": gidNumber, "consent": true}); st != 403 {
+	if st, _ = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", viewer, newKey(), map[string]any{"idNumber": gidNumber}); st != 403 {
 		t.Errorf("viewer writes: %d", st)
 	}
-	if st, _ = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", clean, newKey(), map[string]any{"idNumber": gidNumber, "consent": true}); st != 403 {
+	if st, _ = e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", clean, newKey(), map[string]any{"idNumber": gidNumber}); st != 403 {
 		t.Errorf("housekeeping writes: %d", st)
 	}
 
@@ -247,7 +240,7 @@ func TestGuestID_Lifecycle_SG805(t *testing.T) {
 	if st, _, _ = e.raw("POST", path+"/reveal", owner); st != 404 {
 		t.Fatalf("reveal after delete: %d", st)
 	}
-	for action, want := range map[string]int{"GUEST_ID_REVEALED": 1, "GUEST_ID_PHOTO_VIEWED": 1, "GUEST_ID_PHOTO_DOWNLOADED": 1, "GUEST_ID_PHOTO_DELETED": 1, "GUEST_ID_NUMBER_DELETED": 1, "GUEST_ID_NUMBER_SET": 1, "GUEST_ID_PHOTO_SET": 3} {
+	for action, want := range map[string]int{"GUEST_ID_REVEALED": 1, "GUEST_ID_PHOTO_VIEWED": 1, "GUEST_ID_PHOTO_DOWNLOADED": 1, "GUEST_ID_PHOTO_DELETED": 1, "GUEST_ID_NUMBER_DELETED": 1, "GUEST_ID_NUMBER_SET": 2, "GUEST_ID_PHOTO_SET": 3} {
 		if n := e.count(`SELECT count(*) FROM app.audit_logs WHERE action = $1 AND entity_id = $2`, action, stayID); action != "GUEST_ID_PHOTO_SET" && n != want {
 			t.Errorf("%s audit rows = %d, want %d", action, n, want)
 		}
@@ -276,17 +269,16 @@ func TestGuestID_EditWindow_SG805(t *testing.T) {
 	owner := e.ownerSetup()
 	_, raw := e.checkIn(owner, 1, newKey(), stayBody(nil))
 	stayID := parse(raw)["id"].(string)
-	yes := true
 	src := photoJPEG(t, 20, 20)
 	e.exec(`UPDATE app.stays SET status = 'CHECKED_OUT', check_out_at = $2 WHERE id = $1`, stayID, e.start.Add(-time.Hour))
-	if st, _, _ := e.upload(owner, stayID, "FRONT", src, "image/jpeg", &yes); st != 200 {
+	if st, _, _ := e.upload(owner, stayID, "FRONT", src, "image/jpeg"); st != 200 {
 		t.Fatalf("one hour after check-out: %d", st)
 	}
 	e.exec(`UPDATE app.stays SET check_out_at = $2 WHERE id = $1`, stayID, e.start.Add(-25*time.Hour))
-	if st, _, raw := e.upload(owner, stayID, "BACK", src, "image/jpeg", &yes); st != 409 || !strings.Contains(string(raw), "GUEST_ID_CLOSED") {
+	if st, _, raw := e.upload(owner, stayID, "BACK", src, "image/jpeg"); st != 409 || !strings.Contains(string(raw), "GUEST_ID_CLOSED") {
 		t.Fatalf("25 hours after check-out: %d %s", st, raw)
 	}
-	if st, _ := e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", owner, newKey(), map[string]any{"idNumber": gidNumber, "consent": true}); st != 409 {
+	if st, _ := e.send("PUT", "/v1/stays/"+stayID+"/guest-id/number", owner, newKey(), map[string]any{"idNumber": gidNumber}); st != 409 {
 		t.Fatalf("number after the window: %d", st)
 	}
 }
@@ -295,13 +287,12 @@ func TestGuestID_EditWindow_SG805(t *testing.T) {
 func TestGuestID_Retention_SG805_AC5(t *testing.T) {
 	e := newEnv(t)
 	owner := e.ownerSetupRooms(5)
-	yes := true
 	src := photoJPEG(t, 20, 20)
 	stays := map[string]string{} // name -> stay id
 	for i, name := range []string{"old", "recent", "active", "short"} {
 		_, raw := e.checkIn(owner, i+1, newKey(), stayBody(map[string]any{"idNumber": gidNumber, "idConsent": true}))
 		stays[name] = parse(raw)["id"].(string)
-		if st, _, _ := e.upload(owner, stays[name], "FRONT", src, "image/jpeg", &yes); st != 200 {
+		if st, _, _ := e.upload(owner, stays[name], "FRONT", src, "image/jpeg"); st != 200 {
 			t.Fatalf("upload %s: %d", name, st)
 		}
 	}

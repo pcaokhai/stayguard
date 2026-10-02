@@ -7,17 +7,17 @@ WHERE s.tenant_id = @tenant_id AND s.id = @stay_id
 FOR UPDATE OF s;
 
 -- name: UpsertGuestNumber :exec
-INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, consent_at, consent_by)
+INSERT INTO app.guest_ids (tenant_id, stay_id, number_enc, collected_at, collected_by)
 VALUES (@tenant_id, @stay_id, @number_enc, @at, sqlc.narg(by))
 ON CONFLICT (tenant_id, stay_id) DO UPDATE SET number_enc = EXCLUDED.number_enc;
 
--- name: EnsureGuestConsent :exec
-INSERT INTO app.guest_ids (tenant_id, stay_id, consent_at, consent_by)
+-- name: EnsureGuestRecord :exec
+INSERT INTO app.guest_ids (tenant_id, stay_id, collected_at, collected_by)
 VALUES (@tenant_id, @stay_id, @at, sqlc.narg(by))
 ON CONFLICT (tenant_id, stay_id) DO NOTHING;
 
 -- name: GetGuestIDRow :one
-SELECT number_enc, consent_at FROM app.guest_ids WHERE tenant_id = @tenant_id AND stay_id = @stay_id;
+SELECT number_enc, collected_at FROM app.guest_ids WHERE tenant_id = @tenant_id AND stay_id = @stay_id;
 
 -- name: ClearGuestNumber :execrows
 UPDATE app.guest_ids SET number_enc = NULL WHERE tenant_id = @tenant_id AND stay_id = @stay_id AND number_enc IS NOT NULL;

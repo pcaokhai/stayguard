@@ -31,8 +31,8 @@ func TestIdNumberStored_SG203_AC4(t *testing.T) {
 	// The hash input holds a keyed fingerprint, not the plain id: it equals the expected body hash
 	// and differs from the hash of a body that carries the id itself.
 	fp := hex.EncodeToString(e.enc.Fingerprint(tenantA, "stays.id_number", []byte(idMarker)))
-	want := RequestHash([]byte(`{"rentalType":"HOURLY","guestName":"Marker Guest","guestPhone":"+84 900 000 111","idNumberFingerprint":"` + fp + `","idConsent":true,"deposit":200000}`))
-	plain := RequestHash([]byte(`{"rentalType":"HOURLY","guestName":"Marker Guest","guestPhone":"+84 900 000 111","idNumberFingerprint":"` + idMarker + `","idConsent":true,"deposit":200000}`))
+	want := RequestHash([]byte(`{"rentalType":"HOURLY","guestName":"Marker Guest","guestPhone":"+84 900 000 111","idNumberFingerprint":"` + fp + `","deposit":200000}`))
+	plain := RequestHash([]byte(`{"rentalType":"HOURLY","guestName":"Marker Guest","guestPhone":"+84 900 000 111","idNumberFingerprint":"` + idMarker + `","deposit":200000}`))
 	if got := e.idem.hashes[0]; got != want || got == plain {
 		t.Fatalf("hash %s want %s", got, want)
 	}

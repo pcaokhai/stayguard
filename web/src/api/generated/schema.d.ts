@@ -1583,7 +1583,7 @@ export interface paths {
         get?: never;
         /**
          * Upload or replace an ID photo (front desk cannot read it back)
-         * @description JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. Requires consent (from check-in or setGuestIdNumber).
+         * @description JPEG or PNG, max 5 MB; the server strips metadata, re-encodes and encrypts before storing. Allowed while the stay is ACTIVE or within 24 h after check-out. The ID is collected under the stay-declaration duty; no consent is asked.
          */
         put: operations["uploadGuestIdPhoto"];
         post?: never;
@@ -1811,7 +1811,10 @@ export interface components {
             /** @description Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING */
             idNumber?: string | null;
             deposit: components["schemas"]["Vnd"];
-            /** @description Required true when idNumber is given */
+            /**
+             * @deprecated
+             * @description Ignored. The ID is collected under the stay-declaration duty, not by consent.
+             */
             idConsent?: boolean;
         };
         BillLine: {
@@ -2645,7 +2648,18 @@ export interface components {
             idNumberMasked: string | null;
             front: components["schemas"]["IdPhotoMeta"] | null;
             back: components["schemas"]["IdPhotoMeta"] | null;
+            /**
+             * @description Why the ID is kept (the duty to declare stays)
+             * @enum {string}
+             */
+            legalBasis?: "STAY_DECLARATION";
             /** Format: date-time */
+            collectedAt?: string | null;
+            /**
+             * Format: date-time
+             * @deprecated
+             * @description Never set; replaced by legalBasis and collectedAt.
+             */
             consentAt?: string | null;
             /** Format: date */
             deleteAfter: string | null;
@@ -5409,8 +5423,11 @@ export interface operations {
             content: {
                 "application/json": {
                     idNumber: string;
-                    /** @constant */
-                    consent: true;
+                    /**
+                     * @deprecated
+                     * @description Ignored. The ID is collected under the stay-declaration duty, not by consent.
+                     */
+                    consent?: boolean;
                 };
             };
         };
