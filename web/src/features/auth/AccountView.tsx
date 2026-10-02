@@ -75,9 +75,9 @@ export function AccountView() {
               <Skeleton className="h-24 w-full" />
             )}
           </Card>
-          {isReady("/schedule") && (
+          {isReady("/me/schedule") && (
             <NavCard
-              href="/schedule"
+              href="/me/schedule"
               icon={Clock}
               title={t("account.schedule")}
               sub={t("account.scheduleSub")}

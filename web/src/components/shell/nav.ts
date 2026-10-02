@@ -32,6 +32,7 @@ const READY = new Set<string>([
   "/owner/rooms",
   "/housekeeping",
   "/account",
+  "/me/schedule",
   "/stays",
   "/shift",
   "/owner/alerts",
@@ -50,12 +51,12 @@ const DESK_TABS: NavItem[] = [
   { label: "nav.roomMap", href: "/rooms", icon: Building2 },
   { label: "nav.history", href: "/stays", icon: Clock },
   { label: "nav.shift", href: "/shift", icon: Banknote },
-  { label: "nav.schedule", href: "/schedule", icon: Users },
+  { label: "nav.schedule", href: "/me/schedule", icon: Users },
   { label: "nav.account", href: "/account", icon: User },
 ];
 const HK_TABS: NavItem[] = [
   { label: "nav.clean", href: "/housekeeping", icon: BedDouble },
-  { label: "nav.schedule", href: "/schedule", icon: Users },
+  { label: "nav.schedule", href: "/me/schedule", icon: Users },
   { label: "nav.account", href: "/account", icon: User },
 ];
 

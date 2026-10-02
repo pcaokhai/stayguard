@@ -169,7 +169,7 @@ Tests (required): payroll per pay type with the rounding rule; report totals rec
 #### [x] F-W1 Guest ID UI (WEB-1)
 Show the check-in ID block, indicators everywhere, owner ID panel (masked number, Show and Hide, thumbnails), viewers XemGiayTo and XemGiayToPC; images fetched with no-store and revoked object URLs on close.
 
-#### [ ] F-W2 My schedule and leave (WEB-1)
+#### [x] F-W2 My schedule and leave (WEB-1)
 Boards: LichCuaToi, XinNghi, NghiCuaToi, HuyNghi, LichNghiLeTanPC.
 
 #### [x] F-W3 Stock pages (WEB-2)

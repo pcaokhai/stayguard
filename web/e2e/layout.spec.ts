@@ -43,6 +43,9 @@ const ROUTES = [
   "/sign-in",
   "/set-pin",
   "/account",
+  "/me/schedule",
+  "/me/leave",
+  "/me/leave/new",
   "/states?kind=forbidden",
 ];
 const WIDTHS = [390, 834, 1280];

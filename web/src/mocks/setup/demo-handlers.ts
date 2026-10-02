@@ -166,6 +166,67 @@ const USERS: Record<string, { name: string; role: string }> = {
 };
 let wrongPins = 0;
 
+const dayIso = (offset: number) =>
+  new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+const LEAVE = [
+  {
+    id: "lv1",
+    userId: "u1",
+    userName: "Chị Hoa",
+    fromDate: dayIso(1),
+    toDate: dayIso(1),
+    shift: "AFTERNOON",
+    kind: "PAID",
+    reason: "việc gia đình",
+    status: "PENDING",
+    createdAt: ago(1500),
+    decidedAt: null,
+    declineReason: null,
+  },
+  {
+    id: "lv2",
+    userId: "u1",
+    userName: "Chị Hoa",
+    fromDate: dayIso(12),
+    toDate: dayIso(12),
+    shift: null,
+    kind: "PAID",
+    reason: "về quê",
+    status: "APPROVED",
+    createdAt: ago(3000),
+    decidedAt: ago(2900),
+    declineReason: null,
+  },
+  {
+    id: "lv3",
+    userId: "u1",
+    userName: "Chị Hoa",
+    fromDate: dayIso(-4),
+    toDate: dayIso(-4),
+    shift: "AFTERNOON",
+    kind: "UNPAID",
+    reason: null,
+    status: "DECLINED",
+    createdAt: ago(9000),
+    decidedAt: ago(8800),
+    declineReason: "thiếu người thay",
+  },
+  {
+    id: "lv4",
+    userId: "u1",
+    userName: "Chị Hoa",
+    fromDate: dayIso(-17),
+    toDate: dayIso(-17),
+    shift: null,
+    kind: "SICK",
+    reason: "ốm",
+    status: "TAKEN",
+    createdAt: ago(30000),
+    decidedAt: ago(29000),
+    declineReason: null,
+  },
+];
+
 // Housekeeping list as in the boards: five rooms to clean (longest wait first) and eight done today.
 const task = (id: string, room: string, building: string, waiting: number, done = false) => ({
   id,
@@ -519,6 +580,52 @@ export const demoHandlers = [
   ),
   http.put("*/v1/stays/:id/guest-id/photos/:side", () => json(id(true, true, false))),
   http.put("*/v1/stays/:id/guest-id/number", () => json(id(true, false, false))),
+  // Schedule and leave (F-W2): afternoon shifts Monday to Saturday, Sunday off, one pending request.
+  http.get("*/v1/me/roster", ({ request }) => {
+    const q = new URL(request.url).searchParams;
+    const from = q.get("from") ?? "";
+    const to = q.get("to") ?? "";
+    const assignments: { userId: string; date: string; shift: string }[] = [];
+    for (
+      let d = new Date(`${from}T12:00:00`);
+      d <= new Date(`${to}T12:00:00`);
+      d.setDate(d.getDate() + 1)
+    ) {
+      if (d.getDay() === 0) continue;
+      assignments.push({ userId: "u1", date: d.toISOString().slice(0, 10), shift: "AFTERNOON" });
+    }
+    return json({
+      from,
+      to,
+      assignments,
+      leave: LEAVE.filter((l) => l.status === "PENDING"),
+      gaps: [],
+    });
+  }),
+  http.get("*/v1/me/leave-requests", () =>
+    json({
+      items: LEAVE,
+      balance: { year: new Date().getFullYear(), annual: 12, used: 3, left: 9 },
+    }),
+  ),
+  http.post("*/v1/me/leave-requests", async ({ request }) => {
+    const b = (await request.json()) as Record<string, unknown>;
+    const next = {
+      id: `lv${LEAVE.length + 1}`,
+      userId: "u1",
+      userName: "Chị Hoa",
+      status: "PENDING",
+      createdAt: ago(0),
+      ...b,
+    };
+    LEAVE.unshift(next as (typeof LEAVE)[number]);
+    return json(next, 201);
+  }),
+  http.post("*/v1/me/leave-requests/:id/cancel", ({ params }) => {
+    const r = LEAVE.find((l) => l.id === params.id);
+    if (r) r.status = r.status === "PENDING" ? "CANCELLED" : "CANCEL_REQUESTED";
+    return json(r ?? {});
+  }),
   http.post("*/v1/auth/sign-out", () => new HttpResponse(null, { status: 204 })),
   http.put("*/v1/me/pin", async ({ request }) => {
     const b = (await request.json()) as { currentPin: string };
