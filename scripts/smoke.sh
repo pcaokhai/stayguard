@@ -24,8 +24,11 @@ make deploy/.env.local >/dev/null
 if [ "${REUSE:-0}" != 1 ]; then
 	"${COMPOSE[@]}" down -v >/dev/null 2>&1 || true
 	echo "== starting the stack"
-	"${COMPOSE[@]}" up -d --build db api >/dev/null
+	# The API now refuses to start on an unmigrated database (key fingerprint check): migrate first, then start it.
+	"${COMPOSE[@]}" up -d db >/dev/null
+	"${COMPOSE[@]}" build api >/dev/null
 	"${COMPOSE[@]}" run --rm api migrate >/dev/null
+	"${COMPOSE[@]}" up -d api >/dev/null
 fi
 for _ in $(seq 60); do
 	curl -fsS "$BASE/readyz" >/dev/null 2>&1 && break
@@ -54,4 +57,4 @@ fi
 
 echo "== running the money path"
 cd web
-npx playwright test e2e/smoke.spec.ts --reporter=list
+npx playwright test e2e/smoke.spec.ts e2e/smoke.then-partial.spec.ts --workers=1 --reporter=list

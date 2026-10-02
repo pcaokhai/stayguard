@@ -153,7 +153,8 @@
     "actionFailed": "Không tạo được thanh toán mới. Thử lại.",
     "qrRemaining": "Tạo QR cho {amount} còn thiếu",
     "cashRemaining": "Thu {amount} tiền mặt",
-    "remaining": "Còn thiếu"
+    "remaining": "Còn thiếu",
+    "receivedSoFar": "Đã nhận"
   },
   "hk": {
     "title": "Buồng phòng",

@@ -153,7 +153,8 @@
     "actionFailed": "Could not start the new payment. Try again.",
     "qrRemaining": "QR for the remaining {amount}",
     "cashRemaining": "Take {amount} in cash",
-    "remaining": "Still to pay"
+    "remaining": "Still to pay",
+    "receivedSoFar": "Received so far"
   },
   "hk": {
     "title": "Housekeeping",

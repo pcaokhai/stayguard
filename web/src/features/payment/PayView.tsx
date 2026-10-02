@@ -94,7 +94,7 @@ function Waiting({ p, paid }: { p: Payment; paid: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 px-5 pb-8 lg:pb-0">
       {/* Amounts on the QR screen never animate (docs/16 §4 rule 4). */}
-      <p className="text-[44px] font-bold leading-none">{formatVnd(p.amount)}</p>
+      <p className="text-[44px] font-bold leading-none">{formatVnd(p.qr?.amount ?? p.amount)}</p>
       <AnimatePresence>
         {qrImg && !paid && (
           <motion.div exit={{ scale: 0.9, opacity: 0 }} transition={{ duration: 0.3 }}>
@@ -109,6 +109,18 @@ function Waiting({ p, paid }: { p: Payment; paid: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+      {(p.receivedAmount ?? 0) > 0 && (
+        <Card className="w-full gap-1.5 p-4 shadow-none">
+          <p className={row}>
+            <span className="text-muted-foreground">{t("pay.receivedSoFar")}</span>
+            <span>{formatVnd(p.receivedAmount ?? 0)}</span>
+          </p>
+          <p className={row}>
+            <span className="text-muted-foreground">{t("pay.remaining")}</span>
+            <b className="text-warn-ink">{formatVnd(p.remaining)}</b>
+          </p>
+        </Card>
+      )}
       {qr && (
         <Card className="w-full gap-1.5 p-4 text-muted-foreground shadow-none">
           <p className={row}>
