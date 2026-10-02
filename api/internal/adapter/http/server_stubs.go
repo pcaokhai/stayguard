@@ -30,6 +30,7 @@ type Server struct {
 	stayOps      StayOpsService
 	shifts       ShiftService
 	monitor      MonitorService
+	maintenance  MaintenanceService
 	staff        StaffService
 	bank         BankService
 }
@@ -55,10 +56,6 @@ func (Server) GetReadiness(context.Context, gen.GetReadinessRequestObject) (gen.
 }
 
 func (Server) StreamPaymentEvents(context.Context, gen.StreamPaymentEventsRequestObject) (gen.StreamPaymentEventsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ReportRoomUsage(context.Context, gen.ReportRoomUsageRequestObject) (gen.ReportRoomUsageResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -150,10 +147,6 @@ func (Server) GetRoster(context.Context, gen.GetRosterRequestObject) (gen.GetRos
 	return nil, errNotImplemented
 }
 
-func (Server) GetTicket(context.Context, gen.GetTicketRequestObject) (gen.GetTicketResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListLeaveRequests(context.Context, gen.ListLeaveRequestsRequestObject) (gen.ListLeaveRequestsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -170,10 +163,6 @@ func (Server) ListStockMovements(context.Context, gen.ListStockMovementsRequestO
 	return nil, errNotImplemented
 }
 
-func (Server) ListTickets(context.Context, gen.ListTicketsRequestObject) (gen.ListTicketsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject) (gen.MarkPayrollPaidResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -187,10 +176,6 @@ func (Server) PutRoster(context.Context, gen.PutRosterRequestObject) (gen.PutRos
 }
 
 func (Server) RemoveService(context.Context, gen.RemoveServiceRequestObject) (gen.RemoveServiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ReportDamage(context.Context, gen.ReportDamageRequestObject) (gen.ReportDamageResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -227,10 +212,6 @@ func (Server) UpdateRoom(context.Context, gen.UpdateRoomRequestObject) (gen.Upda
 }
 
 func (Server) UpdateService(context.Context, gen.UpdateServiceRequestObject) (gen.UpdateServiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateTicket(context.Context, gen.UpdateTicketRequestObject) (gen.UpdateTicketResponseObject, error) {
 	return nil, errNotImplemented
 }
 

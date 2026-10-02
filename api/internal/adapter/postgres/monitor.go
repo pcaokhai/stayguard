@@ -117,3 +117,19 @@ func (MonitorRepo) LongToClean(ctx context.Context, tx app.Tx, before time.Time)
 	}
 	return out, nil
 }
+
+func (MonitorRepo) OpenTickets(ctx context.Context, tx app.Tx) ([]app.OpenTicket, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListOpenTickets(ctx, t.tenant)
+	if err != nil {
+		return nil, wrap("list open tickets", err)
+	}
+	out := make([]app.OpenTicket, len(rows))
+	for i, r := range rows {
+		out[i] = app.OpenTicket{ID: r.ID, RoomCode: r.RoomCode}
+	}
+	return out, nil
+}

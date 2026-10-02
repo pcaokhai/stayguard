@@ -17,6 +17,7 @@ var appTables = []string{
 	"pin_credentials", "staff_profiles", "building_permissions", "bank_accounts",
 	"stay_edits", "alerts", // 0013 (L-B1)
 	"shifts", "cash_entries", // 0014 (L-B2)
+	"maintenance_tickets", // 0016 (L-B4)
 }
 
 func queryStrings(t testing.TB, db, q string) []string {

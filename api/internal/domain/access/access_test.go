@@ -17,7 +17,7 @@ var want = map[string]struct{ roles, need string }{
 	"createPayment": {"MOR", "E"}, "simulatePaymentReceived": {"MOR", "E"}, "getPayment": {"MOR", "V"}, "streamPaymentEvents": {"MOR", "V"},
 	"listHousekeepingTasks": {"MORH", "-"},
 	// ponytail: receptionist and manager may clean too (docs/15 rule 6); L-B4 widens this operation.
-	"completeHousekeepingTask": {"OH", "E"},
+	"completeHousekeepingTask": {"MORH", "E"},
 	"reportRoomUsage":          {"MORH", "E"}, "reportDamage": {"MORH", "E"},
 	"getCurrentShift": {"MOR", "E"}, "closeShift": {"MOR", "E"}, "recordCashPayout": {"MOR", "E"},
 	"editCheckInTime": {"MOR", "E"}, "moveStay": {"MOR", "E"}, "listStays": {"MOR", "-"}, "getReceipt": {"MOR", "V"},

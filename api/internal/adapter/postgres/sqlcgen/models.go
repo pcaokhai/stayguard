@@ -111,6 +111,26 @@ type AppInvoice struct {
 	PaidAt    pgtype.Timestamptz
 }
 
+type AppMaintenanceTicket struct {
+	ID             string
+	TenantID       string
+	Code           string
+	UnitID         string
+	Category       string
+	Description    string
+	Status         string
+	RoomLocked     bool
+	ReportedBy     pgtype.Text
+	ReportedAt     pgtype.Timestamptz
+	ExpectedDoneOn pgtype.Date
+	PartsCost      pgtype.Int8
+	LabourCost     pgtype.Int8
+	Repairer       pgtype.Text
+	Note           pgtype.Text
+	CompletedAt    pgtype.Timestamptz
+	CompletedBy    pgtype.Text
+}
+
 type AppPayment struct {
 	ID             string
 	TenantID       string
@@ -269,6 +289,7 @@ type AppTenant struct {
 	HookID           pgtype.Text
 	SepaySecretEnc   []byte
 	SepaySignatureOk pgtype.Bool
+	TicketSeq        int32
 }
 
 type AppTransaction struct {

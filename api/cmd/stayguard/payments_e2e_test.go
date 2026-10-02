@@ -230,8 +230,9 @@ func TestHousekeepingAfterPayment_A3(t *testing.T) {
 		t.Errorf("room = %s, want VACANT", r.roomStatus())
 	}
 	rec := r.e.demo("RECEPTIONIST", "vi", r.tenant).str("accessToken")
-	if st, _ := r.e.send("POST", "/v1/housekeeping/tasks/"+id+"/complete", rec, newKey(), nil); st != 403 {
-		t.Errorf("receptionist complete = %d, want 403", st)
+	// Since L-B4 any role with EDIT on the building can mark a room clean; on a clean room it only answers DONE again.
+	if st, _ := r.e.send("POST", "/v1/housekeeping/tasks/"+id+"/complete", rec, newKey(), nil); st != 200 {
+		t.Errorf("receptionist complete = %d, want 200", st)
 	}
 }
 

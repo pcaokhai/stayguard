@@ -110,7 +110,7 @@ Tests (required): expected cash with deposits, refunds and payouts; a closed shi
 `getOwnerOverview` v2 (`buildings`, `attention`), `listAlerts`, `markAlertRead`, `listTransactions`, `linkTransferToInvoice`, `listAuditLogs`.
 Tests (required): link only by OWNER, only for bank events, once (409), settles the invoice through the settlement code path.
 
-#### [ ] L-B4 Cleaning by any role, damage reports, tickets (API-2) — migration 0016
+#### [x] L-B4 Cleaning by any role, damage reports, tickets (API-2) — migration 0016
 `completeHousekeepingTask` for OWNER, MANAGER, RECEPTIONIST, HOUSEKEEPING with EDIT; `reportDamage` (LOCK_ROOM sets MAINTENANCE, 409 if occupied); `listTickets`, `getTicket`, `updateTicket` (costs by OWNER; DONE unlocks the room; expense posting comes in F-A4).
 Tests: role and building checks; lock refused with a guest.
 

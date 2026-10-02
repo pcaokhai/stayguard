@@ -133,7 +133,7 @@ var rules = map[string]rule{
 	"getPayment":              {roles: front, min: VIEW, scope: ScopeBuilding},
 	"streamPaymentEvents":     {roles: front, min: VIEW, scope: ScopeBuilding},
 
-	"completeHousekeepingTask": {roles: []Role{RoleOwner, RoleHousekeeping}, min: EDIT, scope: ScopeBuilding},
+	"completeHousekeepingTask": {roles: anyRole, min: EDIT, scope: ScopeBuilding},
 	"reportRoomUsage":          {roles: anyRole, min: EDIT, scope: ScopeBuilding},
 
 	"getCurrentShift":  {roles: front, min: EDIT, scope: ScopeAnyEditable},

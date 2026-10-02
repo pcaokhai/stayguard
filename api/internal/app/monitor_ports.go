@@ -55,6 +55,9 @@ type AuditFilter struct {
 	Limit    int
 }
 
+// OpenTicket is a maintenance ticket that is not DONE.
+type OpenTicket struct{ ID, RoomCode string }
+
 type LongToClean struct {
 	RoomCode string
 	Since    time.Time
@@ -69,4 +72,5 @@ type MonitorRepo interface {
 	Transactions(ctx context.Context, tx Tx, f TransactionFilter) ([]TransactionRow, error)
 	AuditLogs(ctx context.Context, tx Tx, f AuditFilter) ([]AuditRow, error)
 	LongToClean(ctx context.Context, tx Tx, before time.Time) ([]LongToClean, error)
+	OpenTickets(ctx context.Context, tx Tx) ([]OpenTicket, error)
 }

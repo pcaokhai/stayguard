@@ -122,6 +122,7 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 		Probe: postgres.NewReadinessProbe(pool), Sessions: sessions, DemoEnabled: true,
 		Auth: auth, Staff: newStaff(uow, auth, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk), Bank: bank,
 		Rooms: mk(uow, clk), RoomMapEnabled: true, Stays: stays, CheckInEnabled: true, Billing: billing, CheckoutEnabled: true, Payments: payments, StayOps: stayOps, Shifts: shifts, Monitor: monitorOps{newMonitor(uow, clk), payments},
+		Maintenance:  newMaintenance(uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clk),
 		Owner:        app.NewOwner(uow, postgres.OwnerRepo{}, mk(uow, clk), clk).WithMonitor(postgres.MonitorRepo{}),
 		Housekeeping: app.NewHousekeeping(uow, postgres.HousekeepingRepo{}, permissions.RoleBased{}, postgres.NewAuditWriter(), ids.New(clk.Now), clk),
 	})

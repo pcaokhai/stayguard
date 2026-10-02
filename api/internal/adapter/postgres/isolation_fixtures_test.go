@@ -37,6 +37,7 @@ var isolationFixtures = []fixture{
 	{"alerts", `INSERT INTO app.alerts (id, tenant_id, kind) VALUES ($2::text || '_al', $1::text, 'CASH_OVER')`},
 	{"shifts", `INSERT INTO app.shifts (id, tenant_id, user_id, shift_code, opened_at) VALUES ($2::text || '_sh', $1::text, $2::text || '_u', 'MORNING', now())`},
 	{"cash_entries", `INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, created_at) VALUES ($2::text || '_ce', $1::text, $2::text || '_sh', 'PAYOUT', 1, now())`},
+	{"maintenance_tickets", `INSERT INTO app.maintenance_tickets (id, tenant_id, code, unit_id, category, description, reported_at) VALUES ($2::text || '_mt', $1::text, 'BT-001', $2::text || '_un', 'TV', 'd', now())`},
 	{"audit_logs", `INSERT INTO app.audit_logs (id, tenant_id, action, entity_type, entity_id) VALUES ($2::text || '_au', $1::text, 'a', 'e', $2::text)`},
 	{"idempotency_keys", `INSERT INTO app.idempotency_keys (tenant_id, route, key, request_hash, expires_at) VALUES ($1::text, 'r', $2::text, 'h', now() + interval '1 hour')`},
 }

@@ -199,5 +199,12 @@ func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
 		minutes := int(now.Sub(w.Since) / time.Minute)
 		out.Attention = append(out.Attention, AttentionItem{Kind: "LONG_TO_CLEAN", Ref: w.RoomCode, RoomCode: w.RoomCode, Minutes: &minutes})
 	}
+	tickets, err := o.monitor.OpenTickets(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("open tickets: %w", err)
+	}
+	for _, t := range tickets {
+		out.Attention = append(out.Attention, AttentionItem{Kind: "TICKET_OPEN", Ref: t.ID, RoomCode: t.RoomCode})
+	}
 	return nil
 }

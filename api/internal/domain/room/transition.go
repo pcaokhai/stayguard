@@ -36,3 +36,22 @@ func MoveOut(stored Status) (Status, error) {
 	}
 	return StatusToClean, nil
 }
+
+// ErrOccupied: a room with a guest in it cannot be locked for maintenance.
+var ErrOccupied = errors.New("room: occupied")
+
+// LockForMaintenance takes a room out of service. A VACANT or TO_CLEAN room is locked at once; one with a guest is refused.
+func LockForMaintenance(stored Status) (Status, error) {
+	if stored == StatusOccupied {
+		return "", ErrOccupied
+	}
+	return StatusMaintenance, nil
+}
+
+// Reopen puts a room under maintenance back in service as VACANT; any other status is left as it is.
+func Reopen(stored Status) Status {
+	if stored == StatusMaintenance {
+		return StatusVacant
+	}
+	return stored
+}
