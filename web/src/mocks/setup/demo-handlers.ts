@@ -164,6 +164,164 @@ const USERS: Record<string, { name: string; role: string }> = {
 };
 let wrongPins = 0;
 
+// Owner overview, alerts and activity log fixtures (boards TongQuan, CanhBao, NhatKy).
+const OVERVIEW_BUILDINGS = [
+  ["A", 18, 7, 8, 2, 1, 1, 39, 2020000],
+  ["B", 17, 5, 9, 2, 0, 1, 29, 1440000],
+  ["C", 12, 4, 7, 1, 1, 0, 33, 860000],
+  ["D", 10, 2, 7, 1, 0, 0, 20, 540000],
+].map(
+  ([
+    code,
+    totalRooms,
+    occupied,
+    vacant,
+    toClean,
+    overdue,
+    maintenance,
+    occupancyPct,
+    revenueToday,
+  ]) => ({
+    buildingId: code,
+    code,
+    totalRooms,
+    occupied,
+    vacant,
+    toClean,
+    overdue,
+    maintenance,
+    occupancyPct,
+    revenueToday,
+  }),
+);
+const readAlerts = new Set<string>(["al4"]);
+const ALERTS = [
+  {
+    id: "al1",
+    kind: "PAYMENT_MISMATCH",
+    createdAt: ago(4),
+    roomCode: "A101",
+    actorName: null,
+    amount: 30000,
+    stayId: "stay-1",
+    details: { billCode: "PH0930A101", expected: "40000", received: "30000" },
+  },
+  {
+    id: "al2",
+    kind: "STAY_TIME_EDITED",
+    createdAt: ago(53),
+    roomCode: "A202",
+    actorName: "Lễ tân demo",
+    amount: null,
+    stayId: "stay-2",
+    details: { oldTime: "12:50", newTime: "13:10", reason: "ghi nhầm giờ" },
+  },
+  {
+    id: "al3",
+    kind: "CASH_SHORT",
+    createdAt: ago(120),
+    shiftId: "sh1",
+    roomCode: null,
+    actorName: "Chị Hoa",
+    amount: 50000,
+    details: { shiftName: "Ca sáng", reason: "trả lại khách tiền thừa" },
+  },
+  {
+    id: "al4",
+    kind: "UNUSED_ROOM_REPORT",
+    createdAt: ago(205),
+    roomCode: "A205",
+    actorName: "Chị Lan",
+    amount: null,
+    details: { note: "Phòng đang bảo trì nhưng giường có người nằm" },
+  },
+];
+const AUDIT_PAGE = 8;
+const localDay = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const when = (daysAgo: number, h: number, m: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+const AUDIT = [
+  {
+    id: "au1",
+    at: when(0, 14, 5),
+    actorName: "Chủ",
+    category: "ACCESS_STAFF",
+    action: "staff.access_changed",
+    details: { staff: "Chị Hoa", building: "Tòa A", from: "Sửa", to: "Không" },
+  },
+  {
+    id: "au2",
+    at: when(0, 13, 12),
+    actorName: "Lễ tân demo",
+    category: "STAY_TIME",
+    action: "stay.check_in_edited",
+    details: { room: "A202", old: "12:50", new: "13:10" },
+  },
+  {
+    id: "au3",
+    at: when(0, 12, 5),
+    actorName: "Chị Hoa",
+    category: "SHIFT",
+    action: "shift.closed",
+    details: { difference: "-50000" },
+  },
+  {
+    id: "au4",
+    at: when(0, 11, 40),
+    actorName: "Chủ",
+    category: "ACCESS_STAFF",
+    action: "staff.pin_reset",
+    details: { staff: "Anh Minh" },
+  },
+  {
+    id: "au5",
+    at: when(1, 22, 10),
+    actorName: "Anh Minh",
+    category: "MONEY",
+    action: "transfer.linked",
+    details: { amount: "150000", bill: "PH0929B203" },
+  },
+  {
+    id: "au6",
+    at: when(1, 17, 30),
+    actorName: "Chị Lan",
+    category: "STOCK",
+    action: "stocktake.created",
+    details: { n: "2" },
+  },
+  {
+    id: "au7",
+    at: when(1, 9, 15),
+    actorName: "Chủ",
+    category: "RATES_SETTINGS",
+    action: "rate.updated",
+    details: { plan: "VIP qua đêm", from: "300000", to: "320000" },
+  },
+  {
+    id: "au8",
+    at: when(2, 20, 45),
+    actorName: "Lễ tân demo",
+    category: "STAY_TIME",
+    action: "stay.moved",
+    details: { from: "A104", to: "A301" },
+  },
+  {
+    id: "au9",
+    at: when(3, 8, 30),
+    actorName: "Chị Hoa",
+    category: "SHIFT",
+    action: "shift.payout",
+    details: { amount: "120000" },
+  },
+];
+
 export const demoHandlers = [
   http.post("*/v1/auth/sign-in", async ({ request }) => {
     const b = (await request.json()) as { guesthouseCode: string; username: string; pin: string };
@@ -346,20 +504,60 @@ export const demoHandlers = [
   http.get("*/v1/owner/overview", () =>
     json({
       date: new Date().toISOString().slice(0, 10),
-      revenueTotal: 3460000,
-      transfersReceived: 2180000,
-      cashExpected: 1280000,
-      byBuilding: [
-        { buildingId: "A", name: "Tòa A", revenue: 2020000 },
-        { buildingId: "B", name: "Tòa B", revenue: 1440000 },
-      ],
-      occupancy: { occupiedRooms: 10, totalRooms: 35, overdueRooms: 1 },
-      alerts: [],
+      revenueTotal: 4860000,
+      transfersReceived: 3120000,
+      cashExpected: 1740000,
+      byBuilding: OVERVIEW_BUILDINGS.map((b) => ({
+        buildingId: b.buildingId,
+        name: `Tòa ${b.code}`,
+        revenue: b.revenueToday,
+      })),
+      occupancy: { occupiedRooms: 18, totalRooms: 57, overdueRooms: 2 },
+      alerts: ALERTS.filter((a) => !readAlerts.has(a.id)),
       latestPayments: [
-        { paymentId: "p1", roomCode: "A101", method: "TRANSFER", amount: 40000, at: ago(10) },
-        { paymentId: "p2", roomCode: "A103", method: "TRANSFER", amount: 300000, at: ago(55) },
-        { paymentId: "p3", roomCode: "A302", method: "CASH", amount: 200000, at: ago(120) },
+        { paymentId: "p1", roomCode: "A101", method: "TRANSFER", amount: 30000, at: ago(4) },
+        { paymentId: "p2", roomCode: "A202", method: "TRANSFER", amount: 80000, at: ago(10) },
+        { paymentId: "p3", roomCode: "B203", method: "CASH", amount: 80000, at: ago(15) },
+        { paymentId: "p4", roomCode: null, method: "TRANSFER", amount: 150000, at: ago(45) },
+        { paymentId: "p5", roomCode: "A104", method: "TRANSFER", amount: 200000, at: ago(83) },
+      ],
+      buildings: OVERVIEW_BUILDINGS,
+      attention: [
+        { kind: "OVERDUE_ROOM", ref: "A201", roomCode: "A201", minutes: 120, amount: null },
+        { kind: "OVERDUE_ROOM", ref: "C105", roomCode: "C105", minutes: 40, amount: null },
+        { kind: "PAYMENT_MISMATCH", ref: "al1", roomCode: "A101", minutes: null, amount: 30000 },
+        { kind: "LONG_TO_CLEAN", ref: "A103", roomCode: "A103", minutes: 55, amount: null },
+        { kind: "CASH_SHORT", ref: "al3", roomCode: null, minutes: null, amount: 50000 },
       ],
     }),
   ),
+  http.get("*/v1/owner/alerts", ({ request }) => {
+    const unread = new URL(request.url).searchParams.get("unread") === "true";
+    return json({
+      items: ALERTS.filter((a) => !unread || !readAlerts.has(a.id)),
+      nextCursor: null,
+    });
+  }),
+  http.post("*/v1/owner/alerts/:id/read", ({ params }) => {
+    readAlerts.add(String(params.id));
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.get("*/v1/owner/audit-logs", ({ request }) => {
+    const q = new URL(request.url).searchParams;
+    const from = q.get("from") ?? "";
+    const to = q.get("to") ?? "";
+    const text = (q.get("q") ?? "").toLowerCase();
+    const rows = AUDIT.filter(
+      (e) =>
+        localDay(e.at) >= from &&
+        localDay(e.at) <= to &&
+        (!q.get("category") || e.category === q.get("category")) &&
+        (!text || JSON.stringify(e).toLowerCase().includes(text)),
+    );
+    const start = q.get("cursor") ? Number(q.get("cursor")) : 0;
+    return json({
+      items: rows.slice(start, start + AUDIT_PAGE),
+      nextCursor: start + AUDIT_PAGE < rows.length ? String(start + AUDIT_PAGE) : null,
+    });
+  }),
 ];

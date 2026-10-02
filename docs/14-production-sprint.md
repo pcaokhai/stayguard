@@ -130,7 +130,7 @@ Boards: ChiTrongCa, ChiTrongCaPC, GiaoCa, GiaoCaPC, LichSuLuotO, LichSuLeTanPC. 
 #### [ ] L-W5 Cleaning and reports (WEB-1)
 Boards: PhongCanDon, PhongCanDonPC, BuongPhongP, PhongCanDonBP, BaoHuHong, BaoPhongDung. Cleaned card slides out, counter ticks down, toast; optimistic update with rollback on error.
 
-#### [ ] L-W6 Owner shell, overview, alerts, activity log (WEB-2)
+#### [x] L-W6 Owner shell, overview, alerts, activity log (WEB-2)
 Boards: TongQuan (phone), TongQuanTab, TongQuanPC, CanhBao, CanhBaoPC, NhatKy, NhatKyChonNgay, NhatKyPC. The old demo layout TongQuanChu is retired. Building status bars animate width on load; rolling KPI numbers; new-alert badge bounce.
 
 #### [ ] L-W7 Money and shifts for the owner (WEB-2)

@@ -13,6 +13,8 @@ const ROUTES = [
   "/paid?payment=pay-CASH",
   "/housekeeping",
   "/owner",
+  "/owner/alerts",
+  "/owner/activity",
   "/sign-in",
   "/set-pin",
   "/account",
