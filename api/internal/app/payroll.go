@@ -177,13 +177,14 @@ func lineFor(s PayrollStaff, st PayrollStored, first, last time.Time, cells []Ro
 	return line, nil
 }
 
-// coverage says whether standing leave of the person covers the shift and whether that leave is paid.
+// coverage says whether standing leave of the person covers the shift and whether that leave is paid: PAID and SICK leave
+// pay like worked shifts, UNPAID does not (docs/15 rule 15). Only PAID leave uses up annual leave days.
 func coverage(userID string, cell roster.Cell, leave []LeaveRow) (covered, paid bool) {
 	for _, l := range leave {
 		rl := roster.Leave{UserID: l.UserID, Shift: l.Shift, Status: l.Status, From: l.From, To: l.To}
 		if l.UserID == userID && rl.Covers(cell) {
 			covered = true
-			paid = paid || l.Kind == roster.KindPaid
+			paid = paid || l.Kind == roster.KindPaid || l.Kind == roster.KindSick
 		}
 	}
 	return covered, paid

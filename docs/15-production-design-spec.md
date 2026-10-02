@@ -63,7 +63,7 @@ People
 12. Sign-in with guesthouse code, user name and a 6-digit PIN. Five wrong PINs lock for 15 minutes and alert the owner. One-time PINs (24 h) are shown once; the person must set their own PIN at first sign-in.
 13. Removing staff deactivates the account (signed out at once); history and payroll are kept; an open shift must be closed first. Removing staff and bank-account changes require the owner's PIN again.
 14. Roster: shifts MORNING 06–14, AFTERNOON 14–22, NIGHT 22–06. Staff request leave (paid, sick, unpaid) with optional cover; pending requests can be cancelled by the requester; approved leave needs the owner's approval to cancel. Uncovered shifts are flagged.
-15. Payroll per month from each contract (monthly, per shift or hourly rate, fixed allowance, standard shifts, annual leave days) and the roster. Bonus and deduction are entered by the owner; the product never deducts cash shortages automatically (check current labour rules). Marking paid posts STAFF_PAY expense.
+15. Payroll per month from each contract (monthly, per shift or hourly rate, fixed allowance, standard shifts, annual leave days) and the roster. Paid leave and sick leave are paid like worked shifts; unpaid leave is not paid (so it reduces a monthly salary in proportion to the standard shifts). Only paid leave uses up annual leave days; sick leave does not. Bonus and deduction are entered by the owner; the product never deducts cash shortages automatically (check current labour rules). Marking paid posts STAFF_PAY expense.
 
 Finance
 16. Expense categories: STAFF_PAY, RENT, ELECTRICITY, WATER, LAUNDRY, MAINTENANCE, SUPPLIES, COST_OF_GOODS, TAX_FEES, INTERNET_TV, PAYMENT_FEES, OTHER. Sources: MANUAL, RECURRING (auto-added each month), PAYROLL, MAINTENANCE, STOCK (cost of goods sold). Automatic lines cannot be edited by hand.
@@ -137,7 +137,7 @@ Detailed stories are in docs/06 (E7 to E13). Suggested order, each a vertical sl
 ## 6. Open questions for the owner
 
 - Q-01 Manager role: confirm the exclusions in §2.
-- Q-02 Leave entitlement and paid-leave rules per contract; whether unpaid leave reduces monthly pay automatically.
+- Q-02 (answered) Leave: paid leave counts as worked and uses annual leave days; sick leave is paid like worked shifts and does not use annual leave days; unpaid leave is unpaid and reduces monthly pay in proportion. Rule 15.
 - Q-03 Recurring expense amounts that vary (electricity) are always manual; confirm.
 - Q-04 Whether managers may enter maintenance costs.
 - Q-05 Receipt printer model (58 or 80 mm) for print CSS.

@@ -328,3 +328,20 @@ func TestLeave_PendingCancelDeclineAndTaken_SG1103(t *testing.T) {
 		t.Fatalf("unknown status: %v", err)
 	}
 }
+
+// Owner decision (docs/15 Q-02): sick leave does not use up annual leave days; paid leave does.
+func TestMyLeave_SickDoesNotUseAnnualDays_FA4(t *testing.T) {
+	e := newRosterEnv()
+	ctx := context.Background()
+	paid, _ := e.r.CreateLeave(ctx, e.lan, "k1", CreateLeaveInput{From: jan(8), To: jan(9), Kind: "PAID"})
+	sick, _ := e.r.CreateLeave(ctx, e.lan, "k2", CreateLeaveInput{From: jan(12), To: jan(14), Kind: "SICK"})
+	for i, id := range []string{paid.ID, sick.ID} {
+		if _, err := e.r.Approve(ctx, e.owner, "ka"+string(rune('0'+i)), id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m, err := e.r.MyLeave(ctx, e.lan)
+	if err != nil || m.Balance.Used != 2 || m.Balance.Left != 10 {
+		t.Fatalf("balance: %+v %v, want 2 used (the paid days only) and 10 left", m.Balance, err)
+	}
+}
