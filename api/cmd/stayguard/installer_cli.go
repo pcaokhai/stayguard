@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/clock"
+	"github.com/pcaokhai/stayguard/api/internal/adapter/crypto"
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres"
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
@@ -35,6 +36,9 @@ func runInstallerCLI(ctx context.Context, args []string) error {
 		return fmt.Errorf("database: %w", err)
 	}
 	defer pool.Close()
+	if err = postgres.CheckKeyFingerprint(ctx, pool, crypto.KeyFingerprint(cfg.DataEncryptionKey)); err != nil {
+		return err
+	}
 	inst, err := newInstaller(cfg, pool, clock.System{})
 	if err != nil {
 		return err
