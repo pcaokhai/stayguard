@@ -177,7 +177,7 @@ const (
 
 // newAuth builds PIN sign-in with per-IP and per-guesthouse-code rate limits.
 func newAuth(sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
-	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.PinHasher{}, audit,
+	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.PinHasher{}, audit, postgres.AlertWriter{},
 		ratelimit.New(signInPerIP, signInRateEvery, clk.Now), ratelimit.New(signInPerCode, signInRateEvery, clk.Now))
 }
 

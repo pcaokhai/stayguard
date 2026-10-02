@@ -82,11 +82,12 @@ type denyKey struct{ key string }
 func (d denyKey) Allow(k string) bool { return k != d.key }
 
 type authRig struct {
-	a     *Auth
-	repo  *fakeAuthRepo
-	audit *fakeAudit
-	ids   *fakeRepo
-	clock *clockBox
+	alerts *fakeAlerts
+	a      *Auth
+	repo   *fakeAuthRepo
+	audit  *fakeAudit
+	ids    *fakeRepo
+	clock  *clockBox
 }
 
 type clockBox struct{ now time.Time }
@@ -114,11 +115,12 @@ func newAuthRig(t *testing.T, byIP, byCode RateLimiter) authRig {
 		repo.byName[authKey{tenant, name}] = id
 	}
 	audit := &fakeAudit{}
-	a, err := NewAuth(s, fakeTenants{"casa": "tn_a", "villa": "tn_b"}, repo, fakeHasher{}, audit, byIP, byCode)
+	alerts := &fakeAlerts{}
+	a, err := NewAuth(s, fakeTenants{"casa": "tn_a", "villa": "tn_b"}, repo, fakeHasher{}, audit, alerts, byIP, byCode)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return authRig{a: a, repo: repo, audit: audit, ids: ir, clock: clk}
+	return authRig{alerts: alerts, a: a, repo: repo, audit: audit, ids: ir, clock: clk}
 }
 
 func (r authRig) signIn(code, user, pin string) (SignInResult, error) {
@@ -176,6 +178,9 @@ func TestSignIn_FifthWrongPinLocks_SG701_AC2(t *testing.T) {
 	}
 	if len(r.audit.entries) != 1 || r.audit.entries[0].Action != "ACCOUNT_LOCKED" || r.audit.entries[0].EntityID != "us_ann" {
 		t.Fatalf("audit: %+v", r.audit.entries)
+	}
+	if len(r.alerts.raised) != 1 || r.alerts.raised[0].Kind != AlertAccountLocked || r.alerts.raised[0].By != "us_ann" {
+		t.Fatalf("alert: %+v", r.alerts.raised)
 	}
 	// Locked: even the right PIN is refused, with the same end time.
 	if _, err = r.signIn("casa", "ann", pinOK); !errors.As(err, &locked) {

@@ -33,18 +33,19 @@ type Auth struct {
 	repo     AuthRepo
 	hasher   PinHasher
 	audit    AuditWriter
+	alerts   AlertWriter
 	byIP     RateLimiter
 	byCode   RateLimiter
 	// dummyHash is checked when the user does not exist, so timing does not reveal it.
 	dummyHash string
 }
 
-func NewAuth(s *Sessions, tenants TenantByCode, repo AuthRepo, hasher PinHasher, audit AuditWriter, byIP, byCode RateLimiter) (*Auth, error) {
+func NewAuth(s *Sessions, tenants TenantByCode, repo AuthRepo, hasher PinHasher, audit AuditWriter, alerts AlertWriter, byIP, byCode RateLimiter) (*Auth, error) {
 	dummy, err := hasher.Hash("000000")
 	if err != nil {
 		return nil, err
 	}
-	return &Auth{s, tenants, repo, hasher, audit, byIP, byCode, dummy}, nil
+	return &Auth{s, tenants, repo, hasher, audit, alerts, byIP, byCode, dummy}, nil
 }
 
 // SignInResult is a new session; the raw token exists only in this value.
@@ -151,9 +152,14 @@ func (a *Auth) recordWrongPin(ctx context.Context, tx Tx, userID string, st PinS
 	if err := a.repo.SetPinFailures(ctx, tx, userID, 0, nil, &until); err != nil {
 		return err
 	}
-	// ponytail: audit_logs until L-B1 adds alerts, then write the ACCOUNT_LOCKED alert here instead.
+	// The owner sees the alert; the audit row keeps the event in the activity log too.
+	err := a.alerts.Raise(ctx, tx, AlertDraft{ID: a.sessions.ids.New(alertIDPrefix), Kind: AlertAccountLocked, By: userID,
+		Details: map[string]string{"lockedUntil": until.UTC().Format(time.RFC3339)}})
+	if err != nil {
+		return err
+	}
 	after, _ := json.Marshal(map[string]any{"lockedUntil": until})
-	err := a.audit.Append(ctx, tx, AuditEntry{
+	err = a.audit.Append(ctx, tx, AuditEntry{
 		ID: a.sessions.ids.New(auditPrefix), Action: auditAccountLocked, EntityType: "user", EntityID: userID, After: after,
 	})
 	if err != nil {

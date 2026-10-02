@@ -70,7 +70,7 @@ func newAuthEnv(t *testing.T) authEnv {
 	uow := NewUnitOfWork(pool)
 	clk := &movingClock{now: time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)}
 	sess := app.NewSessions(app.SessionsConfig{SessionTTL: time.Hour}, uow, NewSessionResolver(pool), NewIdentityRepo(), clk, &testGen{}, testTokens{}, noSeeder{})
-	auth, err := app.NewAuth(sess, NewTenantResolver(pool), NewAuthRepo(), testHasher{}, NewAuditWriter(), allowAllLimiter{}, allowAllLimiter{})
+	auth, err := app.NewAuth(sess, NewTenantResolver(pool), NewAuthRepo(), testHasher{}, NewAuditWriter(), AlertWriter{}, allowAllLimiter{}, allowAllLimiter{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,6 +156,10 @@ func TestSignInPostgres_LockoutPersists_SG701_AC2(t *testing.T) {
 	}
 	if strings.Contains(after, authPinA) || strings.Contains(after, "159357") {
 		t.Fatal("PIN in audit row")
+	}
+	var alerts int
+	if err = owner.QueryRow(ctx, `SELECT count(*) FROM app.alerts WHERE tenant_id = $1 AND kind = 'ACCOUNT_LOCKED' AND actor_id = $2`, e.tenantA, e.tenantA+"_ann").Scan(&alerts); err != nil || alerts != 1 {
+		t.Fatalf("ACCOUNT_LOCKED alert rows = %d %v", alerts, err)
 	}
 	if _, err = e.auth.SignIn(ctx, "1.1.1.1", e.codeA, "ann", authPinA); !errors.As(err, &locked) {
 		t.Fatalf("right PIN while locked: %v", err)
