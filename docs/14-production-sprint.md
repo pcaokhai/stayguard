@@ -149,6 +149,8 @@ Boards: CaiDat, CaiDatNhaNghi, CaiDatNhaNghiPC, ThemNganHang, ThemNganHangPC, To
 3. `stayguard tenant import` with the customer's real data (file outside git); set SePay secret; Test-mode transfer, then one live 2,000đ transfer; scan the QR with two banking apps.
 4. Staff get one-time PINs; walk the receptionist through on their own phone.
 
+Done under G1 (not tracked as tasks): X1 deploy files (`deploy/compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`, README for a fresh VPS; booted and restore-rehearsed locally). X2 smoke test: see below once added.
+
 ### Fast-follow (hours 24–44)
 
 #### [x] F-A1 Stock complete (API-1) — migration 0017

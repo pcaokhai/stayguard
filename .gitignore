@@ -14,3 +14,4 @@ api/bin/
 !.env.example
 .DS_Store
 .shots/
+!.env.prod.example

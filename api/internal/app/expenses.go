@@ -73,34 +73,49 @@ func currentMonth(ctx context.Context, tx Tx, z zoneSource, clk Clock) (string, 
 // EnsureRecurring copies the recurring lines of each month into the next, up to the current month, once per month. It
 // runs the first time a month is read, so a month nobody opens is copied when somebody finally does; a line deleted
 // from a copied month stays deleted because the month is marked as done.
-func EnsureRecurring(ctx context.Context, tx Tx, repo ExpenseRepo, upTo string) error {
+func EnsureRecurring(ctx context.Context, tx Tx, repo ExpenseRepo, upTo string) (int, error) {
 	earliest, ok, err := repo.EarliestRecurring(ctx, tx)
 	if err != nil {
-		return fmt.Errorf("earliest recurring: %w", err)
+		return 0, fmt.Errorf("earliest recurring: %w", err)
 	}
 	if !ok || earliest >= upTo {
-		return nil
+		return 0, nil
 	}
-	steps := 0
+	steps, copied := 0, 0
 	for m := finance.NextMonth(earliest); m <= upTo; m = finance.NextMonth(m) {
 		if steps++; steps > maxRecurringChain {
-			return fmt.Errorf("recurring expenses start %s: more than %d months to copy", earliest, maxRecurringChain)
+			return copied, fmt.Errorf("recurring expenses start %s: more than %d months to copy", earliest, maxRecurringChain)
 		}
 		ran, err := repo.RecurringRan(ctx, tx, m)
 		if err != nil {
-			return fmt.Errorf("recurring ran: %w", err)
+			return copied, fmt.Errorf("recurring ran: %w", err)
 		}
 		if ran {
 			continue
 		}
 		if err := repo.CopyRecurring(ctx, tx, finance.PrevMonth(m), m); err != nil {
-			return fmt.Errorf("copy recurring: %w", err)
+			return copied, fmt.Errorf("copy recurring: %w", err)
 		}
 		if err := repo.MarkRecurringRan(ctx, tx, m); err != nil {
-			return fmt.Errorf("mark recurring ran: %w", err)
+			return copied, fmt.Errorf("mark recurring ran: %w", err)
 		}
+		copied++
 	}
-	return nil
+	return copied, nil
+}
+
+// CopyRecurring is the daily job for one tenant: it copies the months nobody has opened yet and reports how many it copied.
+func (e *Expenses) CopyRecurring(ctx context.Context, tenantID string, now time.Time) (int, error) {
+	n := 0
+	err := e.uow.Do(ctx, tenantID, func(ctx context.Context, tx Tx) error {
+		loc, err := loadZone(ctx, tx, e.repo)
+		if err != nil {
+			return err
+		}
+		n, err = EnsureRecurring(ctx, tx, e.repo, finance.MonthOf(now.In(loc)))
+		return err
+	})
+	return n, err
 }
 
 // ExpenseMonth returns the expenses of a month by category with every line, and the month's revenue.
@@ -118,7 +133,7 @@ func (e *Expenses) ExpenseMonth(ctx context.Context, c Caller, month string) (Ex
 		if err != nil {
 			return err
 		}
-		if err := EnsureRecurring(ctx, tx, e.repo, min(month, cur)); err != nil {
+		if _, err := EnsureRecurring(ctx, tx, e.repo, min(month, cur)); err != nil {
 			return err
 		}
 		loc, err := loadZone(ctx, tx, e.repo)

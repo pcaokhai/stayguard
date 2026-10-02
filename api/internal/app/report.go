@@ -54,7 +54,7 @@ func (r *Reports) IncomeCost(ctx context.Context, c Caller, fromMonth, toMonth s
 		if err != nil {
 			return err
 		}
-		if err := EnsureRecurring(ctx, tx, r.expenses, min(toMonth, cur)); err != nil {
+		if _, err := EnsureRecurring(ctx, tx, r.expenses, min(toMonth, cur)); err != nil {
 			return err
 		}
 		out, err = r.build(ctx, tx, months)

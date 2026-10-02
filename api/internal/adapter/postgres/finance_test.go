@@ -28,7 +28,8 @@ func TestRecurringCopy_ConcurrentReadsCreateOneRow_FU3(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			errs <- uow.Do(ctx, tenant, func(ctx context.Context, tx app.Tx) error {
-				return app.EnsureRecurring(ctx, tx, FinanceRepo{}, "2026-10")
+				_, err := app.EnsureRecurring(ctx, tx, FinanceRepo{}, "2026-10")
+				return err
 			})
 		}()
 	}

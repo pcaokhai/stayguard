@@ -17,7 +17,7 @@ import (
 const jobsUsage = "usage: stayguard jobs run   (daily, from cron; needs DATABASE_URL and DATA_ENCRYPTION_KEY)"
 
 // tenantJob is one daily task. It runs once per tenant, inside that tenant's own scope, and returns how many things it
-// changed. Recurring expenses and leave-to-TAKEN join this registry later.
+// changed. Leave-to-TAKEN needs no job: TAKEN is derived when leave is read.
 type tenantJob struct {
 	name string
 	run  func(ctx context.Context, tenantID string, now time.Time) (int, error)
@@ -32,8 +32,10 @@ func jobRegistry(cfg config.Config, uowDeps jobDeps) ([]tenantJob, error) {
 	if err != nil {
 		return nil, err
 	}
+	e := newFinance(uowDeps.uow, postgres.NewIdempotencyStore(0), postgres.NewAuditWriter(), clock.System{}).Expenses
 	return []tenantJob{
 		{name: "guest-id-retention", run: g.Purge},
+		{name: "recurring-expenses", run: e.CopyRecurring},
 	}, nil
 }
 
