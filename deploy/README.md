@@ -2,7 +2,7 @@
 
 Production runs on one VPS with Docker: PostgreSQL, the API (which also serves the web app) and Caddy for automatic HTTPS.
 The files: `compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`. (`compose.yaml` and
-`compose.demo.override.yaml` are for local use only; `compose.yaml` also has the MinIO test target under profile `backup`.)
+`compose.demo.override.yaml`, `compose.smoke.override.yaml` and `compose.rehearse.yaml` are for local use only; `compose.yaml` also has the MinIO test target under profile `backup`.)
 
 What the production stack guarantees: `DEMO_MODE=0`; the API connects as `stayguard_app`, a non-superuser role that owns
 nothing and cannot bypass row-level security (`ALLOW_PRIVILEGED_DB` is never set for it); the database port is not
@@ -66,6 +66,26 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
     your notes; no rehearsal, no backup.
 13. **Test the money path** before the first real guest: SePay Test-mode transfer, then one real 2,000 d transfer; the QR must turn
     Paid by itself (see the runbook).
+
+## Rehearsal on your own machine (SePay and Cloudflare tunnel)
+
+`make rehearse` runs this same production stack locally before you touch a VPS: `compose.prod.yaml` plus `compose.rehearse.yaml`,
+`DEMO_MODE` off, the non-superuser database role, a MinIO backup bucket, and plain HTTP on `127.0.0.1:18090` (Caddy is left out; set
+`REHEARSE_PORT` to change the port). It imports a fake guesthouse (`rehearse`) with the installer commands, sets the SePay secret, and
+prints once: the owner and receptionist one-time PINs, the exact webhook path, the secret and the tunnel command. It ends with one
+backup to the MinIO bucket (`backup ok`). Needs docker, python3 and openssl; the first build takes a few minutes.
+
+```
+make rehearse                                  # prints the PINs and the webhook path once
+cloudflared tunnel --url http://localhost:18090  # a public https address for SePay to call
+```
+
+In SePay set the webhook URL to `https://<tunnel-host>` plus the printed path, and the secret to the printed one (or start with
+`SEPAY_SECRET=...` to use yours). For a real transfer to turn Paid, start with your SePay receiving account:
+`REHEARSE_BANK_BIN=970436 REHEARSE_ACCOUNT_NO=... REHEARSE_ACCOUNT_NAME=... make rehearse`. The secrets live in `deploy/.env.rehearse`
+(git-ignored) so a restart keeps the key that matches the data. Running it again after the guesthouse exists stops at the import:
+`make rehearse-down` deletes the containers, volumes, bucket, secrets file and local dumps, and the next `make rehearse` starts clean.
+Never put real guest data in it. Without Docker Hub or quay access, `EXTERNAL_S3=1 BACKUP_S3_ENDPOINT=...` skips MinIO.
 
 ## Backup storage (S3-compatible)
 

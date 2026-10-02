@@ -15,3 +15,4 @@ api/bin/
 .DS_Store
 .shots/
 !.env.prod.example
+deploy/.rehearse-backups/
