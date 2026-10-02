@@ -16,6 +16,8 @@ const (
 	defaultStaticDir = "web/out"
 	// Docs/04 line 20: a retried write within a day returns the stored response.
 	defaultIdempotencyTTL = 24 * time.Hour
+	defaultSepayTolerance = 300 * time.Second
+	maxSepayTolerance     = 24 * time.Hour
 )
 
 type Config struct {
@@ -35,6 +37,9 @@ type Config struct {
 	DemoMode bool
 	// TrustProxy (TRUST_PROXY, default false) reads the client address from X-Forwarded-For; set it only behind the reverse proxy.
 	TrustProxy bool
+	// SepayTimestampTolerance (SEPAY_TIMESTAMP_TOLERANCE, Go duration, default 300s) is how far X-SePay-Timestamp may be
+	// from the server clock. Widen it if SePay deliveries or the server clock drift.
+	SepayTimestampTolerance time.Duration
 	// TrustedProxyHops (TRUSTED_PROXY_HOPS, default 1) is how many reverse proxies stand in front of the server:
 	// the client address is that many entries from the right of X-Forwarded-For. One Caddy means 1.
 	TrustedProxyHops int
@@ -113,6 +118,14 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("IDEMPOTENCY_TTL must be a positive duration such as 24h, got %q", v)
 		}
 		c.IdempotencyTTL = d
+	}
+	c.SepayTimestampTolerance = defaultSepayTolerance
+	if v := getenv("SEPAY_TIMESTAMP_TOLERANCE"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil || d < time.Second || d > maxSepayTolerance {
+			return Config{}, fmt.Errorf("SEPAY_TIMESTAMP_TOLERANCE must be a duration between 1s and 24h such as 300s, got %q", v)
+		}
+		c.SepayTimestampTolerance = d
 	}
 	if v := getenv("TRUST_PROXY"); v != "" {
 		b, err := strconv.ParseBool(v)

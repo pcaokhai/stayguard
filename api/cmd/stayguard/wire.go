@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -300,5 +301,5 @@ func newWebhook(cfg config.Config, pool *pgxpool.Pool, uow app.UnitOfWork, payme
 	if err != nil {
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
-	return app.NewWebhook(postgres.NewTenantResolver(pool), uow, postgres.BankRepo{}, payments, enc, clk), nil
+	return app.NewWebhook(postgres.NewTenantResolver(pool), uow, postgres.BankRepo{}, payments, enc, clk).WithTolerance(cfg.SepayTimestampTolerance, slog.Default()), nil
 }

@@ -144,3 +144,24 @@ func TestLoad_TrustedProxyHops_Hardening9(t *testing.T) {
 		}
 	}
 }
+
+func TestLoad_SepayTimestampTolerance(t *testing.T) {
+	get := func(v string) (Config, error) {
+		m := map[string]string{"DATABASE_URL": testDBURL}
+		if v != "" {
+			m["SEPAY_TIMESTAMP_TOLERANCE"] = v
+		}
+		return Load(env(m))
+	}
+	if c, err := get(""); err != nil || c.SepayTimestampTolerance != 300*time.Second {
+		t.Fatalf("default: %v %v", c.SepayTimestampTolerance, err)
+	}
+	if c, err := get("15m"); err != nil || c.SepayTimestampTolerance != 15*time.Minute {
+		t.Fatalf("15m: %v %v", c.SepayTimestampTolerance, err)
+	}
+	for _, bad := range []string{"0s", "-1s", "x", "48h", "300"} {
+		if _, err := get(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}

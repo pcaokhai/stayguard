@@ -37,6 +37,10 @@ Test: simulate an incoming transfer in SePay Test mode, then one real 2,000đ tr
 
   It prints counts only. Check the first night's run in the log.
 
+## If SePay deliveries are rejected for age
+
+SePay's signature covers a timestamp and the server accepts it within `SEPAY_TIMESTAMP_TOLERANCE` of its own clock (default `300s`, the window SePay documents). The log line `sepay webhook rejected: timestamp outside tolerance` carries a running count (`rejected_for_age_total`), the tenant and the skew in seconds, never the payload. If it appears for real transfers: first check the server clock (`timedatectl`, NTP), then widen the window in `deploy/.env.prod`, for example `SEPAY_TIMESTAMP_TOLERANCE=900s` (up to `24h`), and restart the API. A wider window only lets an old signed delivery be replayed for longer: duplicates are still dropped, because every event is deduplicated on SePay's transaction id.
+
 ## Rules
 
 - The secret is write-only: no command or screen prints it back.
