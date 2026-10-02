@@ -26,6 +26,7 @@ const (
 	AlertKindCASHSHORT           AlertKind = "CASH_SHORT"
 	AlertKindDAMAGEREPORTED      AlertKind = "DAMAGE_REPORTED"
 	AlertKindLEAVEREQUESTED      AlertKind = "LEAVE_REQUESTED"
+	AlertKindOVERPAID            AlertKind = "OVERPAID"
 	AlertKindPAYMENTMISMATCH     AlertKind = "PAYMENT_MISMATCH"
 	AlertKindSEPAYUPDATED        AlertKind = "SEPAY_UPDATED"
 	AlertKindSTAYTIMEEDITED      AlertKind = "STAY_TIME_EDITED"
@@ -46,6 +47,8 @@ func (e AlertKind) Valid() bool {
 	case AlertKindDAMAGEREPORTED:
 		return true
 	case AlertKindLEAVEREQUESTED:
+		return true
+	case AlertKindOVERPAID:
 		return true
 	case AlertKindPAYMENTMISMATCH:
 		return true
@@ -94,6 +97,7 @@ const (
 	AttentionItemKindLEAVEPENDING      AttentionItemKind = "LEAVE_PENDING"
 	AttentionItemKindLONGTOCLEAN       AttentionItemKind = "LONG_TO_CLEAN"
 	AttentionItemKindOVERDUEROOM       AttentionItemKind = "OVERDUE_ROOM"
+	AttentionItemKindOVERPAID          AttentionItemKind = "OVERPAID"
 	AttentionItemKindPAYMENTMISMATCH   AttentionItemKind = "PAYMENT_MISMATCH"
 	AttentionItemKindTICKETOPEN        AttentionItemKind = "TICKET_OPEN"
 	AttentionItemKindUNMATCHEDTRANSFER AttentionItemKind = "UNMATCHED_TRANSFER"
@@ -109,6 +113,8 @@ func (e AttentionItemKind) Valid() bool {
 	case AttentionItemKindLONGTOCLEAN:
 		return true
 	case AttentionItemKindOVERDUEROOM:
+		return true
+	case AttentionItemKindOVERPAID:
 		return true
 	case AttentionItemKindPAYMENTMISMATCH:
 		return true
@@ -1794,8 +1800,11 @@ type Payment struct {
 	PaidAt         *time.Time    `json:"paidAt,omitempty"`
 	Qr             *PaymentQr    `json:"qr,omitempty"`
 	ReceivedAmount *Vnd          `json:"receivedAmount,omitempty"`
-	Status         PaymentStatus `json:"status"`
-	TransactionId  *string       `json:"transactionId,omitempty"`
+
+	// Remaining What is still to be paid on this payment (amount minus bank money received so far); 0 once paid.
+	Remaining     Vnd           `json:"remaining"`
+	Status        PaymentStatus `json:"status"`
+	TransactionId *string       `json:"transactionId,omitempty"`
 }
 
 // PaymentMethod defines model for PaymentMethod.

@@ -3539,6 +3539,7 @@ components:
       - CASH_SHORT
       - DAMAGE_REPORTED
       - LEAVE_REQUESTED
+      - OVERPAID
       - PAYMENT_MISMATCH
       - SEPAY_UPDATED
       - STAY_TIME_EDITED
@@ -4024,6 +4025,7 @@ components:
       - method
       - status
       - amount
+      - remaining
       properties:
         id:
           type: string
@@ -4039,6 +4041,9 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Vnd'
           - type: 'null'
+        remaining:
+          description: What is still to be paid on this payment (amount minus bank money received so far); 0 once paid.
+          $ref: '#/components/schemas/Vnd'
         paidAt:
           type:
           - string
@@ -5867,6 +5872,7 @@ components:
           enum:
           - OVERDUE_ROOM
           - LONG_TO_CLEAN
+          - OVERPAID
           - PAYMENT_MISMATCH
           - UNMATCHED_TRANSFER
           - CASH_SHORT

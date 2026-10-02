@@ -44,7 +44,7 @@ type AlertsQuery struct {
 }
 
 var alertKinds = map[string]bool{AlertAccountLocked: true, AlertCashOver: true, AlertCashShort: true, AlertDamageReported: true,
-	AlertLeaveRequested: true, AlertPaymentMismatch: true, AlertSepayUpdated: true, AlertStayTimeEdited: true,
+	AlertLeaveRequested: true, AlertPaymentMismatch: true, AlertOverpaid: true, AlertSepayUpdated: true, AlertStayTimeEdited: true,
 	AlertStocktakeDifference: true, AlertUnmatchedTransfer: true, AlertUnusedRoomReport: true}
 
 // ListAlerts returns alerts newest first.

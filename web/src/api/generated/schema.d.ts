@@ -1713,7 +1713,7 @@ export interface components {
         /** @enum {string} */
         PaymentStatus: "PENDING" | "PAID" | "EXPIRED" | "MISMATCH";
         /** @enum {string} */
-        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "PAYMENT_MISMATCH" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
+        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "OVERPAID" | "PAYMENT_MISMATCH" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
         CreateDemoSessionRequest: {
             role: components["schemas"]["Role"];
             locale: components["schemas"]["Locale"];
@@ -1898,6 +1898,8 @@ export interface components {
             status: components["schemas"]["PaymentStatus"];
             amount: components["schemas"]["Vnd"];
             receivedAmount?: components["schemas"]["Vnd"] | null;
+            /** @description What is still to be paid on this payment (amount minus bank money received so far); 0 once paid. */
+            remaining: components["schemas"]["Vnd"];
             /** Format: date-time */
             paidAt?: string | null;
             transactionId?: string | null;
@@ -2599,7 +2601,7 @@ export interface components {
         };
         AttentionItem: {
             /** @enum {string} */
-            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "PAYMENT_MISMATCH" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
+            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "OVERPAID" | "PAYMENT_MISMATCH" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
             ref: string;
             roomCode?: string | null;
             minutes?: number | null;

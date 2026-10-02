@@ -71,7 +71,7 @@ func TestMonitorE2E_LinkUnmatchedTransfer_SG903(t *testing.T) {
 	if st, b := link(r.token, ids["sim-1"], newKey(), body); st != 422 {
 		t.Fatalf("a demo-bank event was linked: %d %v", st, b)
 	}
-	if st, b := link(r.token, ids["bank-low"], newKey(), body); st != 422 {
+	if st, b := link(r.token, ids["bank-low"], newKey(), body); st != 409 {
 		t.Fatalf("an event of another amount was linked: %d %v", st, b)
 	}
 	if st, _ := link(r.token, "nope", newKey(), body); st != 404 {

@@ -206,6 +206,7 @@
       "OVERDUE_ROOM": "Overdue {d}",
       "LONG_TO_CLEAN": "Waiting to clean {d}",
       "PAYMENT_MISMATCH": "Transfer mismatch",
+      "OVERPAID": "Transfer overpaid",
       "UNMATCHED_TRANSFER": "Unmatched transfer",
       "CASH_SHORT": "Cash short at shift close",
       "LEAVE_PENDING": "Leave request pending",
@@ -384,6 +385,7 @@
       "DAMAGE_REPORTED": "Damage reported",
       "LEAVE_REQUESTED": "Leave requested",
       "PAYMENT_MISMATCH": "Transfer mismatch",
+      "OVERPAID": "Transfer overpaid",
       "SEPAY_UPDATED": "SePay updated",
       "STAY_TIME_EDITED": "Check-in time edited",
       "STOCKTAKE_DIFFERENCE": "Stocktake difference",
@@ -392,6 +394,7 @@
     },
     "text": {
       "PAYMENT_MISMATCH": "Got {got} of {expected} · bill {bill}",
+      "OVERPAID": "Got {got} extra · bill {bill}",
       "PAYMENT_MISMATCH_SHORT": "Got {got} · bill {bill}",
       "UNMATCHED_TRANSFER": "Got {got} · note: {note}",
       "STAY_TIME_EDITED": "{old} → {new}",

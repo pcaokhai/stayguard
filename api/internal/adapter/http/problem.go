@@ -218,6 +218,8 @@ func mapPaymentError(w http.ResponseWriter, err error) bool {
 		writeProblem(w, http.StatusConflict, "Conflict", "INVOICE_NOT_OPEN")
 	case errors.Is(err, app.ErrEventNotLinkable):
 		writeProblem(w, http.StatusConflict, "Conflict", "EVENT_NOT_LINKABLE")
+	case errors.Is(err, app.ErrLinkAmount):
+		writeProblem(w, http.StatusConflict, "Conflict", "LINK_AMOUNT_MISMATCH")
 	case errors.Is(err, app.ErrNoBankAccount):
 		writeProblem(w, http.StatusConflict, "Conflict", "BANK_ACCOUNT_MISSING")
 	default:

@@ -209,6 +209,7 @@ type AppPaymentEvent struct {
 	ReferenceCode pgtype.Text
 	Result        string
 	ReceivedAt    pgtype.Timestamptz
+	InvoiceID     pgtype.Text
 }
 
 type AppPayrollLine struct {

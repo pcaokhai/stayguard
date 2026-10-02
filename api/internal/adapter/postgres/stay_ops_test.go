@@ -183,10 +183,10 @@ func TestStayOps_ReceiptStatesAndBankAlerts_SG801(t *testing.T) {
 		t.Fatalf("unpaid history: %+v %v", page, err)
 	}
 
-	// The same bill code with the wrong amount: MISMATCH state and PAYMENT_MISMATCH alert. A transfer with no bill code: UNMATCHED_TRANSFER.
+	// The same bill code with part of the amount: PARTIAL event and PAYMENT_MISMATCH alert. A transfer with no bill code: UNMATCHED_TRANSFER.
 	pay := app.NewPayments(uow, PaymentRepo{}, editEverywhere{}, nil, NewIdempotencyStore(time.Hour), NewAuditWriter(), gen, clk).WithAlerts(AlertWriter{})
-	if res, err := pay.Settle(ctx, app.PaymentEvent{TenantID: ten, Provider: "t", ExternalID: "e1", Content: "PH1002A101", Amount: 40_000, ReceivedAt: opsNow}); err != nil || res.Result != "MISMATCH" {
-		t.Fatalf("mismatch: %+v %v", res, err)
+	if res, err := pay.Settle(ctx, app.PaymentEvent{TenantID: ten, Provider: "t", ExternalID: "e1", Content: "PH1002A101", Amount: 40_000, ReceivedAt: opsNow}); err != nil || res.Result != "PARTIAL" {
+		t.Fatalf("partial: %+v %v", res, err)
 	}
 	if res, err := pay.Settle(ctx, app.PaymentEvent{TenantID: ten, Provider: "t", ExternalID: "e2", Content: "no code", Amount: 70_000, ReceivedAt: opsNow}); err != nil || res.Result != "UNMATCHED" {
 		t.Fatalf("unmatched: %+v %v", res, err)

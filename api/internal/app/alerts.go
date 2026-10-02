@@ -10,6 +10,7 @@ const (
 	AlertDamageReported      = "DAMAGE_REPORTED"
 	AlertLeaveRequested      = "LEAVE_REQUESTED"
 	AlertPaymentMismatch     = "PAYMENT_MISMATCH"
+	AlertOverpaid            = "OVERPAID"
 	AlertSepayUpdated        = "SEPAY_UPDATED"
 	AlertStayTimeEdited      = "STAY_TIME_EDITED"
 	AlertStocktakeDifference = "STOCKTAKE_DIFFERENCE"

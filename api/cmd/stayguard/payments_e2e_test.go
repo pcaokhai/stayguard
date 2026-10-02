@@ -148,23 +148,26 @@ func TestPaymentDuplicateEvent_A2(t *testing.T) {
 	}
 }
 
-func TestPaymentWrongAmountAndUnmatched_A2(t *testing.T) {
+func TestPaymentOverpaidAndUnmatched_A2(t *testing.T) {
 	r := newPayRig(t, "A102")
 	_, p := r.pay("TRANSFER")
 	id := p["id"].(string)
 	h := r.handler()
-	res, err := h.Settle(context.Background(), r.event("bank-2", r.balance+1000, r.code))
-	if err != nil || res.Result != "MISMATCH" {
-		t.Fatalf("wrong amount: %+v %v", res, err)
-	}
-	if r.status("payments", id) != "MISMATCH" || r.status("invoices", r.invoice) != "OPEN" || r.roomStatus() != "OCCUPIED" {
-		t.Fatal("mismatch must leave invoice OPEN and room OCCUPIED")
-	}
-	if res, err = h.Settle(context.Background(), r.event("bank-3", r.balance, "no code here")); err != nil || res.Result != "UNMATCHED" {
+	if res, err := h.Settle(context.Background(), r.event("bank-3", r.balance, "no code here")); err != nil || res.Result != "UNMATCHED" {
 		t.Fatalf("unmatched: %+v %v", res, err)
 	}
-	if st, again := r.pay("TRANSFER"); st != 201 || again["status"] != "PENDING" || again["id"] == id {
-		t.Fatalf("retry after mismatch: %d %v", st, again)
+	if r.status("payments", id) != "PENDING" {
+		t.Fatal("an unmatched event must leave the payment pending")
+	}
+	res, err := h.Settle(context.Background(), r.event("bank-2", r.balance+1000, r.code))
+	if err != nil || res.Result != "SETTLED" {
+		t.Fatalf("overpaid: %+v %v", res, err)
+	}
+	if r.status("payments", id) != "PAID" || r.status("invoices", r.invoice) != "PAID" || r.roomStatus() != "TO_CLEAN" {
+		t.Fatal("an overpayment still closes the invoice")
+	}
+	if got := r.alerts("OVERPAID"); len(got) != 1 {
+		t.Fatalf("overpaid alert: %v", got)
 	}
 }
 

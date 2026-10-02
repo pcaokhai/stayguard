@@ -27,7 +27,7 @@ func TestListInvoices_Candidates_SG903(t *testing.T) {
 		t.Fatal("transfer payment")
 	}
 	// A partial payment on A: the bank reported 40,000 under A's bill code, which does not settle the invoice.
-	if res, err := a.handler().Settle(t.Context(), a.event("bank-partial", 40_000, a.code)); err != nil || res.Result != "MISMATCH" {
+	if res, err := a.handler().Settle(t.Context(), a.event("bank-partial", 40_000, a.code)); err != nil || res.Result != "PARTIAL" {
 		t.Fatalf("partial transfer: %+v %v", res, err)
 	}
 

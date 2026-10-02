@@ -11,8 +11,10 @@ WITH base AS (
            u.building_id, coalesce(fu.name, '') AS front_desk_name, s.guest_phone,
            iv.total AS total, iv.id AS invoice_id, iv.bill_code AS bill_code, coalesce(pm.method, '')::text AS payment_method,
            CASE
-               WHEN iv.status = 'OPEN' AND EXISTS (SELECT 1 FROM app.payments p
-                    WHERE p.tenant_id = s.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH') THEN 'MISMATCH'
+               WHEN iv.status = 'OPEN' AND (EXISTS (SELECT 1 FROM app.payments p
+                    WHERE p.tenant_id = s.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH')
+                    OR EXISTS (SELECT 1 FROM app.payment_events pe
+                    WHERE pe.tenant_id = s.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL')) THEN 'MISMATCH'
                WHEN iv.status = 'OPEN' THEN 'UNPAID'
                WHEN EXISTS (SELECT 1 FROM app.stay_edits e
                     WHERE e.tenant_id = s.tenant_id AND e.stay_id = s.id AND e.kind = 'CHECK_IN') THEN 'TIME_EDITED'
@@ -93,6 +95,11 @@ SELECT at::timestamptz AS at, kind::text AS kind, actor_name::text AS actor_name
     JOIN app.invoices iv ON iv.tenant_id = p.tenant_id AND iv.id = p.invoice_id
     JOIN app.payment_events pe ON pe.tenant_id = p.tenant_id AND pe.external_id = p.transaction_id AND pe.result = 'MISMATCH'
     WHERE p.tenant_id = @tenant_id AND iv.stay_id = @stay_id AND p.status = 'MISMATCH'
+  UNION ALL
+    SELECT pe.received_at, 'PAYMENT_MISMATCH', '', jsonb_build_object('received', pe.amount::text)
+    FROM app.payment_events pe
+    JOIN app.invoices iv ON iv.tenant_id = pe.tenant_id AND iv.id = pe.invoice_id
+    WHERE pe.tenant_id = @tenant_id AND iv.stay_id = @stay_id AND pe.result = 'PARTIAL'
   UNION ALL
     SELECT a.created_at, 'LINKED_BY_OWNER', coalesce(u.name, ''), '{}'::jsonb
     FROM app.invoices iv

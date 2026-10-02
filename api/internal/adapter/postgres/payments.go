@@ -220,3 +220,46 @@ func (PaymentRepo) LockEvent(ctx context.Context, tx app.Tx, eventID string) (ap
 	ev := app.PaymentEvent{TenantID: t.tenant, Provider: r.Provider, ExternalID: r.ExternalID, Content: r.Content, Amount: r.Amount, ReceivedAt: r.ReceivedAt.Time}
 	return app.StoredEvent{ID: r.ID, Result: r.Result, Event: ev}, true, nil
 }
+
+func (PaymentRepo) ReceivedForInvoice(ctx context.Context, tx app.Tx, invoiceID string) (int64, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := sqlcgen.New(t).ReceivedForInvoice(ctx, sqlcgen.ReceivedForInvoiceParams{TenantID: pgtype.Text{String: t.tenant, Valid: true}, InvoiceID: pgtype.Text{String: invoiceID, Valid: true}})
+	return n, wrap("received for invoice", err)
+}
+
+func (PaymentRepo) SetEventMatched(ctx context.Context, tx app.Tx, ev app.PaymentEvent, invoiceID, result string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("set event matched", sqlcgen.New(t).SetPaymentEventMatched(ctx, sqlcgen.SetPaymentEventMatchedParams{Result: result,
+		InvoiceID: pgtype.Text{String: invoiceID, Valid: true}, TenantID: pgtype.Text{String: t.tenant, Valid: true}, Provider: ev.Provider, ExternalID: ev.ExternalID}))
+}
+
+func (PaymentRepo) SettleInvoiceEvents(ctx context.Context, tx app.Tx, invoiceID string) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	return wrap("settle invoice events", sqlcgen.New(t).SettleInvoiceEvents(ctx, sqlcgen.SettleInvoiceEventsParams{
+		TenantID: pgtype.Text{String: t.tenant, Valid: true}, InvoiceID: pgtype.Text{String: invoiceID, Valid: true}}))
+}
+
+func (PaymentRepo) SetTransferReceived(ctx context.Context, tx app.Tx, paymentID string, received int64) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	n, err := sqlcgen.New(t).SetTransferReceived(ctx, sqlcgen.SetTransferReceivedParams{TenantID: t.tenant, PaymentID: paymentID,
+		ReceivedAmount: pgtype.Int8{Int64: received, Valid: true}})
+	if err != nil {
+		return wrap("set transfer received", err)
+	}
+	if n != 1 {
+		return app.ErrPaymentNotPending
+	}
+	return nil
+}

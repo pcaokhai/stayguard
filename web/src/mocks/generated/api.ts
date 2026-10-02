@@ -148,6 +148,7 @@ export const AlertKind = {
   CASH_SHORT: 'CASH_SHORT',
   DAMAGE_REPORTED: 'DAMAGE_REPORTED',
   LEAVE_REQUESTED: 'LEAVE_REQUESTED',
+  OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   SEPAY_UPDATED: 'SEPAY_UPDATED',
   STAY_TIME_EDITED: 'STAY_TIME_EDITED',
@@ -398,6 +399,8 @@ export interface Payment {
   status: PaymentStatus;
   amount: Vnd;
   receivedAmount?: Vnd | null;
+  /** What is still to be paid on this payment (amount minus bank money received so far); 0 once paid. */
+  remaining: Vnd;
   /** @nullable */
   paidAt?: string | null;
   /** @nullable */
@@ -520,6 +523,7 @@ export type AttentionItemKind = typeof AttentionItemKind[keyof typeof AttentionI
 export const AttentionItemKind = {
   OVERDUE_ROOM: 'OVERDUE_ROOM',
   LONG_TO_CLEAN: 'LONG_TO_CLEAN',
+  OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
   CASH_SHORT: 'CASH_SHORT',

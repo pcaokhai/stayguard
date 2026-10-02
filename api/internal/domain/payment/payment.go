@@ -17,6 +17,7 @@ const (
 
 	ResultSettled   = "SETTLED"
 	ResultMismatch  = "MISMATCH"
+	ResultPartial   = "PARTIAL"
 	ResultUnmatched = "UNMATCHED"
 	ResultDuplicate = "DUPLICATE_IGNORED"
 )

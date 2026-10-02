@@ -20,6 +20,8 @@ export function alertDetails(a: Alert): string {
         expected: money(d.expected),
         bill: d.billCode ?? "",
       });
+    case "OVERPAID":
+      return tf("alerts.text.OVERPAID", { got: amount(a.amount), bill: d.billCode ?? "" });
     case "UNMATCHED_TRANSFER":
       return tf("alerts.text.UNMATCHED_TRANSFER", {
         got: amount(a.amount),
@@ -48,14 +50,14 @@ export const roomOrShift = (a: Alert) => a.roomCode || a.details?.shiftName || "
 export function alertHref(a: Alert): string {
   if (a.stayId) return `/stay?id=${encodeURIComponent(a.stayId)}`;
   if (a.shiftId) return `/owner/shift?id=${encodeURIComponent(a.shiftId)}`;
-  if (a.kind === "PAYMENT_MISMATCH" || a.kind === "UNMATCHED_TRANSFER")
+  if (a.kind === "PAYMENT_MISMATCH" || a.kind === "UNMATCHED_TRANSFER" || a.kind === "OVERPAID")
     return "/owner/transactions";
   if (a.roomCode) return `/owner/rooms?room=${encodeURIComponent(a.roomCode)}`;
   return "/owner/rooms";
 }
 
 export const FILTERS = {
-  money: ["PAYMENT_MISMATCH", "UNMATCHED_TRANSFER", "CASH_SHORT", "CASH_OVER"],
+  money: ["PAYMENT_MISMATCH", "OVERPAID", "UNMATCHED_TRANSFER", "CASH_SHORT", "CASH_OVER"],
   stay: ["STAY_TIME_EDITED"],
   hk: ["UNUSED_ROOM_REPORT", "DAMAGE_REPORTED"],
 } as const;

@@ -277,8 +277,10 @@ func (q *Queries) ListTransactions(ctx context.Context, arg ListTransactionsPara
 const listUnpaidInvoices = `-- name: ListUnpaidInvoices :many
 SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
        least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
-       coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
-                 WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)::bigint AS reported
+       (coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
+                  WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)
+        + coalesce((SELECT sum(pe.amount) FROM app.payment_events pe
+                    WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0))::bigint AS reported
 FROM app.invoices iv
 JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
 JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id

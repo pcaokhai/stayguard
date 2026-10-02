@@ -44,6 +44,7 @@ type PaymentView struct {
 	Status         string     `json:"status"`
 	Amount         int64      `json:"amount"`
 	ReceivedAmount *int64     `json:"receivedAmount"`
+	Remaining      int64      `json:"remaining"`
 	PaidAt         *time.Time `json:"paidAt"`
 	TransactionID  *string    `json:"transactionId"`
 	QR             *PaymentQR `json:"qr"`
@@ -142,33 +143,41 @@ func (p *Payments) create(ctx context.Context, tx Tx, c Caller, inv PayInvoice, 
 	if err := p.repo.ExpirePending(ctx, tx, inv.ID); err != nil { // a late transfer must not settle a closed invoice
 		return PaymentView{}, fmt.Errorf("expire pending: %w", err)
 	}
-	n := NewPayment{ID: p.ids.New(paymentIDPrefix), InvoiceID: inv.ID, BillCode: inv.BillCode, Amount: q.BalanceDue, At: now}
+	got, err := p.repo.ReceivedForInvoice(ctx, tx, inv.ID) // bank money already matched to this bill
+	if err != nil {
+		return PaymentView{}, fmt.Errorf("received for invoice: %w", err)
+	}
+	due := max(q.BalanceDue-got, 0) // cash pays only what the bank has not
+	n := NewPayment{ID: p.ids.New(paymentIDPrefix), InvoiceID: inv.ID, BillCode: inv.BillCode, Amount: due, At: now}
 	if err := p.repo.InsertCashPayment(ctx, tx, n); err != nil {
 		return PaymentView{}, fmt.Errorf("insert cash payment: %w", err)
 	}
 	if err := p.repo.CloseInvoice(ctx, tx, inv.ID, inv.StayID, now); err != nil {
 		return PaymentView{}, err
 	}
-	if err := p.auditPayment(ctx, tx, c.UserID, auditPaySettled, n.ID, payment.MethodCash, inv.ID, q.BalanceDue); err != nil {
+	if err := p.repo.SettleInvoiceEvents(ctx, tx, inv.ID); err != nil {
 		return PaymentView{}, err
 	}
-	if err := p.recordCash(ctx, tx, c, inv, n.ID, q); err != nil {
+	if err := p.auditPayment(ctx, tx, c.UserID, auditPaySettled, n.ID, payment.MethodCash, inv.ID, due); err != nil {
+		return PaymentView{}, err
+	}
+	if err := p.recordCash(ctx, tx, c, inv, n.ID, due, q.RefundDue); err != nil {
 		return PaymentView{}, err
 	}
 	paid := now
-	recv := q.BalanceDue
+	recv := due
 	return PaymentView{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodCash, Status: payment.StatusPaid,
-		Amount: q.BalanceDue, ReceivedAmount: &recv, PaidAt: &paid}, nil
+		Amount: due, ReceivedAmount: &recv, PaidAt: &paid}, nil
 }
 
 // recordCash writes what the drawer received (the balance) and gave back (a deposit refund) to the ledger.
-func (p *Payments) recordCash(ctx context.Context, tx Tx, c Caller, inv PayInvoice, paymentID string, q QuoteView) error {
+func (p *Payments) recordCash(ctx context.Context, tx Tx, c Caller, inv PayInvoice, paymentID string, due, refund int64) error {
 	if p.cash == nil {
 		return nil
 	}
 	for _, e := range []CashRecord{
-		{Kind: shift.Payment, StayID: inv.StayID, PaymentID: paymentID, Amount: q.BalanceDue},
-		{Kind: shift.Refund, StayID: inv.StayID, PaymentID: paymentID, Amount: q.RefundDue},
+		{Kind: shift.Payment, StayID: inv.StayID, PaymentID: paymentID, Amount: due},
+		{Kind: shift.Refund, StayID: inv.StayID, PaymentID: paymentID, Amount: refund},
 	} {
 		if err := p.cash.Record(ctx, tx, c, e); err != nil {
 			return fmt.Errorf("record cash: %w", err)
@@ -289,36 +298,59 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 		return SettleResult{Result: payment.ResultUnmatched}, nil // the event row already says UNMATCHED
 	}
 	t := pend[ix]
-	if ev.Amount != t.Amount {
-		if err := p.repo.MarkMismatch(ctx, tx, t.PaymentID, ev.Amount, ev.ExternalID); err != nil {
-			return SettleResult{}, err
-		}
-		a := AlertDraft{Kind: AlertPaymentMismatch, RoomCode: t.RoomCode, StayID: t.StayID, Amount: &ev.Amount,
-			Details: map[string]string{"billCode": t.BillCode, "expected": strconv.FormatInt(t.Amount, 10),
-				"received": strconv.FormatInt(ev.Amount, 10)}}
-		if err := p.raise(ctx, tx, a); err != nil {
-			return SettleResult{}, err
-		}
-		return p.finish(ctx, tx, ev, payment.ResultMismatch, t.PaymentID)
+	before, err := p.repo.ReceivedForInvoice(ctx, tx, t.InvoiceID)
+	if err != nil {
+		return SettleResult{}, fmt.Errorf("received for invoice: %w", err)
 	}
-	return p.settleMatched(ctx, tx, ev, t, "")
+	total := before + ev.Amount // bank money accumulates on the bill code until it covers the invoice
+	if total >= t.Amount {
+		if total > t.Amount {
+			excess := total - t.Amount
+			a := AlertDraft{Kind: AlertOverpaid, RoomCode: t.RoomCode, StayID: t.StayID, Amount: &excess,
+				Details: map[string]string{"billCode": t.BillCode, "expected": strconv.FormatInt(t.Amount, 10),
+					"received": strconv.FormatInt(total, 10), "excess": strconv.FormatInt(excess, 10)}}
+			if err := p.raise(ctx, tx, a); err != nil {
+				return SettleResult{}, err
+			}
+		}
+		return p.settleMatched(ctx, tx, ev, t, "", total)
+	}
+	if err := p.repo.SetEventMatched(ctx, tx, ev, t.InvoiceID, payment.ResultPartial); err != nil {
+		return SettleResult{}, fmt.Errorf("set event matched: %w", err)
+	}
+	if err := p.repo.SetTransferReceived(ctx, tx, t.PaymentID, total); err != nil {
+		return SettleResult{}, err
+	}
+	a := AlertDraft{Kind: AlertPaymentMismatch, RoomCode: t.RoomCode, StayID: t.StayID, Amount: &ev.Amount,
+		Details: map[string]string{"billCode": t.BillCode, "expected": strconv.FormatInt(t.Amount, 10),
+			"received": strconv.FormatInt(total, 10)}}
+	if err := p.raise(ctx, tx, a); err != nil {
+		return SettleResult{}, err
+	}
+	return SettleResult{Result: payment.ResultPartial, PaymentID: t.PaymentID}, nil
 }
 
 // settleMatched is the tail of settlement: the pending transfer becomes PAID, the invoice closes and the event is
 // SETTLED. The bank-event handler and the owner's link of an unmatched transfer (linkTransferToInvoice) both end here.
 // actor is empty for a provider event.
-func (p *Payments) settleMatched(ctx context.Context, tx Tx, ev PaymentEvent, t PendingTransfer, actor string) (SettleResult, error) {
+func (p *Payments) settleMatched(ctx context.Context, tx Tx, ev PaymentEvent, t PendingTransfer, actor string, received int64) (SettleResult, error) {
 	now := storedTime(p.clock.Now()) // payment time is the server's, not the provider's
-	if err := p.repo.SettleTransfer(ctx, tx, t.PaymentID, now, ev.Amount, ev.ExternalID); err != nil {
+	if err := p.repo.SettleTransfer(ctx, tx, t.PaymentID, now, received, ev.ExternalID); err != nil {
 		return SettleResult{}, err
 	}
 	if err := p.repo.CloseInvoice(ctx, tx, t.InvoiceID, t.StayID, now); err != nil {
 		return SettleResult{}, err
 	}
-	if err := p.auditPayment(ctx, tx, actor, auditPaySettled, t.PaymentID, payment.MethodTransfer, t.InvoiceID, ev.Amount); err != nil {
+	if err := p.auditPayment(ctx, tx, actor, auditPaySettled, t.PaymentID, payment.MethodTransfer, t.InvoiceID, received); err != nil {
 		return SettleResult{}, err
 	}
-	return p.finish(ctx, tx, ev, payment.ResultSettled, t.PaymentID)
+	if err := p.repo.SetEventMatched(ctx, tx, ev, t.InvoiceID, payment.ResultSettled); err != nil {
+		return SettleResult{}, fmt.Errorf("set event matched: %w", err)
+	}
+	if err := p.repo.SettleInvoiceEvents(ctx, tx, t.InvoiceID); err != nil {
+		return SettleResult{}, err
+	}
+	return SettleResult{Result: payment.ResultSettled, PaymentID: t.PaymentID}, nil
 }
 
 // raise writes an alert in the settlement transaction; without an alert writer it does nothing.
@@ -341,13 +373,6 @@ func clip(s string) string {
 	return s
 }
 
-func (p *Payments) finish(ctx context.Context, tx Tx, ev PaymentEvent, result, paymentID string) (SettleResult, error) {
-	if err := p.repo.SetEventResult(ctx, tx, ev, result); err != nil {
-		return SettleResult{}, fmt.Errorf("set event result: %w", err)
-	}
-	return SettleResult{Result: result, PaymentID: paymentID}, nil
-}
-
 // load finds a payment (a foreign or unknown id is a 404 before it can be a 403) and checks the building.
 func (p *Payments) load(ctx context.Context, tx Tx, op string, c Caller, id string) (PaymentRecord, error) {
 	rec, ok, err := p.repo.PaymentByID(ctx, tx, id)
@@ -367,6 +392,12 @@ func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentVie
 	if r.Method != payment.MethodTransfer || r.Status != payment.StatusPending {
 		return v, nil
 	}
+	if r.ReceivedAmount != nil {
+		v.Remaining = max(r.Amount-*r.ReceivedAmount, 0)
+	} else {
+		v.Remaining = r.Amount
+	}
+	r.Amount = v.Remaining // the QR asks for what is still owed, with the same bill code
 	qr, err := p.qr(ctx, tx, r)
 	v.QR = qr
 	return v, err

@@ -59,7 +59,7 @@ func (s Server) SimulatePaymentReceived(ctx context.Context, req gen.SimulatePay
 
 func toPayment(v app.PaymentView) gen.Payment {
 	out := gen.Payment{Id: v.ID, InvoiceId: v.InvoiceID, Method: gen.PaymentMethod(v.Method), Status: gen.PaymentStatus(v.Status),
-		Amount: v.Amount, PaidAt: v.PaidAt, TransactionId: v.TransactionID}
+		Amount: v.Amount, Remaining: v.Remaining, PaidAt: v.PaidAt, TransactionId: v.TransactionID}
 	if v.ReceivedAmount != nil {
 		r := *v.ReceivedAmount
 		out.ReceivedAmount = &r

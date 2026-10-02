@@ -206,6 +206,7 @@
       "OVERDUE_ROOM": "Quá giờ {d}",
       "LONG_TO_CLEAN": "Chờ dọn {d}",
       "PAYMENT_MISMATCH": "Lệch tiền chuyển khoản",
+      "OVERPAID": "Chuyển khoản thừa tiền",
       "UNMATCHED_TRANSFER": "Tiền về chưa gán phiếu",
       "CASH_SHORT": "Thiếu tiền khi kết ca",
       "LEAVE_PENDING": "Xin nghỉ chờ duyệt",
@@ -384,6 +385,7 @@
       "DAMAGE_REPORTED": "Báo hư hỏng",
       "LEAVE_REQUESTED": "Xin nghỉ",
       "PAYMENT_MISMATCH": "Lệch tiền chuyển khoản",
+      "OVERPAID": "Chuyển khoản thừa tiền",
       "SEPAY_UPDATED": "Cập nhật SePay",
       "STAY_TIME_EDITED": "Sửa giờ vào",
       "STOCKTAKE_DIFFERENCE": "Kiểm kho lệch",
@@ -392,6 +394,7 @@
     },
     "text": {
       "PAYMENT_MISMATCH": "Nhận {got} / cần {expected} · phiếu {bill}",
+      "OVERPAID": "Thừa {got} · phiếu {bill}",
       "PAYMENT_MISMATCH_SHORT": "Nhận {got} · phiếu {bill}",
       "UNMATCHED_TRANSFER": "Nhận {got} · nội dung: {note}",
       "STAY_TIME_EDITED": "{old} → {new}",

@@ -84,14 +84,18 @@ func (p *Payments) link(ctx context.Context, tx Tx, c Caller, stored StoredEvent
 	if err := json.Unmarshal(inv.Quote, &q); err != nil {
 		return TransactionRow{}, fmt.Errorf("stored invoice quote: %w", err)
 	}
-	if q.BalanceDue <= 0 || stored.Event.Amount != q.BalanceDue {
-		return TransactionRow{}, stay.NewValidationError([]stay.FieldError{{Path: "invoiceId", Code: "AMOUNT_MISMATCH"}})
+	before, err := p.repo.ReceivedForInvoice(ctx, tx, inv.ID)
+	if err != nil {
+		return TransactionRow{}, fmt.Errorf("received for invoice: %w", err)
+	}
+	if q.BalanceDue-before <= 0 || stored.Event.Amount != q.BalanceDue-before { // the event must be exactly what is still owed
+		return TransactionRow{}, ErrLinkAmount
 	}
 	t, err := p.pendingTransferFor(ctx, tx, inv, q.BalanceDue)
 	if err != nil {
 		return TransactionRow{}, err
 	}
-	res, err := p.settleMatched(ctx, tx, stored.Event, t, c.UserID)
+	res, err := p.settleMatched(ctx, tx, stored.Event, t, c.UserID, q.BalanceDue)
 	if err != nil {
 		return TransactionRow{}, err
 	}

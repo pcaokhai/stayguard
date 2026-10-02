@@ -80,3 +80,21 @@ WHERE tenant_id = @tenant_id AND provider = @provider AND external_id = @externa
 -- name: GetDefaultBankAccount :one
 SELECT id, account_enc FROM app.bank_accounts
 WHERE tenant_id = @tenant_id AND is_default AND sepay_status = 'CONNECTED';
+
+-- name: ReceivedForInvoice :one
+-- Bank money already matched to the invoice that did not close it.
+SELECT coalesce(sum(amount), 0)::bigint FROM app.payment_events
+WHERE tenant_id = @tenant_id AND invoice_id = @invoice_id AND result = 'PARTIAL';
+
+-- name: SetPaymentEventMatched :exec
+UPDATE app.payment_events SET result = @result, invoice_id = @invoice_id
+WHERE tenant_id = @tenant_id AND provider = @provider AND external_id = @external_id;
+
+-- name: SettleInvoiceEvents :exec
+UPDATE app.payment_events SET result = 'SETTLED'
+WHERE tenant_id = @tenant_id AND invoice_id = @invoice_id AND result = 'PARTIAL';
+
+-- name: SetTransferReceived :execrows
+-- A partial transfer: the pending payment records how much the bank has sent so far and stays PENDING.
+UPDATE app.payments SET received_amount = @received_amount
+WHERE tenant_id = @tenant_id AND id = @payment_id AND method = 'TRANSFER' AND status = 'PENDING';

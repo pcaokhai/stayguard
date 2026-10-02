@@ -13,6 +13,8 @@ var (
 	ErrNoBankAccount = errors.New("tenant has no bank account")
 	// ErrPaymentNotPending is the backstop of the settle and mismatch updates (zero rows changed).
 	ErrPaymentNotPending = errors.New("payment is not pending")
+	// ErrLinkAmount: the event does not equal the invoice's remaining balance (HTTP 409 LINK_AMOUNT_MISMATCH).
+	ErrLinkAmount = errors.New("event amount is not the remaining balance")
 	// ErrEventNotLinkable: the bank event was already settled or linked, so linking it again is refused (HTTP 409).
 	ErrEventNotLinkable = errors.New("payment event is not an unmatched transfer")
 )
@@ -72,6 +74,14 @@ type PaymentRepo interface {
 	SetEventResult(ctx context.Context, tx Tx, ev PaymentEvent, result string) error
 	// LockEvent takes the row lock of a stored event of this tenant; false when there is none.
 	LockEvent(ctx context.Context, tx Tx, eventID string) (StoredEvent, bool, error)
+	// ReceivedForInvoice is the bank money matched to the invoice that did not close it (PARTIAL events).
+	ReceivedForInvoice(ctx context.Context, tx Tx, invoiceID string) (int64, error)
+	// SetEventMatched ties an event to an invoice with a result (PARTIAL or SETTLED).
+	SetEventMatched(ctx context.Context, tx Tx, ev PaymentEvent, invoiceID, result string) error
+	// SettleInvoiceEvents turns the PARTIAL events of a paid invoice into SETTLED.
+	SettleInvoiceEvents(ctx context.Context, tx Tx, invoiceID string) error
+	// SetTransferReceived records the cumulative bank money on a pending transfer; it stays PENDING.
+	SetTransferReceived(ctx context.Context, tx Tx, paymentID string, received int64) error
 	// SettleTransfer and MarkMismatch return ErrPaymentNotPending when no pending transfer was updated.
 	SettleTransfer(ctx context.Context, tx Tx, paymentID string, paidAt time.Time, received int64, transactionID string) error
 	MarkMismatch(ctx context.Context, tx Tx, paymentID string, received int64, transactionID string) error

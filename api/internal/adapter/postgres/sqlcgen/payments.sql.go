@@ -348,6 +348,24 @@ func (q *Queries) MarkTransferMismatch(ctx context.Context, arg MarkTransferMism
 	return result.RowsAffected(), nil
 }
 
+const receivedForInvoice = `-- name: ReceivedForInvoice :one
+SELECT coalesce(sum(amount), 0)::bigint FROM app.payment_events
+WHERE tenant_id = $1 AND invoice_id = $2 AND result = 'PARTIAL'
+`
+
+type ReceivedForInvoiceParams struct {
+	TenantID  pgtype.Text
+	InvoiceID pgtype.Text
+}
+
+// Bank money already matched to the invoice that did not close it.
+func (q *Queries) ReceivedForInvoice(ctx context.Context, arg ReceivedForInvoiceParams) (int64, error) {
+	row := q.db.QueryRow(ctx, receivedForInvoice, arg.TenantID, arg.InvoiceID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const releaseRoomToClean = `-- name: ReleaseRoomToClean :exec
 UPDATE app.units u SET status = 'TO_CLEAN'
 FROM app.stays s
@@ -362,6 +380,30 @@ type ReleaseRoomToCleanParams struct {
 
 func (q *Queries) ReleaseRoomToClean(ctx context.Context, arg ReleaseRoomToCleanParams) error {
 	_, err := q.db.Exec(ctx, releaseRoomToClean, arg.TenantID, arg.StayID)
+	return err
+}
+
+const setPaymentEventMatched = `-- name: SetPaymentEventMatched :exec
+UPDATE app.payment_events SET result = $1, invoice_id = $2
+WHERE tenant_id = $3 AND provider = $4 AND external_id = $5
+`
+
+type SetPaymentEventMatchedParams struct {
+	Result     string
+	InvoiceID  pgtype.Text
+	TenantID   pgtype.Text
+	Provider   string
+	ExternalID string
+}
+
+func (q *Queries) SetPaymentEventMatched(ctx context.Context, arg SetPaymentEventMatchedParams) error {
+	_, err := q.db.Exec(ctx, setPaymentEventMatched,
+		arg.Result,
+		arg.InvoiceID,
+		arg.TenantID,
+		arg.Provider,
+		arg.ExternalID,
+	)
 	return err
 }
 
@@ -384,6 +426,41 @@ func (q *Queries) SetPaymentEventResult(ctx context.Context, arg SetPaymentEvent
 		arg.Provider,
 		arg.ExternalID,
 	)
+	return err
+}
+
+const setTransferReceived = `-- name: SetTransferReceived :execrows
+UPDATE app.payments SET received_amount = $1
+WHERE tenant_id = $2 AND id = $3 AND method = 'TRANSFER' AND status = 'PENDING'
+`
+
+type SetTransferReceivedParams struct {
+	ReceivedAmount pgtype.Int8
+	TenantID       string
+	PaymentID      string
+}
+
+// A partial transfer: the pending payment records how much the bank has sent so far and stays PENDING.
+func (q *Queries) SetTransferReceived(ctx context.Context, arg SetTransferReceivedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setTransferReceived, arg.ReceivedAmount, arg.TenantID, arg.PaymentID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const settleInvoiceEvents = `-- name: SettleInvoiceEvents :exec
+UPDATE app.payment_events SET result = 'SETTLED'
+WHERE tenant_id = $1 AND invoice_id = $2 AND result = 'PARTIAL'
+`
+
+type SettleInvoiceEventsParams struct {
+	TenantID  pgtype.Text
+	InvoiceID pgtype.Text
+}
+
+func (q *Queries) SettleInvoiceEvents(ctx context.Context, arg SettleInvoiceEventsParams) error {
+	_, err := q.db.Exec(ctx, settleInvoiceEvents, arg.TenantID, arg.InvoiceID)
 	return err
 }
 
