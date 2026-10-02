@@ -131,7 +131,7 @@ const listStayHistory = `-- name: ListStayHistory :many
 WITH base AS (
     SELECT s.id, u.code AS room_code, s.guest_name, s.rental_type, s.check_in_at, s.check_out_at, s.status,
            u.building_id, coalesce(fu.name, '') AS front_desk_name, s.guest_phone,
-           iv.total AS total, coalesce(pm.method, '')::text AS payment_method,
+           iv.total AS total, iv.id AS invoice_id, iv.bill_code AS bill_code, coalesce(pm.method, '')::text AS payment_method,
            CASE
                WHEN iv.status = 'OPEN' AND EXISTS (SELECT 1 FROM app.payments p
                     WHERE p.tenant_id = s.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH') THEN 'MISMATCH'
@@ -153,7 +153,7 @@ WITH base AS (
       AND s.check_in_at >= $8 AND s.check_in_at < $9
       AND u.building_id = ANY($10::text[])
 )
-SELECT id, room_code, guest_name, rental_type, check_in_at, check_out_at, status, front_desk_name, total, payment_method, state
+SELECT id, room_code, guest_name, rental_type, check_in_at, check_out_at, status, front_desk_name, total, invoice_id, bill_code, payment_method, state
 FROM base
 WHERE ($1::text IS NULL OR building_id = $1::text)
   AND ($2::text IS NULL OR state = $2::text)
@@ -187,6 +187,8 @@ type ListStayHistoryRow struct {
 	Status        string
 	FrontDeskName string
 	Total         pgtype.Int8
+	InvoiceID     pgtype.Text
+	BillCode      pgtype.Text
 	PaymentMethod string
 	State         string
 }
@@ -223,6 +225,8 @@ func (q *Queries) ListStayHistory(ctx context.Context, arg ListStayHistoryParams
 			&i.Status,
 			&i.FrontDeskName,
 			&i.Total,
+			&i.InvoiceID,
+			&i.BillCode,
 			&i.PaymentMethod,
 			&i.State,
 		); err != nil {

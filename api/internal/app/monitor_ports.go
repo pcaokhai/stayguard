@@ -76,5 +76,15 @@ type MonitorRepo interface {
 	AuditLogs(ctx context.Context, tx Tx, f AuditFilter) ([]AuditRow, error)
 	LongToClean(ctx context.Context, tx Tx, before time.Time) ([]LongToClean, error)
 	OpenTickets(ctx context.Context, tx Tx) ([]OpenTicket, error)
+	// UnpaidInvoices lists open checked-out invoices with something to pay, newest check-out first.
+	UnpaidInvoices(ctx context.Context, tx Tx) ([]InvoiceCandidate, error)
 	PendingLeave(ctx context.Context, tx Tx) ([]PendingLeave, error)
+}
+
+// InvoiceCandidate is a checked-out invoice still to be paid. Paid is the deposit plus money the bank reported that did not
+// settle the invoice; Balance is what is left.
+type InvoiceCandidate struct {
+	InvoiceID, BillCode, RoomCode, GuestName string
+	CheckedOutAt                             time.Time
+	Total, Paid, Balance                     int64
 }

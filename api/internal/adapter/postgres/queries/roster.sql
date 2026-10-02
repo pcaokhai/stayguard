@@ -1,7 +1,8 @@
 -- name: ListRosterAssignments :many
-SELECT user_id, work_date, shift FROM app.roster_assignments
-WHERE tenant_id = @tenant_id AND work_date >= @from_date AND work_date <= @to_date
-ORDER BY work_date, shift, user_id;
+SELECT r.user_id, u.name AS user_name, r.work_date, r.shift FROM app.roster_assignments r
+JOIN app.users u ON u.tenant_id = r.tenant_id AND u.id = r.user_id
+WHERE r.tenant_id = @tenant_id AND r.work_date >= @from_date AND r.work_date <= @to_date
+ORDER BY r.work_date, r.shift, r.user_id;
 
 -- name: ListActiveUserIDs :many
 -- Who a roster may use: everyone not removed, including staff with no sign-in.

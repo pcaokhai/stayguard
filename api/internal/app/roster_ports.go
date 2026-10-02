@@ -18,8 +18,10 @@ var (
 // RosterCell is one person on one shift of a day; Date is a calendar day at midnight UTC.
 type RosterCell struct {
 	UserID string
-	Date   time.Time
-	Shift  string
+	// UserName is filled when assignments are read; a change names the person by id only.
+	UserName string `json:"userName,omitempty"`
+	Date     time.Time
+	Shift    string
 }
 
 // LeaveRow is a stored leave request; From and To are calendar days at midnight UTC, Shift is empty for the whole day.

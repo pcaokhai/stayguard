@@ -9,7 +9,7 @@ WHERE s.tenant_id = @tenant_id AND s.id = @stay_id;
 WITH base AS (
     SELECT s.id, u.code AS room_code, s.guest_name, s.rental_type, s.check_in_at, s.check_out_at, s.status,
            u.building_id, coalesce(fu.name, '') AS front_desk_name, s.guest_phone,
-           iv.total AS total, coalesce(pm.method, '')::text AS payment_method,
+           iv.total AS total, iv.id AS invoice_id, iv.bill_code AS bill_code, coalesce(pm.method, '')::text AS payment_method,
            CASE
                WHEN iv.status = 'OPEN' AND EXISTS (SELECT 1 FROM app.payments p
                     WHERE p.tenant_id = s.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH') THEN 'MISMATCH'
@@ -31,7 +31,7 @@ WITH base AS (
       AND s.check_in_at >= @from_at AND s.check_in_at < @to_at
       AND u.building_id = ANY(@building_ids::text[])
 )
-SELECT id, room_code, guest_name, rental_type, check_in_at, check_out_at, status, front_desk_name, total, payment_method, state
+SELECT id, room_code, guest_name, rental_type, check_in_at, check_out_at, status, front_desk_name, total, invoice_id, bill_code, payment_method, state
 FROM base
 WHERE (sqlc.narg(building_id)::text IS NULL OR building_id = sqlc.narg(building_id)::text)
   AND (sqlc.narg(state)::text IS NULL OR state = sqlc.narg(state)::text)

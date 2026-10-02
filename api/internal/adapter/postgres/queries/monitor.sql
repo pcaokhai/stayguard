@@ -57,3 +57,18 @@ WHERE u.tenant_id = @tenant_id AND u.status = 'TO_CLEAN' AND NOT u.retired
 GROUP BY u.code
 HAVING max(s.check_out_at) < @before
 ORDER BY since, u.code;
+
+-- name: ListUnpaidInvoices :many
+-- Checked-out invoices still open with something to pay. paid is the deposit plus money the bank reported that did not
+-- settle the invoice (a transfer of the wrong amount); the caller works out the balance and the order.
+SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
+                 WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)::bigint AS reported
+FROM app.invoices iv
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND s.check_out_at IS NOT NULL
+  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
+ORDER BY s.check_out_at DESC, iv.id DESC
+LIMIT 500;

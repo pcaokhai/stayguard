@@ -25,6 +25,7 @@ type StayListRow struct {
 	CheckOutAt                                                        *time.Time
 	Total                                                             *int64
 	PaymentMethod                                                     string
+	InvoiceID, BillCode                                               string // empty until the stay is checked out
 }
 
 // TimelineRow is one event of a stay; Details hold display values only.

@@ -14,6 +14,7 @@ type MonitorService interface {
 	ListTransactions(ctx context.Context, c app.Caller, q app.TransactionsQuery) (app.TransactionPage, error)
 	LinkTransfer(ctx context.Context, c app.Caller, eventID, retryID, invoiceID string) (app.TransactionRow, error)
 	ListAuditLogs(ctx context.Context, c app.Caller, q app.AuditQuery) (app.AuditPage, error)
+	ListInvoices(ctx context.Context, c app.Caller, amount *int64) ([]app.InvoiceCandidate, error)
 }
 
 // WithMonitor adds the alert, transaction and activity-log use cases.
@@ -133,4 +134,21 @@ func (s Server) ListAuditLogs(ctx context.Context, req gen.ListAuditLogsRequestO
 		}
 	}
 	return gen.ListAuditLogs200JSONResponse{Items: items, NextCursor: nilIfEmpty(page.NextCursor)}, nil
+}
+
+func (s Server) ListInvoices(ctx context.Context, req gen.ListInvoicesRequestObject) (gen.ListInvoicesResponseObject, error) {
+	c, err := s.featureCaller(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.monitor.ListInvoices(ctx, c, req.Params.Amount)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]gen.InvoiceCandidate, len(rows))
+	for i, r := range rows {
+		items[i] = gen.InvoiceCandidate{InvoiceId: r.InvoiceID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
+			CheckedOutAt: r.CheckedOutAt, Total: r.Total, Paid: r.Paid, Balance: r.Balance}
+	}
+	return gen.ListInvoices200JSONResponse{Items: items}, nil
 }

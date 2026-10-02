@@ -43,7 +43,7 @@ func toLeave(l app.LeaveView) gen.LeaveRequest {
 func toRoster(v app.RosterView) gen.Roster {
 	out := gen.Roster{From: date(v.From), To: date(v.To), Assignments: make([]gen.RosterAssignment, len(v.Assignments)), Leave: make([]gen.LeaveRequest, len(v.Leave))}
 	for i, a := range v.Assignments {
-		out.Assignments[i] = gen.RosterAssignment{UserId: a.UserID, Date: date(a.Date), Shift: gen.ShiftCode(a.Shift)}
+		out.Assignments[i] = gen.RosterAssignment{UserId: a.UserID, UserName: nilIfEmpty(a.UserName), Date: date(a.Date), Shift: gen.ShiftCode(a.Shift)}
 	}
 	for i, l := range v.Leave {
 		out.Leave[i] = toLeave(l)

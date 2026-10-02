@@ -38,7 +38,8 @@ func TestRosterE2E_FA3(t *testing.T) {
 	}, "remove": []any{}}
 	st, raw := e.send("PUT", "/v1/owner/roster", boss, newKey(), put)
 	roster := parse(raw)
-	if st != 200 || len(roster["assignments"].([]any)) != 2 || len(roster["gaps"].([]any)) == 0 {
+	if st != 200 || len(roster["assignments"].([]any)) != 2 || len(roster["gaps"].([]any)) == 0 ||
+		roster["assignments"].([]any)[0].(map[string]any)["userName"] == nil {
 		t.Fatalf("put roster: %d %s", st, raw)
 	}
 	if st, _ = e.send("PUT", "/v1/owner/roster", desk, newKey(), put); st != 403 {

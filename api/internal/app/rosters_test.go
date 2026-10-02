@@ -58,7 +58,7 @@ func (r *fakeRosterRepo) CountBetween(ctx context.Context, tx Tx, from, to time.
 func (r *fakeRosterRepo) CopyWeek(_ context.Context, _ Tx, src time.Time, _ string) error {
 	for c := range r.cells {
 		if !c.Date.Before(src) && c.Date.Before(src.AddDate(0, 0, 7)) {
-			r.cells[RosterCell{c.UserID, c.Date.AddDate(0, 0, 7), c.Shift}] = true
+			r.cells[RosterCell{UserID: c.UserID, Date: c.Date.AddDate(0, 0, 7), Shift: c.Shift}] = true
 		}
 	}
 	return nil
@@ -169,24 +169,24 @@ func hasGap(v RosterView, d time.Time, shift string) bool {
 func TestPutRoster_AssignRemoveAndGuards_SG1102(t *testing.T) {
 	e := newRosterEnv()
 	ctx := context.Background()
-	v := e.putSet(t, "k1", RosterCell{"u_lan", jan(5), "MORNING"}, RosterCell{"u_ba", jan(5), "AFTERNOON"})
+	v := e.putSet(t, "k1", RosterCell{UserID: "u_lan", Date: jan(5), Shift: "MORNING"}, RosterCell{UserID: "u_ba", Date: jan(5), Shift: "AFTERNOON"})
 	if len(v.Assignments) != 2 || hasGap(v, jan(5), "MORNING") || !hasGap(v, jan(5), "NIGHT") {
 		t.Fatalf("roster %+v gaps %v", v.Assignments, v.Gaps)
 	}
-	if again := e.putSet(t, "k1", RosterCell{"u_lan", jan(5), "MORNING"}, RosterCell{"u_ba", jan(5), "AFTERNOON"}); len(again.Assignments) != 2 {
+	if again := e.putSet(t, "k1", RosterCell{UserID: "u_lan", Date: jan(5), Shift: "MORNING"}, RosterCell{UserID: "u_ba", Date: jan(5), Shift: "AFTERNOON"}); len(again.Assignments) != 2 {
 		t.Fatalf("replay: %+v", again)
 	}
-	if v, err := e.r.PutRoster(ctx, e.mgr, "k2", nil, []RosterCell{{"u_ba", jan(5), "AFTERNOON"}}); err != nil || len(v.Assignments) != 1 {
+	if v, err := e.r.PutRoster(ctx, e.mgr, "k2", nil, []RosterCell{{UserID: "u_ba", Date: jan(5), Shift: "AFTERNOON"}}); err != nil || len(v.Assignments) != 1 {
 		t.Fatalf("remove: %+v %v", v, err)
 	}
 	var ve *stay.ValidationError
-	if _, err := e.r.PutRoster(ctx, e.mgr, "k3", []RosterCell{{"u_gone", jan(5), "NIGHT"}}, nil); !errors.As(err, &ve) {
+	if _, err := e.r.PutRoster(ctx, e.mgr, "k3", []RosterCell{{UserID: "u_gone", Date: jan(5), Shift: "NIGHT"}}, nil); !errors.As(err, &ve) {
 		t.Errorf("unknown person: %v", err)
 	}
-	if _, err := e.r.PutRoster(ctx, e.mgr, "k4", []RosterCell{{"u_lan", jan(5), "EVENING"}}, nil); !errors.As(err, &ve) {
+	if _, err := e.r.PutRoster(ctx, e.mgr, "k4", []RosterCell{{UserID: "u_lan", Date: jan(5), Shift: "EVENING"}}, nil); !errors.As(err, &ve) {
 		t.Errorf("bad shift: %v", err)
 	}
-	if _, err := e.r.PutRoster(ctx, e.lan, "k5", []RosterCell{{"u_lan", jan(5), "NIGHT"}}, nil); !errors.Is(err, access.ErrRoleForbidden) {
+	if _, err := e.r.PutRoster(ctx, e.lan, "k5", []RosterCell{{UserID: "u_lan", Date: jan(5), Shift: "NIGHT"}}, nil); !errors.Is(err, access.ErrRoleForbidden) {
 		t.Errorf("receptionist edits the roster: %v", err)
 	}
 }
@@ -194,7 +194,7 @@ func TestPutRoster_AssignRemoveAndGuards_SG1102(t *testing.T) {
 func TestRoster_CoverAndGaps_SG1102(t *testing.T) {
 	e := newRosterEnv()
 	ctx := context.Background()
-	e.putSet(t, "k1", RosterCell{"u_lan", jan(6), "MORNING"}, RosterCell{"u_lan", jan(6), "AFTERNOON"}, RosterCell{"u_ba", jan(6), "NIGHT"})
+	e.putSet(t, "k1", RosterCell{UserID: "u_lan", Date: jan(6), Shift: "MORNING"}, RosterCell{UserID: "u_lan", Date: jan(6), Shift: "AFTERNOON"}, RosterCell{UserID: "u_ba", Date: jan(6), Shift: "NIGHT"})
 	// lan takes the 6th off, covered by chi; the cover only fills lan's own shifts.
 	l, err := e.r.CreateLeave(ctx, e.lan, "kl", CreateLeaveInput{From: jan(6), To: jan(6), Kind: "PAID", CoverID: "u_chi"})
 	if err != nil {
@@ -216,7 +216,7 @@ func TestRoster_CoverAndGaps_SG1102(t *testing.T) {
 		t.Fatalf("uncovered leave: %v", v.Gaps)
 	}
 	// and nobody can be rostered onto a day they are off
-	if _, err := e.r.PutRoster(ctx, e.mgr, "k9", []RosterCell{{"u_lan", jan(6), "NIGHT"}}, nil); !errors.Is(err, ErrLeaveConflict) {
+	if _, err := e.r.PutRoster(ctx, e.mgr, "k9", []RosterCell{{UserID: "u_lan", Date: jan(6), Shift: "NIGHT"}}, nil); !errors.Is(err, ErrLeaveConflict) {
 		t.Fatalf("rostering a person on leave: %v", err)
 	}
 	if mine, err := e.r.MyRoster(ctx, e.lan, jan(6), jan(6)); err != nil || len(mine.Assignments) != 2 || mine.Gaps != nil {
@@ -227,7 +227,7 @@ func TestRoster_CoverAndGaps_SG1102(t *testing.T) {
 func TestCopyWeek_SG1102(t *testing.T) {
 	e := newRosterEnv()
 	ctx := context.Background()
-	e.putSet(t, "k1", RosterCell{"u_lan", jan(5), "MORNING"}, RosterCell{"u_ba", jan(7), "NIGHT"})
+	e.putSet(t, "k1", RosterCell{UserID: "u_lan", Date: jan(5), Shift: "MORNING"}, RosterCell{UserID: "u_ba", Date: jan(7), Shift: "NIGHT"})
 	var ve *stay.ValidationError
 	if _, err := e.r.CopyWeek(ctx, e.owner, "c1", jan(12)); err != nil {
 		t.Fatalf("copy: %v", err)

@@ -12,9 +12,9 @@ func TestLineFor_LeaveKindsAndPay_FA4(t *testing.T) {
 	staff := PayrollStaff{UserID: "u1", Name: "Lan", Position: "FRONT_DESK", PayType: "PER_SHIFT", Rate: 250_000, Allowance: 100_000}
 	var cells []RosterCell
 	for d := 1; d <= 6; d++ {
-		cells = append(cells, RosterCell{"u1", oct(d), "MORNING"})
+		cells = append(cells, RosterCell{UserID: "u1", Date: oct(d), Shift: "MORNING"})
 	}
-	cells = append(cells, RosterCell{"u2", oct(1), "MORNING"}) // somebody else's shift is not hers
+	cells = append(cells, RosterCell{UserID: "u2", Date: oct(1), Shift: "MORNING"}) // somebody else's shift is not hers
 	leave := []LeaveRow{
 		{ID: "l1", UserID: "u1", Kind: "PAID", Status: "APPROVED", From: oct(2), To: oct(3)},
 		{ID: "l2", UserID: "u1", Kind: "SICK", Status: "APPROVED", From: oct(4), To: oct(4)},

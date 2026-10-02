@@ -51,7 +51,7 @@ func (StayHistoryRepo) Stays(ctx context.Context, tx app.Tx, f app.StayFilter) (
 	for i, r := range rows {
 		out[i] = app.StayListRow{ID: r.ID, RoomCode: r.RoomCode, GuestName: r.GuestName, RentalType: r.RentalType,
 			Status: r.Status, State: r.State, FrontDeskName: r.FrontDeskName, CheckInAt: r.CheckInAt.Time.UTC(),
-			PaymentMethod: r.PaymentMethod}
+			PaymentMethod: r.PaymentMethod, InvoiceID: r.InvoiceID.String, BillCode: r.BillCode.String}
 		if r.CheckOutAt.Valid {
 			at := r.CheckOutAt.Time.UTC()
 			out[i].CheckOutAt = &at

@@ -149,3 +149,21 @@ func (MonitorRepo) PendingLeave(ctx context.Context, tx app.Tx) ([]app.PendingLe
 	}
 	return out, nil
 }
+
+func (MonitorRepo) UnpaidInvoices(ctx context.Context, tx app.Tx) ([]app.InvoiceCandidate, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListUnpaidInvoices(ctx, t.tenant)
+	if err != nil {
+		return nil, wrap("list unpaid invoices", err)
+	}
+	out := make([]app.InvoiceCandidate, len(rows))
+	for i, r := range rows {
+		paid := r.Deposit + r.Reported
+		out[i] = app.InvoiceCandidate{InvoiceID: r.ID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
+			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0)}
+	}
+	return out, nil
+}

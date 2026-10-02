@@ -51,10 +51,6 @@ func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roo
 // getStayTimeline, getReceipt); a Server without them answers those operations with a nil dereference, so the router always sets them.
 func (s Server) WithStayOps(ops StayOpsService) Server { s.stayOps = ops; return s }
 
-func (Server) ListInvoices(context.Context, gen.ListInvoicesRequestObject) (gen.ListInvoicesResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
 	return nil, errNotImplemented
 }

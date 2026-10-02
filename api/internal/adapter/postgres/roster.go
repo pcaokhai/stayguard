@@ -34,7 +34,7 @@ func (RosterRepo) Assignments(ctx context.Context, tx app.Tx, from, to time.Time
 	}
 	out := make([]app.RosterCell, len(rows))
 	for i, r := range rows {
-		out[i] = app.RosterCell{UserID: r.UserID, Date: r.WorkDate.Time, Shift: r.Shift}
+		out[i] = app.RosterCell{UserID: r.UserID, UserName: r.UserName, Date: r.WorkDate.Time, Shift: r.Shift}
 	}
 	return out, nil
 }

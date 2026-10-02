@@ -260,3 +260,27 @@ func auditDetails(after []byte) map[string]string {
 	}
 	return out
 }
+
+// ListInvoices lists the invoices still to be paid (owner only). With an amount, those whose balance equals it come first,
+// each group newest check-out first.
+func (m *Monitor) ListInvoices(ctx context.Context, c Caller, amount *int64) ([]InvoiceCandidate, error) {
+	if err := m.checkRole("listInvoices", c); err != nil {
+		return nil, err
+	}
+	if amount != nil && *amount < 1 {
+		return nil, stay.NewValidationError([]stay.FieldError{{Path: "amount", Code: stay.CodeMin}})
+	}
+	var out []InvoiceCandidate
+	err := m.uow.Do(ctx, c.TenantID, func(ctx context.Context, tx Tx) error {
+		rows, err := m.repo.UnpaidInvoices(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("unpaid invoices: %w", err)
+		}
+		out = rows
+		if amount != nil {
+			sort.SliceStable(out, func(i, j int) bool { return (out[i].Balance == *amount) && (out[j].Balance != *amount) })
+		}
+		return nil
+	})
+	return out, err
+}

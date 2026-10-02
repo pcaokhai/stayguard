@@ -368,9 +368,10 @@ func (q *Queries) ListPendingLeave(ctx context.Context, tenantID string) ([]List
 }
 
 const listRosterAssignments = `-- name: ListRosterAssignments :many
-SELECT user_id, work_date, shift FROM app.roster_assignments
-WHERE tenant_id = $1 AND work_date >= $2 AND work_date <= $3
-ORDER BY work_date, shift, user_id
+SELECT r.user_id, u.name AS user_name, r.work_date, r.shift FROM app.roster_assignments r
+JOIN app.users u ON u.tenant_id = r.tenant_id AND u.id = r.user_id
+WHERE r.tenant_id = $1 AND r.work_date >= $2 AND r.work_date <= $3
+ORDER BY r.work_date, r.shift, r.user_id
 `
 
 type ListRosterAssignmentsParams struct {
@@ -381,6 +382,7 @@ type ListRosterAssignmentsParams struct {
 
 type ListRosterAssignmentsRow struct {
 	UserID   string
+	UserName string
 	WorkDate pgtype.Date
 	Shift    string
 }
@@ -394,7 +396,12 @@ func (q *Queries) ListRosterAssignments(ctx context.Context, arg ListRosterAssig
 	var items []ListRosterAssignmentsRow
 	for rows.Next() {
 		var i ListRosterAssignmentsRow
-		if err := rows.Scan(&i.UserID, &i.WorkDate, &i.Shift); err != nil {
+		if err := rows.Scan(
+			&i.UserID,
+			&i.UserName,
+			&i.WorkDate,
+			&i.Shift,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
