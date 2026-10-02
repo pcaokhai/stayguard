@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Clock, KeyRound, LogOut, User, Wallet } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -12,27 +11,15 @@ import { QueryError } from "@/components/StateView";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api } from "@/lib/api";
 import { lp } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { formatClock } from "@/lib/time";
 import { useBuildings } from "../rooms/hooks";
+import { useCurrentShift } from "../shift/hooks";
 import { useMe } from "../session/useMe";
 import { homeFor } from "./home";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { useSignOut } from "@/components/shell/useSignOut";
-
-const useCurrentShift = (enabled: boolean) =>
-  useQuery({
-    queryKey: ["shift", "current"],
-    enabled,
-    queryFn: async () => {
-      const { data, response } = await api.GET("/v1/shifts/current");
-      if (response.status === 404) return null; // no open shift
-      if (!data) throw new Error("getCurrentShift failed");
-      return data;
-    },
-  });
 
 export function AccountView() {
   const me = useMe();

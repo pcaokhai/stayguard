@@ -165,6 +165,83 @@ const USERS: Record<string, { name: string; role: string }> = {
 };
 let wrongPins = 0;
 
+const SHIFT = {
+  id: "sh1",
+  userId: "u1",
+  userName: "Chị Hoa",
+  status: "OPEN",
+  openedAt: ago(480),
+  openingFloat: 500000,
+  cashIn: 1280000,
+  cashOut: 30000,
+  expectedCash: 1750000,
+  transfersReceived: 2180000,
+  buildingIds: ["A"],
+};
+const id = (num: boolean, front: boolean, back: boolean) => ({
+  hasIdNumber: num,
+  hasFrontPhoto: front,
+  hasBackPhoto: back,
+});
+const STAYS = [
+  {
+    id: "s1",
+    roomCode: "A101",
+    guestName: "Nguyễn Văn An",
+    rentalType: "HOURLY",
+    checkInAt: ago(155),
+    checkOutAt: ago(0),
+    total: 140000,
+    paymentMethod: "TRANSFER",
+    state: "PAID",
+    status: "ENDED",
+    frontDeskName: "Chị Hoa",
+    guestId: id(true, true, true),
+  },
+  {
+    id: "s2",
+    roomCode: "B203",
+    guestName: "Trần Thị Bình",
+    rentalType: "HOURLY",
+    checkInAt: ago(200),
+    checkOutAt: ago(130),
+    total: 80000,
+    paymentMethod: "CASH",
+    state: "PAID",
+    status: "ENDED",
+    frontDeskName: "Chị Hoa",
+    guestId: id(false, false, false),
+  },
+  {
+    id: "s3",
+    roomCode: "A305",
+    guestName: "Lê Minh",
+    rentalType: "DAILY",
+    checkInAt: ago(1500),
+    checkOutAt: null,
+    total: 300000,
+    paymentMethod: null,
+    state: "IN_STAY",
+    status: "ACTIVE",
+    frontDeskName: "Chị Hoa",
+    guestId: id(true, false, false),
+  },
+  {
+    id: "s4",
+    roomCode: "A202",
+    guestName: "Phạm Hùng",
+    rentalType: "HOURLY",
+    checkInAt: ago(110),
+    checkOutAt: ago(65),
+    total: 80000,
+    paymentMethod: "TRANSFER",
+    state: "MISMATCH",
+    status: "ENDED",
+    frontDeskName: "Chị Hoa",
+    guestId: id(true, true, false),
+  },
+];
+
 // Owner overview, alerts and activity log fixtures (boards TongQuan, CanhBao, NhatKy).
 const OVERVIEW_BUILDINGS = [
   ["A", 18, 7, 8, 2, 1, 1, 39, 2020000],
@@ -366,6 +443,29 @@ export const demoHandlers = [
       200,
     );
   }),
+  http.post("*/v1/shifts/current/close", () =>
+    json({
+      shift: { ...SHIFT, status: "CLOSED" },
+      countedCash: 0,
+      difference: 0,
+      reason: null,
+      cashPayments: [],
+      staffHistory: [],
+    }),
+  ),
+  http.post("*/v1/shifts/current/payouts", async ({ request }) => {
+    const { amount } = (await request.json()) as { amount: number };
+    SHIFT.cashOut += amount;
+    SHIFT.expectedCash -= amount;
+    return json(SHIFT);
+  }),
+  http.get("*/v1/stays", ({ request }) => {
+    const q = new URL(request.url).searchParams.get("q")?.toLowerCase();
+    const items = STAYS.filter(
+      (s) => !q || `${s.roomCode} ${s.guestName}`.toLowerCase().includes(q),
+    );
+    return json({ items, nextCursor: null });
+  }),
   http.post("*/v1/auth/sign-out", () => new HttpResponse(null, { status: 204 })),
   http.put("*/v1/me/pin", async ({ request }) => {
     const b = (await request.json()) as { currentPin: string };
@@ -377,24 +477,7 @@ export const demoHandlers = [
         );
   }),
   http.put("*/v1/me/locale", () => new HttpResponse(null, { status: 204 })),
-  http.get("*/v1/shifts/current", () =>
-    json(
-      {
-        id: "sh1",
-        userId: "u1",
-        userName: "Chị Hoa",
-        status: "OPEN",
-        openedAt: ago(70),
-        openingFloat: 500000,
-        cashIn: 180000,
-        cashOut: 0,
-        expectedCash: 680000,
-        transfersReceived: 220000,
-        buildingIds: ["A"],
-      },
-      200,
-    ),
-  ),
+  http.get("*/v1/shifts/current", () => json(SHIFT)),
   http.post("*/v1/demo/sessions", async ({ request }) => {
     const { role } = (await request.json()) as { role: string };
     return json(
