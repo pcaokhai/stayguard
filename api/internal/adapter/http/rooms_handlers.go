@@ -111,11 +111,22 @@ func strPtr(s string) *string {
 	return &s
 }
 
+// toBuildingNoFloors is a building without a floors list (the field is omitted, not null).
+func toBuildingNoFloors(v app.BuildingView) gen.Building {
+	return gen.Building{
+		Id: v.ID, Code: v.Code, Name: v.Name, Level: permissionLevel(v.Level),
+		Counts: gen.StatusCounts{Vacant: v.Counts.Vacant, Occupied: v.Counts.Occupied, Overdue: v.Counts.Overdue, ToClean: v.Counts.ToClean, Maintenance: v.Counts.Maintenance},
+	}
+}
+
 func toBuilding(v app.BuildingView) gen.Building {
 	var floors []struct {
 		Id    string `json:"id"`
 		Name  string `json:"name"`
 		Order int    `json:"order"`
+	}
+	if v.Floors == nil {
+		return toBuildingNoFloors(v)
 	}
 	for _, f := range v.Floors {
 		floors = append(floors, struct {
