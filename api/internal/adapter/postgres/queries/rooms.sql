@@ -14,7 +14,7 @@ FROM app.units u
 JOIN app.floors f ON f.tenant_id = u.tenant_id AND f.id = u.floor_id
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
 LEFT JOIN app.stays s ON s.tenant_id = u.tenant_id AND s.unit_id = u.id AND s.status = 'ACTIVE'
-WHERE u.tenant_id = @tenant_id
+WHERE u.tenant_id = @tenant_id AND NOT u.retired
   AND (@building_id::text = '' OR u.building_id = @building_id::text)
   AND (@unit_id::text = '' OR u.id = @unit_id::text)
 ORDER BY u.building_id, u.code;

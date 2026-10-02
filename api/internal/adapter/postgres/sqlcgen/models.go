@@ -86,6 +86,7 @@ type AppFloor struct {
 	TenantID   string
 	BuildingID string
 	Level      int32
+	Name       pgtype.Text
 }
 
 type AppIdempotencyKey struct {
@@ -208,12 +209,16 @@ type AppRosterAssignment struct {
 }
 
 type AppService struct {
-	ID       string
-	TenantID string
-	Name     []byte
-	Price    int64
-	Stock    int64
-	Code     string
+	ID             string
+	TenantID       string
+	Name           []byte
+	Price          int64
+	Stock          int64
+	Code           string
+	Unit           string
+	LowStockAt     int32
+	OnSale         bool
+	LatestUnitCost pgtype.Int8
 }
 
 type AppSession struct {
@@ -302,6 +307,18 @@ type AppStayExtra struct {
 	CreatedBy  pgtype.Text
 }
 
+type AppStockMovement struct {
+	ID        string
+	TenantID  string
+	ServiceID string
+	Kind      string
+	Quantity  int32
+	UnitCost  pgtype.Int8
+	Ref       pgtype.Text
+	ActorID   pgtype.Text
+	CreatedAt pgtype.Timestamptz
+}
+
 type AppTenant struct {
 	ID               string
 	Name             string
@@ -341,6 +358,7 @@ type AppUnit struct {
 	Code       string
 	Status     string
 	Attributes []byte
+	Retired    bool
 }
 
 type AppUnitType struct {
@@ -350,6 +368,7 @@ type AppUnitType struct {
 	RatePlan        []byte
 	RatePlanVersion int32
 	Code            string
+	UpdatedAt       pgtype.Timestamptz
 }
 
 type AppUser struct {

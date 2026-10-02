@@ -53,7 +53,7 @@ LIMIT @row_limit;
 SELECT u.code AS room_code, max(s.check_out_at)::timestamptz AS since
 FROM app.units u
 JOIN app.stays s ON s.tenant_id = u.tenant_id AND s.unit_id = u.id AND s.check_out_at IS NOT NULL
-WHERE u.tenant_id = @tenant_id AND u.status = 'TO_CLEAN'
+WHERE u.tenant_id = @tenant_id AND u.status = 'TO_CLEAN' AND NOT u.retired
 GROUP BY u.code
 HAVING max(s.check_out_at) < @before
 ORDER BY since, u.code;

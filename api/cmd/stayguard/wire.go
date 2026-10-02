@@ -29,6 +29,7 @@ type deps struct {
 	auth         *app.Auth
 	staff        *app.Staff
 	bank         *app.Bank
+	setup        *app.Setup
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -106,6 +107,7 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		auth:         auth,
 		staff:        newStaff(uow, auth, idem, audit, clock.System{}),
 		bank:         bank,
+		setup:        app.NewSetup(uow, postgres.SetupRepo{}, idem, audit, ids.New(clock.System{}.Now), clock.System{}),
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,

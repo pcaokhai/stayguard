@@ -34,6 +34,7 @@ type Server struct {
 	roster       RosterService
 	staff        StaffService
 	bank         BankService
+	setup        SetupService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
@@ -64,23 +65,7 @@ func (Server) ReceiveBankWebhook(context.Context, gen.ReceiveBankWebhookRequestO
 	return nil, errNotImplemented
 }
 
-func (Server) CreateBuilding(context.Context, gen.CreateBuildingRequestObject) (gen.CreateBuildingResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) CreateExpense(context.Context, gen.CreateExpenseRequestObject) (gen.CreateExpenseResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreateFloor(context.Context, gen.CreateFloorRequestObject) (gen.CreateFloorResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreateRooms(context.Context, gen.CreateRoomsRequestObject) (gen.CreateRoomsResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) CreateService(context.Context, gen.CreateServiceRequestObject) (gen.CreateServiceResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -120,10 +105,6 @@ func (Server) GetPayroll(context.Context, gen.GetPayrollRequestObject) (gen.GetP
 	return nil, errNotImplemented
 }
 
-func (Server) ListRatePlans(context.Context, gen.ListRatePlansRequestObject) (gen.ListRatePlansResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) ListStockMovements(context.Context, gen.ListStockMovementsRequestObject) (gen.ListStockMovementsResponseObject, error) {
 	return nil, errNotImplemented
 }
@@ -132,15 +113,7 @@ func (Server) MarkPayrollPaid(context.Context, gen.MarkPayrollPaidRequestObject)
 	return nil, errNotImplemented
 }
 
-func (Server) PreviewPrice(context.Context, gen.PreviewPriceRequestObject) (gen.PreviewPriceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) RemoveService(context.Context, gen.RemoveServiceRequestObject) (gen.RemoveServiceResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) RestockService(context.Context, gen.RestockServiceRequestObject) (gen.RestockServiceResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -152,27 +125,11 @@ func (Server) SetGuestIdNumber(context.Context, gen.SetGuestIdNumberRequestObjec
 	return nil, errNotImplemented
 }
 
-func (Server) UpdateBuilding(context.Context, gen.UpdateBuildingRequestObject) (gen.UpdateBuildingResponseObject, error) {
-	return nil, errNotImplemented
-}
-
 func (Server) UpdateExpense(context.Context, gen.UpdateExpenseRequestObject) (gen.UpdateExpenseResponseObject, error) {
 	return nil, errNotImplemented
 }
 
 func (Server) UpdatePayrollLine(context.Context, gen.UpdatePayrollLineRequestObject) (gen.UpdatePayrollLineResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateRatePlan(context.Context, gen.UpdateRatePlanRequestObject) (gen.UpdateRatePlanResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateRoom(context.Context, gen.UpdateRoomRequestObject) (gen.UpdateRoomResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) UpdateService(context.Context, gen.UpdateServiceRequestObject) (gen.UpdateServiceResponseObject, error) {
 	return nil, errNotImplemented
 }
 

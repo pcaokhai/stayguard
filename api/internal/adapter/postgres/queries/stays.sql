@@ -4,14 +4,14 @@
 SELECT u.id, u.code, u.building_id, u.status, ut.rate_plan, ut.rate_plan_version
 FROM app.units u
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
-WHERE u.tenant_id = @tenant_id AND u.id = @unit_id;
+WHERE u.tenant_id = @tenant_id AND u.id = @unit_id AND NOT u.retired;
 
 -- name: LockCheckInRoom :one
 -- FOR UPDATE OF u serializes concurrent check-ins of one room; the unit type row stays unlocked.
 SELECT u.id, u.code, u.building_id, u.status, ut.rate_plan, ut.rate_plan_version
 FROM app.units u
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
-WHERE u.tenant_id = @tenant_id AND u.id = @unit_id
+WHERE u.tenant_id = @tenant_id AND u.id = @unit_id AND NOT u.retired
 FOR UPDATE OF u;
 
 -- name: InsertStay :exec

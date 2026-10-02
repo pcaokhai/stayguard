@@ -65,13 +65,15 @@ func wantRLSViolation(t testing.TB, what string, err error) {
 	}
 }
 
-// wantUntouched requires zero rows touched and no error. audit_logs is the one table where the app
-// role holds no UPDATE or DELETE grant, so there the statement must fail with a privilege error
-// (proves the grant is absent) instead.
+// appendOnly tables give the app role no UPDATE or DELETE grant.
+var appendOnly = map[string]bool{"audit_logs": true, "stock_movements": true}
+
+// wantUntouched requires zero rows touched and no error. On an append-only table the app role holds no
+// UPDATE or DELETE grant, so there the statement must fail with a privilege error (proves the grant is absent) instead.
 func wantUntouched(t testing.TB, what, table string, n int64, err error) {
 	t.Helper()
-	if table == "audit_logs" {
-		wantSQLState(t, what+" on audit_logs", err, insufficientPrivilege)
+	if appendOnly[table] {
+		wantSQLState(t, what+" on "+table, err, insufficientPrivilege)
 		return
 	}
 	if err != nil || n != 0 {

@@ -7,7 +7,7 @@ SELECT u.id, u.code, u.building_id,
                 t.created_at)::timestamptz AS cleaning_since
 FROM app.units u
 JOIN app.tenants t ON t.id = u.tenant_id
-WHERE u.tenant_id = @tenant_id AND u.status = 'TO_CLEAN'
+WHERE u.tenant_id = @tenant_id AND u.status = 'TO_CLEAN' AND NOT u.retired
 ORDER BY cleaning_since, u.code;
 
 -- name: LockRoomForClean :one

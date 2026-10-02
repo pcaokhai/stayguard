@@ -8,7 +8,7 @@ INSERT INTO app.buildings (id, tenant_id, property_id, code, name)
 VALUES (@id, @tenant_id, @property_id, @code, @name);
 
 -- name: InsertFloor :exec
-INSERT INTO app.floors (id, tenant_id, building_id, level) VALUES (@id, @tenant_id, @building_id, @level);
+INSERT INTO app.floors (id, tenant_id, building_id, level, name) VALUES (@id, @tenant_id, @building_id, @level, sqlc.narg(name));
 
 -- name: InsertUnitType :exec
 INSERT INTO app.unit_types (id, tenant_id, code, name, rate_plan, rate_plan_version)

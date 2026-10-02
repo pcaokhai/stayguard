@@ -70,7 +70,9 @@ type Options struct {
 	// Staff serves the staff and building access operations.
 	Staff StaffService
 	// Bank serves the property, receiving account and SePay status operations.
-	Bank       BankService
+	Bank BankService
+	// Setup serves buildings, rooms, rate plans and items.
+	Setup      SetupService
 	TrustProxy bool
 	ProxyHops  int
 	// StayOps serves stay history, timeline, receipt and the check-in time and move corrections (no flag).
@@ -90,7 +92,7 @@ func NewRouter(log *slog.Logger, o Options) http.Handler {
 	useBaseMiddleware(r, log)
 	r.Use(clientIP(o.TrustProxy, o.ProxyHops))
 	r.Use(authenticate(log, o.Sessions))
-	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance).WithRoster(o.Roster), nil, gen.StrictHTTPServerOptions{
+	strict := gen.NewStrictHandlerWithOptions(NewServer(o.Sessions, o.DemoEnabled, o.Rooms, o.RoomMapEnabled, o.Stays, o.CheckInEnabled, o.Billing, o.CheckoutEnabled, o.Payments, o.Housekeeping, o.Owner, o.Auth, o.Staff).WithStayOps(o.StayOps).WithBank(o.Bank).WithSetup(o.Setup).WithShifts(o.Shifts).WithMonitor(o.Monitor).WithMaintenance(o.Maintenance).WithRoster(o.Roster), nil, gen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  badRequestResponse,
 		ResponseErrorHandlerFunc: problemResponder(log),
 	})

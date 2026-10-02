@@ -26,6 +26,7 @@ const (
 
 // DemoData is a trial tenant's starting rows with every id already generated.
 type DemoData struct {
+	SeededAt                 time.Time // the server clock when the rows were prepared (opening stock movements)
 	PropertyID, PropertyName string
 	PropertyAddress          *string
 	PropertyPhone            *string
@@ -148,7 +149,7 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 	if err := json.Unmarshal(demoSeedJSON, &f); err != nil {
 		return DemoData{}, fmt.Errorf("demo seed: %w", err)
 	}
-	out := DemoData{PropertyID: d.ids.New("pr"), PropertyName: trialTenantName}
+	out := DemoData{SeededAt: now, PropertyID: d.ids.New("pr"), PropertyName: trialTenantName}
 	acc, err := d.demoAccount(tenantID, f.Tenant.BankAccount)
 	if err != nil {
 		return DemoData{}, err

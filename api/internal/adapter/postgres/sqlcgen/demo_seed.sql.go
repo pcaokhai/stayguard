@@ -36,7 +36,7 @@ func (q *Queries) InsertBuilding(ctx context.Context, arg InsertBuildingParams) 
 }
 
 const insertFloor = `-- name: InsertFloor :exec
-INSERT INTO app.floors (id, tenant_id, building_id, level) VALUES ($1, $2, $3, $4)
+INSERT INTO app.floors (id, tenant_id, building_id, level, name) VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertFloorParams struct {
@@ -44,6 +44,7 @@ type InsertFloorParams struct {
 	TenantID   string
 	BuildingID string
 	Level      int32
+	Name       pgtype.Text
 }
 
 func (q *Queries) InsertFloor(ctx context.Context, arg InsertFloorParams) error {
@@ -52,6 +53,7 @@ func (q *Queries) InsertFloor(ctx context.Context, arg InsertFloorParams) error 
 		arg.TenantID,
 		arg.BuildingID,
 		arg.Level,
+		arg.Name,
 	)
 	return err
 }

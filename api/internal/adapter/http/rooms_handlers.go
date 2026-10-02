@@ -47,13 +47,7 @@ func (s Server) ListBuildings(ctx context.Context, _ gen.ListBuildingsRequestObj
 	}
 	items := make([]gen.Building, 0, len(views))
 	for _, v := range views {
-		items = append(items, gen.Building{
-			Id: v.ID, Code: v.Code, Name: v.Name, Level: permissionLevel(v.Level),
-			Counts: gen.StatusCounts{
-				Vacant: v.Counts.Vacant, Occupied: v.Counts.Occupied, Overdue: v.Counts.Overdue,
-				ToClean: v.Counts.ToClean, Maintenance: v.Counts.Maintenance,
-			},
-		})
+		items = append(items, toBuilding(v))
 	}
 	return gen.ListBuildings200JSONResponse{Items: items}, nil
 }
@@ -108,4 +102,14 @@ func toRoom(v app.RoomView) gen.Room {
 		}
 	}
 	return r
+}
+
+func toBuilding(v app.BuildingView) gen.Building {
+	return gen.Building{
+		Id: v.ID, Code: v.Code, Name: v.Name, Level: permissionLevel(v.Level),
+		Counts: gen.StatusCounts{
+			Vacant: v.Counts.Vacant, Occupied: v.Counts.Occupied, Overdue: v.Counts.Overdue,
+			ToClean: v.Counts.ToClean, Maintenance: v.Counts.Maintenance,
+		},
+	}
 }

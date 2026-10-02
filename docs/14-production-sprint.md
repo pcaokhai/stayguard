@@ -94,7 +94,7 @@ Tests (required): one table test over every operation × role (OWNER, MANAGER, R
 Tests (required): docs/archive/14-demo-plan.md P3 test list; QR account comes only from the default account; secret never in logs.
 *Status: everything except `receiveBankWebhook` is merged (CLI, bank accounts, property, status, 410 for the old path). The webhook handler waits for the SePay webhook documentation link from Khai; box stays unticked until then.*
 
-#### [ ] L-A4 Setup: rooms, rates, extras basics (API-1) — migration 0012
+#### [x] L-A4 Setup: rooms, rates, extras basics (API-1) — migration 0012
 `createBuilding`, `updateBuilding`, `createFloor`, `createRooms`, `updateRoom`, `listRatePlans`, `updateRatePlan`, `previewPrice`, `createService`, `updateService`, `restockService` (OPENING and IN movements; stock never edited directly).
 Tests: `previewPrice` uses `domain/pricing` (one golden case through the endpoint); room with a guest cannot change type or retire.
 

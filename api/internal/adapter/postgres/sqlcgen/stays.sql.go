@@ -16,7 +16,7 @@ const getCheckInRoom = `-- name: GetCheckInRoom :one
 SELECT u.id, u.code, u.building_id, u.status, ut.rate_plan, ut.rate_plan_version
 FROM app.units u
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
-WHERE u.tenant_id = $1 AND u.id = $2
+WHERE u.tenant_id = $1 AND u.id = $2 AND NOT u.retired
 `
 
 type GetCheckInRoomParams struct {
@@ -188,7 +188,7 @@ const lockCheckInRoom = `-- name: LockCheckInRoom :one
 SELECT u.id, u.code, u.building_id, u.status, ut.rate_plan, ut.rate_plan_version
 FROM app.units u
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
-WHERE u.tenant_id = $1 AND u.id = $2
+WHERE u.tenant_id = $1 AND u.id = $2 AND NOT u.retired
 FOR UPDATE OF u
 `
 

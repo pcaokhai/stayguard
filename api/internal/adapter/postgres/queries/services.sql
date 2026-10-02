@@ -3,13 +3,13 @@
 -- name: ListServices :many
 SELECT id, code, name, price, stock
 FROM app.services
-WHERE tenant_id = @tenant_id
+WHERE tenant_id = @tenant_id AND on_sale
 ORDER BY code;
 
 -- name: ListServicesByCodes :many
 SELECT id, code, name, price, stock
 FROM app.services
-WHERE tenant_id = @tenant_id AND code = ANY(@codes::text[])
+WHERE tenant_id = @tenant_id AND on_sale AND code = ANY(@codes::text[])
 ORDER BY code;
 
 -- name: DecrementServiceStock :one

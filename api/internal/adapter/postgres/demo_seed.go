@@ -54,6 +54,12 @@ func (DemoSeedRepo) InsertDemoData(ctx context.Context, tx app.Tx, d app.DemoDat
 		if err := q.InsertService(ctx, sqlcgen.InsertServiceParams{ID: s.ID, TenantID: tid, Code: s.Code, Name: s.Name, Price: s.Price, Stock: s.Stock}); err != nil {
 			return wrap("insert service", err)
 		}
+		if s.Stock > 0 { // every unit of stock has a movement: the opening count
+			err := (SetupRepo{}).InsertMovement(ctx, tx, app.StockMovement{ID: "sm_" + s.ID, ServiceID: s.ID, Kind: "OPENING", Quantity: s.Stock, At: d.SeededAt})
+			if err != nil {
+				return err
+			}
+		}
 	}
 	for _, s := range d.Stays {
 		if err := (StayRepo{}).InsertStay(ctx, tx, s); err != nil {

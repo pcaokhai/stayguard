@@ -171,7 +171,7 @@ func (i *Installer) buildLayout(tenantID string, f importFile) (DemoData, map[st
 	if name == "" {
 		name = f.Name
 	}
-	out := DemoData{PropertyID: i.ids.New("pr"), PropertyName: name, PropertyAddress: f.Property.Address, PropertyPhone: f.Property.Phone}
+	out := DemoData{SeededAt: i.clock.Now(), PropertyID: i.ids.New("pr"), PropertyName: name, PropertyAddress: f.Property.Address, PropertyPhone: f.Property.Phone}
 	types := map[string]DemoUnitType{}
 	for _, u := range f.UnitTypes {
 		plan, err := pricing.ParseRatePlan(u.RatePlan)

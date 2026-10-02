@@ -33,7 +33,7 @@ const listServices = `-- name: ListServices :many
 
 SELECT id, code, name, price, stock
 FROM app.services
-WHERE tenant_id = $1
+WHERE tenant_id = $1 AND on_sale
 ORDER BY code
 `
 
@@ -75,7 +75,7 @@ func (q *Queries) ListServices(ctx context.Context, tenantID string) ([]ListServ
 const listServicesByCodes = `-- name: ListServicesByCodes :many
 SELECT id, code, name, price, stock
 FROM app.services
-WHERE tenant_id = $1 AND code = ANY($2::text[])
+WHERE tenant_id = $1 AND on_sale AND code = ANY($2::text[])
 ORDER BY code
 `
 

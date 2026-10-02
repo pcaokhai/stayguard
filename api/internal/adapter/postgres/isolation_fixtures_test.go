@@ -29,6 +29,7 @@ var isolationFixtures = []fixture{
 	{"units", `INSERT INTO app.units (id, tenant_id, building_id, floor_id, unit_type_id, code) VALUES ($2::text || '_un', $1::text, $2::text || '_b', $2::text || '_f', $2::text || '_ut', 'R1')`},
 	{"stays", `INSERT INTO app.stays (id, tenant_id, unit_id, rental_type, guest_name, guest_phone, rate_plan_snapshot, rate_plan_schema) VALUES ($2::text || '_st', $1::text, $2::text || '_un', 'DAILY', 'g', '0900000000', '{}', 1)`},
 	{"services", `INSERT INTO app.services (id, tenant_id, code, name, price) VALUES ($2::text || '_sv', $1::text, 'SV', '{}', 1)`},
+	{"stock_movements", `INSERT INTO app.stock_movements (id, tenant_id, service_id, kind, quantity) VALUES ($2::text || '_sm', $1::text, $2::text || '_sv', 'IN', 1)`},
 	{"stay_extras", `INSERT INTO app.stay_extras (id, tenant_id, stay_id, service_id, quantity, unit_amount, amount) VALUES ($2::text || '_se', $1::text, $2::text || '_st', $2::text || '_sv', 1, 1, 1)`},
 	{"invoices", `INSERT INTO app.invoices (id, tenant_id, stay_id, bill_code, quote, total) VALUES ($2::text || '_iv', $1::text, $2::text || '_st', 'BC', '{}', 1)`},
 	{"payments", `INSERT INTO app.payments (id, tenant_id, invoice_id, method, status, amount) VALUES ($2::text || '_pm', $1::text, $2::text || '_iv', 'CASH', 'PENDING', 1)`},
