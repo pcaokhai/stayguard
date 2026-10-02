@@ -11,6 +11,10 @@ type Caller struct {
 	TenantID, UserID string
 	Role             access.Role
 	Locale           string
+	// SessionHash identifies the session of this request (never the raw token).
+	SessionHash string
+	// PinChangeRequired is true until a one-time PIN is replaced.
+	PinChangeRequired bool
 }
 
 type callerKey struct{}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/adapter/pricing"
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/platform/config"
+	"github.com/pcaokhai/stayguard/api/internal/platform/ratelimit"
 )
 
 // deps are the constructed adapters; the wiring has one home here.
@@ -24,6 +26,7 @@ type deps struct {
 	audit        app.AuditWriter
 	probe        app.ReadinessProbe
 	sessions     *app.Sessions
+	auth         *app.Auth
 	rooms        *app.Rooms
 	stays        *app.Stays
 	billing      *app.Billing
@@ -60,9 +63,15 @@ func newDeps(ctx context.Context, cfg config.Config) (deps, error) {
 		pool.Close()
 		return deps{}, err
 	}
+	auth, err := newAuth(sessions, pool, audit, clock.System{})
+	if err != nil {
+		pool.Close()
+		return deps{}, err
+	}
 	return deps{
 		pool:         pool,
 		sessions:     sessions,
+		auth:         auth,
 		rooms:        newRooms(uow, clock.System{}),
 		stays:        stays,
 		billing:      billing,
@@ -128,4 +137,17 @@ func newPayments(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStor
 		return nil, fmt.Errorf("data encryption key: %w", err)
 	}
 	return app.NewPayments(uow, postgres.PaymentRepo{}, permissions.RoleBased{}, enc, idem, audit, ids.New(clk.Now), clk), nil
+}
+
+// Sign-in rate limits: a legitimate front desk signs in a few times a day, so these only stop guessing.
+const (
+	signInPerIP     = 20
+	signInPerCode   = 60
+	signInRateEvery = time.Minute
+)
+
+// newAuth builds PIN sign-in with per-IP and per-guesthouse-code rate limits.
+func newAuth(sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
+	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.PinHasher{}, audit,
+		ratelimit.New(signInPerIP, signInRateEvery, clk.Now), ratelimit.New(signInPerCode, signInRateEvery, clk.Now))
 }

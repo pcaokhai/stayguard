@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/pcaokhai/stayguard/api/internal/app"
 	"github.com/pcaokhai/stayguard/api/internal/domain/access"
@@ -26,6 +27,8 @@ type problemBody struct {
 	Code   string `json:"code"`
 	// Errors lists field failures of a 422; omitted for every other problem.
 	Errors []fieldProblem `json:"errors,omitempty"`
+	// LockedUntil is set only on ACCOUNT_LOCKED.
+	LockedUntil *time.Time `json:"lockedUntil,omitempty"`
 }
 
 // fieldProblem is one entry of the contract's errors[]: a field path and a code, never the value.
@@ -89,7 +92,22 @@ func problemResponder(log *slog.Logger) func(http.ResponseWriter, *http.Request,
 // generic and nothing from the request is echoed.
 func mapSessionError(w http.ResponseWriter, err error) bool {
 	var ve *app.ValidationError
+	var locked *app.AccountLockedError
 	switch {
+	case errors.As(err, &locked):
+		w.Header().Set("Content-Type", problemContentType)
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(problemBody{Type: "about:blank", Title: "Unauthorized", Status: http.StatusUnauthorized,
+			Code: "ACCOUNT_LOCKED", LockedUntil: &locked.Until})
+	case errors.Is(err, app.ErrPinInvalid):
+		writeProblem(w, http.StatusUnauthorized, "Unauthorized", "PIN_INVALID")
+	case errors.Is(err, app.ErrTooManyRequests):
+		w.Header().Set("Retry-After", "60")
+		writeProblem(w, http.StatusTooManyRequests, "Too Many Requests", "RATE_LIMITED")
+	case errors.Is(err, app.ErrPinChangeRequired):
+		writeProblem(w, http.StatusForbidden, "Forbidden", "PIN_CHANGE_REQUIRED")
+	case errors.Is(err, app.ErrPinTooSimple):
+		writeProblem(w, http.StatusUnprocessableEntity, "Unprocessable Entity", "PIN_TOO_SIMPLE")
 	case errors.Is(err, app.ErrDemoDisabled):
 		writeProblem(w, http.StatusNotFound, "Not Found", "DEMO_DISABLED")
 	case errors.Is(err, app.ErrTrialNotFound):

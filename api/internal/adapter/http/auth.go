@@ -19,6 +19,14 @@ const (
 var publicRoutes = map[string]bool{
 	"POST /v1/demo/sessions": true,
 	"POST /v1/webhooks/bank": true,
+	"POST /v1/auth/sign-in":  true,
+}
+
+// pinChangeRoutes are the only routes a session from a one-time PIN may call (SG-701 AC3).
+var pinChangeRoutes = map[string]bool{
+	"PUT /v1/me/pin":         true,
+	"POST /v1/auth/sign-out": true,
+	"GET /v1/me":             true,
 }
 
 type authenticator interface {
@@ -48,6 +56,10 @@ func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Han
 			caller, err := a.Authenticate(r.Context(), token)
 			if err != nil {
 				respond(w, r, err)
+				return
+			}
+			if caller.PinChangeRequired && !pinChangeRoutes[r.Method+" "+r.URL.Path] {
+				respond(w, r, app.ErrPinChangeRequired)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(app.WithCaller(r.Context(), caller)))

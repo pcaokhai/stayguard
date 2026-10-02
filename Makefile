@@ -1,7 +1,7 @@
 # StayGuard task runner. Targets not yet built print the story that adds them and fail.
 COMPOSE := docker compose -f deploy/compose.yaml
 
-.PHONY: gen-api gen-sqlc gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
+.PHONY: gen-api gen-sqlc gen-sqlc-docker gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e
 
 # Local data encryption key, created once and never committed (deploy/.env.local is git-ignored).
 deploy/.env.local:
@@ -73,6 +73,9 @@ gen-api:
 # sqlc reads the goose migrations as schema and internal/adapter/postgres/queries; output is committed.
 gen-sqlc:
 	cd api && go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION) generate
+# Same sqlc version in the official image, for machines where gen-sqlc cannot link (macOS SDK issue).
+gen-sqlc-docker:
+	docker run --rm -v "$(CURDIR)/api:/src" -w /src sqlc/sqlc:$(SQLC_VERSION:v%=%) generate
 contracts:
 	@bash scripts/contracts.sh
 # Runs the binary's own migrate subcommand (embedded goose, forward-only) against MIGRATE_DATABASE_URL, else DATABASE_URL.

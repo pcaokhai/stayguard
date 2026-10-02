@@ -63,7 +63,9 @@ func (IdentityRepo) UserByID(ctx context.Context, tx app.Tx, id string) (app.Use
 		return app.User{}, false, err
 	}
 	row, err := sqlcgen.New(t).GetUserByID(ctx, sqlcgen.GetUserByIDParams{TenantID: t.tenant, ID: id})
-	return optUser(row.ID, row.Name, row.Role, row.Locale, err, "select user")
+	u, ok, err := optUser(row.ID, row.Name, row.Role, row.Locale, err, "select user")
+	u.Blocked, u.MustChangePin = row.Blocked, row.MustChangePin
+	return u, ok, err
 }
 
 // CreateUser runs in a savepoint: a unique violation must not abort the caller's transaction,

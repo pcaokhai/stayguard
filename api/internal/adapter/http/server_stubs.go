@@ -26,14 +26,15 @@ type Server struct {
 	payments     PaymentService
 	housekeeping HousekeepingService
 	owner        OwnerService
+	auth         AuthService
 }
 
 // NewServer builds the operation handlers. demoEnabled mirrors DEMO_MODE, roomMap FF_S1_ROOM_MAP and
 // checkIn FF_S2_CHECKIN and checkout FF_S3_CHECKOUT.
 func NewServer(sessions sessionService, demoEnabled bool, rooms RoomService, roomMap bool, stays StayService, checkIn bool,
-	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService, owner OwnerService) Server {
+	billing BillingService, checkout bool, payments PaymentService, housekeeping HousekeepingService, owner OwnerService, auth AuthService) Server {
 	return Server{sessions: sessions, demoEnabled: demoEnabled, rooms: rooms, roomMap: roomMap, stays: stays, checkIn: checkIn,
-		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner}
+		billing: billing, checkout: checkout, payments: payments, housekeeping: housekeeping, owner: owner, auth: auth}
 }
 
 func (Server) GetHealth(context.Context, gen.GetHealthRequestObject) (gen.GetHealthResponseObject, error) {
@@ -85,10 +86,6 @@ func (Server) ApproveLeave(context.Context, gen.ApproveLeaveRequestObject) (gen.
 }
 
 func (Server) CancelMyLeave(context.Context, gen.CancelMyLeaveRequestObject) (gen.CancelMyLeaveResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) ChangeMyPin(context.Context, gen.ChangeMyPinRequestObject) (gen.ChangeMyPinResponseObject, error) {
 	return nil, errNotImplemented
 }
 
@@ -313,14 +310,6 @@ func (Server) RevealGuestIdNumber(context.Context, gen.RevealGuestIdNumberReques
 }
 
 func (Server) SetGuestIdNumber(context.Context, gen.SetGuestIdNumberRequestObject) (gen.SetGuestIdNumberResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) SignIn(context.Context, gen.SignInRequestObject) (gen.SignInResponseObject, error) {
-	return nil, errNotImplemented
-}
-
-func (Server) SignOut(context.Context, gen.SignOutRequestObject) (gen.SignOutResponseObject, error) {
 	return nil, errNotImplemented
 }
 

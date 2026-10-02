@@ -11,6 +11,117 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :exec
+DELETE FROM app.sessions WHERE tenant_id = $1 AND user_id = $2 AND token_hash <> $3
+`
+
+type DeleteOtherUserSessionsParams struct {
+	TenantID string
+	UserID   string
+	KeepHash string
+}
+
+func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) error {
+	_, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.TenantID, arg.UserID, arg.KeepHash)
+	return err
+}
+
+const deleteSession = `-- name: DeleteSession :exec
+DELETE FROM app.sessions WHERE tenant_id = $1 AND token_hash = $2
+`
+
+type DeleteSessionParams struct {
+	TenantID  string
+	TokenHash string
+}
+
+func (q *Queries) DeleteSession(ctx context.Context, arg DeleteSessionParams) error {
+	_, err := q.db.Exec(ctx, deleteSession, arg.TenantID, arg.TokenHash)
+	return err
+}
+
+const getPinState = `-- name: GetPinState :one
+SELECT pin_hash, failed_count, first_failed_at, locked_until, must_change, one_time_expires_at
+FROM app.pin_credentials WHERE tenant_id = $1 AND user_id = $2
+FOR UPDATE
+`
+
+type GetPinStateParams struct {
+	TenantID string
+	UserID   string
+}
+
+type GetPinStateRow struct {
+	PinHash          string
+	FailedCount      int32
+	FirstFailedAt    pgtype.Timestamptz
+	LockedUntil      pgtype.Timestamptz
+	MustChange       bool
+	OneTimeExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetPinState(ctx context.Context, arg GetPinStateParams) (GetPinStateRow, error) {
+	row := q.db.QueryRow(ctx, getPinState, arg.TenantID, arg.UserID)
+	var i GetPinStateRow
+	err := row.Scan(
+		&i.PinHash,
+		&i.FailedCount,
+		&i.FirstFailedAt,
+		&i.LockedUntil,
+		&i.MustChange,
+		&i.OneTimeExpiresAt,
+	)
+	return i, err
+}
+
+const getSignInUser = `-- name: GetSignInUser :one
+SELECT u.id, u.name, u.role, u.locale, u.app_access, u.status,
+       c.pin_hash, c.failed_count, c.first_failed_at, c.locked_until, c.must_change, c.one_time_expires_at
+FROM app.users u
+JOIN app.pin_credentials c ON c.tenant_id = u.tenant_id AND c.user_id = u.id
+WHERE u.tenant_id = $1 AND u.username = $2
+`
+
+type GetSignInUserParams struct {
+	TenantID string
+	Username pgtype.Text
+}
+
+type GetSignInUserRow struct {
+	ID               string
+	Name             string
+	Role             string
+	Locale           string
+	AppAccess        string
+	Status           string
+	PinHash          string
+	FailedCount      int32
+	FirstFailedAt    pgtype.Timestamptz
+	LockedUntil      pgtype.Timestamptz
+	MustChange       bool
+	OneTimeExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetSignInUser(ctx context.Context, arg GetSignInUserParams) (GetSignInUserRow, error) {
+	row := q.db.QueryRow(ctx, getSignInUser, arg.TenantID, arg.Username)
+	var i GetSignInUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Role,
+		&i.Locale,
+		&i.AppAccess,
+		&i.Status,
+		&i.PinHash,
+		&i.FailedCount,
+		&i.FirstFailedAt,
+		&i.LockedUntil,
+		&i.MustChange,
+		&i.OneTimeExpiresAt,
+	)
+	return i, err
+}
+
 const getTenantInfo = `-- name: GetTenantInfo :one
 SELECT id, name, time_zone, currency FROM app.tenants WHERE id = $1
 `
@@ -35,7 +146,12 @@ func (q *Queries) GetTenantInfo(ctx context.Context, tenantID string) (GetTenant
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, role, locale FROM app.users WHERE tenant_id = $1 AND id = $2
+SELECT u.id, u.name, u.role, u.locale,
+       (u.status <> 'ACTIVE' OR u.app_access = 'NONE')::boolean AS blocked,
+       COALESCE(c.must_change, false)::boolean AS must_change_pin
+FROM app.users u
+LEFT JOIN app.pin_credentials c ON c.tenant_id = u.tenant_id AND c.user_id = u.id
+WHERE u.tenant_id = $1 AND u.id = $2
 `
 
 type GetUserByIDParams struct {
@@ -44,10 +160,12 @@ type GetUserByIDParams struct {
 }
 
 type GetUserByIDRow struct {
-	ID     string
-	Name   string
-	Role   string
-	Locale string
+	ID            string
+	Name          string
+	Role          string
+	Locale        string
+	Blocked       bool
+	MustChangePin bool
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, arg GetUserByIDParams) (GetUserByIDRow, error) {
@@ -58,6 +176,8 @@ func (q *Queries) GetUserByID(ctx context.Context, arg GetUserByIDParams) (GetUs
 		&i.Name,
 		&i.Role,
 		&i.Locale,
+		&i.Blocked,
+		&i.MustChangePin,
 	)
 	return i, err
 }
@@ -134,8 +254,8 @@ func (q *Queries) InsertTrialTenant(ctx context.Context, arg InsertTrialTenantPa
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO app.users (id, tenant_id, name, role, locale)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO app.users (id, tenant_id, name, role, locale, app_access)
+VALUES ($1, $2, $3, $4, $5, $4)
 RETURNING id, name, role, locale
 `
 
@@ -215,6 +335,31 @@ func (q *Queries) TrialTenantActive(ctx context.Context, arg TrialTenantActivePa
 	return exists, err
 }
 
+const updatePinFailures = `-- name: UpdatePinFailures :exec
+UPDATE app.pin_credentials
+SET failed_count = $1, first_failed_at = $2, locked_until = $3
+WHERE tenant_id = $4 AND user_id = $5
+`
+
+type UpdatePinFailuresParams struct {
+	FailedCount   int32
+	FirstFailedAt pgtype.Timestamptz
+	LockedUntil   pgtype.Timestamptz
+	TenantID      string
+	UserID        string
+}
+
+func (q *Queries) UpdatePinFailures(ctx context.Context, arg UpdatePinFailuresParams) error {
+	_, err := q.db.Exec(ctx, updatePinFailures,
+		arg.FailedCount,
+		arg.FirstFailedAt,
+		arg.LockedUntil,
+		arg.TenantID,
+		arg.UserID,
+	)
+	return err
+}
+
 const updateUserLocale = `-- name: UpdateUserLocale :execrows
 UPDATE app.users SET locale = $1 WHERE tenant_id = $2 AND id = $3
 `
@@ -231,4 +376,34 @@ func (q *Queries) UpdateUserLocale(ctx context.Context, arg UpdateUserLocalePara
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const upsertPin = `-- name: UpsertPin :exec
+INSERT INTO app.pin_credentials (tenant_id, user_id, pin_hash, must_change, one_time_expires_at, changed_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (tenant_id, user_id) DO UPDATE
+SET pin_hash = EXCLUDED.pin_hash, must_change = EXCLUDED.must_change,
+    one_time_expires_at = EXCLUDED.one_time_expires_at, changed_at = EXCLUDED.changed_at,
+    failed_count = 0, first_failed_at = NULL, locked_until = NULL
+`
+
+type UpsertPinParams struct {
+	TenantID         string
+	UserID           string
+	PinHash          string
+	MustChange       bool
+	OneTimeExpiresAt pgtype.Timestamptz
+	Now              pgtype.Timestamptz
+}
+
+func (q *Queries) UpsertPin(ctx context.Context, arg UpsertPinParams) error {
+	_, err := q.db.Exec(ctx, upsertPin,
+		arg.TenantID,
+		arg.UserID,
+		arg.PinHash,
+		arg.MustChange,
+		arg.OneTimeExpiresAt,
+		arg.Now,
+	)
+	return err
 }

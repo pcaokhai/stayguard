@@ -15,18 +15,17 @@ func TestIdNumberE2E_SG203_AC4(t *testing.T) {
 	tenant, token := a.str("tenantId"), a.str("accessToken")
 	e.seedStayTenant(tenant, 2)
 	body := stayBody(map[string]any{"guestName": nameMarker, "guestPhone": phoneMarker, "idNumber": idMarker})
-	wantMasked := "*****" + idMarker[len(idMarker)-3:]
 
 	var ids []string
 	for room := 1; room <= 2; room++ {
 		st, raw := e.checkIn(token, room, newKey(), body)
-		if st != 201 || parse(raw)["idNumberMasked"] != wantMasked {
+		if st != 201 || !hasIDNumber(raw) {
 			t.Fatalf("create: %d %s", st, raw)
 		}
 		id, _ := parse(raw)["id"].(string)
 		ids = append(ids, id)
 		gst, graw := e.send("GET", "/v1/stays/"+id, token, "", nil)
-		if gst != 200 || parse(graw)["idNumberMasked"] != wantMasked {
+		if gst != 200 || !hasIDNumber(graw) {
 			t.Fatalf("get: %d %s", gst, graw)
 		}
 		for _, r := range [][]byte{raw, graw} {
@@ -93,4 +92,10 @@ func TestNoPersonalDataInLogs_SG203_AC4(t *testing.T) {
 			t.Errorf("logs contain personal data %q:\n%s", m, logs)
 		}
 	}
+}
+
+// hasIDNumber reads the contract 1.1.0 indicator; the number itself is only served by the owner endpoints (F-A2).
+func hasIDNumber(raw []byte) bool {
+	g, _ := parse(raw)["guestId"].(map[string]any)
+	return g["hasIdNumber"] == true
 }

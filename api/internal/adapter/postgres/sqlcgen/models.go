@@ -84,6 +84,18 @@ type AppPaymentEvent struct {
 	ReceivedAt    pgtype.Timestamptz
 }
 
+type AppPinCredential struct {
+	TenantID         string
+	UserID           string
+	PinHash          string
+	FailedCount      int32
+	FirstFailedAt    pgtype.Timestamptz
+	LockedUntil      pgtype.Timestamptz
+	MustChange       bool
+	OneTimeExpiresAt pgtype.Timestamptz
+	ChangedAt        pgtype.Timestamptz
+}
+
 type AppProperty struct {
 	ID        string
 	TenantID  string
@@ -147,6 +159,7 @@ type AppTenant struct {
 	ExpiresAt      pgtype.Timestamptz
 	BankAccountEnc []byte
 	CreatedAt      pgtype.Timestamptz
+	GuesthouseCode pgtype.Text
 }
 
 type AppUnit struct {
@@ -176,4 +189,7 @@ type AppUser struct {
 	Role      string
 	CreatedAt pgtype.Timestamptz
 	Locale    string
+	AppAccess string
+	Status    string
+	Username  pgtype.Text
 }

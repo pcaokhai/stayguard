@@ -81,7 +81,7 @@ Verify: build, lint, `npx playwright test e2e/layout.spec.ts`, agent-browser sho
 
 ### Launch (hours 2–20)
 
-#### [ ] L-A1 Sign-in with PIN (API-1) — migration 0009
+#### [x] L-A1 Sign-in with PIN (API-1) — migration 0009
 `signIn`, `signOut`, `changeMyPin`; users get `app_access`, `status`; `pin_credentials` (slow hash, failed count, `locked_until`, `must_change`); `tenants.guesthouse_code`. Lockout after 5 wrong PINs for 15 minutes plus ACCOUNT_LOCKED alert (write it to `audit_logs` until L-B1 adds alerts, then switch). Rate limit per IP and per guesthouse code. Demo sessions unchanged behind DEMO_MODE.
 Tests (required): SG-701 AC1–AC5, tenant A user cannot sign in to tenant B.
 

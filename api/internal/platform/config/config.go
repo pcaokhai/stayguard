@@ -31,7 +31,9 @@ type Config struct {
 	// or owner role. LOCAL DEV ONLY: it switches off the second guard (RLS).
 	AllowPrivilegedDB bool
 	// DemoMode (DEMO_MODE, default false) registers the demo routes; off in production.
-	DemoMode   bool
+	DemoMode bool
+	// TrustProxy (TRUST_PROXY, default false) reads the client address from X-Forwarded-For; set it only behind the reverse proxy.
+	TrustProxy bool
 	SessionTTL time.Duration // SESSION_TTL_HOURS, default 12
 	TrialTTL   time.Duration // TRIAL_TTL_HOURS, default 24
 	// RoomMapEnabled (FF_S1_ROOM_MAP, default false) turns on the room map operations (slice S1).
@@ -107,6 +109,13 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("IDEMPOTENCY_TTL must be a positive duration such as 24h, got %q", v)
 		}
 		c.IdempotencyTTL = d
+	}
+	if v := getenv("TRUST_PROXY"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("TRUST_PROXY must be a boolean, got %q", v)
+		}
+		c.TrustProxy = b
 	}
 	if v := getenv("ALLOW_PRIVILEGED_DB"); v != "" {
 		b, err := strconv.ParseBool(v)

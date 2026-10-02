@@ -27,6 +27,9 @@ type User struct {
 	ID, Name string
 	Role     access.Role
 	Locale   string
+	// Blocked is set by UserByID for a user who may not sign in (locked, removed or no app access);
+	// MustChangePin while a one-time PIN is still in use.
+	Blocked, MustChangePin bool
 }
 
 type TenantInfo struct{ ID, Name, Timezone, Currency string }

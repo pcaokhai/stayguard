@@ -74,6 +74,7 @@ func serve(ctx context.Context, cfg config.Config, log *slog.Logger) error {
 			StaticDir: cfg.StaticDir, Probe: d.probe, Sessions: d.sessions, DemoEnabled: cfg.DemoMode,
 			Rooms: d.rooms, RoomMapEnabled: cfg.RoomMapEnabled, Stays: d.stays, CheckInEnabled: cfg.CheckInEnabled,
 			Billing: d.billing, CheckoutEnabled: cfg.CheckoutEnabled, Payments: d.payments, Housekeeping: d.housekeeping, Owner: d.owner,
+			Auth: d.auth, TrustProxy: cfg.TrustProxy,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,

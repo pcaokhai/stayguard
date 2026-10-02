@@ -193,10 +193,11 @@ func (s *Sessions) Authenticate(ctx context.Context, token string) (Caller, erro
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if !ok || u.Blocked {
 			return ErrUnauthenticated
 		}
-		c = Caller{TenantID: ref.TenantID, UserID: u.ID, Role: u.Role, Locale: u.Locale}
+		c = Caller{TenantID: ref.TenantID, UserID: u.ID, Role: u.Role, Locale: u.Locale,
+			SessionHash: HashToken(token), PinChangeRequired: u.MustChangePin}
 		return nil
 	})
 	return c, err
