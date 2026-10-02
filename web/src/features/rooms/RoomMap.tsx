@@ -1,12 +1,18 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FadeIn, RollingNumber, SlidingPill } from "@/components/motion";
+import { AppFrame } from "@/components/shell/AppFrame";
+import { QueryError } from "@/components/StateView";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { t, type MessageKey } from "../../lib/t";
 import { useMe } from "../session/useMe";
 import { useBuildings, useRooms } from "./hooks";
 import { RoomTile } from "./RoomTile";
 import { COUNTER_ORDER, STATUS } from "./status";
+import { lp } from "../../lib/locale";
 
 const clock = () => {
   const d = new Date();
@@ -15,6 +21,7 @@ const clock = () => {
 };
 
 export function RoomMap() {
+  const router = useRouter();
   const b = useSearchParams().get("b");
   const me = useMe();
   const buildings = useBuildings();
@@ -24,58 +31,75 @@ export function RoomMap() {
 
   if (buildings.isError || rooms.isError)
     return (
-      <p role="alert" className="p-5">
-        {t("rooms.loadFailed")}
-      </p>
+      <AppFrame>
+        <QueryError onRetry={() => void Promise.all([buildings.refetch(), rooms.refetch()])} />
+      </AppFrame>
     );
 
   return (
-    <main className="mx-auto flex max-w-[1280px] flex-col pb-8">
-      <header className="flex flex-col gap-1 px-5 pb-3 pt-5 md:flex-row md:items-baseline md:gap-4">
-        <h1 className="text-xl font-bold">{me.data?.tenant.name}</h1>
-        <p className="text-[13px] text-muted">
-          {me.data && t(`rooms.role${me.data.user.role}` as MessageKey)} · {clock()}
-        </p>
-      </header>
-      <nav aria-label="Buildings" className="flex gap-2 px-5 pb-3 md:max-w-md">
-        {buildings.data?.map((x) => (
-          <Link
-            key={x.id}
-            href={`/vi/rooms?b=${x.id}`}
-            aria-current={x.id === current?.id}
-            className={`flex h-11 flex-1 items-center justify-center whitespace-nowrap rounded-[10px] text-[15px] font-semibold ${
-              x.id === current?.id ? "bg-brand text-white" : "border border-line bg-surface"
-            }`}
+    <AppFrame>
+      <main className="mx-auto flex max-w-[1280px] flex-col pb-8">
+        <header className="flex flex-col gap-1 px-5 pb-3 pt-5 md:flex-row md:items-baseline md:gap-4">
+          <h1 className="text-xl font-bold">{me.data?.tenant.name}</h1>
+          <p className="text-[13px] text-muted-foreground">
+            {me.data && t(`rooms.role${me.data.user.role}` as MessageKey)} · {clock()}
+          </p>
+        </header>
+        <ScrollArea className="px-5 pb-3 md:max-w-md">
+          <ToggleGroup
+            type="single"
+            value={current?.id ?? ""}
+            onValueChange={(id) => id && router.replace(lp(`/rooms?b=${id}`))}
+            aria-label={t("rooms.buildings")}
+            className="flex w-full gap-2 pb-2"
           >
-            {x.name} ({Object.values(x.counts).reduce((a, n) => a + n, 0)})
-          </Link>
-        ))}
-      </nav>
-      {current && (
-        <ul className="flex flex-wrap gap-1.5 px-5 pb-3.5">
-          {COUNTER_ORDER.map(([status, key]) => (
-            <li
-              key={status}
-              className={`rounded-full border px-2.5 py-1.5 text-xs font-semibold ${STATUS[status].pill}`}
-            >
-              {t(STATUS[status].label)} {current.counts[key]}
+            {buildings.data?.map((x) => (
+              <ToggleGroupItem
+                key={x.id}
+                value={x.id}
+                className="relative h-11 min-w-28 flex-1 rounded-[10px] border border-border bg-card px-3 text-[15px] font-semibold data-[state=on]:border-transparent data-[state=on]:bg-transparent data-[state=on]:text-primary-foreground"
+              >
+                {x.id === current?.id && (
+                  <SlidingPill
+                    id="building-pill"
+                    className="absolute inset-0 -z-0 rounded-[10px] bg-primary"
+                  />
+                )}
+                <span className="relative whitespace-nowrap">
+                  {x.name} ({Object.values(x.counts).reduce((a, n) => a + n, 0)})
+                </span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+        {current && (
+          <ul className="flex flex-wrap gap-1.5 px-5 pb-3.5">
+            {COUNTER_ORDER.map(([status, key]) => (
+              <li key={status}>
+                <Badge variant={STATUS[status].variant} className="px-2.5 py-1.5 font-semibold">
+                  {t(STATUS[status].label)} <RollingNumber value={current.counts[key]} />
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+        {readOnly && (
+          <p className="mx-5 mb-3 rounded-[10px] bg-sunken p-3 text-[13px] text-ink-2">
+            {t("rooms.viewOnlyNote")}
+          </p>
+        )}
+        <ul className="grid grid-cols-3 gap-2 px-5 md:grid-cols-5 lg:grid-cols-6">
+          {rooms.data?.map((r, i) => (
+            <li key={r.id}>
+              <FadeIn delay={Math.min(i, 10) * 0.03}>
+                <RoomTile room={r} readOnly={readOnly} />
+              </FadeIn>
             </li>
           ))}
         </ul>
-      )}
-      {readOnly && (
-        <p className="mx-5 mb-3 rounded-[10px] bg-sunken p-3 text-[13px] text-ink-2">
-          {t("rooms.viewOnlyNote")}
-        </p>
-      )}
-      <ul className="grid grid-cols-3 gap-2 px-5 md:grid-cols-6">
-        {rooms.data?.map((r) => (
-          <li key={r.id}>
-            <RoomTile room={r} readOnly={readOnly} />
-          </li>
-        ))}
-      </ul>
-      <p className="mx-5 mt-4 text-[13px] text-muted">{t("rooms.hint")}</p>
-    </main>
+        <p className="mx-5 mt-4 text-[13px] text-muted-foreground">{t("rooms.hint")}</p>
+      </main>
+    </AppFrame>
   );
 }

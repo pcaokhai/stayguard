@@ -1,10 +1,27 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { ScreenHeader } from "../../components/ScreenHeader";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Shake } from "@/components/motion";
+import { AppFrame } from "@/components/shell/AppFrame";
+import { TopBar } from "@/components/shell/TopBar";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { newIdempotencyKey } from "../../lib/api";
-import { parseVnd, vndNumber } from "../../lib/money";
+import { lp } from "../../lib/locale";
+import { parseVnd } from "../../lib/money";
 import { t } from "../../lib/t";
 import { useBuildings } from "../rooms/hooks";
 import { useCreateStay, useRoom } from "./hooks";
@@ -12,7 +29,15 @@ import { rentalLabel, type RentalType } from "./labels";
 
 const RENTAL_TYPES: RentalType[] = ["HOURLY", "OVERNIGHT", "DAILY"];
 const DEFAULT_DEPOSIT = "100000";
-const input = "h-11 w-full rounded-[10px] border border-line bg-surface px-4 text-base";
+
+// Zod messages are keys; the form renders them through t() so they follow the route language.
+const schema = z.object({
+  rentalType: z.enum(["HOURLY", "OVERNIGHT", "DAILY"]),
+  guestName: z.string().trim().min(1, "stay.guestNameRequired").max(120),
+  guestPhone: z.string().trim().min(6, "stay.guestPhoneInvalid").max(20, "stay.guestPhoneInvalid"),
+  deposit: z.string(),
+});
+type Values = z.infer<typeof schema>;
 
 export function CheckinForm() {
   const roomId = useSearchParams().get("room");
@@ -20,95 +45,147 @@ export function CheckinForm() {
   const room = useRoom(roomId);
   const building = useBuildings().data?.find((b) => b.id === room.data?.buildingId);
   const create = useCreateStay(roomId ?? "");
-  const [rentalType, setRentalType] = useState<RentalType>("HOURLY");
-  const [guestName, setGuestName] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [deposit, setDeposit] = useState(DEFAULT_DEPOSIT);
   // One key per user action: a retry after a failure reuses it.
   const [key] = useState(newIdempotencyKey);
+  const [tries, setTries] = useState(0);
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      rentalType: "HOURLY",
+      guestName: "",
+      guestPhone: "",
+      deposit: DEFAULT_DEPOSIT,
+    },
+  });
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    create.mutate(
-      { key, body: { rentalType, guestName, guestPhone, deposit: parseVnd(deposit) } },
-      { onSuccess: (stay) => router.replace(`/vi/stay?id=${stay.id}`) },
-    );
-  };
+  const submit = form.handleSubmit(
+    (v) =>
+      create.mutate(
+        {
+          key,
+          body: {
+            rentalType: v.rentalType,
+            guestName: v.guestName,
+            guestPhone: v.guestPhone,
+            deposit: parseVnd(v.deposit),
+          },
+        },
+        { onSuccess: (stay) => router.replace(lp(`/stay?id=${stay.id}`)) },
+      ),
+    () => setTries((n) => n + 1),
+  );
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[480px] flex-col">
-      <ScreenHeader
-        title={`${t("stay.checkinTitle")} ${room.data?.code ?? ""}`}
-        subtitle={[building?.name, room.data?.unitType.name.vi].filter(Boolean).join(" · ")}
-      />
-      <form onSubmit={submit} className="flex flex-1 flex-col gap-4 px-5 pb-8">
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-base font-semibold">{t("stay.rentalType")}</legend>
-          {RENTAL_TYPES.map((r) => (
-            <label
-              key={r}
-              className={`flex min-h-14 items-center rounded-card bg-surface px-4 font-semibold ${
-                rentalType === r ? "border-2 border-brand bg-brand/10" : "border border-line"
-              }`}
+    <AppFrame tabs={false}>
+      <main className="mx-auto flex w-full max-w-[480px] flex-col">
+        <TopBar
+          title={`${t("stay.checkinTitle")} ${room.data?.code ?? ""}`}
+          subtitle={[building?.name, room.data?.unitType.name.vi].filter(Boolean).join(" · ")}
+          back="/rooms"
+        />
+        <Form {...form}>
+          <form onSubmit={submit} noValidate className="flex flex-1 flex-col gap-4 px-5 pb-8">
+            <FormField
+              control={form.control}
+              name="rentalType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">{t("stay.rentalType")}</FormLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={field.value}
+                    onValueChange={(v) => v && field.onChange(v)}
+                    className="grid w-full grid-cols-3 gap-2"
+                  >
+                    {RENTAL_TYPES.map((r) => (
+                      <ToggleGroupItem
+                        key={r}
+                        value={r}
+                        className="h-14 rounded-[10px] text-[15px] font-semibold data-[state=on]:border-2 data-[state=on]:border-primary data-[state=on]:bg-primary/10"
+                      >
+                        {rentalLabel(r)}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </FormItem>
+              )}
+            />
+            <TextField
+              methods={form}
+              name="guestName"
+              label={t("stay.guestName")}
+              tries={tries}
+              maxLength={120}
+            />
+            <TextField
+              methods={form}
+              name="guestPhone"
+              label={t("stay.guestPhone")}
+              tries={tries}
+              maxLength={20}
+              inputMode="tel"
+            />
+            <TextField
+              methods={form}
+              name="deposit"
+              label={t("stay.deposit")}
+              tries={tries}
+              inputMode="numeric"
+            />
+            <p className="rounded-[10px] bg-secondary p-3 text-[13px] text-ink-2">
+              {t("stay.serverClock")}
+            </p>
+            {create.isError && (
+              <p role="alert" className="text-sm text-warn">
+                {t("stay.checkinFailed")}
+              </p>
+            )}
+            <Button
+              type="submit"
+              size="lg"
+              className="mt-auto"
+              loading={create.isPending}
+              disabled={!room.data}
             >
-              <input
-                type="radio"
-                name="rental"
-                className="sr-only"
-                checked={rentalType === r}
-                onChange={() => setRentalType(r)}
-              />
-              {rentalLabel(r)}
-            </label>
-          ))}
-        </fieldset>
-        <label className="flex flex-col gap-1.5 font-semibold">
-          {t("stay.guestName")}
-          <input
-            required
-            maxLength={120}
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            className={input}
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 font-semibold">
-          {t("stay.guestPhone")}
-          <input
-            required
-            minLength={6}
-            maxLength={20}
-            inputMode="tel"
-            value={guestPhone}
-            onChange={(e) => setGuestPhone(e.target.value)}
-            className={input}
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 font-semibold">
-          {t("stay.deposit")}
-          <input
-            inputMode="numeric"
-            value={deposit}
-            onChange={(e) => setDeposit(e.target.value)}
-            className={input}
-          />
-        </label>
-        <p className="rounded-[10px] bg-sunken p-3 text-[13px] text-ink-2">
-          {t("stay.serverClock")}
-        </p>
-        {create.isError && (
-          <p role="alert" className="text-sm text-warn">
-            {t("stay.checkinFailed")}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={create.isPending || !room.data}
-          className="mt-auto h-14 whitespace-nowrap rounded-card bg-brand text-lg font-bold text-white disabled:opacity-60"
-        >
-          {t("stay.confirmCheckin")}
-        </button>
-      </form>
-    </main>
+              {t("stay.confirmCheckin")}
+            </Button>
+          </form>
+        </Form>
+      </main>
+    </AppFrame>
+  );
+}
+
+function TextField({
+  methods,
+  name,
+  label,
+  tries,
+  ...input
+}: {
+  methods: ReturnType<typeof useForm<Values>>;
+  name: "guestName" | "guestPhone" | "deposit";
+  label: string;
+  tries: number;
+} & Omit<React.ComponentProps<"input">, "form" | "name">) {
+  return (
+    <FormField
+      control={methods.control}
+      name={name}
+      render={({ field, fieldState }) => (
+        <FormItem>
+          <FormLabel className="font-semibold">{label}</FormLabel>
+          <Shake trigger={fieldState.error ? tries : 0}>
+            <FormControl>
+              <Input className="h-11 rounded-[10px] bg-card px-4 text-base" {...input} {...field} />
+            </FormControl>
+          </Shake>
+          <FormMessage>
+            {fieldState.error && t(fieldState.error.message as "stay.guestNameRequired")}
+          </FormMessage>
+        </FormItem>
+      )}
+    />
   );
 }

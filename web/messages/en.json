@@ -32,7 +32,8 @@
     "roleOWNER": "Owner",
     "roleRECEPTIONIST": "Front desk",
     "roleHOUSEKEEPING": "Housekeeping",
-    "hourUnit": "h"
+    "hourUnit": "h",
+    "buildings": "Buildings"
   },
   "stay": {
     "back": "Back",
@@ -60,7 +61,9 @@
     "addService": "+ Add service",
     "checkout": "Check out",
     "loadFailed": "Could not load data.",
-    "capped": "Charged at the maximum rate."
+    "capped": "Charged at the maximum rate.",
+    "guestNameRequired": "Enter the guest's name",
+    "guestPhoneInvalid": "Enter a valid phone number (6-20 characters)"
   },
   "extras": {
     "title": "Add service",
@@ -144,5 +147,52 @@
     "cashShort": "Cash",
     "toRooms": "View room map",
     "failed": "Could not load the overview."
+  },
+  "state": {
+    "retry": "Retry",
+    "backRooms": "Back to room map",
+    "offlineTitle": "No internet connection",
+    "offlineBody": "Your last action was not sent. When you are back online, press Retry; it will not be recorded twice.",
+    "errorTitle": "Something went wrong, not saved",
+    "errorBody": "The server has a problem. Nothing was changed.",
+    "errorCode": "Error code {code}; send it to the owner if this repeats.",
+    "forbiddenTitle": "You do not have access here",
+    "forbiddenBody": "Your account cannot open this page. Ask the owner to change your access.",
+    "forbiddenViewOnly": "You can only view {building}. To check in or take payment here, ask the owner to change your access."
+  },
+  "nav": {
+    "main": "Navigation",
+    "overview": "Overview",
+    "rooms": "Rooms",
+    "roomMap": "Room map",
+    "payments": "Payments",
+    "alerts": "Alerts",
+    "more": "More",
+    "history": "History",
+    "shift": "Shift",
+    "schedule": "Schedule",
+    "account": "Account",
+    "clean": "Clean",
+    "monitor": "Monitor",
+    "stays": "Stays",
+    "shiftReview": "Shift review",
+    "activity": "Activity log",
+    "finance": "Finance",
+    "reports": "Reports",
+    "expenses": "Expenses",
+    "operations": "Operations",
+    "maintenance": "Maintenance",
+    "extras": "Extras and stock",
+    "people": "People",
+    "staff": "Staff",
+    "roster": "Shifts and leave",
+    "access": "Access",
+    "settings": "Settings",
+    "property": "Property",
+    "buildings": "Buildings, rooms",
+    "rates": "Rates",
+    "signOut": "Sign out",
+    "menu": "Menu",
+    "close": "Close"
   }
 }

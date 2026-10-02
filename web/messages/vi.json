@@ -32,7 +32,8 @@
     "roleOWNER": "Chủ nhà nghỉ",
     "roleRECEPTIONIST": "Lễ tân",
     "roleHOUSEKEEPING": "Buồng phòng",
-    "hourUnit": "g"
+    "hourUnit": "g",
+    "buildings": "Tòa nhà"
   },
   "stay": {
     "back": "Quay lại",
@@ -60,7 +61,9 @@
     "addService": "+ Thêm dịch vụ",
     "checkout": "Trả phòng",
     "loadFailed": "Không tải được dữ liệu.",
-    "capped": "Đã tính theo mức tối đa."
+    "capped": "Đã tính theo mức tối đa.",
+    "guestNameRequired": "Nhập tên khách",
+    "guestPhoneInvalid": "Nhập số điện thoại hợp lệ (6-20 ký tự)"
   },
   "extras": {
     "title": "Thêm dịch vụ",
@@ -144,5 +147,52 @@
     "cashShort": "Tiền mặt",
     "toRooms": "Xem sơ đồ phòng",
     "failed": "Không tải được tổng quan."
+  },
+  "state": {
+    "retry": "Thử lại",
+    "backRooms": "Về sơ đồ phòng",
+    "offlineTitle": "Mất kết nối mạng",
+    "offlineBody": "Thao tác bạn vừa bấm chưa được gửi. Khi có mạng, bấm Thử lại; hệ thống không ghi trùng.",
+    "errorTitle": "Có lỗi, chưa lưu được",
+    "errorBody": "Máy chủ đang gặp sự cố. Dữ liệu của bạn chưa bị thay đổi.",
+    "errorCode": "Mã lỗi: {code}, gửi mã này cho chủ nếu lỗi lặp lại.",
+    "forbiddenTitle": "Bạn không có quyền ở đây",
+    "forbiddenBody": "Tài khoản của bạn không được mở trang này. Hãy nhờ chủ đổi quyền.",
+    "forbiddenViewOnly": "Bạn chỉ được xem {building}. Muốn nhận phòng hay thu tiền ở tòa này, hãy nhờ chủ đổi quyền."
+  },
+  "nav": {
+    "main": "Điều hướng",
+    "overview": "Tổng quan",
+    "rooms": "Sơ đồ",
+    "roomMap": "Sơ đồ phòng",
+    "payments": "Giao dịch",
+    "alerts": "Cảnh báo",
+    "more": "Thêm",
+    "history": "Lịch sử",
+    "shift": "Ca làm",
+    "schedule": "Lịch",
+    "account": "Tài khoản",
+    "clean": "Dọn phòng",
+    "monitor": "Theo dõi",
+    "stays": "Lượt ở",
+    "shiftReview": "Đối soát ca",
+    "activity": "Nhật ký",
+    "finance": "Tài chính",
+    "reports": "Báo cáo",
+    "expenses": "Chi phí",
+    "operations": "Vận hành",
+    "maintenance": "Bảo trì",
+    "extras": "Dịch vụ và kho",
+    "people": "Nhân sự",
+    "staff": "Nhân viên",
+    "roster": "Lịch ca và nghỉ",
+    "access": "Phân quyền",
+    "settings": "Cài đặt",
+    "property": "Nhà nghỉ",
+    "buildings": "Tòa và phòng",
+    "rates": "Bảng giá",
+    "signOut": "Đăng xuất",
+    "menu": "Menu",
+    "close": "Đóng"
   }
 }

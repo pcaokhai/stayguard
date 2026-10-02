@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { components } from "../../api/generated/schema";
 import { t, type MessageKey } from "../../lib/t";
 import { formatElapsed, STATUS } from "./status";
+import { lp } from "../../lib/locale";
 
 type Room = components["schemas"]["Room"];
 
@@ -21,9 +22,9 @@ function subline(room: Room): string {
 }
 
 function hrefFor(room: Room): string | null {
-  if (room.status === "VACANT") return `/vi/checkin?room=${room.id}`;
+  if (room.status === "VACANT") return lp(`/checkin?room=${room.id}`);
   if ((room.status === "OCCUPIED" || room.status === "OVERDUE") && room.activeStay)
-    return `/vi/stay?id=${room.activeStay.id}`;
+    return lp(`/stay?id=${room.activeStay.id}`);
   return null;
 }
 

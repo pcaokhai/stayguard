@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* Tokens from docs/assets/design/source (one place, reused everywhere). */
 @theme {
@@ -7,7 +8,8 @@
   --color-surface: #ffffff;
   --color-ink: #1c1b19;
   --color-ink-2: #45433f;
-  --color-muted: #5c5a55;
+  --color-muted: #ece9e2;
+  --color-muted-ink: #5c5a55;
   --color-line: #cfcbc3;
   --color-line-soft: #e2ded6;
   --color-sunken: #ece9e2;
@@ -35,4 +37,67 @@
 body {
   background: var(--color-bg);
   color: var(--color-ink);
+}
+
+/* shadcn/ui variables point at the tokens above (docs/16 §2), so the kit files stay as generated. */
+:root {
+  --background: var(--color-bg);
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-sunken);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-sunken);
+  --muted-foreground: var(--color-muted-ink);
+  --accent: var(--color-sunken);
+  --accent-foreground: var(--color-ink);
+  --destructive: #8e2320;
+  --border: var(--color-line-soft);
+  --input: var(--color-line);
+  --ring: var(--color-brand);
+  --chart-1: #1f4e5f;
+  --chart-2: #d9a37a;
+  --chart-3: #1f5a30;
+  --chart-4: #1c4a82;
+  --chart-5: #a8a39a;
+  --radius: 12px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius-card);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }

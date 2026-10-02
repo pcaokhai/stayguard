@@ -1,30 +1,32 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import type { components } from "../../api/generated/schema";
 import { t, type MessageKey } from "../../lib/t";
 import { useCreateDemoSession } from "./useCreateDemoSession";
+import { lp } from "../../lib/locale";
 
 type Role = components["schemas"]["Role"];
 
 const ROLES: { role: Role; href: string; title: MessageKey; sub: MessageKey; icon: string }[] = [
   {
     role: "RECEPTIONIST",
-    href: "/vi/rooms",
+    href: "/rooms",
     title: "login.desk",
     sub: "login.deskSub",
     icon: "M3 20h18M5 20V11h14v9M8 11V7a4 4 0 0 1 8 0v4",
   },
   {
     role: "OWNER",
-    href: "/vi/owner",
+    href: "/owner",
     title: "login.owner",
     sub: "login.ownerSub",
     icon: "M4 19V9M10 19V5M16 19v-7M22 19H2",
   },
   {
     role: "HOUSEKEEPING",
-    href: "/vi/housekeeping",
+    href: "/housekeeping",
     title: "login.housekeeping",
     sub: "login.housekeepingSub",
     icon: "M4 21l6-6M14 4l6 6-8 8-6-6z",
@@ -46,13 +48,14 @@ export function RolePicker() {
           {t("login.tryAs")}
         </h2>
         {ROLES.map(({ role, href, title, sub, icon }, i) => (
-          <button
+          <Button
             key={role}
             type="button"
-            disabled={start.isPending}
-            onClick={() => start.mutate(role, { onSuccess: () => router.push(href) })}
-            className={`flex min-h-[76px] items-center gap-3.5 rounded-card bg-surface px-4 py-3.5 text-left text-ink disabled:opacity-60 ${
-              i === 0 ? "border-2 border-brand" : "border border-line"
+            variant="outline"
+            loading={start.isPending}
+            onClick={() => start.mutate(role, { onSuccess: () => router.push(lp(href)) })}
+            className={`h-auto min-h-[76px] justify-start gap-3.5 rounded-xl bg-card px-4 py-3.5 text-left ${
+              i === 0 ? "border-2 border-primary" : ""
             }`}
           >
             <svg
@@ -69,11 +72,11 @@ export function RolePicker() {
             >
               <path d={icon} />
             </svg>
-            <span className="flex flex-col gap-0.5">
+            <span className="flex flex-col gap-0.5 whitespace-normal">
               <span className="text-base font-semibold">{t(title)}</span>
-              <span className="text-[13px] text-muted">{t(sub)}</span>
+              <span className="text-[13px] font-normal text-muted-foreground">{t(sub)}</span>
             </span>
-          </button>
+          </Button>
         ))}
         {start.isError && (
           <p role="alert" className="text-sm text-warn">

@@ -1,32 +1,44 @@
 import type { components } from "../../api/generated/schema";
 import type { MessageKey } from "../../lib/t";
 
+import type { badgeVariants } from "@/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 export type RoomStatus = components["schemas"]["RoomStatus"];
 
 // Every status carries text as well as colour (web/CLAUDE.md).
-export const STATUS: Record<RoomStatus, { label: MessageKey; box: string; pill: string }> = {
+export const STATUS: Record<
+  RoomStatus,
+  { label: MessageKey; box: string; pill: string; variant: BadgeVariant }
+> = {
   VACANT: {
     label: "rooms.vacant",
+    variant: "vacant",
     box: "bg-ok-bg text-ok border-ok-line",
     pill: "bg-ok-bg text-ok border-ok-line",
   },
   OCCUPIED: {
     label: "rooms.occupied",
+    variant: "occupied",
     box: "bg-info-bg text-info border-info-line",
     pill: "bg-info-bg text-info border-info-line",
   },
   OVERDUE: {
     label: "rooms.overdue",
+    variant: "overdue",
     box: "bg-warn-bg text-warn-ink border-warn-line",
     pill: "bg-warn-bg text-warn-ink border-warn-line",
   },
   TO_CLEAN: {
     label: "rooms.toClean",
+    variant: "toClean",
     box: "bg-dirty-bg text-dirty border-dirty-line",
     pill: "bg-dirty-bg text-dirty border-dirty-line",
   },
   MAINTENANCE: {
     label: "rooms.maintenance",
+    variant: "maintenance",
     box: "bg-maint-bg text-maint border-line",
     pill: "bg-maint-bg text-maint border-line",
   },

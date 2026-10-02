@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { loadSession } from "../../lib/session";
 
 // Deterministic demo data in front of the generated (random) mocks, so screens can be judged
 // against the designs. Amounts are fixtures here; the real API computes them (pricing domain).
@@ -134,9 +135,15 @@ export const demoHandlers = [
       201,
     );
   }),
+  // The role follows the demo session the picker stored, so every shell can be seen on mocks.
   http.get("*/v1/me", () =>
     json({
-      user: { id: "u1", name: "Chị Lan", role: "RECEPTIONIST", locale: "vi" },
+      user: loadSession()?.user ?? {
+        id: "u1",
+        name: "Chị Lan",
+        role: "RECEPTIONIST",
+        locale: "vi",
+      },
       tenant: { id: "t1", name: "Nhà nghỉ Demo", timezone: "Asia/Ho_Chi_Minh", currency: "VND" },
       buildingAccess: [],
     }),
