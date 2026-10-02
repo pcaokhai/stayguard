@@ -13,6 +13,7 @@ type BuildingView struct {
 	ID, Code, Name string
 	Level          access.Level
 	Counts         room.Counts
+	Floors         []FloorView
 }
 
 type StayView struct {
@@ -27,6 +28,7 @@ type StayView struct {
 type RoomView struct {
 	ID, Code, BuildingID string
 	Floor                int
+	FloorID, FloorName   string
 	UnitTypeCode         string
 	UnitTypeName         LocalizedName
 	Status               room.Status
@@ -103,11 +105,19 @@ func (s *Rooms) ListBuildings(ctx context.Context, c Caller) ([]BuildingView, er
 		if err != nil {
 			return fmt.Errorf("building levels: %w", err)
 		}
+		floors, err := s.repo.Floors(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("floors: %w", err)
+		}
+		floorsBy := map[string][]FloorView{}
+		for _, f := range floors { // already in display order: level, then id
+			floorsBy[f.BuildingID] = append(floorsBy[f.BuildingID], FloorView{ID: f.ID, Name: f.Name, Order: f.Level})
+		}
 		for _, b := range buildings {
 			if l := lv[b.ID]; l != access.VIEW && l != access.EDIT {
 				continue
 			}
-			out = append(out, BuildingView{b.ID, b.Code, b.Name, lv[b.ID], room.Count(byBuilding[b.ID])})
+			out = append(out, BuildingView{ID: b.ID, Code: b.Code, Name: b.Name, Level: lv[b.ID], Counts: room.Count(byBuilding[b.ID]), Floors: floorsBy[b.ID]})
 		}
 		return nil
 	})
@@ -218,7 +228,7 @@ func (s *Rooms) views(ctx context.Context, rows []RoomRow, filter *room.Status, 
 		if filter != nil && st != *filter {
 			continue
 		}
-		v := RoomView{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: r.Floor,
+		v := RoomView{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: r.Floor, FloorID: r.FloorID, FloorName: r.FloorName,
 			UnitTypeCode: r.UnitTypeCode, UnitTypeName: r.UnitTypeName, Status: st, Note: r.Note}
 		if timing != nil {
 			if v.ActiveStay, err = s.stayView(ctx, r.Stay, *timing, now, loc); err != nil {

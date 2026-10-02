@@ -14,7 +14,7 @@ SELECT status, count(*)::int AS n FROM app.units
 WHERE tenant_id = @tenant_id AND building_id = @building_id AND NOT retired GROUP BY status;
 
 -- name: GetFloor :one
-SELECT id, building_id, level FROM app.floors WHERE tenant_id = @tenant_id AND id = @id;
+SELECT id, building_id, level, name FROM app.floors WHERE tenant_id = @tenant_id AND id = @id;
 
 -- name: MaxFloorLevel :one
 SELECT COALESCE(max(level), 0)::int FROM app.floors WHERE tenant_id = @tenant_id AND building_id = @building_id;
@@ -39,7 +39,7 @@ UPDATE app.unit_types SET rate_plan = @rate_plan, rate_plan_version = @rate_plan
 WHERE tenant_id = @tenant_id AND id = @id;
 
 -- name: LockRoomForSetup :one
-SELECT u.id, u.code, u.building_id, u.floor_id, u.unit_type_id, u.status, u.retired, u.attributes, f.level AS floor_level,
+SELECT u.id, u.code, u.building_id, u.floor_id, f.name AS floor_name, u.unit_type_id, u.status, u.retired, u.attributes, f.level AS floor_level,
        ut.code AS unit_type_code, ut.name AS unit_type_name,
        EXISTS (SELECT 1 FROM app.stays s WHERE s.tenant_id = u.tenant_id AND s.unit_id = u.id AND s.status = 'ACTIVE') AS has_guest
 FROM app.units u

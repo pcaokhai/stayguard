@@ -26,11 +26,17 @@ type fakeRoomRepo struct {
 	calls     int
 	// ignoreFilter simulates a faulty adapter that returns every room of the tenant.
 	ignoreFilter bool
+	floors       []FloorRow
 }
 
 func (r *fakeRoomRepo) Buildings(_ context.Context, tx Tx) ([]BuildingRow, error) {
 	r.calls++
 	return r.buildings[tx.TenantID()], nil
+}
+
+func (r *fakeRoomRepo) Floors(context.Context, Tx) ([]FloorRow, error) {
+	r.calls++
+	return r.floors, nil
 }
 
 func (r *fakeRoomRepo) Rooms(_ context.Context, tx Tx, f RoomFilter) ([]RoomRow, error) {

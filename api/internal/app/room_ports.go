@@ -28,6 +28,12 @@ type LocalizedName struct {
 
 type BuildingRow struct{ ID, Code, Name string }
 
+// FloorView is a floor of a building in display order.
+type FloorView struct {
+	ID, Name string
+	Order    int
+}
+
 type StayRow struct {
 	ID, RentalType, GuestName string
 	CheckInAt                 time.Time
@@ -37,6 +43,7 @@ type StayRow struct {
 type RoomRow struct {
 	ID, Code, BuildingID string
 	Floor                int
+	FloorID, FloorName   string // the name falls back to the level number when the floor has none
 	UnitTypeCode         string
 	UnitTypeName         LocalizedName
 	StoredStatus         string
@@ -51,6 +58,7 @@ type RoomFilter struct{ BuildingID, RoomID string }
 type RoomRepo interface {
 	Buildings(ctx context.Context, tx Tx) ([]BuildingRow, error)
 	Rooms(ctx context.Context, tx Tx, f RoomFilter) ([]RoomRow, error)
+	Floors(ctx context.Context, tx Tx) ([]FloorRow, error)
 	Timezone(ctx context.Context, tx Tx) (string, error)
 }
 

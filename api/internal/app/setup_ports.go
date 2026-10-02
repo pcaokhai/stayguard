@@ -8,8 +8,8 @@ import (
 )
 
 type FloorRow struct {
-	ID, BuildingID string
-	Level          int
+	ID, BuildingID, Name string // Name falls back to the level number
+	Level                int
 }
 
 // NewRoom is a room to store; Attributes is the JSON object of features and the maintenance note.
@@ -30,6 +30,7 @@ type UnitTypeRow struct {
 type RoomSetupRow struct {
 	ID, Code, BuildingID, FloorID, UnitTypeID, Status string
 	FloorLevel                                        int
+	FloorName                                         string
 	UnitTypeCode                                      string
 	UnitTypeName                                      LocalizedName
 	Retired, HasGuest                                 bool
@@ -83,6 +84,8 @@ type SetupRepo interface {
 	InsertFloor(ctx context.Context, tx Tx, id, buildingID string, level int, name *string) error
 	Floor(ctx context.Context, tx Tx, id string) (FloorRow, bool, error)
 	MaxFloorLevel(ctx context.Context, tx Tx, buildingID string) (int, error)
+	// Floors of one building in display order.
+	Floors(ctx context.Context, tx Tx, buildingID string) ([]FloorView, error)
 	// ExistingCodes is the subset of codes that already name a room.
 	ExistingCodes(ctx context.Context, tx Tx, codes []string) ([]string, error)
 	InsertRoom(ctx context.Context, tx Tx, r NewRoom) error

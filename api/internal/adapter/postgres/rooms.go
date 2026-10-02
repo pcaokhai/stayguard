@@ -64,7 +64,7 @@ func toRoomRow(r sqlcgen.ListRoomsRow) (app.RoomRow, error) {
 		return app.RoomRow{}, fmt.Errorf("decode unit type name of room %s: %w", r.ID, err)
 	}
 	row := app.RoomRow{
-		ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: int(r.FloorLevel),
+		ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: int(r.FloorLevel), FloorID: r.FloorID, FloorName: floorLabel(r.FloorName, int(r.FloorLevel)),
 		UnitTypeCode: r.UnitTypeCode, UnitTypeName: app.LocalizedName(name), StoredStatus: r.Status,
 	}
 	if r.HasNote {
@@ -78,4 +78,20 @@ func toRoomRow(r sqlcgen.ListRoomsRow) (app.RoomRow, error) {
 		}
 	}
 	return row, nil
+}
+
+func (RoomRepo) Floors(ctx context.Context, tx app.Tx) ([]app.FloorRow, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListFloors(ctx, t.tenant)
+	if err != nil {
+		return nil, wrap("list floors", err)
+	}
+	out := make([]app.FloorRow, len(rows))
+	for i, r := range rows {
+		out[i] = app.FloorRow{ID: r.ID, BuildingID: r.BuildingID, Name: floorLabel(r.Name, int(r.Level)), Level: int(r.Level)}
+	}
+	return out, nil
 }

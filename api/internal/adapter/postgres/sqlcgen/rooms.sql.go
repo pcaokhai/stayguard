@@ -43,8 +43,44 @@ func (q *Queries) ListBuildings(ctx context.Context, tenantID string) ([]ListBui
 	return items, nil
 }
 
+const listFloors = `-- name: ListFloors :many
+SELECT id, building_id, level, name FROM app.floors WHERE tenant_id = $1 ORDER BY building_id, level, id
+`
+
+type ListFloorsRow struct {
+	ID         string
+	BuildingID string
+	Level      int32
+	Name       pgtype.Text
+}
+
+func (q *Queries) ListFloors(ctx context.Context, tenantID string) ([]ListFloorsRow, error) {
+	rows, err := q.db.Query(ctx, listFloors, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFloorsRow
+	for rows.Next() {
+		var i ListFloorsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.BuildingID,
+			&i.Level,
+			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRooms = `-- name: ListRooms :many
-SELECT u.id, u.code, u.building_id, f.level AS floor_level,
+SELECT u.id, u.code, u.building_id, f.id AS floor_id, f.name AS floor_name, f.level AS floor_level,
        ut.code AS unit_type_code, ut.name AS unit_type_name, u.status,
        coalesce(jsonb_typeof(u.attributes->'note') = 'string', false)::boolean AS has_note, coalesce(u.attributes->>'note', '')::text AS note,
        s.id AS stay_id, s.rental_type AS stay_rental_type, s.guest_name AS stay_guest_name,
@@ -69,6 +105,8 @@ type ListRoomsRow struct {
 	ID                   string
 	Code                 string
 	BuildingID           string
+	FloorID              string
+	FloorName            pgtype.Text
 	FloorLevel           int32
 	UnitTypeCode         string
 	UnitTypeName         []byte
@@ -96,6 +134,8 @@ func (q *Queries) ListRooms(ctx context.Context, arg ListRoomsParams) ([]ListRoo
 			&i.ID,
 			&i.Code,
 			&i.BuildingID,
+			&i.FloorID,
+			&i.FloorName,
 			&i.FloorLevel,
 			&i.UnitTypeCode,
 			&i.UnitTypeName,

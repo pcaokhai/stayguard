@@ -150,7 +150,7 @@ func (q *Queries) GetBuilding(ctx context.Context, arg GetBuildingParams) (GetBu
 }
 
 const getFloor = `-- name: GetFloor :one
-SELECT id, building_id, level FROM app.floors WHERE tenant_id = $1 AND id = $2
+SELECT id, building_id, level, name FROM app.floors WHERE tenant_id = $1 AND id = $2
 `
 
 type GetFloorParams struct {
@@ -162,12 +162,18 @@ type GetFloorRow struct {
 	ID         string
 	BuildingID string
 	Level      int32
+	Name       pgtype.Text
 }
 
 func (q *Queries) GetFloor(ctx context.Context, arg GetFloorParams) (GetFloorRow, error) {
 	row := q.db.QueryRow(ctx, getFloor, arg.TenantID, arg.ID)
 	var i GetFloorRow
-	err := row.Scan(&i.ID, &i.BuildingID, &i.Level)
+	err := row.Scan(
+		&i.ID,
+		&i.BuildingID,
+		&i.Level,
+		&i.Name,
+	)
 	return i, err
 }
 
@@ -503,7 +509,7 @@ func (q *Queries) ListUnitTypes(ctx context.Context, tenantID string) ([]ListUni
 }
 
 const lockRoomForSetup = `-- name: LockRoomForSetup :one
-SELECT u.id, u.code, u.building_id, u.floor_id, u.unit_type_id, u.status, u.retired, u.attributes, f.level AS floor_level,
+SELECT u.id, u.code, u.building_id, u.floor_id, f.name AS floor_name, u.unit_type_id, u.status, u.retired, u.attributes, f.level AS floor_level,
        ut.code AS unit_type_code, ut.name AS unit_type_name,
        EXISTS (SELECT 1 FROM app.stays s WHERE s.tenant_id = u.tenant_id AND s.unit_id = u.id AND s.status = 'ACTIVE') AS has_guest
 FROM app.units u
@@ -523,6 +529,7 @@ type LockRoomForSetupRow struct {
 	Code         string
 	BuildingID   string
 	FloorID      string
+	FloorName    pgtype.Text
 	UnitTypeID   string
 	Status       string
 	Retired      bool
@@ -541,6 +548,7 @@ func (q *Queries) LockRoomForSetup(ctx context.Context, arg LockRoomForSetupPara
 		&i.Code,
 		&i.BuildingID,
 		&i.FloorID,
+		&i.FloorName,
 		&i.UnitTypeID,
 		&i.Status,
 		&i.Retired,

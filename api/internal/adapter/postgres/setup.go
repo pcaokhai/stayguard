@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -103,7 +104,7 @@ func (SetupRepo) Floor(ctx context.Context, tx app.Tx, id string) (app.FloorRow,
 	if errors.Is(err, pgx.ErrNoRows) {
 		return app.FloorRow{}, false, nil
 	}
-	return app.FloorRow{ID: r.ID, BuildingID: r.BuildingID, Level: int(r.Level)}, err == nil, wrap("select floor", err)
+	return app.FloorRow{ID: r.ID, BuildingID: r.BuildingID, Name: floorLabel(r.Name, int(r.Level)), Level: int(r.Level)}, err == nil, wrap("select floor", err)
 }
 
 func (SetupRepo) MaxFloorLevel(ctx context.Context, tx app.Tx, buildingID string) (int, error) {
@@ -206,7 +207,7 @@ func (SetupRepo) Room(ctx context.Context, tx app.Tx, id string) (app.RoomSetupR
 		return app.RoomSetupRow{}, false, wrap("decode unit type name", err)
 	}
 	return app.RoomSetupRow{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, FloorID: r.FloorID, UnitTypeID: r.UnitTypeID, Status: r.Status,
-		FloorLevel: int(r.FloorLevel), UnitTypeCode: r.UnitTypeCode, UnitTypeName: n, Retired: r.Retired, HasGuest: r.HasGuest, Attributes: r.Attributes}, true, nil
+		FloorLevel: int(r.FloorLevel), FloorName: floorLabel(r.FloorName, int(r.FloorLevel)), UnitTypeCode: r.UnitTypeCode, UnitTypeName: n, Retired: r.Retired, HasGuest: r.HasGuest, Attributes: r.Attributes}, true, nil
 }
 
 func (SetupRepo) UpdateRoom(ctx context.Context, tx app.Tx, u app.RoomUpdate) error {
@@ -368,4 +369,30 @@ func (SetupRepo) InsertStocktake(ctx context.Context, tx app.Tx, id, actorID str
 	}
 	return wrap("insert stocktake", sqlcgen.New(t).InsertStocktake(ctx, sqlcgen.InsertStocktakeParams{ID: id, TenantID: t.tenant, ActorID: text(&actorID),
 		Note: text(note), ValueDifference: valueDifference, CreatedAt: pgtype.Timestamptz{Time: at, Valid: true}}))
+}
+
+// floorLabel is the stored floor name, or the level number when the floor has none.
+func floorLabel(name pgtype.Text, level int) string {
+	if name.Valid && name.String != "" {
+		return name.String
+	}
+	return strconv.Itoa(level)
+}
+
+func (SetupRepo) Floors(ctx context.Context, tx app.Tx, buildingID string) ([]app.FloorView, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListFloors(ctx, t.tenant)
+	if err != nil {
+		return nil, wrap("list floors", err)
+	}
+	out := []app.FloorView{}
+	for _, r := range rows {
+		if r.BuildingID == buildingID {
+			out = append(out, app.FloorView{ID: r.ID, Name: floorLabel(r.Name, int(r.Level)), Order: int(r.Level)})
+		}
+	}
+	return out, nil
 }

@@ -448,3 +448,54 @@ func TestStockMovementsStocktakeAndRemove_SG1004(t *testing.T) {
 		t.Fatalf("the desk cannot remove items: %d", st)
 	}
 }
+
+// Integration: rooms carry floorId and floorName, buildings list their floors in order, and createRooms puts rooms on the floor given.
+func TestFloorsInRoomsAndBuildings_Integration(t *testing.T) {
+	e := newEnv(t)
+	token := e.ownerSetup()
+	st, raw := e.send("POST", "/v1/owner/buildings", token, newKey(), map[string]any{"code": "C", "name": "Block C", "floors": 2, "roomsPerFloor": 1, "unitTypeCode": "STD"})
+	b := parse(raw)
+	bid := b["id"].(string)
+	floors := b["floors"].([]any)
+	if st != 201 || len(floors) != 2 || floors[0].(map[string]any)["name"] != "1" || floors[1].(map[string]any)["order"] != float64(2) {
+		t.Fatalf("createBuilding floors: %d %s", st, raw)
+	}
+	st, r := e.post("/v1/owner/buildings/"+bid+"/floors", token, map[string]any{"name": "Rooftop"})
+	if st != 201 {
+		t.Fatalf("createFloor: %d", st)
+	}
+	var fid string
+	if err := e.owner.QueryRow(context.Background(), `SELECT id FROM app.floors WHERE building_id = $1 AND level = 3`, bid).Scan(&fid); err != nil {
+		t.Fatal(err)
+	}
+	st, r = e.post("/v1/owner/rooms", token, map[string]any{"buildingId": bid, "floorId": fid, "fromCode": "C901", "toCode": "C902", "unitTypeCode": "STD"})
+	rooms := items(r)
+	if st != 201 || len(rooms) != 2 || rooms[0]["floorId"] != fid || rooms[0]["floorName"] != "Rooftop" || rooms[0]["floor"] != float64(3) {
+		t.Fatalf("createRooms on a floor: %d %v", st, r.body)
+	}
+	list := items(e.call("GET", "/v1/buildings", token, nil))
+	var c map[string]any
+	for _, it := range list {
+		if it["id"] == bid {
+			c = it
+		}
+	}
+	fl, _ := c["floors"].([]any)
+	if len(fl) != 3 || fl[2].(map[string]any)["id"] != fid || fl[2].(map[string]any)["name"] != "Rooftop" || fl[0].(map[string]any)["order"] != float64(1) {
+		t.Fatalf("listBuildings floors: %v", c["floors"])
+	}
+	for _, rm := range items(e.call("GET", "/v1/buildings/"+bid+"/rooms", token, nil)) {
+		if rm["floorId"] == nil || rm["floorName"] == nil {
+			t.Fatalf("listRooms without floor: %v", rm)
+		}
+		if rm["code"] == "C901" && (rm["floorId"] != fid || rm["floorName"] != "Rooftop") {
+			t.Fatalf("listRooms floor: %v", rm)
+		}
+	}
+	// A floor of another building is refused.
+	var foreign string
+	_ = e.owner.QueryRow(context.Background(), `SELECT id FROM app.floors WHERE building_id = $1 LIMIT 1`, stayBuilding).Scan(&foreign)
+	if st, _ = e.post("/v1/owner/rooms", token, map[string]any{"buildingId": bid, "floorId": foreign, "fromCode": "C951", "toCode": "C951", "unitTypeCode": "STD"}); st != 422 {
+		t.Fatalf("foreign floor: %d", st)
+	}
+}

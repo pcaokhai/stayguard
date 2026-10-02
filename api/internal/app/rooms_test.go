@@ -339,3 +339,13 @@ func TestRoomsLevelsCallCount_SG201_AC5(t *testing.T) {
 		t.Fatalf("levels calls vary with rooms: %v", counts)
 	}
 }
+
+// Building.floors lists each building's floors in display order with names (the level number when unnamed).
+func TestListBuildings_Floors_Integration(t *testing.T) {
+	env := newRoomsEnv(nil, map[string]access.Level{"bl_1": access.VIEW})
+	env.repo.floors = []FloorRow{{ID: "f2", BuildingID: "bl_1", Name: "Rooftop", Level: 2}, {ID: "f1", BuildingID: "bl_1", Name: "1", Level: 1}}
+	got, err := env.svc.ListBuildings(context.Background(), caller(access.RoleReceptionist))
+	if err != nil || len(got) == 0 || len(got[0].Floors) != 2 || got[0].Floors[0].ID != "f2" || got[0].Floors[1].Order != 1 {
+		t.Fatalf("%+v %v", got, err)
+	}
+}

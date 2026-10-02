@@ -189,8 +189,12 @@ func (s *Setup) createBuilding(ctx context.Context, tx Tx, c Caller, in Building
 
 func (s *Setup) buildingView(ctx context.Context, tx Tx, b BuildingRow) (BuildingView, error) {
 	counts, err := s.repo.StatusCounts(ctx, tx, b.ID)
+	if err != nil {
+		return BuildingView{}, err
+	}
+	floors, err := s.repo.Floors(ctx, tx, b.ID)
 	// ponytail: overdue is derived from running stays and is counted as occupied here; listBuildings has the exact split.
-	return BuildingView{ID: b.ID, Code: b.Code, Name: b.Name, Level: access.EDIT, Counts: counts}, err
+	return BuildingView{ID: b.ID, Code: b.Code, Name: b.Name, Level: access.EDIT, Counts: counts, Floors: floors}, err
 }
 
 // checkFree is ErrConflict when any of the room codes already exists.
@@ -292,7 +296,7 @@ func (s *Setup) createFloor(ctx context.Context, tx Tx, c Caller, buildingID str
 		if err != nil {
 			return nil, err
 		}
-		out, err = s.insertRooms(ctx, tx, buildingID, fid, level, in.Rooms.UnitTypeCode, codes, nil, statusVacant)
+		out, err = s.insertRooms(ctx, tx, buildingID, fid, in.Name, level, in.Rooms.UnitTypeCode, codes, nil, statusVacant)
 		if err != nil {
 			return nil, err
 		}
@@ -336,7 +340,7 @@ func (s *Setup) CreateRooms(ctx context.Context, c Caller, key string, in RoomsI
 			if !in.AvailableNow {
 				status = statusToClean // not ready: it waits for cleaning (design: "Turn off if the room is not ready")
 			}
-			views, err := s.insertRooms(ctx, tx, in.BuildingID, in.FloorID, f.Level, in.UnitTypeCode, codes, in.Features, status)
+			views, err := s.insertRooms(ctx, tx, in.BuildingID, in.FloorID, f.Name, f.Level, in.UnitTypeCode, codes, in.Features, status)
 			if err != nil {
 				return nil, err
 			}
@@ -347,7 +351,7 @@ func (s *Setup) CreateRooms(ctx context.Context, c Caller, key string, in RoomsI
 	return out, err
 }
 
-func (s *Setup) insertRooms(ctx context.Context, tx Tx, buildingID, floorID string, level int, typeCode string, codes, features []string, status string) ([]RoomView, error) {
+func (s *Setup) insertRooms(ctx context.Context, tx Tx, buildingID, floorID, floorName string, level int, typeCode string, codes, features []string, status string) ([]RoomView, error) {
 	ut, ok, err := s.repo.UnitTypeByCode(ctx, tx, typeCode)
 	if err != nil || !ok {
 		return nil, errOr(err, &ValidationError{"unitTypeCode", "unknown room type"})
@@ -365,7 +369,7 @@ func (s *Setup) insertRooms(ctx context.Context, tx Tx, buildingID, floorID stri
 		if err = s.repo.InsertRoom(ctx, tx, r); err != nil {
 			return nil, err
 		}
-		out = append(out, RoomView{ID: r.ID, Code: code, BuildingID: buildingID, Floor: level, UnitTypeCode: ut.Code, UnitTypeName: ut.Name, Status: room.Status(status)})
+		out = append(out, RoomView{ID: r.ID, Code: code, BuildingID: buildingID, Floor: level, FloorID: floorID, FloorName: floorName, UnitTypeCode: ut.Code, UnitTypeName: ut.Name, Status: room.Status(status)})
 	}
 	return out, nil
 }
@@ -570,7 +574,7 @@ func (s *Setup) roomView(ctx context.Context, tx Tx, id string) (RoomView, error
 	if err != nil || !ok {
 		return RoomView{}, errOr(err, ErrNotFound)
 	}
-	v := RoomView{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: r.FloorLevel, UnitTypeCode: r.UnitTypeCode, UnitTypeName: r.UnitTypeName, Status: room.Status(r.Status)}
+	v := RoomView{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: r.FloorLevel, FloorID: r.FloorID, FloorName: r.FloorName, UnitTypeCode: r.UnitTypeCode, UnitTypeName: r.UnitTypeName, Status: room.Status(r.Status)}
 	var attrs struct {
 		Note *string `json:"note"`
 	}

@@ -90,7 +90,7 @@ func (s Server) GetRoom(ctx context.Context, req gen.GetRoomRequestObject) (gen.
 
 func toRoom(v app.RoomView) gen.Room {
 	r := gen.Room{
-		Id: v.ID, Code: v.Code, BuildingId: v.BuildingID, Floor: v.Floor,
+		Id: v.ID, Code: v.Code, BuildingId: v.BuildingID, Floor: v.Floor, FloorId: strPtr(v.FloorID), FloorName: strPtr(v.FloorName),
 		Status: gen.RoomStatus(v.Status), Note: v.Note,
 	}
 	r.UnitType.Code = v.UnitTypeCode
@@ -104,8 +104,27 @@ func toRoom(v app.RoomView) gen.Room {
 	return r
 }
 
+func strPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func toBuilding(v app.BuildingView) gen.Building {
-	return gen.Building{
+	var floors []struct {
+		Id    string `json:"id"`
+		Name  string `json:"name"`
+		Order int    `json:"order"`
+	}
+	for _, f := range v.Floors {
+		floors = append(floors, struct {
+			Id    string `json:"id"`
+			Name  string `json:"name"`
+			Order int    `json:"order"`
+		}{f.ID, f.Name, f.Order})
+	}
+	return gen.Building{Floors: &floors,
 		Id: v.ID, Code: v.Code, Name: v.Name, Level: permissionLevel(v.Level),
 		Counts: gen.StatusCounts{
 			Vacant: v.Counts.Vacant, Occupied: v.Counts.Occupied, Overdue: v.Counts.Overdue,
