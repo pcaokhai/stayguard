@@ -181,6 +181,20 @@ export class Api {
       amount: p.body.amount as number,
     };
   }
+  /** A guest who paid cash and left: the room is TO_CLEAN and its housekeeping task is open. */
+  async toClean(w: Who, o: { deposit?: number } = {}) {
+    const stay = await this.checkIn(w, { deposit: o.deposit });
+    const invoice = await this.checkout(w, stay.id);
+    const p = await this.post(w, `/v1/invoices/${invoice.id}/payments`, { method: "CASH" });
+    expect(p.status, "cash payment").toBe(201);
+    const room = await this.room(w, stay.roomCode);
+    expect(room.status).toBe("TO_CLEAN");
+    return { stay, invoice, room };
+  }
+  async cleanTask(w: Who, roomId: string) {
+    const tasks: any[] = (await this.get(w, "/v1/housekeeping/tasks")).body.items;
+    return tasks.find((t) => t.roomId === roomId && t.status === "OPEN");
+  }
   async getStay(w: Who, id: string) {
     return (await this.get(w, `/v1/stays/${id}`)).body;
   }
