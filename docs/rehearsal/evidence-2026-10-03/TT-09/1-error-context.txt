@@ -1,0 +1,228 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: money.spec.ts >> TT-09 an outgoing transfer is ignored
+- Location: e2e/rehearsal/money.spec.ts:154:5
+
+# Error details
+
+```
+Error: an outgoing transfer cannot be linked to a bill
+
+expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 400
+Received:    200
+```
+
+# Test source
+
+```ts
+  72  |   expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  73  | });
+  74  | 
+  75  | test("TT-05 a transfer that is already linked cannot be linked again", async ({ api }) => {
+  76  |   const r = await api.as("r1");
+  77  |   const owner = await api.as("owner");
+  78  |   const a = await api.toQr(r);
+  79  |   const b = await api.toQr(r);
+  80  |   const amount = a.amount;
+  81  |   expect(b.amount, "both bills are the same").toBe(amount);
+  82  |   await api.pay("", amount, { content: "once only" });
+  83  |   const tx = (await api.transactions(owner)).find(
+  84  |     (t) => t.amount === amount && t.reconciliation === "UNMATCHED" && !t.billCode,
+  85  |   );
+  86  |   expect(tx?.paymentEventId).toBeTruthy();
+  87  |   expect(
+  88  |     (
+  89  |       await api.post(owner, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  90  |         invoiceId: a.invoice.id,
+  91  |       })
+  92  |     ).status,
+  93  |   ).toBe(200);
+  94  |   const again = await api.post(owner, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  95  |     invoiceId: b.invoice.id,
+  96  |   });
+  97  |   expect(again.status, "second link refused").toBe(409);
+  98  |   expect((await api.payment(r, b.payment.id)).status).toBe("PENDING");
+  99  | });
+  100 | 
+  101 | test("TT-06 a receptionist cannot link a transfer", async ({ api }) => {
+  102 |   const r = await api.as("r1");
+  103 |   const owner = await api.as("owner");
+  104 |   const q = await api.toQr(r);
+  105 |   await api.pay("", q.amount, { content: "front desk tries" });
+  106 |   const tx = (await api.transactions(owner)).find(
+  107 |     (t) => t.amount === q.amount && t.reconciliation === "UNMATCHED" && !t.billCode,
+  108 |   );
+  109 |   expect(tx?.paymentEventId).toBeTruthy();
+  110 |   const link = await api.post(r, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  111 |     invoiceId: q.invoice.id,
+  112 |   });
+  113 |   expect(link.status).toBe(403);
+  114 |   expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  115 | });
+  116 | 
+  117 | test("TT-07 short transfer, then the remainder QR with the same bill code, top-up, paid", async ({
+  118 |   api,
+  119 | }) => {
+  120 |   const r = await api.as("r1");
+  121 |   const owner = await api.as("owner");
+  122 |   const q = await api.toQr(r);
+  123 |   const first = Math.floor(q.amount / 2);
+  124 |   await api.pay(q.note, first);
+  125 |   let p = await api.payment(r, q.payment.id);
+  126 |   expect(p.status, "short money does not pay the bill").toBe("PENDING");
+  127 |   expect(p.receivedAmount).toBe(first);
+  128 |   expect(p.remaining).toBe(q.amount - first);
+  129 |   const again = await api.post(r, `/v1/invoices/${q.invoice.id}/payments`, { method: "TRANSFER" });
+  130 |   expect(again.status, "remainder QR").toBeLessThan(300);
+  131 |   expect(again.body.qr.transferNote, "the same bill code").toBe(q.note);
+  132 |   expect(again.body.qr.amount, "for the remainder only").toBe(q.amount - first);
+  133 |   await api.pay(q.note, q.amount - first);
+  134 |   await api.untilPayment(r, again.body.id, "PAID");
+  135 |   expect((await api.getStay(r, q.stay.id)).paymentState).toBe("PAID");
+  136 |   const mine = (await api.transactions(owner)).filter(
+  137 |     (t) => t.billCode === q.note && t.method === "TRANSFER",
+  138 |   );
+  139 |   expect(mine.reduce((s, t) => s + t.amount, 0)).toBe(q.amount);
+  140 | });
+  141 | 
+  142 | test("TT-08 overpaid transfer pays the bill and alerts the owner", async ({ api }) => {
+  143 |   const r = await api.as("r1");
+  144 |   const owner = await api.as("owner");
+  145 |   const q = await api.toQr(r);
+  146 |   await api.pay(q.note, q.amount + 5_000);
+  147 |   await api.untilPayment(r, q.payment.id, "PAID");
+  148 |   const alert = (await api.alerts(owner)).find(
+  149 |     (a) => a.kind === "OVERPAID" && a.details?.billCode === q.note,
+  150 |   );
+  151 |   expect(alert, "OVERPAID alert for this bill").toBeTruthy();
+  152 | });
+  153 | 
+  154 | test("TT-09 an outgoing transfer is ignored", async ({ api }) => {
+  155 |   const r = await api.as("r1");
+  156 |   const q = await api.toQr(r);
+  157 |   const out = await api.deliver({ note: q.note, amount: q.amount, type: "out" });
+  158 |   expect(out.status).toBe(200);
+  159 |   expect((await api.payment(r, q.payment.id)).status, "money going out pays nothing").toBe(
+  160 |     "PENDING",
+  161 |   );
+  162 |   expect((await api.getStay(r, q.stay.id)).paymentState).toBe("AWAITING_PAYMENT");
+  163 |   // Money that left the account must not turn into money the owner can link to a bill.
+  164 |   const owner = await api.as("owner");
+  165 |   const row = (await api.transactions(owner)).find(
+  166 |     (t) => t.transferNote?.includes(q.note) && t.paymentEventId,
+  167 |   );
+  168 |   if (row) {
+  169 |     const link = await api.post(owner, `/v1/owner/payment-events/${row.paymentEventId}/link`, {
+  170 |       invoiceId: q.invoice.id,
+  171 |     });
+> 172 |     expect(link.status, "an outgoing transfer cannot be linked to a bill").toBeGreaterThanOrEqual(
+      |                                                                            ^ Error: an outgoing transfer cannot be linked to a bill
+  173 |       400,
+  174 |     );
+  175 |     expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  176 |   }
+  177 | });
+  178 | 
+  179 | test("TT-10 the same delivery twice is counted once", async ({ api }) => {
+  180 |   const r = await api.as("r1");
+  181 |   const owner = await api.as("owner");
+  182 |   const q = await api.toQr(r);
+  183 |   const first = await api.pay(q.note, q.amount);
+  184 |   const second = await api.deliver({ note: q.note, amount: q.amount, id: first.id });
+  185 |   expect(second.status, "SePay retries get the same answer").toBe(200);
+  186 |   expect(second.body).toEqual({ success: true });
+  187 |   await api.untilPayment(r, q.payment.id, "PAID");
+  188 |   const mine = (await api.transactions(owner)).filter(
+  189 |     (t) => t.billCode === q.note && t.method === "TRANSFER",
+  190 |   );
+  191 |   expect(mine, "one transaction").toHaveLength(1);
+  192 |   expect(
+  193 |     (await api.alerts(owner)).filter(
+  194 |       (a) => a.kind === "OVERPAID" && a.details?.billCode === q.note,
+  195 |     ),
+  196 |   ).toHaveLength(0);
+  197 | });
+  198 | 
+  199 | test("TT-11 deposit larger than the bill is refunded in cash and lands on the shift", async ({
+  200 |   api,
+  201 | }) => {
+  202 |   const r = await api.as("r2"); // own drawer: nobody else's cash is on this shift
+  203 |   const stay = await api.checkIn(r, { deposit: 500_000 });
+  204 |   const invoice = await api.checkout(r, stay.id);
+  205 |   const refund = invoice.quote.refundDue;
+  206 |   expect(refund, "the deposit is more than the bill").toBeGreaterThan(0);
+  207 |   expect((await api.getStay(r, stay.id)).paymentState).toBe("REFUND_PENDING");
+  208 |   const before = (await api.shift(r)).body;
+  209 |   const pay = await api.post(r, `/v1/invoices/${invoice.id}/payments`, { method: "CASH" });
+  210 |   expect(pay.status).toBe(201);
+  211 |   expect(pay.body.status).toBe("PAID");
+  212 |   const after = (await api.shift(r)).body;
+  213 |   expect(after.expectedCash, "the refund leaves the drawer").toBe(before.expectedCash - refund);
+  214 |   const line = after.movements.find(
+  215 |     (x: any) => x.kind === "REFUND" && x.billCode === invoice.billCode,
+  216 |   );
+  217 |   expect(line, "a REFUND line on the shift").toBeTruthy();
+  218 |   expect(Math.abs(line.amount)).toBe(refund);
+  219 |   expect((await api.getStay(r, stay.id)).paymentState).toBe("PAID");
+  220 | });
+  221 | 
+  222 | test("TT-12 leave the payment screen, reload, resume with the same bill code and no second payment", async ({
+  223 |   api,
+  224 |   page,
+  225 | }) => {
+  226 |   const r = await api.as("r3");
+  227 |   const q = await api.toQr(r);
+  228 |   await uiLogin(page, r);
+  229 |   await page.goto(`/en/pay?payment=${q.payment.id}`);
+  230 |   await expect(page.getByText("Transfer note")).toBeVisible();
+  231 |   await expect(page.locator("body")).toContainText(q.note);
+  232 |   await page.goto("/en/rooms"); // leave the payment screen
+  233 |   await page.goto(`/en/stay?id=${q.stay.id}`);
+  234 |   await page.getByRole("button", { name: "Continue payment" }).click();
+  235 |   await expect(page).toHaveURL(new RegExp(`/en/pay\\?payment=${q.payment.id}`));
+  236 |   await page.reload();
+  237 |   await expect(page.locator("body")).toContainText(q.note);
+  238 |   await expect(page).toHaveURL(new RegExp(q.payment.id));
+  239 |   const stay = await api.getStay(r, q.stay.id);
+  240 |   expect(stay.pendingPayment.paymentId, "still the one payment").toBe(q.payment.id);
+  241 |   await api.pay(q.note, q.amount);
+  242 |   await expect(page).toHaveURL(/\/en\/paid\?payment=/, { timeout: 20_000 });
+  243 | });
+  244 | 
+  245 | test("TT-13 the reopened checkout shows the real deposit", async ({ api, page }) => {
+  246 |   const r = await api.as("r3");
+  247 |   const stay = await api.checkIn(r, { deposit: 250_000 });
+  248 |   await api.checkout(r, stay.id);
+  249 |   await uiLogin(page, r);
+  250 |   await page.goto(`/en/checkout?stay=${stay.id}`);
+  251 |   await expect(page.locator("body")).toContainText("250,000");
+  252 |   await expect(page.locator("body")).not.toContainText("100,000");
+  253 |   expect((await api.getStay(r, stay.id)).quote.depositPaid).toBe(250_000);
+  254 | });
+  255 | 
+  256 | test("TT-14 a finished stay is read-only in the app and in the API", async ({ api, page }) => {
+  257 |   const r = await api.as("r3");
+  258 |   const q = await api.toQr(r);
+  259 |   await api.pay(q.note, q.amount);
+  260 |   await api.untilPayment(r, q.payment.id, "PAID");
+  261 |   const id = q.stay.id;
+  262 |   const other = await api.vacantRoom(r);
+  263 |   const edits = [
+  264 |     api.post(r, `/v1/stays/${id}/extras`, { items: [{ serviceCode: "WATER", quantity: 1 }] }),
+  265 |     api.post(r, `/v1/stays/${id}/checkout`),
+  266 |     api.post(r, `/v1/stays/${id}/check-in-time`, {
+  267 |       newCheckInAt: new Date().toISOString(),
+  268 |       reasonCode: "OTHER",
+  269 |       note: "late fix",
+  270 |     }),
+  271 |     api.post(r, `/v1/stays/${id}/move`, { toRoomId: other.id, rentalType: "HOURLY" }),
+  272 |   ];
+```

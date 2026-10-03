@@ -1,0 +1,6 @@
+Error: only the new deposit adds to the day's cash
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 10000
+Received: 30000

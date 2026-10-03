@@ -60,10 +60,10 @@ t = json.load(open("scripts/smoke/tenant.json"))
 t["guesthouseCode"] = sys.argv[2]
 t["name"] = t["property"]["name"] = "Rehearsal Test " + sys.argv[2]
 t["bankAccount"]["accountName"] = "REHEARSAL TEST"
-t["buildings"] = [{"code": "A", "name": "Building A", "floors": 1, "roomsPerFloor": 40}]
+t["buildings"] = [{"code": "A", "name": "Building A", "floors": 3, "roomsPerFloor": 40}]
 contract = {"payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12}
-# One receptionist per concern (r1..r10) so shift cases never share a drawer, and one housekeeper.
-for i in range(1, 11):
+# One receptionist per concern (r1..r12) so shift cases never share a drawer, and one housekeeper.
+for i in range(1, 13):
     t["staff"].append({"name": f"Rehearsal R{i}", "username": f"r{i}", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
                        "contract": contract, "buildingAccess": {"A": "EDIT"}})
 t["staff"].append({"name": "Rehearsal Housekeeper", "username": "hk", "position": "HOUSEKEEPING", "appAccess": "HOUSEKEEPING",

@@ -191,13 +191,13 @@ test("RL-09 hitting the sign-in rate limit is not shown as a locked account", as
   api,
   page,
 }) => {
+  test.setTimeout(150_000);
   await api.as("linh");
   for (let i = 0; i < 22; i++) {
-    // An unknown guesthouse code: nobody's account is touched, only the per-address counter.
-    await api.post(null, "/v1/auth/sign-in", {
-      guesthouseCode: "nosuchcode",
-      username: "x",
-      pin: "135790",
+    // An unknown guesthouse code: nobody's account is touched, only the per-address counter. Sent raw, past the helper's own throttle.
+    await api.request.post(`${cfg.base}/v1/auth/sign-in`, {
+      data: { guesthouseCode: "nosuchcode", username: "x", pin: "135790" },
+      failOnStatusCode: false,
     });
   }
   await formSignIn(page, "linh", NEW_PIN);

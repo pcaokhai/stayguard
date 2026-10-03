@@ -153,7 +153,7 @@ test("SH-07 the shift screen and the owner overview show the same expected cash"
 test("SH-08 a float left in the drawer is not counted twice by the owner overview", async ({
   api,
 }) => {
-  const w = await api.as("linh");
+  const w = await api.as("r11");
   const owner = await api.as("owner");
   const { shift } = await openShift(api, w, 50_000);
   const o0 = (await api.overview(owner)).cashExpected;

@@ -13,7 +13,7 @@ RH_ENV_OUT=/tmp/rh.env make rehearse-test   # only prepare the guesthouse; `. /t
 ```
 
 Each run starts or reuses the stack, stops the `jobs` service (so the alerts the specs count are raised only by the specs; it is
-started again at the end), imports a guesthouse `rh<hex>` with the installer commands (owner, manager, 12 receptionists, a housekeeper), sets the
+started again at the end), imports a guesthouse `rh<hex>` with the installer commands (owner, manager, receptionists r1 to r12, a housekeeper, 120 rooms), sets the
 SePay secret with `sepay set-secret`, and runs the specs. Every spec file has the id first in the test title.
 
 ## Output

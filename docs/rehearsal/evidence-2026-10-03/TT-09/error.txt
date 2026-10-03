@@ -1,0 +1,6 @@
+Error: an outgoing transfer cannot be linked to a bill
+
+expect(received).toBeGreaterThanOrEqual(expected)
+
+Expected: >= 400
+Received:    200
