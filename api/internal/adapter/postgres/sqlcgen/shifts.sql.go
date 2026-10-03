@@ -535,13 +535,14 @@ func (q *Queries) OwnerCashNoShift(ctx context.Context, arg OwnerCashNoShiftPara
 }
 
 const ownerCashShifts = `-- name: OwnerCashShifts :many
-SELECT s.opening_float,
+SELECT s.opened_at, s.opening_float,
        coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
        coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
 FROM app.shifts s
 LEFT JOIN app.cash_entries e ON e.tenant_id = s.tenant_id AND e.shift_id = s.id
 WHERE s.tenant_id = $1 AND s.opened_at < $2 AND (s.closed_at IS NULL OR s.closed_at >= $3)
-GROUP BY s.id, s.opening_float
+GROUP BY s.id, s.opened_at, s.opening_float
+ORDER BY s.opened_at, s.id
 `
 
 type OwnerCashShiftsParams struct {
@@ -551,12 +552,14 @@ type OwnerCashShiftsParams struct {
 }
 
 type OwnerCashShiftsRow struct {
+	OpenedAt     pgtype.Timestamptz
 	OpeningFloat int64
 	CashIn       int64
 	CashOut      int64
 }
 
-// Shifts open at any time in [from, to) with their whole ledger; expected cash is worked out in Go by the same function the shift screen uses.
+// Shifts open at any time in [from, to) with their whole ledger, oldest first; expected cash is worked out in Go by the same function the
+// shift screen uses. A float one shift leaves is the next shift's opening float: only the first float counts.
 func (q *Queries) OwnerCashShifts(ctx context.Context, arg OwnerCashShiftsParams) ([]OwnerCashShiftsRow, error) {
 	rows, err := q.db.Query(ctx, ownerCashShifts, arg.TenantID, arg.ToAt, arg.FromAt)
 	if err != nil {
@@ -566,7 +569,12 @@ func (q *Queries) OwnerCashShifts(ctx context.Context, arg OwnerCashShiftsParams
 	var items []OwnerCashShiftsRow
 	for rows.Next() {
 		var i OwnerCashShiftsRow
-		if err := rows.Scan(&i.OpeningFloat, &i.CashIn, &i.CashOut); err != nil {
+		if err := rows.Scan(
+			&i.OpenedAt,
+			&i.OpeningFloat,
+			&i.CashIn,
+			&i.CashOut,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

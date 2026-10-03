@@ -30,8 +30,8 @@ type OwnerRepo interface {
 	// Revenue covers PAID payments with paid_at in [from, to), one row per building.
 	Revenue(ctx context.Context, tx Tx, from, to time.Time) ([]BuildingRevenue, error)
 	LatestPayments(ctx context.Context, tx Tx, limit int) ([]PaymentSummary, error)
-	// CashExpected is the cash that should be in the drawers for [from, to): every shift open in it (opening float plus its ledger) and the
-	// owner cash with no shift, each worked out with shift.ExpectedCash, the function the shift screen uses.
+	// CashExpected is the cash that should be in the drawers for [from, to): the first open shift's float plus the ledger lines of every shift
+	// open in it and the owner cash with no shift, through shift.ExpectedCash (the shift screen's function). A float handed on counts once.
 	CashExpected(ctx context.Context, tx Tx, from, to time.Time) (int64, error)
 }
 

@@ -51,8 +51,9 @@ func (OwnerRepo) LatestPayments(ctx context.Context, tx app.Tx, limit int) ([]ap
 	return out, nil
 }
 
-// CashExpected adds the expected cash of every shift open in the window and the owner cash with no shift, all through
-// shift.ExpectedCash: the figure of the shift screen.
+// CashExpected is the cash that should be in the drawers for [from, to), worked out with shift.ExpectedCash like the shift screen: the
+// opening float of the first shift open in the window, plus every cash line of those shifts and the owner cash with no shift, in minus
+// out. The float a shift leaves is the next shift's opening float (the same cash), so only the first one is counted.
 func (OwnerRepo) CashExpected(ctx context.Context, tx app.Tx, from, to time.Time) (int64, error) {
 	t, err := pgTx(tx)
 	if err != nil {
@@ -63,21 +64,21 @@ func (OwnerRepo) CashExpected(ctx context.Context, tx app.Tx, from, to time.Time
 	if err != nil {
 		return 0, wrap("owner cash shifts", err)
 	}
-	var total int64
-	for _, s := range shifts {
-		n, err := shift.ExpectedCash(s.OpeningFloat, s.CashIn, s.CashOut)
-		if err != nil {
-			return 0, fmt.Errorf("expected cash: %w", err)
+	var opening, in, out int64
+	for i, s := range shifts {
+		if i == 0 {
+			opening = s.OpeningFloat
 		}
-		total += n
+		in += s.CashIn
+		out += s.CashOut
 	}
 	own, err := q.OwnerCashNoShift(ctx, sqlcgen.OwnerCashNoShiftParams{TenantID: t.tenant, FromAt: ts(from), ToAt: ts(to)})
 	if err != nil {
 		return 0, wrap("owner cash", err)
 	}
-	n, err := shift.ExpectedCash(0, own.CashIn, own.CashOut)
+	n, err := shift.ExpectedCash(opening, in+own.CashIn, out+own.CashOut)
 	if err != nil {
-		return 0, fmt.Errorf("owner cash: %w", err)
+		return 0, fmt.Errorf("expected cash: %w", err)
 	}
-	return total + n, nil
+	return n, nil
 }

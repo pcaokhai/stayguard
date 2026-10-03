@@ -108,3 +108,34 @@ func TestCashDrawer_ScreensAlwaysMatch_FU(t *testing.T) {
 	}
 	check("payout")
 }
+
+// QA SH-08: shift 1 closes leaving a float, shift 2 opens with it. The float is the same cash, so the owner overview counts it once:
+// a new 10,000 deposit moves the day's cash by 10,000, not by the 10,000 plus the float.
+func TestCashDrawer_AFloatLeftInTheDrawerIsCountedOnce_FU(t *testing.T) {
+	e := newSeededEnv(t)
+	tenant := e.demo("OWNER", "vi", "").str("tenantId")
+	own := e.demo("OWNER", "vi", tenant).str("accessToken")
+	desk := e.demo("RECEPTIONIST", "vi", tenant).str("accessToken")
+	r := refundRig{e: e, tenant: tenant, desk: desk, own: own}
+	e.clock.set(e.start)
+	if st, raw := e.send("POST", "/v1/rooms/"+e.roomIDByCode(tenant, "A102")+"/stays", desk, newKey(), stayBody(map[string]any{"rentalType": "HOURLY", "deposit": 50_000})); st != 201 {
+		t.Fatalf("check-in: %d %s", st, raw)
+	}
+	// Shift 1 expects 50,000; the desk counts 40,000 (short, with a reason) and leaves 20,000 in the drawer.
+	body := map[string]any{"counts": []map[string]any{{"denomination": 20000, "quantity": 2}}, "floatLeft": 20_000, "reason": "a 10,000 note went as change"}
+	if st, raw := e.send("POST", "/v1/shifts/current/close", desk, newKey(), body); st != 200 {
+		t.Fatalf("close: %d %s", st, raw)
+	}
+	before := r.overviewCash()
+	e.clock.set(e.start.Add(20 * time.Minute))
+	if st, raw := e.send("POST", "/v1/rooms/"+e.roomIDByCode(tenant, "A106")+"/stays", desk, newKey(), stayBody(map[string]any{"rentalType": "HOURLY", "deposit": 10_000})); st != 201 {
+		t.Fatalf("second check-in: %d %s", st, raw)
+	}
+	st, raw := e.send("GET", "/v1/shifts/current", desk, "", nil)
+	if sh := parse(raw); st != 200 || num(sh["openingFloat"]) != 20_000 {
+		t.Fatalf("shift 2 opens with the float: %d %s", st, raw)
+	}
+	if after := r.overviewCash(); after-before != 10_000 {
+		t.Fatalf("the overview moved by %d (from %d to %d), want only the new 10,000 deposit", after-before, before, after)
+	}
+}

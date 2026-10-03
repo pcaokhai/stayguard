@@ -104,14 +104,16 @@ LIMIT 1
 FOR UPDATE OF s;
 
 -- name: OwnerCashShifts :many
--- Shifts open at any time in [from, to) with their whole ledger; expected cash is worked out in Go by the same function the shift screen uses.
-SELECT s.opening_float,
+-- Shifts open at any time in [from, to) with their whole ledger, oldest first; expected cash is worked out in Go by the same function the
+-- shift screen uses. A float one shift leaves is the next shift's opening float: only the first float counts.
+SELECT s.opened_at, s.opening_float,
        coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
        coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
 FROM app.shifts s
 LEFT JOIN app.cash_entries e ON e.tenant_id = s.tenant_id AND e.shift_id = s.id
 WHERE s.tenant_id = @tenant_id AND s.opened_at < @to_at AND (s.closed_at IS NULL OR s.closed_at >= @from_at)
-GROUP BY s.id, s.opening_float;
+GROUP BY s.id, s.opened_at, s.opening_float
+ORDER BY s.opened_at, s.id;
 
 -- name: OwnerCashNoShift :one
 -- Owner cash of the day: ledger lines with no shift.
