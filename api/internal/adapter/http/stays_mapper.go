@@ -28,7 +28,7 @@ func toPendingPayment(p *app.PendingPayment) *gen.PendingPayment {
 	if p == nil {
 		return nil
 	}
-	out := &gen.PendingPayment{Total: p.Total, Received: p.Received, Remaining: p.Remaining}
+	out := &gen.PendingPayment{Total: p.Total, Deposit: p.Deposit, Received: p.Received, Remaining: p.Remaining, RefundDue: p.RefundDue, CreatedAt: p.CreatedAt}
 	if p.PaymentID != "" {
 		out.PaymentId = &p.PaymentID
 	}

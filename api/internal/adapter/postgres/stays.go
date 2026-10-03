@@ -163,5 +163,5 @@ func (StayRepo) PendingPayment(ctx context.Context, tx app.Tx, stayID string) (*
 	if err != nil {
 		return nil, wrap("stay pending payment", err)
 	}
-	return app.NewPendingPayment(r.PaymentID, r.Total, r.Deposit, r.Received), nil
+	return app.NewPendingPayment(r.PaymentID, r.Total, r.Deposit, r.Received, r.RefundDue, r.CreatedAt.Time), nil
 }

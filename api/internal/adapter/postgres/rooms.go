@@ -78,7 +78,7 @@ func toRoomRow(r sqlcgen.ListRoomsRow) (app.RoomRow, error) {
 		}
 		if r.InvID.Valid {
 			row.Stay.CheckOutAt = timePtr(r.StayCheckOutAt)
-			row.Stay.Pending = app.NewPendingPayment(r.InvPaymentID, r.InvTotal, r.InvDeposit, r.InvReceived)
+			row.Stay.Pending = app.NewPendingPayment(r.InvPaymentID, r.InvTotal, r.InvDeposit, r.InvReceived, r.InvRefundDue, r.InvCreatedAt.Time)
 		}
 	}
 	return row, nil

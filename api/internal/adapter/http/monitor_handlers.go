@@ -153,6 +153,9 @@ func toInvoiceCandidates(rows []app.InvoiceCandidate) []gen.InvoiceCandidate {
 	for i, r := range rows {
 		items[i] = gen.InvoiceCandidate{InvoiceId: r.InvoiceID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
 			CheckedOutAt: r.CheckedOutAt, Total: r.Total, Paid: r.Paid, Balance: r.Balance}
+		if r.RefundDue > 0 {
+			items[i].RefundDue = &r.RefundDue
+		}
 	}
 	return items
 }

@@ -64,8 +64,9 @@ func (q *Queries) GetInvoiceByStay(ctx context.Context, arg GetInvoiceByStayPara
 }
 
 const getStayPendingPayment = `-- name: GetStayPendingPayment :one
-SELECT iv.id AS invoice_id, iv.total,
-       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+SELECT iv.id AS invoice_id, iv.total, iv.created_at,
+       coalesce((iv.quote->>'depositPaid')::bigint, 0)::bigint AS deposit,
+       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS refund_due,
        coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS received,
        coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
                  ORDER BY p.created_at DESC LIMIT 1), '')::text AS payment_id
@@ -81,7 +82,9 @@ type GetStayPendingPaymentParams struct {
 type GetStayPendingPaymentRow struct {
 	InvoiceID string
 	Total     int64
+	CreatedAt pgtype.Timestamptz
 	Deposit   int64
+	RefundDue int64
 	Received  int64
 	PaymentID string
 }
@@ -93,7 +96,9 @@ func (q *Queries) GetStayPendingPayment(ctx context.Context, arg GetStayPendingP
 	err := row.Scan(
 		&i.InvoiceID,
 		&i.Total,
+		&i.CreatedAt,
 		&i.Deposit,
+		&i.RefundDue,
 		&i.Received,
 		&i.PaymentID,
 	)

@@ -31,45 +31,53 @@ export function CheckoutView() {
   // Idempotency-Key must be a UUID, and the same key with another body is a 409: one key per method.
   const payKeys = useRef<Partial<Record<"CASH" | "TRANSFER", string>>>({});
   const started = useRef(false);
+  const pay = useCreatePayment();
+  const s = stay.data;
   const invoice = checkout.data;
-  const pay = useCreatePayment(invoice?.id ?? "");
 
-  // The server ends the stay and freezes the bill; repeating the request returns the same invoice.
+  // Opening this screen only quotes: the stay is still open and nothing changes on the server. The check-out time and the invoice
+  // are fixed by the request sent when the receptionist confirms a payment or the refund (server clock). A stay that was already
+  // checked out and left unsettled resumes here: repeating the request returns the same invoice and bill code.
   useEffect(() => {
-    if (stayId && !started.current) {
+    if (s?.status === "CHECKED_OUT" && !started.current) {
       started.current = true;
       checkout.mutate(checkoutKey);
     }
-  }, [stayId, checkout, checkoutKey]);
+  }, [s?.status, checkout, checkoutKey]);
 
-  if (checkout.isError)
+  if (checkout.isError && s?.status === "CHECKED_OUT")
+    // resuming failed: nothing to show but a retry
     return (
       <AppFrame tabs={false}>
         <QueryError onRetry={() => checkout.mutate(checkoutKey)} />
       </AppFrame>
     );
-  const q = invoice?.quote;
-  const s = stay.data;
+  const q = invoice?.quote ?? (s?.status === "ACTIVE" ? s.quote : undefined);
   const mins = s?.checkOutAt ? minutesBetween(s.checkInAt, s.checkOutAt) : undefined;
+  const busy = pay.isPending || checkout.isPending;
 
-  const choose = (method: "CASH" | "TRANSFER") =>
-    pay.mutate(
-      { method, key: (payKeys.current[method] ??= newIdempotencyKey()) },
-      {
-        onSuccess: (p) =>
-          router.push(
-            lp(
-              `/${method === "TRANSFER" ? "pay" : "paid"}?payment=${p.id}&room=${s?.roomId ?? ""}`,
-            ),
-          ),
-      },
-    );
+  // Confirming: freeze the bill (idempotent), then record the payment or refund with its own key.
+  const choose = async (method: "CASH" | "TRANSFER") => {
+    try {
+      const inv = invoice ?? (await checkout.mutateAsync(checkoutKey));
+      const p = await pay.mutateAsync({
+        invoiceId: inv.id,
+        method,
+        key: (payKeys.current[method] ??= newIdempotencyKey()),
+      });
+      router.push(
+        lp(`/${method === "TRANSFER" ? "pay" : "paid"}?payment=${p.id}&room=${s?.roomId ?? ""}`),
+      );
+    } catch {
+      // the error line below shows it; the next press repeats the same keys
+    }
+  };
 
   return (
     <AppFrame tabs={false}>
       <FlowSplit roomId={s?.roomId}>
         <TopBar
-          title={`${t("checkout.title")} ${invoice?.roomCode ?? s?.roomCode ?? ""}`}
+          title={`${t("checkout.title")} ${s?.roomCode ?? invoice?.roomCode ?? ""}`}
           subtitle={
             s
               ? [
@@ -84,7 +92,7 @@ export function CheckoutView() {
           }
           back={`/stay?id=${stayId}`}
         />
-        {!invoice || !q ? (
+        {!q ? (
           <div className="px-5">
             <Skeleton className="h-72 w-full" />
             <p className="pt-3 text-sm text-muted-foreground">{t("checkout.preparing")}</p>
@@ -129,7 +137,7 @@ export function CheckoutView() {
                 <Button
                   type="button"
                   variant="outline"
-                  loading={pay.isPending}
+                  loading={busy}
                   disabled={q.balanceDue === 0}
                   onClick={() => choose("TRANSFER")}
                   className={`${option} border-2 border-primary`}
@@ -146,7 +154,7 @@ export function CheckoutView() {
               <Button
                 type="button"
                 variant="outline"
-                loading={pay.isPending}
+                loading={busy}
                 onClick={() => choose("CASH")}
                 className={option}
               >
@@ -161,7 +169,7 @@ export function CheckoutView() {
                 </span>
               </Button>
             </div>
-            {pay.isError && (
+            {(pay.isError || checkout.isError) && (
               <p role="alert" className="text-sm text-warn">
                 {t("checkout.failed")}
               </p>

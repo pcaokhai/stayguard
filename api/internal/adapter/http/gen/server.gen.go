@@ -1661,8 +1661,11 @@ type InvoiceCandidate struct {
 	InvoiceId    string    `json:"invoiceId"`
 
 	// Paid Whole Vietnamese dong
-	Paid     Vnd    `json:"paid"`
-	RoomCode string `json:"roomCode"`
+	Paid Vnd `json:"paid"`
+
+	// RefundDue Set when the invoice only waits for the deposit refund to be recorded (balance is then 0).
+	RefundDue *Vnd   `json:"refundDue,omitempty"`
+	RoomCode  string `json:"roomCode"`
 
 	// Total Whole Vietnamese dong
 	Total Vnd `json:"total"`
@@ -1892,18 +1895,27 @@ type PayrollLine struct {
 // PayrollLineStatus defines model for PayrollLine.Status.
 type PayrollLineStatus string
 
-// PendingPayment Money state of a checked-out stay's open invoice.
+// PendingPayment Where the check-out of a stay stands while its invoice is open, enough to resume it. The same for every kind of stay (an open deposit refund, a transfer chosen and not paid, a partial transfer).
 type PendingPayment struct {
+	// CreatedAt Server time of the check-out; the bill is frozen at this moment.
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Deposit Deposit taken at check-in.
+	Deposit Vnd `json:"deposit"`
+
 	// PaymentId The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created.
 	PaymentId *string `json:"paymentId"`
 
-	// Received Deposit plus bank money received that did not yet settle the invoice.
+	// Received Bank money received for the invoice that did not settle it yet (partial transfers); the deposit is not included.
 	Received Vnd `json:"received"`
 
-	// Remaining What is still to be paid; 0 when only a deposit refund is open.
+	// RefundDue Deposit to give back in cash when it is more than the bill; 0 otherwise.
+	RefundDue Vnd `json:"refundDue"`
+
+	// Remaining What is still to be paid (total minus deposit minus received, never below 0).
 	Remaining Vnd `json:"remaining"`
 
-	// Total Whole Vietnamese dong
+	// Total The frozen bill.
 	Total Vnd `json:"total"`
 }
 

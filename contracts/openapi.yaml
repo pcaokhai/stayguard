@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.3.0
+  version: 1.4.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -3719,12 +3719,15 @@ components:
           - type: 'null'
     PendingPayment:
       type: object
-      description: Money state of a checked-out stay's open invoice.
+      description: Where the check-out of a stay stands while its invoice is open, enough to resume it. The same for every kind of stay (an open deposit refund, a transfer chosen and not paid, a partial transfer).
       required:
       - paymentId
       - total
+      - deposit
       - received
       - remaining
+      - refundDue
+      - createdAt
       properties:
         paymentId:
           type:
@@ -3732,13 +3735,24 @@ components:
           - 'null'
           description: The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created.
         total:
+          description: The frozen bill.
+          $ref: '#/components/schemas/Vnd'
+        deposit:
+          description: Deposit taken at check-in.
           $ref: '#/components/schemas/Vnd'
         received:
-          description: Deposit plus bank money received that did not yet settle the invoice.
+          description: Bank money received for the invoice that did not settle it yet (partial transfers); the deposit is not included.
           $ref: '#/components/schemas/Vnd'
         remaining:
-          description: What is still to be paid; 0 when only a deposit refund is open.
+          description: What is still to be paid (total minus deposit minus received, never below 0).
           $ref: '#/components/schemas/Vnd'
+        refundDue:
+          description: Deposit to give back in cash when it is more than the bill; 0 otherwise.
+          $ref: '#/components/schemas/Vnd'
+        createdAt:
+          type: string
+          format: date-time
+          description: Server time of the check-out; the bill is frozen at this moment.
     Room:
       type: object
       required:
@@ -5711,6 +5725,9 @@ components:
         paid:
           $ref: '#/components/schemas/Vnd'
         balance:
+          $ref: '#/components/schemas/Vnd'
+        refundDue:
+          description: Set when the invoice only waits for the deposit refund to be recorded (balance is then 0).
           $ref: '#/components/schemas/Vnd'
     StayListItem:
       type: object

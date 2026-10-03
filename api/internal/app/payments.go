@@ -471,7 +471,8 @@ func (p *Payments) RaisePartialAlerts(ctx context.Context, tenantID string, now 
 const unpaidAlertAfter = 30 * time.Minute
 
 // RaiseUnpaidAlerts (a job) raises one PAYMENT_UNPAID alert for each invoice that has had no bank or cash money 30 minutes after
-// check-out (invoice creation, server time). Invoices with partial bank money are covered by PAYMENT_PARTIAL instead.
+// check-out (invoice creation, server time), once per stay. That includes a deposit refund nobody recorded. Invoices with partial
+// bank money are covered by PAYMENT_PARTIAL instead.
 func (p *Payments) RaiseUnpaidAlerts(ctx context.Context, tenantID string, now time.Time) (int, error) {
 	n := 0
 	err := p.uow.Do(ctx, tenantID, func(ctx context.Context, tx Tx) error {
@@ -480,8 +481,13 @@ func (p *Payments) RaiseUnpaidAlerts(ctx context.Context, tenantID string, now t
 			return fmt.Errorf("stale unpaid: %w", err)
 		}
 		for _, u := range list {
-			a := AlertDraft{Kind: AlertPaymentUnpaid, RoomCode: u.RoomCode, StayID: u.StayID, Amount: &u.Balance,
-				Details: map[string]string{"billCode": u.BillCode, "balance": strconv.FormatInt(u.Balance, 10)}}
+			owed := u.Balance // an open deposit refund is what the desk still owes the guest
+			details := map[string]string{"billCode": u.BillCode, "balance": strconv.FormatInt(u.Balance, 10)}
+			if u.Balance == 0 {
+				owed = u.RefundDue
+				details["refundDue"] = strconv.FormatInt(u.RefundDue, 10)
+			}
+			a := AlertDraft{Kind: AlertPaymentUnpaid, RoomCode: u.RoomCode, StayID: u.StayID, Amount: &owed, Details: details}
 			if err := p.raise(ctx, tx, a); err != nil {
 				return err
 			}

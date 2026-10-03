@@ -88,9 +88,17 @@ export function useCheckout(stayId: string) {
   });
 }
 
-export function useCreatePayment(invoiceId: string) {
+export function useCreatePayment() {
   return useMutation({
-    mutationFn: async ({ method, key }: { method: Schemas["PaymentMethod"]; key: string }) => {
+    mutationFn: async ({
+      invoiceId,
+      method,
+      key,
+    }: {
+      invoiceId: string;
+      method: Schemas["PaymentMethod"];
+      key: string;
+    }) => {
       const { data, error } = await api.POST("/v1/invoices/{invoiceId}/payments", {
         params: { path: { invoiceId }, header: idempotencyHeader(key) },
         body: { method },

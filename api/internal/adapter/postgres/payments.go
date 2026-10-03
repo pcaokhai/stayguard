@@ -292,7 +292,7 @@ func (PaymentRepo) StaleUnpaid(ctx context.Context, tx app.Tx, before time.Time)
 	}
 	out := make([]app.StaleUnpaid, len(rows))
 	for i, r := range rows {
-		out[i] = app.StaleUnpaid{InvoiceID: r.InvoiceID, BillCode: r.BillCode, StayID: r.StayID, RoomCode: r.RoomCode, Balance: r.BalanceDue}
+		out[i] = app.StaleUnpaid{InvoiceID: r.InvoiceID, BillCode: r.BillCode, StayID: r.StayID, RoomCode: r.RoomCode, Balance: r.BalanceDue, RefundDue: r.RefundDue}
 	}
 	return out, nil
 }

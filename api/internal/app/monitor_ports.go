@@ -87,4 +87,5 @@ type InvoiceCandidate struct {
 	InvoiceID, BillCode, RoomCode, GuestName string
 	CheckedOutAt                             time.Time
 	Total, Paid, Balance                     int64
+	RefundDue                                int64 // set for an invoice that only waits for the deposit refund
 }

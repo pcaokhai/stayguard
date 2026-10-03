@@ -3,13 +3,14 @@
 # Playwright test against it, and tear everything down. Needs docker, node (npm ci done in web/), python3.
 #   KEEP=1 make smoke     leaves the stack running afterwards (http://localhost:18080)
 #   REUSE=1 make smoke    uses the stack KEEP=1 left (each run creates a fresh guesthouse, so it can run again at once)
+#   SMOKE_PROJECT=name SMOKE_PORT=n SMOKE_DB_PORT=n   run next to another checkout's smoke stack
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PORT="${SMOKE_PORT:-18080}"
 BASE="http://localhost:$PORT"
 export SMOKE_PORT="$PORT" SMOKE_DB_PORT="${SMOKE_DB_PORT:-15432}"
-COMPOSE=(docker compose -p stayguard-smoke -f deploy/compose.yaml -f deploy/compose.smoke.override.yaml)
+COMPOSE=(docker compose -p "${SMOKE_PROJECT:-stayguard-smoke}" -f deploy/compose.yaml -f deploy/compose.smoke.override.yaml)
 log="$(mktemp)"
 tenant_file="$(mktemp)"
 cleanup() {

@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.3.0
+ * OpenAPI spec version: 1.4.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -223,7 +223,7 @@ export interface Building {
 }
 
 /**
- * Money state of a checked-out stay's open invoice.
+ * Where the check-out of a stay stands while its invoice is open, enough to resume it. The same for every kind of stay (an open deposit refund, a transfer chosen and not paid, a partial transfer).
  */
 export interface PendingPayment {
   /**
@@ -231,11 +231,18 @@ export interface PendingPayment {
      * @nullable
      */
   paymentId: string | null;
+  /** The frozen bill. */
   total: Vnd;
-  /** Deposit plus bank money received that did not yet settle the invoice. */
+  /** Deposit taken at check-in. */
+  deposit: Vnd;
+  /** Bank money received for the invoice that did not settle it yet (partial transfers); the deposit is not included. */
   received: Vnd;
-  /** What is still to be paid; 0 when only a deposit refund is open. */
+  /** What is still to be paid (total minus deposit minus received, never below 0). */
   remaining: Vnd;
+  /** Deposit to give back in cash when it is more than the bill; 0 otherwise. */
+  refundDue: Vnd;
+  /** Server time of the check-out; the bill is frozen at this moment. */
+  createdAt: string;
 }
 
 export interface StaySummary {
@@ -602,6 +609,8 @@ export interface InvoiceCandidate {
   total: Vnd;
   paid: Vnd;
   balance: Vnd;
+  /** Set when the invoice only waits for the deposit refund to be recorded (balance is then 0). */
+  refundDue?: Vnd;
 }
 
 export interface Shift {

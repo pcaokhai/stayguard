@@ -29,6 +29,7 @@ function subline(room: Room): string {
 // Phone and tablet portrait open a page; with a side panel (desktop) the tile selects the room.
 export function hrefFor(room: Room): string | null {
   if (room.status === "VACANT") return lp(`/checkin?room=${room.id}`);
+  if (room.activeStay?.pendingPayment) return lp(`/checkout?stay=${room.activeStay.id}`); // checked out, not settled: resume
   if ((room.status === "OCCUPIED" || room.status === "OVERDUE") && room.activeStay)
     return lp(`/stay?id=${room.activeStay.id}`);
   if (room.status === "TO_CLEAN") return lp(`/clean?room=${room.id}`);

@@ -31,7 +31,7 @@ type StayDetail struct {
 	Quote          QuoteView         `json:"quote"`
 	PricingVersion int               `json:"pricingVersion"`
 	// PendingPayment is set while the stay is checked out and its invoice is not paid.
-	PendingPayment *PendingPayment `json:"pendingPayment"`
+	PendingPayment *PendingPayment `json:"pendingPayment,omitempty"`
 }
 
 type ExtraView struct {

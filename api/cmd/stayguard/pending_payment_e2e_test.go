@@ -59,7 +59,7 @@ func TestPendingPayment_OnRoomMapAndGetStay_FU(t *testing.T) {
 		t.Helper()
 		s := r.roomMapStay()
 		pp, _ := s["pendingPayment"].(map[string]any)
-		if pp == nil || pp["paymentId"] != payID || num(pp["total"]) != total || num(pp["received"]) != received || num(pp["remaining"]) != remaining {
+		if pp == nil || pp["paymentId"] != payID || num(pp["total"]) != total || num(pp["deposit"]) != deposit || num(pp["received"]) != received || num(pp["remaining"]) != remaining {
 			t.Fatalf("%s: room map pendingPayment %v (want %s %d %d %d)", step, s, payID, total, received, remaining)
 		}
 		st, raw := r.e.send("GET", "/v1/stays/"+r.stayID(), r.token, "", nil)
@@ -68,12 +68,12 @@ func TestPendingPayment_OnRoomMapAndGetStay_FU(t *testing.T) {
 			t.Fatalf("%s: getStay pendingPayment %d %s", step, st, raw)
 		}
 	}
-	check("nothing paid yet", deposit, r.balance)
+	check("nothing paid yet", 0, r.balance)
 	first := r.balance * 3 / 10
 	if res, err := r.handler().Settle(context.Background(), r.event("bank-pp1", first, r.code)); err != nil || res.Result != "PARTIAL" {
 		t.Fatalf("partial: %+v %v", res, err)
 	}
-	check("after a partial transfer", deposit+first, r.balance-first)
+	check("after a partial transfer", first, r.balance-first)
 	if res, err := r.handler().Settle(context.Background(), r.event("bank-pp2", r.balance-first, r.code)); err != nil || res.Result != "SETTLED" {
 		t.Fatalf("rest: %+v %v", res, err)
 	}

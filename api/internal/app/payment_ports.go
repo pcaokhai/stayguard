@@ -108,5 +108,5 @@ type StalePartial struct {
 // StaleUnpaid is an invoice nobody has paid anything on since check-out.
 type StaleUnpaid struct {
 	InvoiceID, BillCode, StayID, RoomCode string
-	Balance                               int64
+	Balance, RefundDue                    int64
 }

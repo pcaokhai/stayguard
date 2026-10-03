@@ -43,17 +43,20 @@ type StayRow struct {
 	Pending    *PendingPayment
 }
 
-// PendingPayment is the money state of a checked-out stay's open invoice. PaymentID is the pending transfer, empty when no QR was
-// asked for yet. Received is the deposit plus bank money that did not settle the invoice; Remaining is what is left to pay.
+// PendingPayment is the state of a checked-out stay's open invoice, enough to resume the check-out. PaymentID is the pending
+// transfer, empty when no QR was asked for. Deposit is what was taken at check-in, Received the bank money that did not settle the
+// invoice yet, Remaining what is still to pay and RefundDue the deposit to give back when it exceeds the bill. CreatedAt is the
+// server time of the check-out.
 type PendingPayment struct {
-	PaymentID                  string
-	Total, Received, Remaining int64
+	PaymentID                                      string
+	Total, Deposit, Received, Remaining, RefundDue int64
+	CreatedAt                                      time.Time
 }
 
-// NewPendingPayment derives the amounts from the invoice total, the deposit and the partial bank money.
-func NewPendingPayment(paymentID string, total, deposit, partial int64) *PendingPayment {
-	received := deposit + partial
-	return &PendingPayment{PaymentID: paymentID, Total: total, Received: received, Remaining: max(total-received, 0)}
+// NewPendingPayment derives Remaining from the total, the deposit and the partial bank money.
+func NewPendingPayment(paymentID string, total, deposit, received, refundDue int64, createdAt time.Time) *PendingPayment {
+	return &PendingPayment{PaymentID: paymentID, Total: total, Deposit: deposit, Received: received,
+		Remaining: max(total-deposit-received, 0), RefundDue: refundDue, CreatedAt: createdAt.UTC()}
 }
 
 type RoomRow struct {

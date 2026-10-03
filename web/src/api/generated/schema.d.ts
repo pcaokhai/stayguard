@@ -1779,15 +1779,25 @@ export interface components {
             /** @description Set once the stay is checked out and its invoice is not paid (the room stays OCCUPIED until it is). runningTotal is then the invoice total and elapsedMinutes stops at check-out. */
             pendingPayment?: components["schemas"]["PendingPayment"] | null;
         };
-        /** @description Money state of a checked-out stay's open invoice. */
+        /** @description Where the check-out of a stay stands while its invoice is open, enough to resume it. The same for every kind of stay (an open deposit refund, a transfer chosen and not paid, a partial transfer). */
         PendingPayment: {
             /** @description The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created. */
             paymentId: string | null;
+            /** @description The frozen bill. */
             total: components["schemas"]["Vnd"];
-            /** @description Deposit plus bank money received that did not yet settle the invoice. */
+            /** @description Deposit taken at check-in. */
+            deposit: components["schemas"]["Vnd"];
+            /** @description Bank money received for the invoice that did not settle it yet (partial transfers); the deposit is not included. */
             received: components["schemas"]["Vnd"];
-            /** @description What is still to be paid; 0 when only a deposit refund is open. */
+            /** @description What is still to be paid (total minus deposit minus received, never below 0). */
             remaining: components["schemas"]["Vnd"];
+            /** @description Deposit to give back in cash when it is more than the bill; 0 otherwise. */
+            refundDue: components["schemas"]["Vnd"];
+            /**
+             * Format: date-time
+             * @description Server time of the check-out; the bill is frozen at this moment.
+             */
+            createdAt: string;
         };
         Room: {
             id: string;
@@ -2539,6 +2549,8 @@ export interface components {
             total: components["schemas"]["Vnd"];
             paid: components["schemas"]["Vnd"];
             balance: components["schemas"]["Vnd"];
+            /** @description Set when the invoice only waits for the deposit refund to be recorded (balance is then 0). */
+            refundDue?: components["schemas"]["Vnd"];
         };
         StayListItem: {
             id: string;

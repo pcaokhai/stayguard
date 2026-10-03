@@ -176,11 +176,11 @@ function Waiting({ p, paid }: { p: Payment; paid: boolean }) {
 function useNewPayment(invoiceId: string) {
   const router = useRouter();
   const roomId = useSearchParams().get("room") ?? "";
-  const create = useCreatePayment(invoiceId);
+  const create = useCreatePayment();
   const keys = useRef<Record<string, string>>({});
   const start = (method: "CASH" | "TRANSFER", attempt: string) =>
     create.mutate(
-      { method, key: (keys.current[`${method}${attempt}`] ??= newIdempotencyKey()) },
+      { invoiceId, method, key: (keys.current[`${method}${attempt}`] ??= newIdempotencyKey()) },
       {
         onSuccess: (n) =>
           router.replace(

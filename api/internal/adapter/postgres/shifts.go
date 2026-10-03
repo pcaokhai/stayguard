@@ -239,7 +239,7 @@ func (ShiftRepo) UnpaidInvoices(ctx context.Context, tx app.Tx, from, to time.Ti
 	for i, r := range rows {
 		paid := r.Deposit + r.Reported
 		out[i] = app.InvoiceCandidate{InvoiceID: r.ID, BillCode: r.BillCode, RoomCode: r.RoomCode, GuestName: r.GuestName,
-			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0)}
+			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0), RefundDue: r.RefundDue}
 	}
 	return out, nil
 }

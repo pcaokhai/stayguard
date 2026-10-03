@@ -300,6 +300,7 @@ func (q *Queries) ListShiftCashIn(ctx context.Context, arg ListShiftCashInParams
 const listShiftUnpaidInvoices = `-- name: ListShiftUnpaidInvoices :many
 SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
        least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS refund_due,
        (coalesce((SELECT sum(coalesce(p.received_amount, 0)) FROM app.payments p
                   WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.status = 'MISMATCH'), 0)
         + coalesce((SELECT sum(pe.amount) FROM app.payment_events pe
@@ -308,7 +309,6 @@ FROM app.invoices iv
 JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
 JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
 WHERE iv.tenant_id = $1 AND iv.status = 'OPEN' AND s.check_out_at IS NOT NULL
-  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
   AND ((iv.created_at >= $2 AND iv.created_at <= $3)
        OR EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id
                   AND pe.result = 'PARTIAL' AND pe.received_at >= $2 AND pe.received_at <= $3))
@@ -330,10 +330,11 @@ type ListShiftUnpaidInvoicesRow struct {
 	CheckOutAt pgtype.Timestamptz
 	Total      int64
 	Deposit    int64
+	RefundDue  int64
 	Reported   int64
 }
 
-// Invoices not fully paid that belong to a shift: checked out during it, or with bank money that arrived during it.
+// Invoices not fully paid (including an open deposit refund) that belong to a shift: checked out during it, or with bank money that arrived during it.
 // Same figures as ListUnpaidInvoices (the owner's list): paid is the deposit plus reported bank money.
 func (q *Queries) ListShiftUnpaidInvoices(ctx context.Context, arg ListShiftUnpaidInvoicesParams) ([]ListShiftUnpaidInvoicesRow, error) {
 	rows, err := q.db.Query(ctx, listShiftUnpaidInvoices, arg.TenantID, arg.FromAt, arg.ToAt)
@@ -352,6 +353,7 @@ func (q *Queries) ListShiftUnpaidInvoices(ctx context.Context, arg ListShiftUnpa
 			&i.CheckOutAt,
 			&i.Total,
 			&i.Deposit,
+			&i.RefundDue,
 			&i.Reported,
 		); err != nil {
 			return nil, err
