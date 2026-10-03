@@ -18,7 +18,8 @@ import { newIdempotencyKey } from "@/lib/api";
 import { t, type MessageKey } from "@/lib/t";
 import { PinInput } from "../../auth/PinInput";
 import { FormSheet, inputClass, SwitchField, TextField } from "../FormFields";
-import { statusOf, useCreateBank } from "./hooks";
+import { messageFor } from "../../problem/problem";
+import { useCreateBank } from "./hooks";
 
 // ponytail: the common Vietnamese banks by VietQR BIN; add rows here when an owner banks elsewhere.
 export const BANKS = [
@@ -71,13 +72,12 @@ export function BankSheet({ onClose }: { onClose: () => void }) {
         onError: (e) => {
           form.setValue("ownerPin", "");
           setShake((n) => n + 1);
-          const s = statusOf(e);
           toast.error(
-            s === 409
-              ? t("property.duplicate")
-              : s === 403 || s === 422
-                ? t("property.wrongPin")
-                : t("property.actionFailed"),
+            messageFor(e, {
+              OWNER_PIN_INVALID: "property.wrongPin",
+              CONFLICT: "property.duplicate",
+              VALIDATION_FAILED: "property.actionFailed",
+            }),
           );
         },
       },

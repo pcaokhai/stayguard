@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { newIdempotencyKey } from "@/lib/api";
 import { parseVnd, vndNumber } from "@/lib/money";
 import { t, type MessageKey } from "@/lib/t";
+import { messageFor } from "../../problem/problem";
 import { FormSheet, inputClass, SwitchField, TextField } from "../FormFields";
 import {
   type Category,
@@ -85,7 +86,13 @@ export function ExpenseSheet({
       toast.success(msg);
       onClose();
     },
-    onError: () => toast.error(t("expense.saveFailed")),
+    onError: (e: unknown) =>
+      toast.error(
+        messageFor(e, {
+          EXPENSE_AUTOMATIC: "expense.auto",
+          VALIDATION_FAILED: "expense.saveFailed",
+        }),
+      ),
   });
   const submit = form.handleSubmit((v) => {
     const body = {

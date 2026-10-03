@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 export type Staff = components["schemas"]["Staff"];
@@ -20,10 +21,6 @@ export function useStaff(enabled = true) {
   });
 }
 
-// Errors carry the HTTP status so the dialogs can word 409 and 422 differently.
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-export const statusOf = (e: unknown) => (e as { status?: number }).status;
-
 function useRefresh() {
   const qc = useQueryClient();
   return () => {
@@ -40,7 +37,7 @@ export function useCreateStaff() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error || !data) throw fail("createStaff", response.status);
+      if (error || !data) throw problem("createStaff", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -55,7 +52,7 @@ export function useUpdateStaff() {
         params: { path: { userId: v.userId } },
         body: v.body,
       });
-      if (error || !data) throw fail("updateStaff", response.status);
+      if (error || !data) throw problem("updateStaff", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -69,7 +66,7 @@ export function useResetPin() {
       const { data, error, response } = await api.POST("/v1/owner/staff/{userId}/pin-reset", {
         params: { path: { userId: v.userId }, header: idempotencyHeader(v.key) },
       });
-      if (error || !data) throw fail("resetStaffPin", response.status);
+      if (error || !data) throw problem("resetStaffPin", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -82,7 +79,7 @@ export function useLockToggle() {
     mutationFn: async (v: { userId: string; lock: boolean }) => {
       const path = v.lock ? "/v1/owner/staff/{userId}/lock" : "/v1/owner/staff/{userId}/unlock";
       const { error, response } = await api.POST(path, { params: { path: { userId: v.userId } } });
-      if (error) throw fail("lockStaff", response.status);
+      if (error) throw problem("lockStaff", error, response);
     },
     onSuccess: refresh,
   });
@@ -96,7 +93,7 @@ export function useRemoveStaff() {
         params: { path: { userId: v.userId } },
         body: { ownerPin: v.ownerPin },
       });
-      if (error) throw fail("removeStaff", response.status);
+      if (error) throw problem("removeStaff", error, response);
     },
     onSuccess: refresh,
   });
@@ -124,7 +121,7 @@ export function useSetPermission() {
           body: { level: v.level },
         },
       );
-      if (error || !data) throw fail("setBuildingPermission", response.status);
+      if (error || !data) throw problem("setBuildingPermission", error, response);
       return data;
     },
     onSettled: () => {

@@ -13,6 +13,7 @@ import { newIdempotencyKey } from "@/lib/api";
 import { formatVnd } from "@/lib/money";
 import { t, tf } from "@/lib/t";
 import { clockOf } from "../format";
+import { linkErrorMessage } from "./linkErrors";
 import { useLinkTransfer, useUnpaidBills } from "./hooks";
 
 type Transaction = components["schemas"]["Transaction"];
@@ -27,7 +28,9 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
   if (!tx) return null;
 
   const list = bills.data ?? [];
-  const chosen = list.find((b) => b.invoiceId === (picked ?? list[0]?.invoiceId));
+  // Only a bill whose balance equals the transfer can be confirmed; the others stay visible but disabled.
+  const matching = list.filter((b) => b.balance === tx.amount);
+  const chosen = matching.find((b) => b.invoiceId === (picked ?? matching[0]?.invoiceId));
   const submit = () => {
     if (!chosen || !tx.paymentEventId) return;
     const action = `${tx.paymentEventId}:${chosen.invoiceId}`;
@@ -40,16 +43,7 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
           toast.success(tf("money.linked", { bill: chosen.billCode }));
           onClose();
         },
-        onError: (e) => {
-          const status = (e as { status?: number }).status;
-          toast.error(
-            status === 409
-              ? t("money.alreadyLinked")
-              : status === 422
-                ? t("money.amountMismatch")
-                : t("money.linkFailed"),
-          );
-        },
+        onError: (e) => toast.error(linkErrorMessage(e)),
       },
     );
   };
@@ -86,9 +80,9 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
           return (
             <label
               key={b.invoiceId}
-              className="flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-border p-3 has-[:checked]:border-2 has-[:checked]:border-primary has-disabled:opacity-50"
+              className="flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-border p-3 has-[:checked]:border-2 has-[:checked]:border-primary has-disabled:cursor-not-allowed has-disabled:bg-sunken/60"
             >
-              <RadioGroupItem value={b.invoiceId} />
+              <RadioGroupItem value={b.invoiceId} disabled={!same} />
               <span className="min-w-0 flex-1">
                 <b className="block font-mono text-[13px]">{b.billCode}</b>
                 <span className="text-[13px] text-muted-foreground">
@@ -97,6 +91,14 @@ export function LinkSheet({ tx, onClose }: { tx: Transaction | null; onClose: ()
                     time: clockOf(b.checkedOutAt),
                   })}
                 </span>
+                {!same && (
+                  <span className="mt-0.5 block text-[12px] font-bold text-warn-ink">
+                    {tf("money.mismatchLine", {
+                      amount: formatVnd(tx.amount),
+                      balance: formatVnd(b.balance),
+                    })}
+                  </span>
+                )}
               </span>
               <b className="text-[16px]">{formatVnd(b.balance)}</b>
               <Badge variant={same ? "ok" : "warn"} className="max-sm:hidden">

@@ -664,7 +664,9 @@
     "linked": "Linked the transfer to bill {bill}",
     "alreadyLinked": "This transfer is already linked.",
     "amountMismatch": "The amount does not match this bill.",
-    "linkFailed": "Could not link. Try again."
+    "linkFailed": "Could not link. Try again.",
+    "invoiceNotOpen": "This bill is already paid",
+    "mismatchLine": "This transfer is {amount}, the bill still needs {balance}"
   },
   "shifts": {
     "title": "Closed shifts",
@@ -1494,7 +1496,9 @@
     "saved": "Ticket saved.",
     "saveFailed": "Could not save. Try again.",
     "occupied": "The room has a guest, so it cannot be locked yet.",
-    "required": "Enter a number"
+    "required": "Enter a number",
+    "ticketDone": "The ticket is done and can no longer be edited.",
+    "statusBad": "Cannot change to that status."
   },
   "expense": {
     "title": "Expenses",
@@ -1588,7 +1592,10 @@
     "empty": "No staff in payroll yet.",
     "failed": "Could not load payroll.",
     "saveFailed": "Could not save this line.",
-    "adjust": "Bonus and deduction"
+    "adjust": "Bonus and deduction",
+    "alreadyPaid": "This month's payroll is already paid.",
+    "nothingToPay": "Nothing left to pay.",
+    "future": "This month cannot be paid yet."
   },
   "report": {
     "title": "Income and costs",
@@ -1713,6 +1720,17 @@
       "d5": "Friday",
       "d6": "Saturday",
       "d7": "Sunday"
-    }
+    },
+    "leaveState": "This request was already handled.",
+    "leaveConflict": "The request clashes with a shift or another request."
+  },
+  "problem": {
+    "forbidden": "You are not allowed to do this.",
+    "notFound": "We could not find this item.",
+    "server": "The server had a problem. Try again in a few minutes.",
+    "rate": "Too many requests. Wait a moment and try again.",
+    "again": "This was just sent. Reload the page to see the result.",
+    "network": "Could not connect. Check your network and try again.",
+    "unknown": "Could not do that (error id {id}). Try again; if it keeps failing, report this id."
   }
 }

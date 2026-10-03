@@ -1,13 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 type S = components["schemas"];
 export type Room = S["Room"] & { floorId?: string };
 export type RoomFeature = S["RoomFeature"];
-
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-export const statusOf = (e: unknown) => (e as { status?: number }).status;
 
 function useRefresh() {
   const qc = useQueryClient();
@@ -25,7 +23,7 @@ export function useCreateBuilding() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error || !data) throw fail("createBuilding", response.status);
+      if (error || !data) throw problem("createBuilding", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -40,7 +38,7 @@ export function useUpdateBuilding() {
         params: { path: { buildingId: v.id } },
         body: { name: v.name },
       });
-      if (error) throw fail("updateBuilding", response.status);
+      if (error) throw problem("updateBuilding", error, response);
     },
     onSuccess: refresh,
   });
@@ -54,7 +52,7 @@ export function useCreateFloor() {
         params: { path: { buildingId: v.buildingId }, header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error) throw fail("createFloor", response.status);
+      if (error) throw problem("createFloor", error, response);
     },
     onSuccess: refresh,
   });
@@ -68,7 +66,7 @@ export function useCreateRooms() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error) throw fail("createRooms", response.status);
+      if (error) throw problem("createRooms", error, response);
     },
     onSuccess: refresh,
   });
@@ -82,7 +80,7 @@ export function useUpdateRoom() {
         params: { path: { roomId: v.id } },
         body: v.body,
       });
-      if (error) throw fail("updateRoom", response.status);
+      if (error) throw problem("updateRoom", error, response);
     },
     onSuccess: refresh,
   });

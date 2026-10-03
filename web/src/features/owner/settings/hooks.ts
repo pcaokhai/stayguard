@@ -1,13 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 export type Property = components["schemas"]["Property"];
 export type BankAccount = components["schemas"]["BankAccount"];
 export type UpdateProperty = components["schemas"]["UpdatePropertyRequest"];
-
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-export const statusOf = (e: unknown) => (e as { status?: number }).status;
 
 export function useProperty() {
   return useQuery({
@@ -25,7 +23,7 @@ export function useUpdateProperty() {
   return useMutation({
     mutationFn: async (body: UpdateProperty) => {
       const { data, error, response } = await api.PATCH("/v1/owner/property", { body });
-      if (error || !data) throw fail("updateProperty", response.status);
+      if (error || !data) throw problem("updateProperty", error, response);
       return data;
     },
     onSuccess: (data) => qc.setQueryData(["property"], data),
@@ -72,7 +70,7 @@ export function useCreateBank() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error || !data) throw fail("createBankAccount", response.status);
+      if (error || !data) throw problem("createBankAccount", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -90,7 +88,7 @@ export function useMakeDefaultBank() {
           body: { ownerPin: v.ownerPin },
         },
       );
-      if (error) throw fail("makeDefaultBankAccount", response.status);
+      if (error) throw problem("makeDefaultBankAccount", error, response);
     },
     onSuccess: refresh,
   });
@@ -104,7 +102,7 @@ export function useRemoveBank() {
         params: { path: { accountId: v.accountId } },
         body: { ownerPin: v.ownerPin },
       });
-      if (error) throw fail("removeBankAccount", response.status);
+      if (error) throw problem("removeBankAccount", error, response);
     },
     onSuccess: refresh,
   });

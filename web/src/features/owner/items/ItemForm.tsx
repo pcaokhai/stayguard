@@ -11,7 +11,8 @@ import { newIdempotencyKey } from "@/lib/api";
 import { parseVnd, vndNumber } from "@/lib/money";
 import { t } from "@/lib/t";
 import { FormSheet, SwitchField, TextField } from "../FormFields";
-import { statusOf, useCreateItem, useUpdateItem, type Service } from "./hooks";
+import { messageFor } from "../../problem/problem";
+import { useCreateItem, useUpdateItem, type Service } from "./hooks";
 
 const num = z.string().trim().regex(/\d/, "items.required");
 const schema = z.object({
@@ -57,7 +58,9 @@ export function ItemForm({ item, onClose }: { item?: Service; onClose: () => voi
   const submit = form.handleSubmit((v) => {
     const name = { vi: v.nameVi, en: v.nameEn || v.nameVi };
     const failed = (e: unknown) =>
-      toast.error(statusOf(e) === 409 ? t("items.nameTaken") : t("items.saveFailed"));
+      toast.error(
+        messageFor(e, { CONFLICT: "items.nameTaken", VALIDATION_FAILED: "items.saveFailed" }),
+      );
     const done = () => {
       toast.success(t("items.saved"));
       onClose();

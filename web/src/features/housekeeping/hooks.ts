@@ -58,11 +58,12 @@ export class RoomOccupiedError extends Error {}
 export function useReportDamage(roomId: string) {
   return useMutation({
     mutationFn: async ({ body, key }: { body: Schemas["DamageReportRequest"]; key: string }) => {
-      const { data, error, response } = await api.POST("/v1/rooms/{roomId}/damage-reports", {
+      const { data, error } = await api.POST("/v1/rooms/{roomId}/damage-reports", {
         params: { path: { roomId }, header: idempotencyHeader(key) },
         body,
       });
-      if (response.status === 409) throw new RoomOccupiedError();
+      if ((error as { code?: string } | undefined)?.code === "ROOM_OCCUPIED")
+        throw new RoomOccupiedError();
       if (error || !data) throw new Error("reportDamage failed");
       return data;
     },

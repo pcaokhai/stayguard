@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { t, tf } from "@/lib/t";
 import { PinInput } from "../../auth/PinInput";
 import { isSixDigits } from "../../auth/pin";
-import { statusOf, useRemoveStaff, type Staff } from "./hooks";
+import { codeOf, messageFor } from "../../problem/problem";
+import { useRemoveStaff, type Staff } from "./hooks";
 
 // Removing staff needs the owner's PIN again (docs/15 rule 13); the PIN is sent once and never kept.
 export function RemoveDialog({ staff, onClose }: { staff: Staff | null; onClose: () => void }) {
@@ -29,14 +30,15 @@ export function RemoveDialog({ staff, onClose }: { staff: Staff | null; onClose:
           onClose();
         },
         onError: (e) => {
-          setPin("");
-          setShake((n) => n + 1);
+          const code = codeOf(e);
+          if (code === "OWNER_PIN_INVALID") {
+            setPin("");
+            setShake((n) => n + 1);
+          }
           setError(
-            statusOf(e) === 409
+            code === "SHIFT_OPEN"
               ? tf("staff.del.shiftOpen", { name })
-              : statusOf(e) === 422 || statusOf(e) === 403
-                ? t("staff.del.wrongPin")
-                : t("staff.actionFailed"),
+              : messageFor(e, { OWNER_PIN_INVALID: "staff.del.wrongPin" }),
           );
         },
       },

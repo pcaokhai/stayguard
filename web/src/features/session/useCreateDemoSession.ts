@@ -15,7 +15,7 @@ export function useCreateDemoSession() {
       // Switching role keeps the same trial tenant so the demo story carries over.
       let res = await start(role, loadSession()?.tenantId);
       // The saved trial is gone (expired or reset): start a new one instead of getting stuck.
-      if (res.response.status === 404) {
+      if ((res.error as { code?: string } | undefined)?.code === "TRIAL_NOT_FOUND") {
         clearSession();
         res = await start(role);
       }

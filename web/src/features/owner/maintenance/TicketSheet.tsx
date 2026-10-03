@@ -11,6 +11,7 @@ import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { clockOf, formatDayMonth } from "../format";
 import { FormSheet, SegmentField, SwitchField, TextField } from "../FormFields";
+import { messageFor } from "../../problem/problem";
 import { type Ticket, useUpdateTicket } from "./hooks";
 
 const money = z
@@ -80,7 +81,12 @@ export function TicketSheet({ ticket, onClose }: { ticket: Ticket; onClose: () =
         },
         onError: (e) =>
           toast.error(
-            (e as { status?: number }).status === 409 ? t("maint.occupied") : t("maint.saveFailed"),
+            messageFor(e, {
+              ROOM_OCCUPIED: "maint.occupied",
+              TICKET_DONE: "maint.ticketDone",
+              TICKET_STATUS: "maint.statusBad",
+              VALIDATION_FAILED: "maint.saveFailed",
+            }),
           ),
       },
     ),

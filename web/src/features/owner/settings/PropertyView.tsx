@@ -18,11 +18,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { t, tf } from "@/lib/t";
 import { clockOf, formatDayMonth } from "../format";
 import { useIsOwner } from "../role";
+import { messageFor } from "../../problem/problem";
 import { OwnerPinDialog } from "../OwnerPinDialog";
 import { TextField } from "../FormFields";
 import { BankSheet } from "./BankSheet";
 import {
-  statusOf,
   useBankAccounts,
   useMakeDefaultBank,
   useProperty,
@@ -121,14 +121,12 @@ export function PropertyView() {
         setPending(null);
       },
       onError: (e: unknown) => {
-        const s = statusOf(e);
         setShake((n) => n + 1);
         setError(
-          s === 403 || s === 422
-            ? t("property.wrongPin")
-            : s === 409
-              ? t("property.isDefaultBlock")
-              : t("property.actionFailed"),
+          messageFor(e, {
+            OWNER_PIN_INVALID: "property.wrongPin",
+            CONFLICT: "property.isDefaultBlock",
+          }),
         );
       },
     });

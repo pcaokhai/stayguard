@@ -14,9 +14,9 @@ import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { FormSheet, SegmentField, SwitchField, TextField } from "../FormFields";
 import type { UnitTypeRates } from "../rates/hooks";
+import { messageFor } from "../../problem/problem";
 import { between, buildingCodes, codeRange, summarise } from "./codes";
 import {
-  statusOf,
   useCreateBuilding,
   useCreateFloor,
   useCreateRooms,
@@ -105,7 +105,12 @@ export function BuildingForm({
           onClose();
         },
         onError: (e) =>
-          toast.error(statusOf(e) === 409 ? t("buildings.codeTaken") : t("buildings.saveFailed")),
+          toast.error(
+            messageFor(e, {
+              CONFLICT: "buildings.codeTaken",
+              VALIDATION_FAILED: "buildings.saveFailed",
+            }),
+          ),
       },
     ),
   );
@@ -400,7 +405,12 @@ export function RoomsForm({
           onClose();
         },
         onError: (e) =>
-          toast.error(statusOf(e) === 409 ? t("buildings.codeTaken") : t("buildings.saveFailed")),
+          toast.error(
+            messageFor(e, {
+              CONFLICT: "buildings.codeTaken",
+              VALIDATION_FAILED: "buildings.saveFailed",
+            }),
+          ),
       },
     );
   });
@@ -541,11 +551,11 @@ export function RoomEditForm({
         },
         onError: (e) =>
           toast.error(
-            statusOf(e) === 409
-              ? typeChanged || body.retired
-                ? t("buildings.occupied")
-                : t("buildings.codeTaken")
-              : t("buildings.saveFailed"),
+            messageFor(e, {
+              ROOM_OCCUPIED: "buildings.occupied",
+              CONFLICT: "buildings.codeTaken",
+              VALIDATION_FAILED: "buildings.saveFailed",
+            }),
           ),
       },
     );

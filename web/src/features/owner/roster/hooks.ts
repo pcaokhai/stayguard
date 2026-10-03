@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader, newIdempotencyKey } from "@/lib/api";
 
 type S = components["schemas"];
@@ -22,8 +23,6 @@ export function useRoster(from: string, to: string) {
   });
 }
 
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-
 // Each toggle is its own action, so each gets its own Idempotency-Key.
 export function usePutRoster() {
   const qc = useQueryClient();
@@ -33,7 +32,7 @@ export function usePutRoster() {
         params: { header: idempotencyHeader(newIdempotencyKey()) },
         body: v,
       });
-      if (error || !data) throw fail("putRoster", response.status);
+      if (error || !data) throw problem("putRoster", error, response);
       return data;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["roster"] }),
@@ -48,7 +47,7 @@ export function useCopyWeek() {
         params: { header: idempotencyHeader(newIdempotencyKey()) },
         body: { weekStart },
       });
-      if (error || !data) throw fail("copyRosterWeek", response.status);
+      if (error || !data) throw problem("copyRosterWeek", error, response);
       return data;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["roster"] }),
@@ -78,13 +77,13 @@ export function useDecideLeave() {
           params: { path: { leaveId: v.id }, header },
           body: { reason: v.reason },
         });
-        if (error) throw fail("declineLeave", response.status);
+        if (error) throw problem("declineLeave", error, response);
         return;
       }
       const { error, response } = await api.POST("/v1/owner/leave-requests/{leaveId}/approve", {
         params: { path: { leaveId: v.id }, header },
       });
-      if (error) throw fail("approveLeave", response.status);
+      if (error) throw problem("approveLeave", error, response);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["leave-pending"] });

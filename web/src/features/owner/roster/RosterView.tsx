@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { lp } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
+import { messageFor } from "../../problem/problem";
 import { useIsOwner } from "../role";
 import { useStaff } from "../staff/hooks";
 import { AssignSheet, dayFull, dayKey, SHIFTS, type Person } from "./AssignSheet";
@@ -103,7 +104,13 @@ export function RosterView() {
       { id: l.id },
       {
         onSuccess: () => toast.success(t("roster.approved")),
-        onError: () => toast.error(t("roster.actionFailed")),
+        onError: (e) =>
+          toast.error(
+            messageFor(e, {
+              LEAVE_STATE: "roster.leaveState",
+              LEAVE_CONFLICT: "roster.leaveConflict",
+            }),
+          ),
       },
     );
   const sendDecline = () =>
@@ -116,7 +123,13 @@ export function RosterView() {
           setDeclining(null);
           setReason("");
         },
-        onError: () => toast.error(t("roster.actionFailed")),
+        onError: (e) =>
+          toast.error(
+            messageFor(e, {
+              LEAVE_STATE: "roster.leaveState",
+              LEAVE_CONFLICT: "roster.leaveConflict",
+            }),
+          ),
       },
     );
   const request = (l: Leave, compact?: boolean) => (
@@ -283,7 +296,8 @@ export function RosterView() {
                 onClick={() =>
                   copy.mutate(week, {
                     onSuccess: () => toast.success(t("roster.copied")),
-                    onError: () => toast.error(t("roster.copyFailed")),
+                    onError: (e) =>
+                      toast.error(messageFor(e, { ROSTER_NOT_EMPTY: "roster.copyFailed" })),
                   })
                 }
               >

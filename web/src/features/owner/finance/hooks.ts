@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 type S = components["schemas"];
@@ -11,9 +12,6 @@ export type CreateExpense = S["CreateExpenseRequest"];
 export type Payroll = S["Payroll"];
 export type PayrollLine = S["PayrollLine"];
 export type IncomeCostReport = S["IncomeCostReport"];
-
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-export const statusOf = (e: unknown) => (e as { status?: number }).status;
 
 export function useExpenseMonth(month: string) {
   return useQuery({
@@ -42,7 +40,7 @@ export function useCreateExpense() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error || !data) throw fail("createExpense", response.status);
+      if (error || !data) throw problem("createExpense", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -57,7 +55,7 @@ export function useUpdateExpense() {
         params: { path: { expenseId: v.id } },
         body: v.body,
       });
-      if (error || !data) throw fail("updateExpense", response.status);
+      if (error || !data) throw problem("updateExpense", error, response);
       return data;
     },
     onSuccess: refresh,
@@ -71,7 +69,7 @@ export function useDeleteExpense() {
       const { error, response } = await api.DELETE("/v1/owner/expenses/{expenseId}", {
         params: { path: { expenseId: id } },
       });
-      if (error) throw fail("deleteExpense", response.status);
+      if (error) throw problem("deleteExpense", error, response);
     },
     onSuccess: refresh,
   });
@@ -107,7 +105,7 @@ export function useUpdatePayrollLine(month: string) {
           body,
         },
       );
-      if (error || !data) throw fail("updatePayrollLine", response.status);
+      if (error || !data) throw problem("updatePayrollLine", error, response);
       return data;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["payroll", month] }),
@@ -122,7 +120,7 @@ export function useMarkPaid(month: string) {
         params: { path: { month }, header: idempotencyHeader(v.key) },
         body: v.userIds ? { userIds: v.userIds } : {},
       });
-      if (error || !data) throw fail("markPayrollPaid", response.status);
+      if (error || !data) throw problem("markPayrollPaid", error, response);
       return data;
     },
     onSuccess: () => {

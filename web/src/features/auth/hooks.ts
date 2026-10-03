@@ -25,13 +25,13 @@ export function useSignIn() {
         return data;
       }
       const code = (error as { code?: string } | undefined)?.code;
-      if (response.status === 429 || code === "ACCOUNT_LOCKED") {
+      if (code === "RATE_LIMITED" || code === "ACCOUNT_LOCKED") {
         const wait = Number(response.headers.get("Retry-After"));
         throw new LockedError(
           new Date(Date.now() + (wait > 0 ? wait * 1000 : LOCK_MINUTES * 60_000)),
         );
       }
-      if (response.status === 401 || response.status === 422) throw new WrongCredentialsError();
+      if (code === "PIN_INVALID" || code === "VALIDATION_FAILED") throw new WrongCredentialsError();
       throw new Error("signIn failed");
     },
   });

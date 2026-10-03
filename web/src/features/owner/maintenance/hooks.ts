@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api } from "@/lib/api";
 
 export type Ticket = components["schemas"]["MaintenanceTicket"];
@@ -31,8 +32,7 @@ export function useUpdateTicket() {
           body: v.body,
         },
       );
-      if (error || !data)
-        throw Object.assign(new Error("updateTicket failed"), { status: response.status });
+      if (error || !data) throw problem("updateTicket", error, response);
       return data;
     },
     onSuccess: () => {

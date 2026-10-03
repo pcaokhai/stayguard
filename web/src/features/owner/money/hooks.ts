@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 export function useTransactions(q: string) {
@@ -35,18 +36,21 @@ export function useUnpaidBills(enabled: boolean, amount: number) {
   });
 }
 
+export type LinkVars = { eventId: string; invoiceId: string; key: string };
+
 // One Idempotency-Key per link action, reused when the same action is retried.
+export async function linkTransfer(v: LinkVars, client = api) {
+  const { error, response } = await client.POST("/v1/owner/payment-events/{eventId}/link", {
+    params: { path: { eventId: v.eventId }, header: idempotencyHeader(v.key) },
+    body: { invoiceId: v.invoiceId },
+  });
+  if (error) throw problem("linkTransferToInvoice", error, response);
+}
+
 export function useLinkTransfer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (v: { eventId: string; invoiceId: string; key: string }) => {
-      const { error, response } = await api.POST("/v1/owner/payment-events/{eventId}/link", {
-        params: { path: { eventId: v.eventId }, header: idempotencyHeader(v.key) },
-        body: { invoiceId: v.invoiceId },
-      });
-      if (error)
-        throw Object.assign(new Error("linkTransferToInvoice failed"), { status: response.status });
-    },
+    mutationFn: (v: LinkVars) => linkTransfer(v),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["transactions"] });
       void qc.invalidateQueries({ queryKey: ["unpaid-bills"] });

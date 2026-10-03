@@ -664,7 +664,9 @@
     "linked": "Đã gán khoản tiền vào phiếu {bill}",
     "alreadyLinked": "Khoản này đã được gán.",
     "amountMismatch": "Số tiền không khớp phiếu này.",
-    "linkFailed": "Chưa gán được. Thử lại."
+    "linkFailed": "Chưa gán được. Thử lại.",
+    "invoiceNotOpen": "Phiếu này đã thanh toán",
+    "mismatchLine": "Khoản này {amount}, phiếu còn {balance}"
   },
   "shifts": {
     "title": "Các ca đã đóng",
@@ -1494,7 +1496,9 @@
     "saved": "Đã lưu phiếu.",
     "saveFailed": "Chưa lưu được. Thử lại.",
     "occupied": "Phòng đang có khách nên chưa khóa được.",
-    "required": "Nhập số"
+    "required": "Nhập số",
+    "ticketDone": "Phiếu đã xong nên không sửa được nữa.",
+    "statusBad": "Không chuyển được sang trạng thái này."
   },
   "expense": {
     "title": "Chi phí",
@@ -1553,7 +1557,7 @@
     "saved": "Đã lưu khoản chi.",
     "deleted": "Đã xóa khoản chi.",
     "saveFailed": "Chưa lưu được. Kiểm tra lại các ô.",
-    "auto": "Khoản này được tính tự động, không sửa ở đây.",
+    "auto": "Khoản này tính tự động, không sửa ở đây.",
     "required": "Nhập ô này"
   },
   "payroll": {
@@ -1588,7 +1592,10 @@
     "empty": "Chưa có nhân viên trong bảng lương.",
     "failed": "Không tải được bảng lương.",
     "saveFailed": "Chưa lưu được khoản này.",
-    "adjust": "Thưởng và khấu trừ"
+    "adjust": "Thưởng và khấu trừ",
+    "alreadyPaid": "Bảng lương tháng này đã trả.",
+    "nothingToPay": "Không còn khoản nào để trả.",
+    "future": "Chưa đến kỳ trả lương của tháng này."
   },
   "report": {
     "title": "Báo cáo thu chi",
@@ -1713,6 +1720,17 @@
       "d5": "Thứ 6",
       "d6": "Thứ 7",
       "d7": "Chủ nhật"
-    }
+    },
+    "leaveState": "Yêu cầu này đã được xử lý.",
+    "leaveConflict": "Yêu cầu trùng với ca hoặc yêu cầu khác."
+  },
+  "problem": {
+    "forbidden": "Bạn không có quyền làm việc này.",
+    "notFound": "Không tìm thấy mục này.",
+    "server": "Máy chủ đang gặp lỗi. Thử lại sau ít phút.",
+    "rate": "Thao tác quá nhanh. Đợi một lát rồi thử lại.",
+    "again": "Thao tác này vừa được gửi. Tải lại trang để xem kết quả.",
+    "network": "Không kết nối được. Kiểm tra mạng rồi thử lại.",
+    "unknown": "Chưa làm được (mã lỗi {id}). Thử lại, nếu vẫn lỗi hãy báo mã này."
   }
 }

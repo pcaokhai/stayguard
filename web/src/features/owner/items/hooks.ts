@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { components } from "@/api/generated/schema";
+import { problem } from "../../problem/problem";
 import { api, idempotencyHeader } from "@/lib/api";
 
 export type Service = components["schemas"]["Service"];
@@ -17,9 +18,6 @@ export function useItems() {
   });
 }
 
-const fail = (op: string, status: number) => Object.assign(new Error(`${op} failed`), { status });
-export const statusOf = (e: unknown) => (e as { status?: number }).status;
-
 export function useCreateItem() {
   const qc = useQueryClient();
   return useMutation({
@@ -28,7 +26,7 @@ export function useCreateItem() {
         params: { header: idempotencyHeader(v.key) },
         body: v.body,
       });
-      if (error || !data) throw fail("createService", response.status);
+      if (error || !data) throw problem("createService", error, response);
       return data;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["items"] }),
@@ -43,7 +41,7 @@ export function useUpdateItem() {
         params: { path: { serviceCode: v.code } },
         body: v.body,
       });
-      if (error || !data) throw fail("updateService", response.status);
+      if (error || !data) throw problem("updateService", error, response);
       return data;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["items"] }),
@@ -75,7 +73,7 @@ export function useRestock() {
         params: { path: { serviceCode: v.code }, header: idempotencyHeader(v.key) },
         body: { quantity: v.quantity, unitCost: v.unitCost },
       });
-      if (error || !data) throw fail("restockService", response.status);
+      if (error || !data) throw problem("restockService", error, response);
       return data;
     },
     onSuccess: () => {
@@ -92,7 +90,7 @@ export function useRemoveItem() {
       const { data, error, response } = await api.POST("/v1/owner/services/{serviceCode}/remove", {
         params: { path: { serviceCode: v.code }, header: idempotencyHeader(v.key) },
       });
-      if (error || !data) throw fail("removeService", response.status);
+      if (error || !data) throw problem("removeService", error, response);
       return data.result;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["items"] }),
@@ -111,7 +109,7 @@ export function useStocktake() {
         params: { header: idempotencyHeader(v.key) },
         body: { lines: v.lines, note: v.note },
       });
-      if (error || !data) throw fail("createStocktake", response.status);
+      if (error || !data) throw problem("createStocktake", error, response);
       return data;
     },
     onSuccess: () => {

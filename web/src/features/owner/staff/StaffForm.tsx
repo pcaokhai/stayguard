@@ -34,7 +34,8 @@ import { newIdempotencyKey } from "@/lib/api";
 import { parseVnd, vndNumber } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { useBuildings } from "../../rooms/hooks";
-import { statusOf, useCreateStaff, useUpdateStaff, type Level, type Staff } from "./hooks";
+import { messageFor } from "../../problem/problem";
+import { useCreateStaff, useUpdateStaff, type Level, type Staff } from "./hooks";
 import type { PinReveal } from "./PinDialog";
 
 const POSITIONS = [
@@ -134,7 +135,9 @@ export function StaffForm({
       contract,
     };
     const failed = (e: unknown) =>
-      toast.error(statusOf(e) === 409 ? t("staff.usernameTaken") : t("staff.saveFailed"));
+      toast.error(
+        messageFor(e, { CONFLICT: "staff.usernameTaken", VALIDATION_FAILED: "staff.saveFailed" }),
+      );
     if (staff)
       return update.mutate(
         { userId: staff.id, body: base },

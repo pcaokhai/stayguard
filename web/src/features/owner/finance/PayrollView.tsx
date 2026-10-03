@@ -19,6 +19,7 @@ import { lp } from "@/lib/locale";
 import { formatVnd, parseVnd, vndNumber } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
+import { messageFor } from "../../problem/problem";
 import { type PayrollLine, useMarkPaid, usePayroll, useUpdatePayrollLine } from "./hooks";
 import { addMonths, isMonth, monthLabel, thisMonth } from "./month";
 
@@ -102,7 +103,14 @@ export function PayrollView() {
           toast.success(t("payroll.marked"));
           setConfirm(false);
         },
-        onError: () => toast.error(t("payroll.markFailed")),
+        onError: (e) =>
+          toast.error(
+            messageFor(e, {
+              PAYROLL_PAID: "payroll.alreadyPaid",
+              PAYROLL_NOTHING_TO_PAY: "payroll.nothingToPay",
+              PAYROLL_FUTURE: "payroll.future",
+            }),
+          ),
       },
     );
   const monthBar = (

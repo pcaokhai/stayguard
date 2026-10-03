@@ -10,8 +10,9 @@ export function useCurrentShift(enabled = true) {
     queryKey: ["shift", "current"],
     enabled,
     queryFn: async () => {
-      const { data, response } = await api.GET("/v1/shifts/current");
-      if (response.status === 404) return null;
+      const { data, error } = await api.GET("/v1/shifts/current");
+      // NOT_FOUND here means no shift is open yet.
+      if ((error as { code?: string } | undefined)?.code === "NOT_FOUND") return null;
       if (!data) throw new Error("getCurrentShift failed");
       return data;
     },
