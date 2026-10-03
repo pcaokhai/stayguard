@@ -33,6 +33,8 @@ for i in "${!names[@]}"; do
 done
 for i in "${!names[@]}"; do
 	if [ "${results[$i]}" = FAIL ]; then
+		printf '\n--- %s: the first 20 lines with FAIL, panic or Error ---\n' "${names[$i]}"
+		grep -n -E 'FAIL|panic|Error' "$logs/${names[$i]}.log" | head -n 20
 		printf '\n--- %s: last lines of its output ---\n' "${names[$i]}"
 		tail -n 15 "$logs/${names[$i]}.log"
 	fi
