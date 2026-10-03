@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useMe } from "../../session/useMe";
 import { clockOf } from "../format";
 import { useTransactions } from "./hooks";
+import { DismissDialog } from "./DismissDialog";
 import { LinkSheet } from "./LinkSheet";
 import {
   amountLine,
@@ -58,6 +59,7 @@ export function TransactionsView() {
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
   const [linking, setLinking] = useState<Tx | null>(null);
+  const [dismissing, setDismissing] = useState<Tx | null>(null);
   useEffect(() => {
     const id = setTimeout(() => setQ(text.trim()), 300);
     return () => clearTimeout(id);
@@ -76,13 +78,28 @@ export function TransactionsView() {
       </AppFrame>
     );
 
-  const linkButton = (x: Tx, className?: string) =>
+  const actions = (x: Tx, className?: string) =>
     canLink &&
     x.reconciliation === "UNMATCHED" &&
     x.paymentEventId && (
-      <Button variant="outline" size="lg" className={className} onClick={() => setLinking(x)}>
-        {t("money.link")}
-      </Button>
+      <span className={cn("flex gap-2", className)}>
+        <Button
+          variant="outline"
+          size="lg"
+          className="flex-1 font-bold"
+          onClick={() => setLinking(x)}
+        >
+          {t("money.link")}
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          className="flex-1 font-bold"
+          onClick={() => setDismissing(x)}
+        >
+          {t("money.dismiss")}
+        </Button>
+      </span>
     );
 
   const csv = (
@@ -166,7 +183,7 @@ export function TransactionsView() {
                     {tf("money.noteText", { note: x.transferNote })}
                   </p>
                 )}
-                {linkButton(x, "mt-1 w-full font-bold")}
+                {actions(x, "mt-1")}
               </Card>
             ))}
           </StaggerList>
@@ -215,7 +232,7 @@ export function TransactionsView() {
                             {x.reconciliation === "UNMATCHED" && x.transferNote
                               ? tf("money.noteText", { note: x.transferNote })
                               : ""}
-                            {linkButton(x)}
+                            {actions(x)}
                           </span>
                         </td>
                       </tr>
@@ -233,6 +250,9 @@ export function TransactionsView() {
         </div>
       </main>
       <LinkSheet key={linking?.id} tx={linking} onClose={() => setLinking(null)} />
+      {dismissing && (
+        <DismissDialog key={dismissing.id} tx={dismissing} onClose={() => setDismissing(null)} />
+      )}
     </AppFrame>
   );
 }

@@ -448,7 +448,7 @@
       "PAID": "paid",
       "REFUNDED": "refunded",
       "LINKED": "linked",
-      "DISMISSED": "dismissed"
+      "DISMISSED": "not a room payment"
     }
   },
   "activity": {
@@ -756,7 +756,17 @@
     "invoiceNotOpen": "This bill is already paid",
     "mismatchLine": "This transfer is {amount}, the bill still needs {balance}",
     "settledAt": "linked at {time}",
-    "cashRefund": "Cash refund"
+    "cashRefund": "Cash refund",
+    "dismiss": "Not a room payment",
+    "dismissTitle": "Not a room payment",
+    "dismissBody": "This {amount} transfer will be closed and linked to no bill. Only the owner can see the reason.",
+    "dismissNote": "Reason",
+    "dismissHint": "For example: sent by mistake, already refunded, not ours",
+    "dismissRequired": "A reason is required",
+    "dismissTooLong": "The reason is at most 500 characters",
+    "dismissConfirm": "Close this transfer",
+    "dismissed": "Transfer closed. It does not count as room revenue.",
+    "notDismissable": "This transfer can no longer be dismissed: it is already linked or closed."
   },
   "shifts": {
     "title": "Closed shifts",

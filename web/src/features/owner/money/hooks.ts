@@ -58,3 +58,26 @@ export function useLinkTransfer() {
     },
   });
 }
+
+export type DismissVars = { eventId: string; note: string; key: string };
+
+// "Not a room payment": closes an unmatched transfer with a note; one Idempotency-Key per action.
+export async function dismissTransfer(v: DismissVars, client = api) {
+  const { error, response } = await client.POST("/v1/owner/payment-events/{eventId}/dismiss", {
+    params: { path: { eventId: v.eventId }, header: idempotencyHeader(v.key) },
+    body: { note: v.note.trim() },
+  });
+  if (error) throw problem("dismissUnmatchedTransfer", error, response);
+}
+
+export function useDismissTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: DismissVars) => dismissTransfer(v),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["transactions"] });
+      void qc.invalidateQueries({ queryKey: ["alerts"] });
+      void qc.invalidateQueries({ queryKey: ["owner-overview"] });
+    },
+  });
+}

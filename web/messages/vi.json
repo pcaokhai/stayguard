@@ -448,7 +448,7 @@
       "PAID": "đã thu tiền",
       "REFUNDED": "đã hoàn tiền",
       "LINKED": "đã gán phiếu",
-      "DISMISSED": "đã bỏ qua"
+      "DISMISSED": "không phải tiền phòng"
     }
   },
   "activity": {
@@ -756,7 +756,17 @@
     "invoiceNotOpen": "Phiếu này đã thanh toán",
     "mismatchLine": "Khoản này {amount}, phiếu còn {balance}",
     "settledAt": "gán lúc {time}",
-    "cashRefund": "Hoàn tiền mặt"
+    "cashRefund": "Hoàn tiền mặt",
+    "dismiss": "Không phải tiền phòng",
+    "dismissTitle": "Không phải tiền phòng",
+    "dismissBody": "Khoản {amount} này sẽ được đóng lại, không gán vào phiếu nào. Chỉ chủ xem được lý do.",
+    "dismissNote": "Lý do",
+    "dismissHint": "Ví dụ: khách chuyển nhầm, đã hoàn lại, không phải của quán",
+    "dismissRequired": "Cần ghi lý do",
+    "dismissTooLong": "Lý do tối đa 500 ký tự",
+    "dismissConfirm": "Đóng khoản này",
+    "dismissed": "Đã đóng khoản chuyển khoản. Không tính vào tiền phòng.",
+    "notDismissable": "Không thể bỏ qua khoản này nữa: đã được gán hoặc đã đóng."
   },
   "shifts": {
     "title": "Các ca đã đóng",
