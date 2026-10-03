@@ -70,6 +70,8 @@ const rooms = (b: BuildingId) =>
             guestName: "Anh Tuấn",
             elapsedMinutes: minutes ?? 60,
             runningTotal: 140000,
+            // A104: checked out, transfer chosen, 60,000 of the bill still to pay (the board-less awaiting-payment state).
+            ...(code === "A104" ? { pendingPayment: PENDING } : {}),
           }
         : null,
     };
@@ -239,6 +241,7 @@ const task = (id: string, room: string, building: string, waiting: number, done 
   completedAt: done ? ago(waiting - 20) : null,
   waitingMinutes: waiting,
 });
+const PENDING = { paymentId: "pay-TRANSFER", total: 140000, received: 100000, remaining: 40000 };
 const hkTasks = [
   task("h1", "B104", "B", 135),
   task("h2", "A103", "A", 55),
@@ -705,7 +708,20 @@ export const demoHandlers = [
     }),
   ),
   http.post("*/v1/rooms/:id/stays", () => json(stay(), 201)),
-  http.get("*/v1/stays/:id", () => json(stay())),
+  http.get("*/v1/stays/:id", ({ params }) =>
+    json(
+      params.id === "stay-A104"
+        ? {
+            ...stay(),
+            id: "stay-A104",
+            roomId: "A104",
+            roomCode: "A104",
+            checkOutAt: ago(0),
+            pendingPayment: PENDING,
+          }
+        : stay(),
+    ),
+  ),
   http.post("*/v1/stays/:id/extras", () => json(stay())),
   http.post("*/v1/stays/:id/check-in-time", () => json(stay())),
   http.post("*/v1/stays/:id/move", () => json(stay())),

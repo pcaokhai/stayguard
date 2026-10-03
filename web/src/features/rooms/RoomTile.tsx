@@ -7,7 +7,8 @@ import { Pulse } from "@/components/motion";
 import { localized, lp } from "../../lib/locale";
 import { t, type MessageKey } from "../../lib/t";
 import { cn } from "@/lib/utils";
-import { formatElapsed, STATUS } from "./status";
+import { formatVnd } from "../../lib/money";
+import { formatElapsed, tileStatus } from "./status";
 
 type Room = components["schemas"]["Room"];
 
@@ -19,6 +20,8 @@ const RENTAL: Record<string, MessageKey> = {
 
 function subline(room: Room): string {
   const stay = room.activeStay;
+  if (stay?.pendingPayment)
+    return `${t("pay.remaining")} ${formatVnd(stay.pendingPayment.remaining)}`;
   if (stay)
     return `${t(RENTAL[stay.rentalType])} · ${formatElapsed(stay.elapsedMinutes, t("rooms.hourUnit"))}`;
   if (room.status === "TO_CLEAN") return t("rooms.justLeft");
@@ -47,7 +50,7 @@ export function RoomTile({
   selected?: boolean;
   onSelect?: (room: Room) => void;
 }) {
-  const s = STATUS[room.status];
+  const s = tileStatus(room);
   const href = readOnly ? null : hrefFor(room);
   // A status change cross-fades the colour (CSS) and pulses the tile once.
   const prev = useRef(room.status);

@@ -39,7 +39,9 @@
     "vacantSub": "Phòng trống, sẵn sàng nhận khách.",
     "cleanSub": "Khách vừa trả. Dọn xong thì bấm bên dưới.",
     "maintenanceSub": "Phòng đang bảo trì.",
-    "roleMANAGER": "Quản lý nhà nghỉ"
+    "roleMANAGER": "Quản lý nhà nghỉ",
+    "awaitingPayment": "Chờ thanh toán",
+    "panelLoadFailed": "Không tải được thông tin phòng"
   },
   "stay": {
     "back": "Quay lại",
@@ -358,7 +360,12 @@
     "frontPhoto": "Có ảnh mặt trước",
     "noFrontPhoto": "Chưa có mặt trước",
     "backPhoto": "Có ảnh mặt sau",
-    "noBackPhoto": "Chưa có mặt sau"
+    "noBackPhoto": "Chưa có mặt sau",
+    "reload": "Tải lại",
+    "resume": "Tiếp tục thanh toán",
+    "resumeCash": "Thu tiền mặt",
+    "pendingTotal": "Tổng hóa đơn",
+    "resumeFailed": "Không mở lại được thanh toán. Thử lại."
   },
   "alerts": {
     "title": "Cảnh báo",

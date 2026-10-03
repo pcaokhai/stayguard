@@ -19,7 +19,8 @@ import { rentalLabel } from "../stay/labels";
 import { IdChips } from "../stay/IdChips";
 import { isOwnerRole } from "@/components/shell/nav";
 import { useMe } from "../session/useMe";
-import { STATUS } from "./status";
+import { tileStatus } from "./status";
+import { ResumePayment } from "./ResumePayment";
 
 type Room = components["schemas"]["Room"];
 
@@ -31,7 +32,7 @@ export function RoomPanel({ room, readOnly }: { room?: Room; readOnly: boolean }
     return (
       <Card className="p-5 text-sm text-muted-foreground shadow-none">{t("rooms.pickRoom")}</Card>
     );
-  const s = STATUS[room.status];
+  const s = tileStatus(room);
   return (
     <Card className="gap-3 p-5 shadow-none">
       <div className="flex items-center justify-between gap-3">
@@ -54,6 +55,7 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
   const stay = useStay(stayId);
   const [extras, setExtras] = useState(false);
   const s = stay.data;
+  const pending = room.activeStay?.pendingPayment;
   if (!s) return <Skeleton className="h-64 w-full" />;
   const q = s.quote;
   const mins = minutesBetween(s.checkInAt, q.asOf);
@@ -66,43 +68,50 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
       </p>
       {s.guestId &&
         (owner ? <OwnerIdRow stayId={s.id} ids={s.guestId} /> : <IdChips ids={s.guestId} />)}
-      <div className="border-b border-border pb-3">
-        <p className="text-[13px] text-muted-foreground">
-          {tf("panel.stayedSince", { time: formatClock(s.checkInAt) })}
-        </p>
-        <p className="text-[28px] font-bold leading-tight">
-          {tf("stay.hoursMinutes", { h: Math.floor(mins / 60), m: mins % 60 })}
-        </p>
-      </div>
-      <div className="flex flex-col gap-2.5">
-        <p className={row}>
-          <span>{t("panel.roomCharge")}</span>
-          <span>{formatVnd(q.stayAmount)}</span>
-        </p>
-        <p className={row}>
-          <span>{t("panel.extras")}</span>
-          <span>{formatVnd(q.extrasAmount)}</span>
-        </p>
-        <p className={row}>
-          <span>{t("panel.deposit")}</span>
-          <span>−{formatVnd(q.depositPaid)}</span>
-        </p>
-        <p className="flex items-baseline justify-between font-bold">
-          <span>{q.refundDue > 0 ? t("panel.refundDue") : t("panel.balanceDue")}</span>
-          <span className="text-[28px]">
-            {formatVnd(q.refundDue > 0 ? q.refundDue : q.balanceDue)}
-          </span>
-        </p>
-      </div>
-      {!readOnly && (
-        <div className="mt-2 flex flex-col gap-2">
-          <Button type="button" variant="dashed" onClick={() => setExtras(true)}>
-            {t("panel.addExtras")}
-          </Button>
-          <Button asChild size="lg">
-            <Link href={lp(`/checkout?stay=${s.id}`)}>{t("panel.checkout")}</Link>
-          </Button>
-        </div>
+      {pending ? (
+        <ResumePayment stayId={s.id} roomId={room.id} pending={pending} readOnly={readOnly} />
+      ) : null}
+      {pending ? null : (
+        <>
+          <div className="border-b border-border pb-3">
+            <p className="text-[13px] text-muted-foreground">
+              {tf("panel.stayedSince", { time: formatClock(s.checkInAt) })}
+            </p>
+            <p className="text-[28px] font-bold leading-tight">
+              {tf("stay.hoursMinutes", { h: Math.floor(mins / 60), m: mins % 60 })}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <p className={row}>
+              <span>{t("panel.roomCharge")}</span>
+              <span>{formatVnd(q.stayAmount)}</span>
+            </p>
+            <p className={row}>
+              <span>{t("panel.extras")}</span>
+              <span>{formatVnd(q.extrasAmount)}</span>
+            </p>
+            <p className={row}>
+              <span>{t("panel.deposit")}</span>
+              <span>−{formatVnd(q.depositPaid)}</span>
+            </p>
+            <p className="flex items-baseline justify-between font-bold">
+              <span>{q.refundDue > 0 ? t("panel.refundDue") : t("panel.balanceDue")}</span>
+              <span className="text-[28px]">
+                {formatVnd(q.refundDue > 0 ? q.refundDue : q.balanceDue)}
+              </span>
+            </p>
+          </div>
+          {!readOnly && (
+            <div className="mt-2 flex flex-col gap-2">
+              <Button type="button" variant="dashed" onClick={() => setExtras(true)}>
+                {t("panel.addExtras")}
+              </Button>
+              <Button asChild size="lg">
+                <Link href={lp(`/checkout?stay=${s.id}`)}>{t("panel.checkout")}</Link>
+              </Button>
+            </div>
+          )}
+        </>
       )}
       {extras && (
         <ExtrasSheet stayId={s.id} roomCode={s.roomCode} onClose={() => setExtras(false)} />
@@ -111,11 +120,14 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
   );
 }
 
+// Every state has an explicit branch; anything else is an error screen, never maintenance text by default.
 function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
   const tasks = useTasks();
   const done = useCompleteTask();
   const key = useRef(newIdempotencyKey());
   const task = tasks.data?.find((x) => x.status === "OPEN" && x.roomCode === room.code);
+  if (room.status !== "VACANT" && room.status !== "TO_CLEAN" && room.status !== "MAINTENANCE")
+    return <PanelLoadFailed />;
   const sub =
     room.status === "VACANT"
       ? t("rooms.vacantSub")
@@ -151,6 +163,17 @@ function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
         </>
       )}
     </>
+  );
+}
+
+export function PanelLoadFailed() {
+  return (
+    <div role="alert" className="flex flex-col gap-3">
+      <p className="font-semibold">{t("rooms.panelLoadFailed")}</p>
+      <Button variant="outline" onClick={() => window.location.reload()}>
+        {t("panel.reload")}
+      </Button>
+    </div>
   );
 }
 

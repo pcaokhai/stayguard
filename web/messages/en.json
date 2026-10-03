@@ -39,7 +39,9 @@
     "vacantSub": "Vacant and ready for a guest.",
     "cleanSub": "The guest just left. Tap below when it is cleaned.",
     "maintenanceSub": "This room is in maintenance.",
-    "roleMANAGER": "Guesthouse manager"
+    "roleMANAGER": "Guesthouse manager",
+    "awaitingPayment": "Awaiting payment",
+    "panelLoadFailed": "Could not load the room"
   },
   "stay": {
     "back": "Back",
@@ -358,7 +360,12 @@
     "frontPhoto": "Front photo on file",
     "noFrontPhoto": "No front photo",
     "backPhoto": "Back photo on file",
-    "noBackPhoto": "No back photo"
+    "noBackPhoto": "No back photo",
+    "reload": "Reload",
+    "resume": "Continue payment",
+    "resumeCash": "Take cash",
+    "pendingTotal": "Invoice total",
+    "resumeFailed": "Could not reopen the payment. Try again."
   },
   "alerts": {
     "title": "Alerts",

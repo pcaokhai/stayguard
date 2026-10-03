@@ -58,3 +58,13 @@ export const COUNTER_ORDER: [
 // 155 minutes -> "2g35" (display only, not a price).
 export const formatElapsed = (minutes: number, unit: string) =>
   `${Math.floor(minutes / 60)}${unit}${String(minutes % 60).padStart(2, "0")}`;
+
+// A checked-out stay whose invoice is not paid keeps the room OCCUPIED; the map shows it as awaiting payment.
+export const AWAITING_PAYMENT = {
+  label: "rooms.awaitingPayment" as MessageKey,
+  box: "bg-warn-bg text-warn-ink border-warn-line",
+  pill: "bg-warn-bg text-warn-ink border-warn-line",
+  variant: "warn" as BadgeVariant,
+};
+export const tileStatus = (room: components["schemas"]["Room"]) =>
+  room.activeStay?.pendingPayment ? AWAITING_PAYMENT : STATUS[room.status];

@@ -17,7 +17,8 @@ import { t, tf } from "../../lib/t";
 import { formatClock, minutesBetween } from "../../lib/time";
 import { FlowSplit } from "../rooms/FlowSplit";
 import { useBuildings } from "../rooms/hooks";
-import { STATUS } from "../rooms/status";
+import { AWAITING_PAYMENT, STATUS } from "../rooms/status";
+import { ResumePayment } from "../rooms/ResumePayment";
 import { ExtrasSheet } from "./ExtrasSheet";
 import { useRoom, useStay } from "./hooks";
 import { IdChips } from "./IdChips";
@@ -41,7 +42,7 @@ export function StayDetail() {
   const s = stay.data;
   const q = s?.quote;
   const mins = s && q ? minutesBetween(s.checkInAt, q.asOf) : 0;
-  const status = STATUS[room.data?.status ?? "OCCUPIED"];
+  const status = s?.pendingPayment ? AWAITING_PAYMENT : STATUS[room.data?.status ?? "OCCUPIED"];
 
   return (
     <AppFrame tabs={false}>
@@ -80,60 +81,73 @@ export function StayDetail() {
               </p>
               {s.guestId && <IdChips ids={s.guestId} />}
             </Card>
-            <Card className="gap-2 p-5 shadow-none">
-              <div className="flex items-baseline justify-between">
-                <h2 className="font-bold">{t("stay.runningTotal")}</h2>
-                <p className="text-[32px] font-bold leading-none">{formatVnd(q.total)}</p>
-              </div>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("stay.roomCharge")}</span>
-                <span>{formatVnd(q.stayAmount)}</span>
-              </p>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("stay.services")}</span>
-                <span>{formatVnd(q.extrasAmount)}</span>
-              </p>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("stay.depositPaid")}</span>
-                <span>−{formatVnd(q.depositPaid)}</span>
-              </p>
-              <p className={`${row} border-t border-border pt-2 font-bold`}>
-                <span>{q.refundDue > 0 ? t("stay.refundDue") : t("stay.balanceDue")}</span>
-                <span>{formatVnd(q.refundDue > 0 ? q.refundDue : q.balanceDue)}</span>
-              </p>
-              {q.capped && <p className="text-[13px] text-muted-foreground">{t("stay.capped")}</p>}
-            </Card>
-            <Card className="gap-2.5 p-5 shadow-none">
-              <h2 className="font-bold">{t("stay.services")}</h2>
-              {s.extras.map((x) => (
-                <p key={x.serviceCode} className={row}>
-                  <span>
-                    {localized(x.name)} × {x.quantity}
-                  </span>
-                  <span>{formatVnd(x.amount)}</span>
-                </p>
-              ))}
-              <Button type="button" variant="dashed" onClick={() => setSheet(true)}>
-                {t("stay.addService")}
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="outline">
-                  <Link href={lp(`/stay/edit-time?id=${s.id}`)}>
-                    <Pencil aria-hidden="true" />
-                    {t("stay.editTime")}
-                  </Link>
+            {s.pendingPayment ? (
+              <ResumePayment
+                stayId={s.id}
+                roomId={s.roomId}
+                pending={s.pendingPayment}
+                readOnly={false}
+              />
+            ) : (
+              <>
+                <Card className="gap-2 p-5 shadow-none">
+                  <div className="flex items-baseline justify-between">
+                    <h2 className="font-bold">{t("stay.runningTotal")}</h2>
+                    <p className="text-[32px] font-bold leading-none">{formatVnd(q.total)}</p>
+                  </div>
+                  <p className={`${row} text-ink-2`}>
+                    <span>{t("stay.roomCharge")}</span>
+                    <span>{formatVnd(q.stayAmount)}</span>
+                  </p>
+                  <p className={`${row} text-ink-2`}>
+                    <span>{t("stay.services")}</span>
+                    <span>{formatVnd(q.extrasAmount)}</span>
+                  </p>
+                  <p className={`${row} text-ink-2`}>
+                    <span>{t("stay.depositPaid")}</span>
+                    <span>−{formatVnd(q.depositPaid)}</span>
+                  </p>
+                  <p className={`${row} border-t border-border pt-2 font-bold`}>
+                    <span>{q.refundDue > 0 ? t("stay.refundDue") : t("stay.balanceDue")}</span>
+                    <span>{formatVnd(q.refundDue > 0 ? q.refundDue : q.balanceDue)}</span>
+                  </p>
+                  {q.capped && (
+                    <p className="text-[13px] text-muted-foreground">{t("stay.capped")}</p>
+                  )}
+                </Card>
+                <Card className="gap-2.5 p-5 shadow-none">
+                  <h2 className="font-bold">{t("stay.services")}</h2>
+                  {s.extras.map((x) => (
+                    <p key={x.serviceCode} className={row}>
+                      <span>
+                        {localized(x.name)} × {x.quantity}
+                      </span>
+                      <span>{formatVnd(x.amount)}</span>
+                    </p>
+                  ))}
+                  <Button type="button" variant="dashed" onClick={() => setSheet(true)}>
+                    {t("stay.addService")}
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button asChild variant="outline">
+                      <Link href={lp(`/stay/edit-time?id=${s.id}`)}>
+                        <Pencil aria-hidden="true" />
+                        {t("stay.editTime")}
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link href={lp(`/stay/move?id=${s.id}`)}>
+                        <ArrowLeftRight aria-hidden="true" />
+                        {t("stay.moveRoom")}
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+                <Button asChild size="lg" className="mt-6">
+                  <Link href={lp(`/checkout?stay=${s.id}`)}>{t("stay.checkout")}</Link>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href={lp(`/stay/move?id=${s.id}`)}>
-                    <ArrowLeftRight aria-hidden="true" />
-                    {t("stay.moveRoom")}
-                  </Link>
-                </Button>
-              </div>
-            </Card>
-            <Button asChild size="lg" className="mt-6">
-              <Link href={lp(`/checkout?stay=${s.id}`)}>{t("stay.checkout")}</Link>
-            </Button>
+              </>
+            )}
           </div>
         )}
         {sheet && s && (

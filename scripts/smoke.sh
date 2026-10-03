@@ -58,4 +58,4 @@ fi
 
 echo "== running the money path"
 cd web
-npx playwright test e2e/smoke.spec.ts e2e/smoke.then-partial.spec.ts --workers=1 --reporter=list
+npx playwright test e2e/smoke.spec.ts e2e/smoke.then-partial.spec.ts e2e/smoke.then-awaiting.spec.ts --workers=1 --reporter=list
