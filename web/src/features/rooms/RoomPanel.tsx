@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { components } from "../../api/generated/schema";
@@ -21,6 +22,7 @@ import { isOwnerRole } from "@/components/shell/nav";
 import { useMe } from "../session/useMe";
 import { tileStatus } from "./status";
 import { ResumePayment } from "./ResumePayment";
+import { CleanRoom } from "../housekeeping/CleanRoom";
 
 type Room = components["schemas"]["Room"];
 
@@ -106,6 +108,20 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
               <Button type="button" variant="dashed" onClick={() => setExtras(true)}>
                 {t("panel.addExtras")}
               </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button asChild variant="outline">
+                  <Link href={lp(`/stay/edit-time?id=${s.id}`)}>
+                    <Pencil aria-hidden="true" />
+                    {t("stay.editTime")}
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={lp(`/stay/move?id=${s.id}`)}>
+                    <ArrowLeftRight aria-hidden="true" />
+                    {t("stay.moveRoom")}
+                  </Link>
+                </Button>
+              </div>
               <Button asChild size="lg">
                 <Link href={lp(`/checkout?stay=${s.id}`)}>{t("panel.checkout")}</Link>
               </Button>
@@ -122,18 +138,10 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
 
 // Every state has an explicit branch; anything else is an error screen, never maintenance text by default.
 function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
-  const tasks = useTasks();
-  const done = useCompleteTask();
-  const key = useRef(newIdempotencyKey());
-  const task = tasks.data?.find((x) => x.status === "OPEN" && x.roomCode === room.code);
-  if (room.status !== "VACANT" && room.status !== "TO_CLEAN" && room.status !== "MAINTENANCE")
-    return <PanelLoadFailed />;
+  if (room.status === "TO_CLEAN") return <CleanRoom room={room} readOnly={readOnly} />;
+  if (room.status !== "VACANT" && room.status !== "MAINTENANCE") return <PanelLoadFailed />;
   const sub =
-    room.status === "VACANT"
-      ? t("rooms.vacantSub")
-      : room.status === "TO_CLEAN"
-        ? t("rooms.cleanSub")
-        : (room.note ?? t("rooms.maintenanceSub"));
+    room.status === "VACANT" ? t("rooms.vacantSub") : (room.note ?? t("rooms.maintenanceSub"));
   return (
     <>
       <p className="text-sm text-muted-foreground">{sub}</p>
@@ -141,26 +149,6 @@ function IdleBody({ room, readOnly }: { room: Room; readOnly: boolean }) {
         <Button asChild size="lg" className="mt-2">
           <Link href={lp(`/checkin?room=${room.id}`)}>{t("panel.checkin")}</Link>
         </Button>
-      )}
-      {!readOnly && room.status === "TO_CLEAN" && (
-        <>
-          <Button
-            size="lg"
-            className="mt-2"
-            disabled={!task}
-            loading={done.isPending}
-            onClick={() =>
-              task && done.mutate({ taskId: task.id, key: key.current, roomCode: room.code })
-            }
-          >
-            {t("panel.markClean")}
-          </Button>
-          {done.isError && (
-            <p role="alert" className="text-sm text-warn">
-              {t("panel.cleanFailed")}
-            </p>
-          )}
-        </>
       )}
     </>
   );

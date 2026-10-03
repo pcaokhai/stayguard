@@ -17,7 +17,7 @@ async function typePin(page: Page, nth: number, pin: string) {
   await page.keyboard.type(pin);
 }
 
-// Works whichever spec signed the receptionist in first: the one-time PIN only works once.
+// Works whichever spec signed the receptionist in first; the chosen PIN goes first so wrong guesses do not add up to a lockout.
 async function signIn(page: Page) {
   const attempt = async (pin: string) => {
     await page.goto("/en/sign-in");
@@ -26,21 +26,22 @@ async function signIn(page: Page) {
     await typePin(page, 2, pin);
     await page.getByRole("button", { name: "Sign in" }).click();
   };
-  await attempt(env("SMOKE_RECEPTIONIST_PIN"));
+  await attempt(NEW_PIN);
   const next = await Promise.race([
-    page.waitForURL(/set-pin/).then(() => "set"),
-    page.waitForURL(/\/en\/rooms/).then(() => "rooms"),
+    page.waitForURL(/\/en\/rooms/).then(() => "home"),
     page
       .getByText("is not right")
       .waitFor()
-      .then(() => "wrong"),
+      .then(() => "first"),
   ]);
-  if (next === "set") {
+  if (next === "first") {
+    await attempt(env("SMOKE_RECEPTIONIST_PIN"));
+    await page.waitForURL(/set-pin/);
     await typePin(page, 0, NEW_PIN);
     await typePin(page, 1, NEW_PIN);
     await page.getByRole("button", { name: "Save PIN and continue" }).click();
-  } else if (next === "wrong") await attempt(NEW_PIN);
-  await page.waitForURL(/\/en\/rooms/);
+    await page.waitForURL(/\/en\/rooms/);
+  }
 }
 
 async function deliver(

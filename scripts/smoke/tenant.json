@@ -25,6 +25,16 @@
       "name": "Smoke Linh", "username": "linh", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
       "contract": { "payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12 },
       "buildingAccess": { "A": "EDIT" }
+    },
+    {
+      "name": "Smoke Mina", "username": "mina", "position": "MANAGER", "appAccess": "MANAGER",
+      "contract": { "payType": "MONTHLY", "rate": 8000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12 },
+      "buildingAccess": { "A": "EDIT" }
+    },
+    {
+      "name": "Smoke Viv", "username": "viv", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
+      "contract": { "payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12 },
+      "buildingAccess": { "A": "VIEW" }
     }
   ]
 }

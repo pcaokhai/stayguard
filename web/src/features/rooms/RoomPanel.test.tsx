@@ -37,5 +37,8 @@ test("occupied_room_without_active_stay_never_shows_maintenance_text_FU", () => 
 test("maintenance_text_only_for_maintenance_rooms_FU", () => {
   expect(render(room("MAINTENANCE"))).toContain(vi_.rooms.maintenanceSub);
   expect(render(room("VACANT"))).toContain(vi_.rooms.vacantSub);
-  expect(render(room("TO_CLEAN"))).toContain(vi_.rooms.cleanSub);
+  // To clean reuses the /clean body: checklist and the three actions
+  const clean = render(room("TO_CLEAN"));
+  for (const k of [vi_.clean.checklist, vi_.clean.done, vi_.clean.maintenance, vi_.clean.damage])
+    expect(clean).toContain(k);
 });

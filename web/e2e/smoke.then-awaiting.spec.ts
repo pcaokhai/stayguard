@@ -12,7 +12,8 @@ async function typePin(page: Page, nth: number, pin: string) {
   await page.locator("input").nth(nth).click();
   await page.keyboard.type(pin);
 }
-// Works whichever spec signed the user in first: the one-time PIN only works once.
+// Works whichever spec signed the user in first. The chosen PIN goes first: wrong guesses count towards the
+// five-try lockout, so the one-time PIN is only tried by the very first sign-in of a user.
 async function signIn(page: Page, user: "linh" | "owner" = "linh") {
   const oneTime = env(user === "linh" ? "SMOKE_RECEPTIONIST_PIN" : "SMOKE_OWNER_PIN");
   const home = user === "linh" ? /\/en\/rooms/ : /\/en\/owner/;
@@ -23,21 +24,22 @@ async function signIn(page: Page, user: "linh" | "owner" = "linh") {
     await typePin(page, 2, pin);
     await page.getByRole("button", { name: "Sign in" }).click();
   };
-  await attempt(oneTime);
+  await attempt(NEW_PIN);
   const next = await Promise.race([
-    page.waitForURL(/set-pin/).then(() => "set"),
     page.waitForURL(home).then(() => "home"),
     page
       .getByText("is not right")
       .waitFor()
-      .then(() => "wrong"),
+      .then(() => "first"),
   ]);
-  if (next === "set") {
+  if (next === "first") {
+    await attempt(oneTime);
+    await page.waitForURL(/set-pin/);
     await typePin(page, 0, NEW_PIN);
     await typePin(page, 1, NEW_PIN);
     await page.getByRole("button", { name: "Save PIN and continue" }).click();
-  } else if (next === "wrong") await attempt(NEW_PIN);
-  await page.waitForURL(home);
+    await page.waitForURL(home);
+  }
 }
 async function deliver(
   request: import("@playwright/test").APIRequestContext,
