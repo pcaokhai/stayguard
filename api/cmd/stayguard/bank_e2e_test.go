@@ -183,6 +183,14 @@ func TestInstallerCLI_ImportAndSepay_SG703(t *testing.T) {
 		t.Fatalf("remove with a wrong owner PIN: %d %v", r.status, r.body)
 	}
 
+	// With the right owner PIN the second account can go, and the connected default stays the default.
+	if r := e.call("POST", "/v1/owner/bank-accounts/"+parse(raw)["id"].(string)+"/remove", token, map[string]any{"ownerPin": "482915"}); r.status != 204 {
+		t.Fatalf("remove the second account: %d %v", r.status, r.body)
+	}
+	if r := e.call("POST", "/v1/owner/bank-accounts/"+pending+"/make-default", token, map[string]any{"ownerPin": "482915"}); r.status != 200 {
+		t.Fatalf("make the connected default the default again: %d %v", r.status, r.body)
+	}
+
 	// Errors name the field, never the value; an unknown guesthouse is refused; a second import of the code conflicts.
 	if _, err = e.cli([]string{"sepay", "status", "--tenant", "nowhere"}, ""); !errors.Is(err, app.ErrTenantUnknown) {
 		t.Fatalf("unknown tenant: %v", err)

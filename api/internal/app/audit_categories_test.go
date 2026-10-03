@@ -1,9 +1,11 @@
 package app
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -112,4 +114,35 @@ func hasCategoryPrefix(action string) bool {
 		}
 	}
 	return false
+}
+
+// contracts/audit-actions.json lists every audit action once, with the category auditCategoryOf gives it.
+func TestAuditActionsFile_ListsEveryConstant_Audit(t *testing.T) {
+	raw, err := os.ReadFile("../../../contracts/audit-actions.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file map[string]struct {
+		Category string   `json:"category"`
+		Details  []string `json:"details"`
+	}
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatal(err)
+	}
+	codes := auditActionConsts(t)
+	for code := range codes {
+		e, ok := file[code]
+		if !ok {
+			t.Errorf("%s is not listed in contracts/audit-actions.json", code)
+			continue
+		}
+		if want := auditCategoryOf(code); e.Category != want {
+			t.Errorf("%s: file says %s, auditCategoryOf says %s", code, e.Category, want)
+		}
+	}
+	for code := range file {
+		if _, ok := codes[code]; !ok {
+			t.Errorf("%s is in contracts/audit-actions.json but no audit constant has it", code)
+		}
+	}
 }

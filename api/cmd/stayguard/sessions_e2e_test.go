@@ -138,7 +138,9 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	return &env{t: t, pool: pool, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start, logs: logs}
+	e := &env{t: t, pool: pool, srv: srv, clock: clk, owner: connect(t, urlFor(db, "owner")), start: start, logs: logs}
+	t.Cleanup(func() { recordAudit(e) }) // runs before the pool and the connection close
+	return e
 }
 
 type reply struct {

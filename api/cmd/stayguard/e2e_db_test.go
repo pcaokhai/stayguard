@@ -57,7 +57,14 @@ func runContainer(m *testing.M) int {
 		return 1
 	}
 	baseURL = adminURL[:strings.LastIndex(adminURL, "/postgres?")]
-	return m.Run()
+	code := m.Run()
+	if code == 0 {
+		if bad := checkAuditContract(); len(bad) > 0 {
+			fmt.Fprintln(os.Stderr, "audit-actions.json does not match the audit rows the tests wrote:\n  "+strings.Join(bad, "\n  "))
+			return 1
+		}
+	}
+	return code
 }
 
 func urlFor(db, user string) string {

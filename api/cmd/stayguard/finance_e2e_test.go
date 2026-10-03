@@ -177,6 +177,9 @@ func TestFinanceE2E_ReportReconciles_FA4(t *testing.T) {
 	if copyID == "" {
 		t.Fatalf("the recurring rent was not copied: %s", raw)
 	}
+	if st, raw = e.send("PATCH", "/v1/owner/expenses/"+copyID, boss, "", map[string]any{"category": "RENT", "amount": 5000000, "month": month, "paidOn": now.Format("2006-01-02")}); st != 200 {
+		t.Fatalf("edit a copy: %d %s", st, raw)
+	}
 	if st, _ = e.send("DELETE", "/v1/owner/expenses/"+copyID, boss, "", nil); st != 204 {
 		t.Fatalf("delete a copy: %d", st)
 	}

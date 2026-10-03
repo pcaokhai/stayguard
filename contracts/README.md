@@ -10,6 +10,7 @@ Normative interfaces. SHIP MODE: change `openapi.yaml` on `main` with `make gen`
 | `pricing/golden-cases.json` | 25 price cases, 2 error cases, 2 bill cases; generated, never hand-edited |
 | `pricing/rate-plan.schema.json` | Rate plan configuration schema |
 | `fixtures/demo-tenant-seed.json` | Sample tenant for trials; test data only |
+| `audit-actions.json` | Every audit action code: its activity-log category and the detail keys it shows (room and bill are resolved at read time); checked by `internal/app` and the e2e suite |
 
 Rule: a new pricing rule means a new vector first.
 

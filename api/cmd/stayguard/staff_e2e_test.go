@@ -155,6 +155,9 @@ func TestStaffLifecycle_SG1101_SG501(t *testing.T) {
 	}
 
 	// Lock ends the session at once and unlock restores sign-in; the PIN reset issues a new one-time PIN.
+	if r := e.call("PATCH", "/v1/owner/staff/"+id, owner, map[string]any{"phone": "0901234567"}); r.status != 200 {
+		t.Fatalf("update staff: %d %v", r.status, r.body)
+	}
 	if r := e.call("POST", "/v1/owner/staff/"+id+"/lock", owner, nil); r.status != 200 || r.str("status") != "LOCKED" {
 		t.Fatalf("lock: %d %v", r.status, r.body)
 	}

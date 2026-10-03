@@ -89,6 +89,11 @@ func TestMaintenanceE2E_SG1201(t *testing.T) {
 		t.Fatalf("reopen a done ticket: %d %s", st, raw)
 	}
 
+	// The owner can still correct the costs of a finished ticket.
+	if st, raw = e.send("PATCH", "/v1/owner/maintenance-tickets/"+id, boss, "", map[string]any{"partsCost": 350000}); st != 200 {
+		t.Fatalf("costs of a done ticket: %d %s", st, raw)
+	}
+
 	// A receptionist with EDIT cleans a room after the guest paid.
 	e.clock.set(e.start.Add(2 * time.Hour))
 	var stayID string

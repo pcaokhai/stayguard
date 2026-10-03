@@ -1,0 +1,263 @@
+{
+  "ACCOUNT_LOCKED": {
+    "category": "ACCESS_STAFF",
+    "details": ["lockedUntil"]
+  },
+  "BANK_ACCOUNT_ADDED": {
+    "category": "INSTALLER",
+    "details": []
+  },
+  "BANK_ACCOUNT_DEFAULT": {
+    "category": "INSTALLER",
+    "details": []
+  },
+  "BANK_ACCOUNT_REMOVED": {
+    "category": "INSTALLER",
+    "details": []
+  },
+  "BUILDING_CREATED": {
+    "category": "RATES_SETTINGS",
+    "details": ["floors", "rooms"]
+  },
+  "BUILDING_PERMISSION_SET": {
+    "category": "ACCESS_STAFF",
+    "details": ["buildingId", "level"]
+  },
+  "BUILDING_RENAMED": {
+    "category": "RATES_SETTINGS",
+    "details": []
+  },
+  "FLOOR_CREATED": {
+    "category": "RATES_SETTINGS",
+    "details": ["level", "rooms"]
+  },
+  "GUEST_ID_NUMBER_DELETED": {
+    "category": "GUEST_ID",
+    "details": ["room"]
+  },
+  "GUEST_ID_NUMBER_SET": {
+    "category": "GUEST_ID",
+    "details": ["room"]
+  },
+  "GUEST_ID_PHOTO_DELETED": {
+    "category": "GUEST_ID",
+    "details": ["room", "side"]
+  },
+  "GUEST_ID_PHOTO_DOWNLOADED": {
+    "category": "GUEST_ID",
+    "details": ["room", "side"]
+  },
+  "GUEST_ID_PHOTO_SET": {
+    "category": "GUEST_ID",
+    "details": ["room", "side"]
+  },
+  "GUEST_ID_PHOTO_VIEWED": {
+    "category": "GUEST_ID",
+    "details": ["room", "side"]
+  },
+  "GUEST_ID_RETENTION_DELETED": {
+    "category": "GUEST_ID",
+    "details": ["retentionDays", "room"]
+  },
+  "GUEST_ID_REVEALED": {
+    "category": "GUEST_ID",
+    "details": ["room"]
+  },
+  "INSTALLER_SEPAY_UPDATED": {
+    "category": "INSTALLER",
+    "details": []
+  },
+  "INSTALLER_TENANT_IMPORTED": {
+    "category": "INSTALLER",
+    "details": ["tenantId"]
+  },
+  "PROPERTY_UPDATED": {
+    "category": "RATES_SETTINGS",
+    "details": []
+  },
+  "RATE_PLAN_UPDATED": {
+    "category": "RATES_SETTINGS",
+    "details": ["code", "version"]
+  },
+  "ROOMS_CREATED": {
+    "category": "RATES_SETTINGS",
+    "details": ["count"]
+  },
+  "ROOM_UPDATED": {
+    "category": "RATES_SETTINGS",
+    "details": ["retired", "room", "status"]
+  },
+  "SERVICE_CREATED": {
+    "category": "STOCK",
+    "details": ["code", "openingQuantity"]
+  },
+  "SERVICE_REMOVED": {
+    "category": "STOCK",
+    "details": ["result"]
+  },
+  "SERVICE_UPDATED": {
+    "category": "STOCK",
+    "details": []
+  },
+  "STAFF_CREATED": {
+    "category": "ACCESS_STAFF",
+    "details": ["appAccess", "position"]
+  },
+  "STAFF_LOCKED": {
+    "category": "ACCESS_STAFF",
+    "details": []
+  },
+  "STAFF_PIN_RESET": {
+    "category": "ACCESS_STAFF",
+    "details": []
+  },
+  "STAFF_REMOVED": {
+    "category": "ACCESS_STAFF",
+    "details": []
+  },
+  "STAFF_UNLOCKED": {
+    "category": "ACCESS_STAFF",
+    "details": []
+  },
+  "STAFF_UPDATED": {
+    "category": "ACCESS_STAFF",
+    "details": ["appAccess", "position"]
+  },
+  "STOCKTAKE_CREATED": {
+    "category": "STOCK",
+    "details": ["differences"]
+  },
+  "STOCK_IN": {
+    "category": "STOCK",
+    "details": ["quantity"]
+  },
+  "expense.created": {
+    "category": "MONEY",
+    "details": ["amount", "category", "expenseId", "month"]
+  },
+  "expense.deleted": {
+    "category": "MONEY",
+    "details": ["expenseId"]
+  },
+  "expense.updated": {
+    "category": "MONEY",
+    "details": ["amount", "category", "expenseId", "month"]
+  },
+  "leave.decided": {
+    "category": "ACCESS_STAFF",
+    "details": ["action", "leaveId", "status"]
+  },
+  "leave.requested": {
+    "category": "ACCESS_STAFF",
+    "details": ["kind", "leaveId"]
+  },
+  "payment.created": {
+    "category": "MONEY",
+    "details": ["amount", "bill", "invoiceId", "method", "room"]
+  },
+  "payment.linked": {
+    "category": "MONEY",
+    "details": ["amount", "bill", "eventId", "invoiceId", "paymentId", "room"]
+  },
+  "payment.settled": {
+    "category": "MONEY",
+    "details": ["amount", "bill", "invoiceId", "method", "room"]
+  },
+  "payroll.line_updated": {
+    "category": "MONEY",
+    "details": ["bonus", "deduction", "month", "userId"]
+  },
+  "payroll.paid": {
+    "category": "MONEY",
+    "details": ["lines", "month"]
+  },
+  "room.cleaned": {
+    "category": "MAINTENANCE",
+    "details": ["room", "roomId", "status"]
+  },
+  "roster.copied": {
+    "category": "ACCESS_STAFF",
+    "details": ["weekStart"]
+  },
+  "roster.updated": {
+    "category": "ACCESS_STAFF",
+    "details": ["removed", "set"]
+  },
+  "shift.closed": {
+    "category": "SHIFT",
+    "details": ["counted", "difference", "expected", "floatLeft", "shiftId"]
+  },
+  "shift.payout": {
+    "category": "SHIFT",
+    "details": ["amount", "shiftId"]
+  },
+  "stay.check_in": {
+    "category": "STAY_TIME",
+    "details": [
+      "bill",
+      "deposit",
+      "pricingVersion",
+      "room",
+      "roomId",
+      "status",
+      "stayId"
+    ]
+  },
+  "stay.check_in_edited": {
+    "category": "STAY_TIME",
+    "details": [
+      "bill",
+      "newCheckInAt",
+      "oldCheckInAt",
+      "reasonCode",
+      "room",
+      "stayId"
+    ]
+  },
+  "stay.checked_out": {
+    "category": "MONEY",
+    "details": [
+      "balanceDue",
+      "bill",
+      "billCode",
+      "invoiceId",
+      "refundDue",
+      "room",
+      "status",
+      "stayId",
+      "total"
+    ]
+  },
+  "stay.extras_added": {
+    "category": "MONEY",
+    "details": ["bill", "room", "stayId"]
+  },
+  "stay.moved": {
+    "category": "STAY_TIME",
+    "details": [
+      "bill",
+      "fromRoomId",
+      "pricingVersion",
+      "rentalType",
+      "room",
+      "stayId",
+      "toRoomId"
+    ]
+  },
+  "ticket.cost_updated": {
+    "category": "MAINTENANCE",
+    "details": ["roomLocked", "status", "ticketId", "total"]
+  },
+  "ticket.created": {
+    "category": "MAINTENANCE",
+    "details": ["category", "roomId", "roomLocked", "ticketId"]
+  },
+  "ticket.done": {
+    "category": "MAINTENANCE",
+    "details": ["roomLocked", "status", "ticketId"]
+  },
+  "ticket.updated": {
+    "category": "MAINTENANCE",
+    "details": ["roomLocked", "status", "ticketId"]
+  }
+}
