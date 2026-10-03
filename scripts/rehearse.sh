@@ -43,6 +43,10 @@ if [ "${REHEARSE_BACKUP:-0}" = 1 ]; then
 	fi
 fi
 
+cat <<'WARN'
+!!! REHEARSAL STACK: the sign-in rate limits are RAISED (100000 a minute instead of 20 per address and 60 per code), so scripted tests
+!!! can sign in freely. This is NOT the production setting. Never point real guests or a real domain at this stack.
+WARN
 echo "== starting the production stack (first build takes a few minutes)"
 "${COMPOSE[@]}" up -d --build "${services[@]}" >/dev/null
 for _ in $(seq 90); do

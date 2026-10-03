@@ -35,6 +35,9 @@ type Config struct {
 	AllowPrivilegedDB bool
 	// DemoMode (DEMO_MODE, default false) registers the demo routes; off in production.
 	DemoMode bool
+	// SignInPerIP and SignInPerCode are the sign-in attempts allowed per minute per client address and per guesthouse code
+	// (SIGNIN_RATE_PER_IP, SIGNIN_RATE_PER_CODE). The defaults are the production limits; only the rehearsal stack raises them.
+	SignInPerIP, SignInPerCode int
 	// TrustProxy (TRUST_PROXY, default false) reads the client address from X-Forwarded-For; set it only behind the reverse proxy.
 	TrustProxy bool
 	// SepayTimestampTolerance (SEPAY_TIMESTAMP_TOLERANCE, Go duration, default 300s) is how far X-SePay-Timestamp may be
@@ -127,6 +130,19 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 		}
 		c.SepayTimestampTolerance = d
 	}
+	c.SignInPerIP, c.SignInPerCode = defaultSignInPerIP, defaultSignInPerCode
+	for _, o := range []struct {
+		name string
+		dst  *int
+	}{{"SIGNIN_RATE_PER_IP", &c.SignInPerIP}, {"SIGNIN_RATE_PER_CODE", &c.SignInPerCode}} {
+		if v := getenv(o.name); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > maxSignInRate {
+				return Config{}, fmt.Errorf("%s must be a whole number between 1 and %d, got %q", o.name, maxSignInRate, v)
+			}
+			*o.dst = n
+		}
+	}
 	if v := getenv("TRUST_PROXY"); v != "" {
 		b, err := strconv.ParseBool(v)
 		if err != nil {
@@ -150,4 +166,15 @@ func loadDatabase(c Config, getenv func(string) string) (Config, error) {
 		c.AllowPrivilegedDB = b
 	}
 	return c, nil
+}
+
+const (
+	defaultSignInPerIP   = 20
+	defaultSignInPerCode = 60
+	maxSignInRate        = 1_000_000
+)
+
+// SignInRateRaised reports whether a sign-in limit is above the production value (the rehearsal override).
+func (c Config) SignInRateRaised() bool {
+	return c.SignInPerIP > defaultSignInPerIP || c.SignInPerCode > defaultSignInPerCode
 }

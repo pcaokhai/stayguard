@@ -69,6 +69,10 @@ func run() error {
 		log.Info("migrations applied")
 		return nil
 	}
+	if cfg.SignInRateRaised() { // only the rehearsal stack does this; never leave it on a real server
+		log.Warn("SIGN-IN RATE LIMITS ARE RAISED: this is a rehearsal stack, do not use it for real guests",
+			"perIP", cfg.SignInPerIP, "perCode", cfg.SignInPerCode)
+	}
 	return serve(ctx, cfg, log)
 }
 

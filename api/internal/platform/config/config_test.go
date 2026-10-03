@@ -165,3 +165,20 @@ func TestLoad_SepayTimestampTolerance(t *testing.T) {
 		}
 	}
 }
+
+// Rehearsal only: SIGNIN_RATE_PER_IP and SIGNIN_RATE_PER_CODE raise the sign-in limits (per minute); unset they are the production values.
+func TestLoadSignInRateOverride_FU(t *testing.T) {
+	c, err := Load(env(map[string]string{"DATABASE_URL": testDBURL}))
+	if err != nil || c.SignInPerIP != 20 || c.SignInPerCode != 60 || c.SignInRateRaised() {
+		t.Fatalf("defaults: %+v %v", c, err)
+	}
+	c, err = Load(env(map[string]string{"DATABASE_URL": testDBURL, "SIGNIN_RATE_PER_IP": "5000", "SIGNIN_RATE_PER_CODE": "9000"}))
+	if err != nil || c.SignInPerIP != 5000 || c.SignInPerCode != 9000 || !c.SignInRateRaised() {
+		t.Fatalf("override: %+v %v", c, err)
+	}
+	for _, bad := range []string{"0", "-1", "many", "1000001"} {
+		if _, err := Load(env(map[string]string{"DATABASE_URL": testDBURL, "SIGNIN_RATE_PER_IP": bad})); err == nil {
+			t.Errorf("SIGNIN_RATE_PER_IP=%q must be refused", bad)
+		}
+	}
+}

@@ -7,6 +7,11 @@ services:
   api:
     ports:
       - "127.0.0.1:${REHEARSE_PORT:-18090}:8080"
+    environment:
+      # REHEARSAL ONLY: scripted tests sign in many times a minute from one address. The production compose never sets these (limits 20
+      # per address and 60 per guesthouse code per minute); the API logs a warning at start while they are raised.
+      SIGNIN_RATE_PER_IP: "100000"
+      SIGNIN_RATE_PER_CODE: "100000"
   # Optional backup target (REHEARSE_BACKUP=1): rclone's own S3 server from the official rclone image on Docker Hub. Nothing is
   # pulled from quay.io. The bucket is a folder made on start; the data lives in the container and goes with `make rehearse-down`.
   s3:
