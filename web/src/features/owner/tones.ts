@@ -9,7 +9,10 @@ const DIRTY = "border-dirty-line bg-dirty-bg text-dirty";
 const RED = "border-destructive/30 bg-destructive/10 text-destructive";
 const INFO = "border-info-line bg-info-bg text-info";
 
-export const KIND_TONE: Record<AlertKind | AttentionKind, string> = {
+const BRAND = "border-brand/30 bg-brand/10 text-brand";
+
+export const KIND_TONE: Record<AlertKind | AttentionKind | "REFUND_PENDING", string> = {
+  REFUND_PENDING: BRAND,
   ACCOUNT_LOCKED: RED,
   CASH_OVER: WARN,
   CASH_SHORT: RED,

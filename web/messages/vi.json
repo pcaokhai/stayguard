@@ -223,7 +223,8 @@
       "UNMATCHED_TRANSFER": "Tiền về chưa gán phiếu",
       "CASH_SHORT": "Thiếu tiền khi kết ca",
       "LEAVE_PENDING": "Xin nghỉ chờ duyệt",
-      "TICKET_OPEN": "Phiếu bảo trì đang mở"
+      "TICKET_OPEN": "Phiếu bảo trì đang mở",
+      "REFUND_PENDING": "Chờ hoàn tiền cho khách"
     },
     "minutes": "{m} phút",
     "hours": "{h} giờ",
@@ -412,7 +413,8 @@
       "STAY_TIME_EDITED": "Sửa giờ vào",
       "STOCKTAKE_DIFFERENCE": "Kiểm kho lệch",
       "UNMATCHED_TRANSFER": "Tiền về chưa gán phiếu",
-      "UNUSED_ROOM_REPORT": "Báo phòng có dấu hiệu dùng"
+      "UNUSED_ROOM_REPORT": "Báo phòng có dấu hiệu dùng",
+      "REFUND_PENDING": "Chờ hoàn tiền cho khách"
     },
     "text": {
       "PAYMENT_MISMATCH": "Nhận {got} / cần {expected} · phiếu {bill}",
@@ -426,7 +428,9 @@
       "CASH_OVER": "Thừa {got}",
       "reason": " · lý do: {reason}",
       "ACCOUNT_LOCKED": "Khóa đến {until}",
-      "fallback": "{kind}"
+      "fallback": "{kind}",
+      "REFUND_PENDING": "Chờ hoàn {amount} cho khách",
+      "SEPAY_UPDATED": "Người cài đặt đã cập nhật kết nối SePay lúc {when}"
     }
   },
   "activity": {

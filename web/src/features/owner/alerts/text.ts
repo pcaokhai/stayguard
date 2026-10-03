@@ -1,7 +1,7 @@
 import type { components } from "@/api/generated/schema";
 import { formatVnd } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
-import { clockOf } from "../format";
+import { clockOf, formatDayMonth } from "../format";
 
 export type Alert = components["schemas"]["Alert"];
 
@@ -9,11 +9,24 @@ const time = (v?: string) => (v && /^\d{4}-\d\d-\d\dT/.test(v) ? clockOf(v) : (v
 const amount = (n?: number | null) => (n == null ? "" : formatVnd(n));
 const money = (v?: string) => (v ? formatVnd(Number(v)) : "");
 
+// The API sends a deposit refund the desk still owes as PAYMENT_UNPAID with details.refundDue; it is a
+// refund owed to the guest, not an unpaid bill, so it gets its own kind (REFUND_PENDING may arrive as such too).
+export const alertKind = (a: Alert): string =>
+  (a.kind as string) === "PAYMENT_UNPAID" && a.details?.refundDue
+    ? "REFUND_PENDING"
+    : (a.kind as string);
+
 // Display text for an alert row, built from the kind-specific details the API stores.
 export function alertDetails(a: Alert): string {
   const d = a.details ?? {};
   const reason = d.reason ? tf("alerts.text.reason", { reason: d.reason }) : "";
-  switch (a.kind) {
+  switch (alertKind(a)) {
+    case "REFUND_PENDING":
+      return tf("alerts.text.REFUND_PENDING", { amount: amount(a.amount) || money(d.refundDue) });
+    case "SEPAY_UPDATED": {
+      const at = d.at && /^\d{4}-\d\d-\d\dT/.test(d.at) ? d.at : a.createdAt;
+      return tf("alerts.text.SEPAY_UPDATED", { when: `${formatDayMonth(at)} ${clockOf(at)}` });
+    }
     case "PAYMENT_MISMATCH":
       return tf("alerts.text.PAYMENT_MISMATCH", {
         got: amount(a.amount) || money(d.received),
@@ -51,20 +64,14 @@ export function alertDetails(a: Alert): string {
   }
 }
 
-export const kindLabel = (k: Alert["kind"]) => t(`alerts.kind.${k}` as MessageKey);
+export const kindLabel = (a: Alert) => t(`alerts.kind.${alertKind(a)}` as MessageKey);
 export const roomOrShift = (a: Alert) => a.roomCode || a.details?.shiftName || "—";
 
-// Where "Open" goes. The money and shift pages arrive with L-W7.
+// Where "Open" goes: a stay-related alert opens the owner's stay timeline, never the front-desk stay page.
 export function alertHref(a: Alert): string {
-  if (a.stayId) return `/stay?id=${encodeURIComponent(a.stayId)}`;
+  if (a.stayId) return `/owner/stay?id=${encodeURIComponent(a.stayId)}`;
   if (a.shiftId) return `/owner/shift?id=${encodeURIComponent(a.shiftId)}`;
-  if (
-    a.kind === "PAYMENT_MISMATCH" ||
-    a.kind === "UNMATCHED_TRANSFER" ||
-    a.kind === "OVERPAID" ||
-    a.kind === "PAYMENT_PARTIAL" ||
-    a.kind === "PAYMENT_UNPAID"
-  )
+  if (["PAYMENT_MISMATCH", "UNMATCHED_TRANSFER", "OVERPAID", "PAYMENT_PARTIAL"].includes(a.kind))
     return "/owner/transactions";
   if (a.roomCode) return `/owner/rooms?room=${encodeURIComponent(a.roomCode)}`;
   return "/owner/rooms";
@@ -75,6 +82,7 @@ export const FILTERS = {
     "PAYMENT_MISMATCH",
     "PAYMENT_PARTIAL",
     "PAYMENT_UNPAID",
+    "REFUND_PENDING",
     "OVERPAID",
     "UNMATCHED_TRANSFER",
     "CASH_SHORT",

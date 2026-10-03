@@ -223,7 +223,8 @@
       "UNMATCHED_TRANSFER": "Unmatched transfer",
       "CASH_SHORT": "Cash short at shift close",
       "LEAVE_PENDING": "Leave request pending",
-      "TICKET_OPEN": "Open maintenance ticket"
+      "TICKET_OPEN": "Open maintenance ticket",
+      "REFUND_PENDING": "Refund pending for the guest"
     },
     "minutes": "{m} min",
     "hours": "{h} h",
@@ -412,7 +413,8 @@
       "STAY_TIME_EDITED": "Check-in time edited",
       "STOCKTAKE_DIFFERENCE": "Stocktake difference",
       "UNMATCHED_TRANSFER": "Unmatched transfer",
-      "UNUSED_ROOM_REPORT": "Room looks used"
+      "UNUSED_ROOM_REPORT": "Room looks used",
+      "REFUND_PENDING": "Refund pending for the guest"
     },
     "text": {
       "PAYMENT_MISMATCH": "Got {got} of {expected} · bill {bill}",
@@ -426,7 +428,9 @@
       "CASH_OVER": "Over {got}",
       "reason": " · reason: {reason}",
       "ACCOUNT_LOCKED": "Locked until {until}",
-      "fallback": "{kind}"
+      "fallback": "{kind}",
+      "REFUND_PENDING": "{amount} to refund to the guest",
+      "SEPAY_UPDATED": "The installer updated the SePay connection at {when}"
     }
   },
   "activity": {

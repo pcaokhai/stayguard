@@ -26,7 +26,15 @@ import { cn } from "@/lib/utils";
 import { clockOf, formatDayMonth, localDay } from "../format";
 import { KIND_TONE } from "../tones";
 import { useAlerts, useMarkRead } from "./hooks";
-import { alertDetails, alertHref, FILTERS, kindLabel, roomOrShift, type Alert } from "./text";
+import {
+  alertDetails,
+  alertHref,
+  alertKind,
+  FILTERS,
+  kindLabel,
+  roomOrShift,
+  type Alert,
+} from "./text";
 
 type Filter = "unread" | "all" | keyof typeof FILTERS;
 const CHIPS: { value: Filter; extra?: boolean }[] = [
@@ -42,10 +50,10 @@ function KindPill({ a }: { a: Alert }) {
     <span
       className={cn(
         "inline-block rounded-full border px-3 py-1 text-[13px] font-bold whitespace-nowrap",
-        KIND_TONE[a.kind],
+        KIND_TONE[alertKind(a) as keyof typeof KIND_TONE],
       )}
     >
-      {kindLabel(a.kind)}
+      {kindLabel(a)}
     </span>
   );
 }
@@ -62,7 +70,7 @@ export function AlertsView() {
 
   const rows = (source.data ?? []).filter((a) => {
     if (filter === "unread" || filter === "all") return true;
-    return (FILTERS[filter] as readonly string[]).includes(a.kind);
+    return (FILTERS[filter] as readonly string[]).includes(alertKind(a));
   });
   const read = (ids: string[]) =>
     mark.mutate(ids, { onError: () => toast.error(t("alerts.failed")) });
