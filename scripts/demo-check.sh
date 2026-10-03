@@ -16,7 +16,7 @@ while IFS='|' read -r name cmd; do
 	if [ -n "${DEMO_CHECK_ONLY:-}" ] && ! [[ "$name" =~ ^(${DEMO_CHECK_ONLY})$ ]]; then continue; fi
 	echo ">> $name" >&2
 	start=$SECONDS
-	if bash -c "$cmd" >"$logs/$name.log" 2>&1; then r=PASS; else r=FAIL; fi
+	if bash -c "$cmd" </dev/null >"$logs/$name.log" 2>&1; then r=PASS; else r=FAIL; fi
 	names+=("$name"); results+=("$r"); secs+=("$((SECONDS - start))")
 	echo "<< $name $r (${secs[${#secs[@]}-1]}s)" >&2
 done <"$steps"

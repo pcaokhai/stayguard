@@ -7,7 +7,8 @@ fail=0
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-printf 'first|true\nsecond|echo boom >&2; false\nthird|true\n' >"$tmp/mixed"
+# first reads stdin like make and npx can: it must not swallow the steps after it
+printf 'first|cat >/dev/null; true\nsecond|echo boom >&2; false\nthird|true\n' >"$tmp/mixed"
 out=$(DEMO_CHECK_STEPS="$tmp/mixed" scripts/demo-check.sh 2>&1); rc=$?
 [ $rc -ne 0 ] || { echo "FAIL a failing step must give a non-zero exit"; fail=1; }
 grep -Eq '^first +PASS' <<<"$out" || { echo "FAIL first should PASS: $out"; fail=1; }
