@@ -74,10 +74,13 @@
     "loadFailed": "Không tải được dữ liệu.",
     "capped": "Đã tính theo mức tối đa.",
     "guestNameRequired": "Nhập tên khách",
-    "guestPhoneInvalid": "Nhập số điện thoại hợp lệ (6-20 ký tự)",
+    "guestPhoneInvalid": "Số điện thoại gồm 9 đến 11 chữ số, có thể bắt đầu bằng 0 hoặc +84",
     "editTime": "Sửa giờ vào",
     "moveRoom": "Chuyển phòng",
-    "checkinPlace": "{building} · {type}"
+    "checkinPlace": "{building} · {type}",
+    "checkedOutAt": "Đã trả phòng lúc {time}",
+    "checkedOut": "Đã trả phòng",
+    "viewReceipt": "Xem biên lai"
   },
   "extras": {
     "title": "Thêm dịch vụ",
@@ -561,7 +564,7 @@
     "sub": "{name} · từ {time}",
     "expects": "Tiền mặt hệ thống tính",
     "float": "Quỹ đầu ca",
-    "cashIn": "Thu tiền mặt trong ca",
+    "cashIn": "Thu tiền mặt trong ca (gồm tiền cọc)",
     "cashOut": "Chi trong ca",
     "recordPayout": "Ghi khoản chi trong ca",
     "expected": "Tiền mặt phải có",

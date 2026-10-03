@@ -273,3 +273,73 @@ test("a receptionist on an owner-only page keeps the session; only a 401 goes to
   await expect(fresh).toHaveURL(/\/en\/sign-in/);
   await expect(fresh.getByText("Your session has ended. Sign in again.")).toBeVisible();
 });
+
+test("a checked-out stay opened on /stay is a read-only summary; a reopened checkout shows the real deposit", async ({
+  page,
+  request,
+  browser,
+}) => {
+  test.skip(!configured, "needs the stack and test guesthouse that `make smoke` creates");
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page);
+  await checkIn(page, /A101/, "Summary Guest", "0912345679");
+  const stayUrl = page.url();
+  await page.getByRole("link", { name: "Check out" }).click();
+  await page.getByRole("button", { name: /Bank transfer/ }).click();
+  await expect(page.getByText("Transfer note")).toBeVisible();
+  const text = await page.locator("body").innerText();
+  const note = text.match(/Transfer note\s+(\S+)/)?.[1] ?? "";
+  const due = vnd(text.match(/₫[\d,]+/)?.[0] ?? "");
+  await deliver(request, note, due - 10_000); // 10,000 short: still awaiting payment
+
+  // the read-only summary, unpaid
+  const GONE = [
+    "Check out",
+    "+ Add extras",
+    "Edit check-in",
+    "Move room",
+    "Time in room",
+    "Running total",
+    "Balance due",
+  ];
+  const gone = async (scope: import("@playwright/test").Locator) => {
+    for (const label of GONE) await expect(scope.getByText(label, { exact: true })).toHaveCount(0);
+  };
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(stayUrl);
+    await expect(page.getByText(/Checked out at \d/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue payment" })).toBeVisible();
+    await gone(page.locator("body"));
+  }
+  // a reopened checkout shows the stay's own deposit, not a recomputed one
+  await page.goto(stayUrl.replace("/stay?id=", "/checkout?stay="));
+  await expect(page.getByText("Deposit paid").locator("xpath=following-sibling::*[1]")).toHaveText(
+    "−₫10,000",
+  );
+
+  // owner: same read-only summary
+  const owner = await (
+    await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  ).newPage();
+  await signIn(owner, "owner");
+  await owner.goto(stayUrl);
+  await expect(owner.getByText(/Checked out at \d/)).toBeVisible();
+  await gone(owner.locator("body"));
+  await owner.context().close();
+
+  // settle it: the summary says paid, offers the receipt, still nothing to act on
+  await page.goto(stayUrl.replace("/stay?id=", "/checkout?stay="));
+  await page.getByRole("button", { name: "Continue payment" }).click();
+  await expect(page.getByText("Transfer note")).toBeVisible();
+  await deliver(request, note, 10_000);
+  await expect(page).toHaveURL(/\/en\/paid\?payment=/, { timeout: 20_000 });
+  await page.goto(stayUrl);
+  await expect(page.getByText(/Checked out at \d/)).toBeVisible();
+  await expect(page.getByText("Paid", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "View receipt" })).toBeVisible();
+  await gone(page.locator("body"));
+  await page.setViewportSize({ width: 390, height: 844 }); // tiles are links on a phone
+  await clean(page, /A101/);
+});

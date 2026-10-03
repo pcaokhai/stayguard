@@ -74,10 +74,13 @@
     "loadFailed": "Could not load data.",
     "capped": "Charged at the maximum rate.",
     "guestNameRequired": "Enter the guest's name",
-    "guestPhoneInvalid": "Enter a valid phone number (6-20 characters)",
+    "guestPhoneInvalid": "Phone number has 9 to 11 digits, optionally starting with 0 or +84",
     "editTime": "Edit check-in",
     "moveRoom": "Move room",
-    "checkinPlace": "{building} · {type}"
+    "checkinPlace": "{building} · {type}",
+    "checkedOutAt": "Checked out at {time}",
+    "checkedOut": "Checked out",
+    "viewReceipt": "View receipt"
   },
   "extras": {
     "title": "Add extras",
@@ -561,7 +564,7 @@
     "sub": "{name} · since {time}",
     "expects": "Cash the system expects",
     "float": "Opening float",
-    "cashIn": "Cash taken this shift",
+    "cashIn": "Cash taken this shift (includes deposits)",
     "cashOut": "Paid out this shift",
     "recordPayout": "Record a cash payout",
     "expected": "Cash expected",

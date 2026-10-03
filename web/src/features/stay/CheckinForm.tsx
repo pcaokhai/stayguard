@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { newIdempotencyKey } from "../../lib/api";
 import { localized, lp } from "../../lib/locale";
 import { parseVnd, vndNumber } from "../../lib/money";
+import { isVnPhone } from "../../lib/phone";
 import { toast } from "sonner";
 import { t, tf } from "../../lib/t";
 import { IdBlock, photoProblem, type IdPhotos } from "../guestid/IdBlock";
@@ -41,7 +42,7 @@ const DEFAULT_DEPOSIT = 100000;
 const schema = z.object({
   rentalType: z.enum(["HOURLY", "OVERNIGHT", "DAILY"]),
   guestName: z.string().trim().min(1, "stay.guestNameRequired").max(120),
-  guestPhone: z.string().trim().min(6, "stay.guestPhoneInvalid").max(20, "stay.guestPhoneInvalid"),
+  guestPhone: z.string().trim().refine(isVnPhone, "stay.guestPhoneInvalid"),
   deposit: z.string(),
   // Optional national ID: 9 to 12 digits, encrypted by the server and never shown to the front desk again.
   idNumber: z

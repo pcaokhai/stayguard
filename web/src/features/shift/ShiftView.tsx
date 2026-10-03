@@ -94,8 +94,8 @@ export function ShiftView() {
         {!s ? (
           <Skeleton className="mx-5 h-80" />
         ) : (
-          <div className="flex flex-1 flex-col gap-3 px-5 pb-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
-            <Card className="gap-2.5 p-5 shadow-none">
+          <div className="flex flex-1 flex-col gap-3 px-5 pb-8 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-5">
+            <Card className="gap-2.5 p-5 shadow-none lg:col-start-1 lg:row-start-1">
               <h2 className="font-bold">{t("shift.expects")}</h2>
               <p className={`${row} text-ink-2`}>
                 <span>{t("shift.float")}</span>
@@ -123,7 +123,7 @@ export function ShiftView() {
                 {tf("shift.transfers", { amount: formatVnd(s.transfersReceived) })}
               </p>
             </Card>
-            <Card className="gap-1 p-5 shadow-none">
+            <Card className="gap-1 p-5 shadow-none lg:col-start-2 lg:row-span-2 lg:row-start-1">
               <h2 className="font-bold">{t("shift.counted")}</h2>
               <p className="pb-2 text-[13px] text-muted-foreground">{t("shift.countHint")}</p>
               <ul className="flex flex-col gap-2.5">
@@ -163,7 +163,8 @@ export function ShiftView() {
                 <span className="text-[26px] leading-none">{formatVnd(counted)}</span>
               </p>
             </Card>
-            <div className="flex flex-col gap-3 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[560px]">
+            {/* On desktop the difference sits under the expected-cash card, beside the count: no empty gap. */}
+            <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2">
               <div
                 role="status"
                 className={`rounded-xl border p-3.5 ${
@@ -208,6 +209,8 @@ export function ShiftView() {
                   </ul>
                 </div>
               )}
+            </div>
+            <div className="flex flex-col gap-3 lg:col-span-2 lg:mx-auto lg:w-full lg:max-w-[560px]">
               <label className="flex flex-col gap-1.5 text-sm font-bold">
                 {t("shift.reason")}
                 <Textarea

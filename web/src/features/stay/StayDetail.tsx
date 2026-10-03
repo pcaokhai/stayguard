@@ -19,6 +19,7 @@ import { FlowSplit } from "../rooms/FlowSplit";
 import { useBuildings } from "../rooms/hooks";
 import { AWAITING_PAYMENT, STATUS } from "../rooms/status";
 import { ResumePayment } from "../rooms/ResumePayment";
+import { CheckedOutSummary } from "./CheckedOutSummary";
 import { ExtrasSheet } from "./ExtrasSheet";
 import { useRoom, useStay } from "./hooks";
 import { IdChips } from "./IdChips";
@@ -69,6 +70,10 @@ export function StayDetail() {
         />
         {!s || !q ? (
           <Skeleton className="mx-5 h-64" />
+        ) : s.status === "CHECKED_OUT" ? (
+          <div className="px-5 pb-8 lg:pb-0">
+            <CheckedOutSummary stay={s} />
+          </div>
         ) : (
           <div className="flex flex-col gap-3 px-5 pb-8 lg:pb-0">
             <Card className="gap-2 p-5 shadow-none">

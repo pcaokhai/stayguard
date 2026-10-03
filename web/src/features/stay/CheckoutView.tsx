@@ -121,7 +121,7 @@ export function CheckoutView() {
               </p>
               <p className={`${row} text-ink-2`}>
                 <span>{t("checkout.deposit")}</span>
-                <span>−{formatVnd(q.depositPaid)}</span>
+                <span>−{formatVnd(s?.deposit ?? q.depositPaid)}</span>
               </p>
               <p className="flex items-baseline justify-between font-bold">
                 <span>{t("checkout.due")}</span>
