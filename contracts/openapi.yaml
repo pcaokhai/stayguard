@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.7.0
+  version: 1.8.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -4506,6 +4506,9 @@ components:
                 format: date-time
               amount:
                 $ref: '#/components/schemas/Vnd'
+              byOwner:
+                type: boolean
+                description: Recorded by the owner or a manager on this shift (the cash left the same drawer).
         staffHistory:
           type: object
           required:

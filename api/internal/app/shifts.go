@@ -45,6 +45,7 @@ type CashPaymentRow struct {
 	RoomCode, RentalType string
 	At                   time.Time
 	Amount               int64
+	ByOwner              bool
 }
 
 type ShiftReview struct {
@@ -104,14 +105,26 @@ func hasDrawer(c Caller) bool { return c.Role == access.RoleReceptionist }
 // Record puts a cash movement on the drawer of the caller's open shift, opening the shift first when this is the
 // caller's first cash action. It runs in the transaction of the command that moved the cash.
 //
-// Cash taken by the owner or a manager has no drawer, so it opens no shift and has no ledger line. It is not lost: the
-// payment is stored, the transactions list shows it as CASH with no shift id, and revenue by method counts it
-// (TestOwnerCash_NoShiftButNeverDropped_FU1).
+// Cash moved by the owner or a manager has no drawer of its own and opens no shift. While a receptionist shift is open in the stay's
+// building the cash leaves that same drawer, so the line goes on that shift, marked "by owner"; with no such shift it is owner cash, a
+// ledger line with no shift. Either way it is in the ledger, so the shift screen and the owner overview (both worked out from it by
+// shift.ExpectedCash) always agree.
 func (s *Shifts) Record(ctx context.Context, tx Tx, c Caller, e CashRecord) error {
-	if !hasDrawer(c) || e.Amount <= 0 {
+	if e.Amount <= 0 {
 		return nil
 	}
 	now := storedTime(s.clock.Now())
+	if !hasDrawer(c) {
+		sh, ok, err := s.repo.LockOpenForStay(ctx, tx, e.StayID)
+		if err != nil {
+			return fmt.Errorf("open shift for stay: %w", err)
+		}
+		shiftID := ""
+		if ok {
+			shiftID = sh.ID
+		}
+		return s.addEntryBy(ctx, tx, c, shiftID, e.Kind, e.Amount, e.StayID, e.PaymentID, "", now, true)
+	}
 	sh, err := s.ensureOpen(ctx, tx, c, now)
 	if err != nil {
 		return err
@@ -120,8 +133,12 @@ func (s *Shifts) Record(ctx context.Context, tx Tx, c Caller, e CashRecord) erro
 }
 
 func (s *Shifts) addEntry(ctx context.Context, tx Tx, c Caller, shiftID, kind string, amount int64, stayID, paymentID, desc string, at time.Time) error {
+	return s.addEntryBy(ctx, tx, c, shiftID, kind, amount, stayID, paymentID, desc, at, false)
+}
+
+func (s *Shifts) addEntryBy(ctx context.Context, tx Tx, c Caller, shiftID, kind string, amount int64, stayID, paymentID, desc string, at time.Time, byOwner bool) error {
 	e := CashEntry{ID: s.ids.New(cashIDPrefix), ShiftID: shiftID, Kind: kind, Amount: amount, StayID: stayID, PaymentID: paymentID,
-		Description: desc, CreatedBy: c.UserID, CreatedAt: at}
+		Description: desc, CreatedBy: c.UserID, CreatedAt: at, ByOwner: byOwner}
 	if err := s.repo.AddEntry(ctx, tx, e); err != nil {
 		return fmt.Errorf("cash entry: %w", err)
 	}
@@ -533,7 +550,7 @@ func (s *Shifts) review(ctx context.Context, tx Tx, sh ShiftRecord, buildings []
 	r := ShiftReview{Shift: v, CountedCash: *sh.Counted, Difference: *sh.Difference, Reason: sh.Reason,
 		ReasonRecordedAt: utcPtr(sh.ReasonAt), CashPayments: make([]CashPaymentRow, len(rows)), ShiftsWithDiff: withDiff, TotalShort: short}
 	for i, row := range rows {
-		r.CashPayments[i] = CashPaymentRow{RoomCode: row.RoomCode, RentalType: row.RentalType, At: row.At.UTC(), Amount: row.Amount}
+		r.CashPayments[i] = CashPaymentRow{RoomCode: row.RoomCode, RentalType: row.RentalType, At: row.At.UTC(), Amount: row.Amount, ByOwner: row.ByOwner}
 	}
 	return r, nil
 }

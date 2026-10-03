@@ -182,7 +182,7 @@ func TestRefund_RecordedOnceWhateverTheRetries_FU(t *testing.T) {
 	}
 }
 
-func TestRefund_OwnerRecordsItOnNoShiftOnce_FU(t *testing.T) {
+func TestRefund_OwnerRecordsItOnceOnTheOpenShift_FU(t *testing.T) {
 	r := newRefundRig(t)
 	for i := 0; i < 2; i++ {
 		st, raw := r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.own, newKey(), map[string]any{"method": "CASH"})
@@ -193,8 +193,9 @@ func TestRefund_OwnerRecordsItOnNoShiftOnce_FU(t *testing.T) {
 	if n := r.e.count(`SELECT count(*) FROM app.payments WHERE tenant_id = $1 AND invoice_id = $2 AND status = 'PAID'`, r.tenant, r.invoice); n != 1 {
 		t.Fatalf("payments: %d", n)
 	}
-	if n := r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND'`, r.tenant); n != 0 {
-		t.Fatalf("the owner has no drawer, so no shift entry: %d", n)
+	// The receptionist's shift is open in that building, so the owner's refund is on it, marked by owner (once).
+	if n := r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND' AND by_owner AND shift_id IS NOT NULL`, r.tenant); n != 1 {
+		t.Fatalf("the owner's refund is one line on the open shift: %d", n)
 	}
 }
 
@@ -267,7 +268,7 @@ func TestRefund_FiveParallelCalls_RecordedOnce_FU(t *testing.T) {
 	}
 }
 
-func TestRefund_OwnerFiveParallelCalls_OnePaymentNoShift_FU(t *testing.T) {
+func TestRefund_OwnerFiveParallelCalls_OnePaymentOneLine_FU(t *testing.T) {
 	r := newRefundRig(t)
 	codes := make(chan int, 5)
 	for i := 0; i < 5; i++ {
@@ -283,7 +284,7 @@ func TestRefund_OwnerFiveParallelCalls_OnePaymentNoShift_FU(t *testing.T) {
 		}
 	}
 	if created != 1 || r.e.count(`SELECT count(*) FROM app.payments WHERE tenant_id = $1 AND invoice_id = $2`, r.tenant, r.invoice) != 1 ||
-		r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND'`, r.tenant) != 0 {
-		t.Fatalf("owner: %d created; want one payment and no shift entry", created)
+		r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND'`, r.tenant) != 1 {
+		t.Fatalf("owner: %d created; want one payment and one refund line", created)
 	}
 }

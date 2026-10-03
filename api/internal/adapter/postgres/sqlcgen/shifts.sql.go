@@ -104,15 +104,15 @@ func (q *Queries) GetShiftByID(ctx context.Context, arg GetShiftByIDParams) (Get
 }
 
 const insertCashEntry = `-- name: InsertCashEntry :exec
-INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, stay_id, payment_id, description, created_by, created_at)
+INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, stay_id, payment_id, description, created_by, created_at, by_owner)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10)
+        $9, $10, $11)
 `
 
 type InsertCashEntryParams struct {
 	ID          string
 	TenantID    string
-	ShiftID     string
+	ShiftID     pgtype.Text
 	Kind        string
 	Amount      int64
 	StayID      pgtype.Text
@@ -120,6 +120,7 @@ type InsertCashEntryParams struct {
 	Description pgtype.Text
 	CreatedBy   pgtype.Text
 	CreatedAt   pgtype.Timestamptz
+	ByOwner     bool
 }
 
 func (q *Queries) InsertCashEntry(ctx context.Context, arg InsertCashEntryParams) error {
@@ -134,6 +135,7 @@ func (q *Queries) InsertCashEntry(ctx context.Context, arg InsertCashEntryParams
 		arg.Description,
 		arg.CreatedBy,
 		arg.CreatedAt,
+		arg.ByOwner,
 	)
 	return err
 }
@@ -252,7 +254,7 @@ func (q *Queries) ListClosedShifts(ctx context.Context, arg ListClosedShiftsPara
 }
 
 const listShiftCashIn = `-- name: ListShiftCashIn :many
-SELECT un.code AS room_code, st.rental_type, e.created_at, e.amount
+SELECT un.code AS room_code, st.rental_type, e.created_at, e.amount, e.by_owner
 FROM app.cash_entries e
 JOIN app.stays st ON st.tenant_id = e.tenant_id AND st.id = e.stay_id
 JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
@@ -262,7 +264,7 @@ ORDER BY e.created_at, e.id
 
 type ListShiftCashInParams struct {
 	TenantID string
-	ShiftID  string
+	ShiftID  pgtype.Text
 }
 
 type ListShiftCashInRow struct {
@@ -270,6 +272,7 @@ type ListShiftCashInRow struct {
 	RentalType string
 	CreatedAt  pgtype.Timestamptz
 	Amount     int64
+	ByOwner    bool
 }
 
 func (q *Queries) ListShiftCashIn(ctx context.Context, arg ListShiftCashInParams) ([]ListShiftCashInRow, error) {
@@ -286,6 +289,7 @@ func (q *Queries) ListShiftCashIn(ctx context.Context, arg ListShiftCashInParams
 			&i.RentalType,
 			&i.CreatedAt,
 			&i.Amount,
+			&i.ByOwner,
 		); err != nil {
 			return nil, err
 		}
@@ -405,6 +409,122 @@ func (q *Queries) LockOpenShift(ctx context.Context, arg LockOpenShiftParams) (L
 	return i, err
 }
 
+const lockOpenShiftForStay = `-- name: LockOpenShiftForStay :one
+SELECT s.id, s.user_id, u.name AS user_name, s.status, s.shift_code, s.opened_at, s.closed_at, s.opening_float
+FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.user_id
+WHERE s.tenant_id = $1 AND s.status = 'OPEN'
+  AND EXISTS (SELECT 1 FROM app.stays st
+              JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
+              JOIN app.building_permissions bp ON bp.tenant_id = s.tenant_id AND bp.user_id = s.user_id AND bp.building_id = un.building_id AND bp.level = 'EDIT'
+              WHERE st.tenant_id = s.tenant_id AND st.id = $2::text)
+ORDER BY s.opened_at DESC, s.id DESC
+LIMIT 1
+FOR UPDATE OF s
+`
+
+type LockOpenShiftForStayParams struct {
+	TenantID string
+	StayID   string
+}
+
+type LockOpenShiftForStayRow struct {
+	ID           string
+	UserID       string
+	UserName     string
+	Status       string
+	ShiftCode    string
+	OpenedAt     pgtype.Timestamptz
+	ClosedAt     pgtype.Timestamptz
+	OpeningFloat int64
+}
+
+// The open shift whose person can edit the building of the stay's room (the latest opened): where cash moved by the owner or a manager
+// for that stay belongs, because it leaves the same drawer.
+func (q *Queries) LockOpenShiftForStay(ctx context.Context, arg LockOpenShiftForStayParams) (LockOpenShiftForStayRow, error) {
+	row := q.db.QueryRow(ctx, lockOpenShiftForStay, arg.TenantID, arg.StayID)
+	var i LockOpenShiftForStayRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.UserName,
+		&i.Status,
+		&i.ShiftCode,
+		&i.OpenedAt,
+		&i.ClosedAt,
+		&i.OpeningFloat,
+	)
+	return i, err
+}
+
+const ownerCashNoShift = `-- name: OwnerCashNoShift :one
+SELECT coalesce(sum(amount) FILTER (WHERE kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
+       coalesce(sum(amount) FILTER (WHERE kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
+FROM app.cash_entries
+WHERE tenant_id = $1 AND shift_id IS NULL AND created_at >= $2 AND created_at < $3
+`
+
+type OwnerCashNoShiftParams struct {
+	TenantID string
+	FromAt   pgtype.Timestamptz
+	ToAt     pgtype.Timestamptz
+}
+
+type OwnerCashNoShiftRow struct {
+	CashIn  int64
+	CashOut int64
+}
+
+// Owner cash of the day: ledger lines with no shift.
+func (q *Queries) OwnerCashNoShift(ctx context.Context, arg OwnerCashNoShiftParams) (OwnerCashNoShiftRow, error) {
+	row := q.db.QueryRow(ctx, ownerCashNoShift, arg.TenantID, arg.FromAt, arg.ToAt)
+	var i OwnerCashNoShiftRow
+	err := row.Scan(&i.CashIn, &i.CashOut)
+	return i, err
+}
+
+const ownerCashShifts = `-- name: OwnerCashShifts :many
+SELECT s.opening_float,
+       coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
+       coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
+FROM app.shifts s
+LEFT JOIN app.cash_entries e ON e.tenant_id = s.tenant_id AND e.shift_id = s.id
+WHERE s.tenant_id = $1 AND s.opened_at < $2 AND (s.closed_at IS NULL OR s.closed_at >= $3)
+GROUP BY s.id, s.opening_float
+`
+
+type OwnerCashShiftsParams struct {
+	TenantID string
+	ToAt     pgtype.Timestamptz
+	FromAt   pgtype.Timestamptz
+}
+
+type OwnerCashShiftsRow struct {
+	OpeningFloat int64
+	CashIn       int64
+	CashOut      int64
+}
+
+// Shifts open at any time in [from, to) with their whole ledger; expected cash is worked out in Go by the same function the shift screen uses.
+func (q *Queries) OwnerCashShifts(ctx context.Context, arg OwnerCashShiftsParams) ([]OwnerCashShiftsRow, error) {
+	rows, err := q.db.Query(ctx, ownerCashShifts, arg.TenantID, arg.ToAt, arg.FromAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OwnerCashShiftsRow
+	for rows.Next() {
+		var i OwnerCashShiftsRow
+		if err := rows.Scan(&i.OpeningFloat, &i.CashIn, &i.CashOut); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const shiftCash = `-- name: ShiftCash :one
 SELECT coalesce(sum(amount) FILTER (WHERE kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
        coalesce(sum(amount) FILTER (WHERE kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
@@ -413,7 +533,7 @@ FROM app.cash_entries WHERE tenant_id = $1 AND shift_id = $2
 
 type ShiftCashParams struct {
 	TenantID string
-	ShiftID  string
+	ShiftID  pgtype.Text
 }
 
 type ShiftCashRow struct {

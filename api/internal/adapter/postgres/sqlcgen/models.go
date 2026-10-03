@@ -73,7 +73,7 @@ type AppBuildingPermission struct {
 type AppCashEntry struct {
 	ID          string
 	TenantID    string
-	ShiftID     string
+	ShiftID     pgtype.Text
 	Kind        string
 	Amount      int64
 	StayID      pgtype.Text
@@ -81,6 +81,7 @@ type AppCashEntry struct {
 	Description pgtype.Text
 	CreatedBy   pgtype.Text
 	CreatedAt   pgtype.Timestamptz
+	ByOwner     bool
 }
 
 type AppExpense struct {

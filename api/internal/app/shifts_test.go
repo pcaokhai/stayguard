@@ -34,6 +34,14 @@ func (r *fakeShiftRepo) LockOpen(_ context.Context, _ Tx, userID string) (ShiftR
 	}
 	return ShiftRecord{}, false, nil
 }
+func (r *fakeShiftRepo) LockOpenForStay(context.Context, Tx, string) (ShiftRecord, bool, error) {
+	for _, s := range r.shifts {
+		if s.Status == shiftOpen {
+			return *s, true, nil
+		}
+	}
+	return ShiftRecord{}, false, nil
+}
 func (r *fakeShiftRepo) Open(_ context.Context, _ Tx, n NewShift) (bool, error) {
 	r.shifts = append(r.shifts, &ShiftRecord{ID: n.ID, UserID: n.UserID, UserName: "Lan", Status: shiftOpen, Code: n.Code, OpenedAt: n.OpenedAt, OpeningFloat: n.OpeningFloat})
 	return true, nil

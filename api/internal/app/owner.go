@@ -30,6 +30,9 @@ type OwnerRepo interface {
 	// Revenue covers PAID payments with paid_at in [from, to), one row per building.
 	Revenue(ctx context.Context, tx Tx, from, to time.Time) ([]BuildingRevenue, error)
 	LatestPayments(ctx context.Context, tx Tx, limit int) ([]PaymentSummary, error)
+	// CashExpected is the cash that should be in the drawers for [from, to): every shift open in it (opening float plus its ledger) and the
+	// owner cash with no shift, each worked out with shift.ExpectedCash, the function the shift screen uses.
+	CashExpected(ctx context.Context, tx Tx, from, to time.Time) (int64, error)
 }
 
 // RoomCounter gives the room counts per building and the rooms of one; *Rooms implements it.
@@ -117,7 +120,9 @@ func (o *Owner) Overview(ctx context.Context, c Caller, date *time.Time) (OwnerO
 		for _, r := range rows {
 			out.RevenueTotal += r.Cash + r.Transfer
 			out.TransfersReceived += r.Transfer
-			out.CashTotal += r.Cash
+		}
+		if out.CashTotal, err = o.repo.CashExpected(ctx, tx, from, from.AddDate(0, 0, 1)); err != nil {
+			return fmt.Errorf("cash expected: %w", err)
 		}
 		return o.watch(ctx, tx, &out)
 	})

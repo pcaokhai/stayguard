@@ -68,6 +68,7 @@ People
 Finance
 16. Expense categories: STAFF_PAY, RENT, ELECTRICITY, WATER, LAUNDRY, MAINTENANCE, SUPPLIES, COST_OF_GOODS, TAX_FEES, INTERNET_TV, PAYMENT_FEES, OTHER. Sources: MANUAL, RECURRING (auto-added each month), PAYROLL, MAINTENANCE, STOCK (cost of goods sold). Automatic lines cannot be edited by hand.
 17. Cash paid from the drawer during a shift is a front-desk payout (shift reconciliation), not an owner expense, so nothing is counted twice.
+17a. Cash moved by the OWNER or a MANAGER (deposit, cash payment, deposit refund) while a receptionist shift is open in that building is recorded on that shift and marked "by owner", because the cash leaves the same drawer; with no such shift open it is owner cash, a ledger line with no shift. The shift screen and the owner overview both read this one ledger through one expected-cash function (opening float + cash in - cash out). *Proposed by the API lane; Khai to confirm.*
 18. The income and cost report takes a month range (quick picks: this month, last month, this quarter, 6 months, this year) and shows revenue, expenses, profit, margin, occupancy, monthly bars, expenses by category, revenue by rental type, building and payment method.
 
 Bank and SePay

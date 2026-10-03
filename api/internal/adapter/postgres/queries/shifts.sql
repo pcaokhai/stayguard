@@ -17,9 +17,9 @@ WHERE tenant_id = @tenant_id AND status = 'CLOSED'
 ORDER BY closed_at DESC, id DESC LIMIT 1;
 
 -- name: InsertCashEntry :exec
-INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, stay_id, payment_id, description, created_by, created_at)
-VALUES (@id, @tenant_id, @shift_id, @kind, @amount, sqlc.narg(stay_id), sqlc.narg(payment_id), sqlc.narg(description),
-        sqlc.narg(created_by), @created_at);
+INSERT INTO app.cash_entries (id, tenant_id, shift_id, kind, amount, stay_id, payment_id, description, created_by, created_at, by_owner)
+VALUES (@id, @tenant_id, sqlc.narg(shift_id), @kind, @amount, sqlc.narg(stay_id), sqlc.narg(payment_id), sqlc.narg(description),
+        sqlc.narg(created_by), @created_at, @by_owner);
 
 -- name: ShiftCash :one
 SELECT coalesce(sum(amount) FILTER (WHERE kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
@@ -44,7 +44,7 @@ FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.use
 WHERE s.tenant_id = @tenant_id AND s.id = @shift_id;
 
 -- name: ListShiftCashIn :many
-SELECT un.code AS room_code, st.rental_type, e.created_at, e.amount
+SELECT un.code AS room_code, st.rental_type, e.created_at, e.amount, e.by_owner
 FROM app.cash_entries e
 JOIN app.stays st ON st.tenant_id = e.tenant_id AND st.id = e.stay_id
 JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
@@ -88,3 +88,34 @@ WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND s.check_out_at IS NOT
                   AND pe.result = 'PARTIAL' AND pe.received_at >= @from_at AND pe.received_at <= @to_at))
 ORDER BY s.check_out_at DESC, iv.id DESC
 LIMIT 200;
+
+-- name: LockOpenShiftForStay :one
+-- The open shift whose person can edit the building of the stay's room (the latest opened): where cash moved by the owner or a manager
+-- for that stay belongs, because it leaves the same drawer.
+SELECT s.id, s.user_id, u.name AS user_name, s.status, s.shift_code, s.opened_at, s.closed_at, s.opening_float
+FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.user_id
+WHERE s.tenant_id = @tenant_id AND s.status = 'OPEN'
+  AND EXISTS (SELECT 1 FROM app.stays st
+              JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
+              JOIN app.building_permissions bp ON bp.tenant_id = s.tenant_id AND bp.user_id = s.user_id AND bp.building_id = un.building_id AND bp.level = 'EDIT'
+              WHERE st.tenant_id = s.tenant_id AND st.id = @stay_id::text)
+ORDER BY s.opened_at DESC, s.id DESC
+LIMIT 1
+FOR UPDATE OF s;
+
+-- name: OwnerCashShifts :many
+-- Shifts open at any time in [from, to) with their whole ledger; expected cash is worked out in Go by the same function the shift screen uses.
+SELECT s.opening_float,
+       coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
+       coalesce(sum(e.amount) FILTER (WHERE e.kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
+FROM app.shifts s
+LEFT JOIN app.cash_entries e ON e.tenant_id = s.tenant_id AND e.shift_id = s.id
+WHERE s.tenant_id = @tenant_id AND s.opened_at < @to_at AND (s.closed_at IS NULL OR s.closed_at >= @from_at)
+GROUP BY s.id, s.opening_float;
+
+-- name: OwnerCashNoShift :one
+-- Owner cash of the day: ledger lines with no shift.
+SELECT coalesce(sum(amount) FILTER (WHERE kind IN ('DEPOSIT', 'PAYMENT')), 0)::bigint AS cash_in,
+       coalesce(sum(amount) FILTER (WHERE kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
+FROM app.cash_entries
+WHERE tenant_id = @tenant_id AND shift_id IS NULL AND created_at >= @from_at AND created_at < @to_at;

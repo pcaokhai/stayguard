@@ -75,7 +75,7 @@ func (ShiftRepo) AddEntry(ctx context.Context, tx app.Tx, e app.CashEntry) error
 		return err
 	}
 	return writeFailure("insert cash entry", sqlcgen.New(t).InsertCashEntry(ctx, sqlcgen.InsertCashEntryParams{
-		ID: e.ID, TenantID: t.tenant, ShiftID: e.ShiftID, Kind: e.Kind, Amount: e.Amount, StayID: optText(e.StayID),
+		ID: e.ID, TenantID: t.tenant, ShiftID: optText(e.ShiftID), ByOwner: e.ByOwner, Kind: e.Kind, Amount: e.Amount, StayID: optText(e.StayID),
 		PaymentID: optText(e.PaymentID), Description: optText(e.Description), CreatedBy: optText(e.CreatedBy), CreatedAt: ts(e.CreatedAt)}))
 }
 
@@ -84,7 +84,7 @@ func (ShiftRepo) Cash(ctx context.Context, tx app.Tx, shiftID string) (int64, in
 	if err != nil {
 		return 0, 0, err
 	}
-	r, err := sqlcgen.New(t).ShiftCash(ctx, sqlcgen.ShiftCashParams{TenantID: t.tenant, ShiftID: shiftID})
+	r, err := sqlcgen.New(t).ShiftCash(ctx, sqlcgen.ShiftCashParams{TenantID: t.tenant, ShiftID: optText(shiftID)})
 	return r.CashIn, r.CashOut, wrap("sum shift cash", err)
 }
 
@@ -165,13 +165,13 @@ func (ShiftRepo) CashIn(ctx context.Context, tx app.Tx, shiftID string) ([]app.C
 	if err != nil {
 		return nil, err
 	}
-	rows, err := sqlcgen.New(t).ListShiftCashIn(ctx, sqlcgen.ListShiftCashInParams{TenantID: t.tenant, ShiftID: shiftID})
+	rows, err := sqlcgen.New(t).ListShiftCashIn(ctx, sqlcgen.ListShiftCashInParams{TenantID: t.tenant, ShiftID: optText(shiftID)})
 	if err != nil {
 		return nil, wrap("list shift cash", err)
 	}
 	out := make([]app.CashInRow, len(rows))
 	for i, r := range rows {
-		out[i] = app.CashInRow{RoomCode: r.RoomCode, RentalType: r.RentalType, At: r.CreatedAt.Time, Amount: r.Amount}
+		out[i] = app.CashInRow{RoomCode: r.RoomCode, RentalType: r.RentalType, At: r.CreatedAt.Time, Amount: r.Amount, ByOwner: r.ByOwner}
 	}
 	return out, nil
 }
@@ -242,4 +242,21 @@ func (ShiftRepo) UnpaidInvoices(ctx context.Context, tx app.Tx, from, to time.Ti
 			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0), RefundDue: r.RefundDue}
 	}
 	return out, nil
+}
+
+// LockOpenForStay is the open shift of someone who can edit the stay's building, locked; false when there is none.
+func (ShiftRepo) LockOpenForStay(ctx context.Context, tx app.Tx, stayID string) (app.ShiftRecord, bool, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return app.ShiftRecord{}, false, err
+	}
+	r, err := sqlcgen.New(t).LockOpenShiftForStay(ctx, sqlcgen.LockOpenShiftForStayParams{TenantID: t.tenant, StayID: stayID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return app.ShiftRecord{}, false, nil
+	}
+	if err != nil {
+		return app.ShiftRecord{}, false, wrap("lock open shift for stay", err)
+	}
+	return app.ShiftRecord{ID: r.ID, UserID: r.UserID, UserName: r.UserName, Status: r.Status, Code: r.ShiftCode, OpenedAt: r.OpenedAt.Time,
+		ClosedAt: timePtr(r.ClosedAt), OpeningFloat: r.OpeningFloat}, true, nil
 }

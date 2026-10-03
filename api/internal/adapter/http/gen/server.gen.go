@@ -2262,8 +2262,11 @@ type ShiftCode string
 type ShiftReview struct {
 	CashPayments []struct {
 		// Amount Whole Vietnamese dong
-		Amount     Vnd        `json:"amount"`
-		At         time.Time  `json:"at"`
+		Amount Vnd       `json:"amount"`
+		At     time.Time `json:"at"`
+
+		// ByOwner Recorded by the owner or a manager on this shift (the cash left the same drawer).
+		ByOwner    *bool      `json:"byOwner,omitempty"`
 		RentalType RentalType `json:"rentalType"`
 		RoomCode   string     `json:"roomCode"`
 	} `json:"cashPayments"`

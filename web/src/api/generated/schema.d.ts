@@ -2085,6 +2085,8 @@ export interface components {
                 /** Format: date-time */
                 at: string;
                 amount: components["schemas"]["Vnd"];
+                /** @description Recorded by the owner or a manager on this shift (the cash left the same drawer). */
+                byOwner?: boolean;
             }[];
             staffHistory: {
                 /** @description Shifts with a non-zero difference in the current month */

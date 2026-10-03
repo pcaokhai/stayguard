@@ -28,9 +28,10 @@ type NewShift struct {
 
 // CashEntry is one line of the drawer ledger; kinds are the domain/shift constants.
 type CashEntry struct {
-	ID, ShiftID, Kind, StayID, PaymentID, Description, CreatedBy string
+	ID, ShiftID, Kind, StayID, PaymentID, Description, CreatedBy string // ShiftID is empty for owner cash with no shift
 	Amount                                                       int64
 	CreatedAt                                                    time.Time
+	ByOwner                                                      bool
 }
 
 // ShiftClose is what closing writes.
@@ -46,6 +47,7 @@ type CashInRow struct {
 	RoomCode, RentalType string
 	At                   time.Time
 	Amount               int64
+	ByOwner              bool // recorded by the owner or a manager on this shift
 }
 
 type ClosedShiftRow struct {
@@ -72,6 +74,8 @@ type ShiftRepo interface {
 	Scheduled(ctx context.Context, tx Tx, userID string, day time.Time) ([]string, error)
 	// LockOpen takes the row lock of the user's open shift; false when there is none.
 	LockOpen(ctx context.Context, tx Tx, userID string) (ShiftRecord, bool, error)
+	// LockOpenForStay is the open shift of a person who can edit the stay's building (the latest opened), locked; false when none.
+	LockOpenForStay(ctx context.Context, tx Tx, stayID string) (ShiftRecord, bool, error)
 	// Open inserts an open shift; it reports false when the user already has one (a race that was lost).
 	Open(ctx context.Context, tx Tx, s NewShift) (bool, error)
 	// LastFloatLeft is the float of the shift closed last; zero when none was closed yet.

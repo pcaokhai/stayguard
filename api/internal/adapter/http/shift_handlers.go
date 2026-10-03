@@ -114,12 +114,16 @@ func toShiftReview(r app.ShiftReview) gen.ShiftReview {
 	out.CashPayments = make([]struct {
 		Amount     gen.Vnd        `json:"amount"`
 		At         time.Time      `json:"at"`
+		ByOwner    *bool          `json:"byOwner,omitempty"`
 		RentalType gen.RentalType `json:"rentalType"`
 		RoomCode   string         `json:"roomCode"`
 	}, len(r.CashPayments))
 	for i, p := range r.CashPayments {
 		out.CashPayments[i].Amount, out.CashPayments[i].At = p.Amount, p.At
 		out.CashPayments[i].RentalType, out.CashPayments[i].RoomCode = gen.RentalType(p.RentalType), p.RoomCode
+		if p.ByOwner {
+			out.CashPayments[i].ByOwner = &p.ByOwner
+		}
 	}
 	out.StaffHistory.ShiftsWithDifference, out.StaffHistory.TotalShort = int(r.ShiftsWithDiff), r.TotalShort
 	return out

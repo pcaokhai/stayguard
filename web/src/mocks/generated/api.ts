@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.7.0
+ * OpenAPI spec version: 1.8.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -719,6 +719,8 @@ export type ShiftReviewCashPaymentsItem = {
   rentalType: RentalType;
   at: string;
   amount: Vnd;
+  /** Recorded by the owner or a manager on this shift (the cash left the same drawer). */
+  byOwner?: boolean;
 };
 
 export type ShiftReviewStaffHistory = {
