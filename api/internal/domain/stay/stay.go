@@ -45,9 +45,6 @@ const (
 
 const (
 	maxNameRunes = 120
-	minPhoneLen  = 6
-	maxPhoneLen  = 20
-	minPhoneDigs = 6
 	minIDLen     = 5
 	maxIDLen     = 20
 	// MaxDeposit guards against overflow and typos (an extra zero); 100 million VND.
@@ -84,7 +81,7 @@ type Guest struct {
 
 // ValidateGuest reports every problem at once, sorted by path then code.
 func ValidateGuest(name, phone, idNumber string) (Guest, error) {
-	g := Guest{Name: strings.TrimSpace(name), Phone: strings.TrimSpace(phone), IDNumber: strings.TrimSpace(idNumber)}
+	g := Guest{Name: strings.TrimSpace(name), Phone: NormalizePhone(strings.TrimSpace(phone)), IDNumber: strings.TrimSpace(idNumber)}
 	var errs []FieldError
 	errs = append(errs, checkName(g.Name)...)
 	errs = append(errs, checkPhone(g.Phone)...)
@@ -135,28 +132,46 @@ func isHiddenRune(r rune) bool {
 	return unicode.IsControl(r) || unicode.In(r, unicode.Cf, unicode.Zl, unicode.Zp)
 }
 
+// Guest phone rule, the same as the web's isVnPhone: spaces, dots and dashes are allowed and stripped; what is left is digits with an
+// optional leading +84, and 9 to 11 digits in all (a leading 0 or the 84 counts as digits).
+const (
+	minPhoneDigits = 9
+	maxPhoneDigits = 11
+	phoneCountry   = "+84"
+)
+
+// NormalizePhone strips spaces, dots and dashes.
+func NormalizePhone(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == ' ' || r == '.' || r == '-' {
+			return -1
+		}
+		return r
+	}, s)
+}
+
 func checkPhone(s string) []FieldError {
-	switch n := utf8.RuneCountInString(s); {
-	case n == 0:
+	n := NormalizePhone(s)
+	if n == "" {
 		return []FieldError{{pathPhone, CodeRequired}}
-	case n < minPhoneLen:
-		return []FieldError{{pathPhone, CodeTooShort}}
-	case n > maxPhoneLen:
-		return []FieldError{{pathPhone, CodeTooLong}}
 	}
-	digits := 0
-	for i, r := range s {
-		switch {
-		case r >= '0' && r <= '9':
-			digits++
-		case r == ' ' || r == '-' || r == '.' || r == '(' || r == ')':
-		case r == '+' && i == 0:
-		default:
+	digits := n
+	if strings.HasPrefix(n, "+") {
+		if !strings.HasPrefix(n, phoneCountry) {
+			return []FieldError{{pathPhone, CodePattern}}
+		}
+		digits = n[1:]
+	}
+	for _, r := range digits {
+		if r < '0' || r > '9' {
 			return []FieldError{{pathPhone, CodePattern}}
 		}
 	}
-	if digits < minPhoneDigs {
+	switch {
+	case len(digits) < minPhoneDigits:
 		return []FieldError{{pathPhone, CodeTooShort}}
+	case len(digits) > maxPhoneDigits:
+		return []FieldError{{pathPhone, CodeTooLong}}
 	}
 	return nil
 }

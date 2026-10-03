@@ -93,7 +93,7 @@ func TestCreateStayIdempotent_SG203_AC3(t *testing.T) {
 		"id":      func(in *CreateStayInput) { in.IDNumber = &other },
 		"no id":   func(in *CreateStayInput) { in.IDNumber = nil },
 		"rental":  func(in *CreateStayInput) { in.RentalType = "DAILY" },
-		"phone":   func(in *CreateStayInput) { in.GuestPhone = "123456" },
+		"phone":   func(in *CreateStayInput) { in.GuestPhone = "0911111111" },
 	} {
 		in := goodInput()
 		mod(&in)

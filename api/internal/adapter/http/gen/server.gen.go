@@ -1575,8 +1575,10 @@ type CreateStaffResponse struct {
 // CreateStayRequest defines model for CreateStayRequest.
 type CreateStayRequest struct {
 	// Deposit Whole Vietnamese dong
-	Deposit    Vnd    `json:"deposit"`
-	GuestName  string `json:"guestName"`
+	Deposit   Vnd    `json:"deposit"`
+	GuestName string `json:"guestName"`
+
+	// GuestPhone Vietnamese number: 9 to 11 digits, optionally written with a leading 0 or +84; spaces, dots and dashes are allowed and stripped (the stored and returned value has none). Anything else is 422 on guestPhone. The web applies the same rule (isVnPhone).
 	GuestPhone string `json:"guestPhone"`
 
 	// IdConsent Ignored. The ID is collected under the stay-declaration duty, not by consent.

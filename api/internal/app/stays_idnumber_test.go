@@ -36,7 +36,7 @@ func TestIdNumberStored_SG203_AC4(t *testing.T) {
 	if got := e.idem.hashes[0]; got != want || got == plain {
 		t.Fatalf("hash %s want %s", got, want)
 	}
-	if _, _, err := create(newStayEnv(t), "k", CreateStayInput{RentalType: "HOURLY", GuestName: "A", GuestPhone: "123456"}); err != nil {
+	if _, _, err := create(newStayEnv(t), "k", CreateStayInput{RentalType: "HOURLY", GuestName: "A", GuestPhone: "0901234567"}); err != nil {
 		t.Fatalf("no id number is allowed: %v", err)
 	}
 }

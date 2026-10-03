@@ -1852,6 +1852,7 @@ export interface components {
         CreateStayRequest: {
             rentalType: components["schemas"]["RentalType"];
             guestName: string;
+            /** @description Vietnamese number: 9 to 11 digits, optionally written with a leading 0 or +84; spaces, dots and dashes are allowed and stripped (the stored and returned value has none). Anything else is 422 on guestPhone. The web applies the same rule (isVnPhone). */
             guestPhone: string;
             /** @description Optional national ID; encrypted at rest; never returned to RECEPTIONIST or HOUSEKEEPING */
             idNumber?: string | null;
