@@ -244,7 +244,10 @@ const review = (id: string) => {
     countedCash: expected + s.difference,
     difference: s.difference,
     reason: s.difference ? "Trả lại tiền thừa cho khách A104, lúc thu ghi nhầm số tiền." : null,
-    reasonAt: s.difference ? s.closedAt : null,
+    reasonRecordedAt: s.difference ? s.closedAt : null,
+    closedByName: s.userName,
+    closedByRole: "RECEPTIONIST",
+    floatLeft: 500000,
     cashPayments: [
       { roomCode: "A105", rentalType: "DAILY", at: at(0, 7, 10), amount: 300000 },
       { roomCode: "A106", rentalType: "DAILY", at: at(0, 8, 25), amount: 300000 },

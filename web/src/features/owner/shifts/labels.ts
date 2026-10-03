@@ -5,6 +5,7 @@ import { clockOf, formatDayMonth, localDay } from "../format";
 import { addDays } from "../range";
 
 export type ClosedShift = components["schemas"]["ClosedShift"];
+export type Review = components["schemas"]["ShiftReview"];
 
 const NAME: Record<string, MessageKey> = {
   MORNING: "shifts.morning",
@@ -38,3 +39,45 @@ export const differenceTone = (n: number) =>
     : n > 0
       ? "border-warn-line bg-warn-bg text-warn-ink"
       : "border-ok-line bg-ok-bg text-ok";
+
+// Role label from the message files; an unknown role gives "" so a raw code is never shown.
+const roleName = (role?: string) => {
+  const key = `rooms.role${role}` as MessageKey;
+  return role && t(key) !== key ? t(key) : "";
+};
+
+// "Người bàn giao" is the person who closed the shift (a shift is closed by its own person), with their role.
+export function handoverLine(r: Review): string {
+  const name = r.closedByName || r.shift.userName;
+  const role = roleName(r.closedByRole);
+  return role ? tf("shifts.handoverRole", { name, role }) : tf("shifts.handover", { name });
+}
+
+export const floatLine = (r: Review) =>
+  r.floatLeft == null
+    ? t("shifts.floatNone")
+    : tf("shifts.floatLeft", { amount: formatVnd(r.floatLeft) });
+
+const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+
+// One CSV of the review: the figures first, then the handover person and float, then the cash bills.
+export function shiftCsv(r: Review): string {
+  const name = r.closedByName || r.shift.userName;
+  const role = roleName(r.closedByRole);
+  const rows: (string | number)[][] = [
+    [t("shifts.expected"), r.shift.expectedCash],
+    [t("shifts.counted"), r.countedCash],
+    [t("shifts.difference"), r.difference],
+    [t("shifts.handoverCsv"), name, role],
+    [t("shifts.floatCsv"), r.floatLeft ?? ""],
+    [],
+    [t("shifts.room"), t("shifts.type"), t("shifts.timeCol"), t("shifts.cash")],
+    ...r.cashPayments.map((p) => [
+      p.roomCode,
+      t(`shifts.rental.${p.rentalType}` as MessageKey),
+      clockOf(p.at),
+      p.amount,
+    ]),
+  ];
+  return rows.map((row) => row.map(cell).join(",")).join("\n");
+}

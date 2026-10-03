@@ -817,7 +817,14 @@
       "HOURLY": "Giờ",
       "OVERNIGHT": "Qua đêm",
       "DAILY": "Ngày"
-    }
+    },
+    "handover": "Người bàn giao: {name}",
+    "handoverRole": "Người bàn giao: {name} ({role})",
+    "handoverCsv": "Người bàn giao",
+    "floatLeft": "Để lại két: {amount}",
+    "floatNone": "Để lại két: không ghi",
+    "floatCsv": "Để lại két",
+    "csv": "Tải CSV"
   },
   "ownerStays": {
     "title": "Lịch sử lượt ở",

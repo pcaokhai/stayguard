@@ -3,14 +3,16 @@
 import type { ReactNode } from "react";
 import { FadeIn } from "@/components/motion";
 import { QueryError } from "@/components/StateView";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatVnd } from "@/lib/money";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { clockOf } from "../format";
 import { useShiftReview } from "./hooks";
-import { differenceTone } from "./labels";
+import { floatLine, handoverLine, differenceTone, shiftCsv } from "./labels";
 
 const heading = "text-[13px] font-bold uppercase tracking-wide text-ink-2";
 const Row = ({ k, v, strong }: { k: string; v: ReactNode; strong?: boolean }) => (
@@ -67,6 +69,20 @@ export function ShiftReview({ id }: { id: string }) {
           <Row k={t("shifts.counted")} v={formatVnd(r.countedCash)} />
           <Row k={t("shifts.difference")} v={signed(d)} strong />
         </dl>
+      </Card>
+
+      <Card className="gap-2 p-5 shadow-none">
+        <p className="text-[15px] font-bold">{handoverLine(r)}</p>
+        <p className="text-[15px]">{floatLine(r)}</p>
+        <Button
+          variant="outline"
+          size="lg"
+          className="self-start"
+          onClick={() => downloadShiftCsv(r)}
+        >
+          <Download aria-hidden="true" />
+          {t("shifts.csv")}
+        </Button>
       </Card>
 
       {r.reason && (
@@ -135,4 +151,14 @@ export function ShiftReview({ id }: { id: string }) {
       </Card>
     </FadeIn>
   );
+}
+
+function downloadShiftCsv(r: NonNullable<ReturnType<typeof useShiftReview>["data"]>) {
+  const blob = new Blob(["\uFEFF" + shiftCsv(r)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  Object.assign(document.createElement("a"), {
+    href: url,
+    download: `shift-${r.shift.id}.csv`,
+  }).click();
+  URL.revokeObjectURL(url);
 }
