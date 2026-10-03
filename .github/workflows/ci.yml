@@ -51,6 +51,7 @@ jobs:
         run: scripts/install-gitleaks.sh
       - run: echo "$PWD" >> "$GITHUB_PATH"
       - run: scripts/test-makefile.sh
+      - run: scripts/test-demo-check.sh
       - run: scripts/check-pinning.sh
       - run: scripts/check-claude-deny.sh
       - run: scripts/test-secret-scan.sh

@@ -4,9 +4,29 @@ Production runs on one VPS with Docker: PostgreSQL, the API (which also serves t
 The files: `compose.prod.yaml`, `Caddyfile`, `.env.prod.example`, `backup.sh`, `restore-rehearsal.sh`. (`compose.yaml` and
 `compose.demo.override.yaml`, `compose.smoke.override.yaml` and `compose.rehearse.yaml` are for local use only; `compose.yaml` also has a local S3 test target under profile `backup`.)
 
-What the production stack guarantees: `DEMO_MODE=0`; the API connects as `stayguard_app`, a non-superuser role that owns
+What the production stack guarantees (with `DEMO_MODE` left at its default `0`; see the demo section below); the API connects as `stayguard_app`, a non-superuser role that owns
 nothing and cannot bypass row-level security (`ALLOW_PRIVILEGED_DB` is never set for it); the database port is not
 published; every service restarts unless stopped; `TRUST_PROXY=1` and `TRUSTED_PROXY_HOPS=1` with Caddy as the only way in.
+
+## Demo build and the role picker
+
+This repository is a portfolio demo, so the web image is built **with** the demo role picker by default: `compose.prod.yaml` passes
+`NEXT_PUBLIC_DEMO_MODE=${NEXT_PUBLIC_DEMO_MODE:-1}`. The picker only works when the API also runs with `DEMO_MODE=1` (default `0`, which answers
+the demo routes with 404). Set both in `deploy/.env.prod` for a demo server:
+
+```
+NEXT_PUBLIC_DEMO_MODE=1
+DEMO_MODE=1
+```
+
+For a build with the real PIN sign-in only (no picker), build with `0`, either in `deploy/.env.prod` or on the command line, and keep `DEMO_MODE=0`:
+
+```
+NEXT_PUBLIC_DEMO_MODE=0 docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod up -d --build
+```
+
+The value is baked into the web bundle at build time, so changing it needs `--build`. The rehearsal stack (`compose.rehearse.yaml`) defaults to `0` because
+it imitates production. CI builds the image with `0` (`image` job). `make demo-check` runs the whole demo gate.
 
 ## Fresh VPS, step by step
 
@@ -39,8 +59,7 @@ Ubuntu 24.04 LTS, 2 GB RAM or more, a domain whose DNS A record points at the se
    docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod up -d --build
    ```
    The `migrate` and `roles` containers run once and exit; that is normal.
-8. **Check it**: `curl -fsS https://DOMAIN/readyz` answers 200; open `https://DOMAIN/vi/` and see the sign-in page without the
-   demo role picker. `docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod ps` shows `db`, `api`, `jobs` and `caddy` up.
+8. **Check it**: `curl -fsS https://DOMAIN/readyz` answers 200; open `https://DOMAIN/vi/` and see the sign-in page (without the demo role picker when built with `NEXT_PUBLIC_DEMO_MODE=0`). `docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod ps` shows `db`, `api`, `jobs` and `caddy` up.
    If HTTPS fails, `docker compose ... logs caddy`: the usual cause is DNS not pointing at the server yet.
 9. **Add the first guesthouse** (docs/runbooks/sepay-handover.md has the SePay part). Put the import file in `/tmp`, outside git:
    ```

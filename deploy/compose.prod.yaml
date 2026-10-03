@@ -2,6 +2,8 @@
 # Run from the repository root with the secrets file outside git:
 #   docker compose -f deploy/compose.prod.yaml --env-file deploy/.env.prod up -d --build
 # See deploy/README.md for every step on a fresh server.
+# The web build keeps the demo role picker by default (NEXT_PUBLIC_DEMO_MODE=1, the portfolio demo). Build with NEXT_PUBLIC_DEMO_MODE=0 for a
+# real sign-in only; the picker needs the API's DEMO_MODE=1 to work (default 0). See "Demo build" in deploy/README.md.
 name: stayguard
 services:
   db:
@@ -27,7 +29,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
       args:
-        NEXT_PUBLIC_DEMO_MODE: "0"
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-1}
     command: ["migrate"]
     restart: "no"
     environment:
@@ -61,12 +63,12 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
       args:
-        NEXT_PUBLIC_DEMO_MODE: "0"
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-1}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://stayguard_app:${APP_DB_PASSWORD}@db:5432/stayguard?sslmode=disable
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
-      DEMO_MODE: "0"
+      DEMO_MODE: ${DEMO_MODE:-0}
       # One proxy (Caddy) in front and the port below closed to the internet: see deploy/README.md.
       TRUST_PROXY: "1"
       TRUSTED_PROXY_HOPS: "1"
@@ -88,7 +90,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile
       args:
-        NEXT_PUBLIC_DEMO_MODE: "0"
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-1}
     command: ["jobs", "run", "--every", "5m"]
     restart: unless-stopped
     environment:

@@ -2,9 +2,21 @@
 # same non-superuser database role, DEMO_MODE off. Caddy is left out (profile "tls", never started), so a Cloudflare tunnel (or any
 # proxy on this machine) points at http://localhost:${REHEARSE_PORT:-18090}. The web app is served by the api container. Local only.
 services:
+  # The rehearsal is production-like: the web is built WITHOUT the demo role picker unless NEXT_PUBLIC_DEMO_MODE says otherwise.
+  migrate:
+    build:
+      args:
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-0}
+  jobs:
+    build:
+      args:
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-0}
   caddy:
     profiles: ["tls"]
   api:
+    build:
+      args:
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-0}
     ports:
       - "127.0.0.1:${REHEARSE_PORT:-18090}:8080"
     environment:
