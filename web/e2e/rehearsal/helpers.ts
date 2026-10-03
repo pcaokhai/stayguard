@@ -14,6 +14,7 @@ export const cfg = {
   pinsFile: process.env.RH_PINS_FILE ?? "",
   root: process.env.RH_ROOT ?? "",
   envFile: process.env.RH_ENV_FILE ?? "deploy/.env.rehearse",
+  project: process.env.RH_PROJECT ?? process.env.REHEARSE_PROJECT ?? "stayguard-rehearse", // this clone's compose project
 };
 // A 1x1 PNG: the smallest picture the photo upload accepts.
 const PNG =
@@ -413,7 +414,7 @@ const compose = (args: string[], input?: string) =>
     [
       "compose",
       "-p",
-      "stayguard-rehearse",
+      cfg.project,
       "-f",
       "deploy/compose.prod.yaml",
       "-f",

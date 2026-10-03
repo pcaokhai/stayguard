@@ -1,0 +1,10 @@
+# Cases a person must look at: a pass here never becomes Đạt in the checklist, only a "QA tự động" note (scripts/rehearsal-sync.py).
+# One id per line. Rows that judge how a screen looks, feels or reads, not only what it does.
+GD-03   # tablet layout
+GD-04   # desktop layout
+GD-05   # reduced motion: everything shown, only fades
+GD-06   # English: every word switched
+GD-07   # offline state looks right and recovers
+UI-01   # no raw keys, codes or placeholders, no sideways scroll
+TD-05   # owner room map shows no shift actions
+TD-08   # the SePay alert reads as a sentence

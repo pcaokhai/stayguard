@@ -1,5 +1,5 @@
 GET /v1/owner/property 
-  -> 200 {"address":"1 Test Street","frontDeskHistoryDays":7,"guesthouseCode":"rh11ce74","idRetentionDays":30,"name":"Rehearsal Test rh11ce74","phone":"0900000000","qrExpiryMinutes":30}
+  -> 200 {"address":"1 Test Street","frontDeskHistoryDays":7,"guesthouseCode":"rh7296d6","idRetentionDays":30,"name":"Rehearsal Test rh7296d6","phone":"0900000000","qrExpiryMinutes":30}
 GET /v1/stays?date=2026-10-02 
   -> 200 {"items":[]}
 GET /v1/stays?date=2026-09-21 

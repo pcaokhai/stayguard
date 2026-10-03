@@ -163,7 +163,7 @@ test("LO-09 history search by room, guest name and phone", async ({ api }) => {
   expect(await find("nobody-has-this-name")).not.toContain(stay.id);
 });
 
-test("LO-10 the guest phone takes 9 to 11 digits starting with 0 or +84", async ({ api }) => {
+test("LO-10 the guest phone takes 9 to 11 digits with an optional 0 or +84", async ({ api }) => {
   const w = await api.as("r13");
   const tryPhone = async (phone: string) => {
     const room = await api.vacantRoom(w);
@@ -174,9 +174,9 @@ test("LO-10 the guest phone takes 9 to 11 digits starting with 0 or +84", async 
       deposit: 0,
     });
   };
-  for (const ok of ["012345678", "0912345678", "09123456789", "+84912345678"])
+  for (const ok of ["012345678", "0912345678", "09123456789", "+84912345678", "912345678"])
     expect((await tryPhone(ok)).status, ok).toBe(201);
-  for (const bad of ["01234567", "091234567890", "09123456789012", "1234567890", "abc"])
+  for (const bad of ["01234567", "091234567890", "09123456789012", "abc"])
     expect((await tryPhone(bad)).status, bad).toBe(422);
 });
 

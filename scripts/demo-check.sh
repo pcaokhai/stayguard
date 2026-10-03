@@ -8,7 +8,11 @@ set -u
 cd "$(dirname "$0")/.."
 steps="${DEMO_CHECK_STEPS:-scripts/demo-check.steps}"
 logs="$(mktemp -d)"
-trap 'rm -rf "$logs"' EXIT
+# The real steps use the rehearse stack: one run at a time per clone. The rehearse-test step passes through because it inherits the lock.
+# (A self-test with its own step list does not touch the stack and takes no lock.)
+. scripts/rehearse-env.sh
+[ -n "${DEMO_CHECK_STEPS:-}" ] || rehearse_lock "make demo-check"
+trap 'rm -rf "$logs"; rehearse_unlock' EXIT
 
 names=(); results=(); secs=()
 while IFS='|' read -r name cmd; do

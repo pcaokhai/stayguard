@@ -72,6 +72,7 @@ class CsvReporter implements Reporter {
         ...this.rows,
         "",
         "# demo-check",
+        `# commit ${process.env.RH_COMMIT ?? "unknown"}`,
         "suite,status,pass,fail,skip,duration_s",
         ...demo,
       ].join("\n") + "\n",

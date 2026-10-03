@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Moves the time of ONE invoice's records back in the rehearsal database, so the 15-minute and 30-minute alert rules can be tested
-# without waiting. It refuses to run against anything but the compose project stayguard-rehearse (`make rehearse` / `make rehearse-test`)
+# without waiting. It refuses to run against this clone's rehearse compose project ($REHEARSE_PROJECT, stayguard-rehearse in the main clone; `make rehearse` / `make rehearse-test`)
 # and only touches the guesthouse you name, which must be a rehearsal one (code `rehearse` or `rh` + 6 hex digits).
 #
 #   RH_TENANT=rh1a2b3c scripts/rehearsal-backdate.sh partial PH1003A101 20   # bank money first arrived 20 minutes ago
@@ -9,11 +9,12 @@
 # partial: payment_events.received_at of that invoice's PARTIAL events, minus N minutes   (raises PAYMENT_PARTIAL after 15)
 # unpaid:  invoices.created_at (the check-out time), minus N minutes                        (raises PAYMENT_UNPAID or REFUND_PENDING after 30)
 # stay:    stays.check_in_at and check_out_at, minus N minutes                                 (guest ID retention: 40 days = 57600)
-# Then run the jobs once: `docker compose -p stayguard-rehearse ... run --rm api jobs run` (rehearse-test does it) and read the alerts.
+# Then run the jobs once: `docker compose -p $REHEARSE_PROJECT ... run --rm api jobs run` (rehearse-test does it) and read the alerts.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PROJECT="stayguard-rehearse"
+. scripts/rehearse-env.sh
+PROJECT="$REHEARSE_PROJECT" # this clone's rehearse stack; nothing else
 kind="${1:-}"; bill="${2:-}"; mins="${3:-}"; code="${RH_TENANT:-}"
 [ -n "$kind" ] && [ -n "$bill" ] && [ -n "$mins" ] && [ -n "$code" ] || { sed -n 2,14p "$0" >&2; exit 2; }
 case "$kind" in partial | unpaid | stay) ;; *) echo "kind must be partial, unpaid or stay" >&2; exit 2 ;; esac
@@ -24,7 +25,7 @@ if [ -n "${COMPOSE_PROJECT_NAME:-}" ] && [ "$COMPOSE_PROJECT_NAME" != "$PROJECT"
 	echo "REFUSED: COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME, this only runs on $PROJECT" >&2; exit 1
 fi
 
-COMPOSE=(docker compose -p "$PROJECT" -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "${RH_ENV_FILE:-deploy/.env.rehearse}")
+COMPOSE=(docker compose -p "$PROJECT" -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "${RH_ENV_FILE:-$REHEARSE_ENV_FILE}")
 db="$("${COMPOSE[@]}" ps -q db 2>/dev/null | head -n 1)"
 [ -n "$db" ] || { echo "REFUSED: no running db in compose project $PROJECT" >&2; exit 1; }
 label="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$db")"

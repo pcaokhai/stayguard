@@ -1,2 +1,0 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh11ce74","username":"owner","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T23:43:47.374105Z","mustChangePin":false,"tenantId":"tn_01M40S5PXMPY7RENBTZJAW4FGE","user":{"id":"us_01M40S5PYE5NEH8MHM1FK2DB4H","locale":"en","name":"Smoke Owner","role":"OWNER"}}

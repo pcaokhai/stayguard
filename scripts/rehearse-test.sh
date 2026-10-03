@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
-# `make rehearse-test`: the rehearsal checklist as Playwright specs (web/e2e/rehearsal), run against the rehearse stack (project
-# stayguard-rehearse, plain HTTP on 127.0.0.1:$REHEARSE_PORT, default 18090) with a FRESH guesthouse every run. No clicking, no real
-# money, no real keys: payments arrive as signed webhooks, time-based cases backdate the rehearsal database only.
+# `make rehearse-test`: the rehearsal checklist as Playwright specs (web/e2e/rehearsal), run against this clone's rehearse stack (compose
+# project $REHEARSE_PROJECT and port $REHEARSE_PORT, see scripts/rehearse-env.sh: stayguard-rehearse and 18090 in the main clone, their own
+# in every other clone) with a FRESH guesthouse every run. No clicking, no real money, no real keys: payments arrive as signed webhooks,
+# time-based cases backdate the rehearsal database only.
 # Writes docs/rehearsal/results-<date>.csv and docs/rehearsal/evidence-<date>/ (screenshots, API logs).
 #   RH_ONLY='TT-0'     only the tests whose title matches this regular expression
 #   RH_SHOTS=1         afterwards, also the visual sweep (scripts/rehearsal-shots.sh)
 #   RH_ENV_OUT=file    only prepare: write `export RH_...` lines to file (and keep the pins file) so a spec can be run by hand
 #   RH_KEEP_JOBS=1     leave the jobs service running (it is stopped for the run so it cannot raise the alerts the specs count)
+# Exits 3 when another run holds the lock (deploy/.rehearse.lock), 4 when the image under test is not this commit.
 # Needs docker, python3, openssl, and `npm ci` done in web/. Never put real guest data in the stack.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PORT="${REHEARSE_PORT:-18090}"
-export REHEARSE_PORT="$PORT" REHEARSE_S3_PORT="${REHEARSE_S3_PORT:-19100}"
+. scripts/rehearse-env.sh
+PORT="$REHEARSE_PORT"
 BASE="http://localhost:$PORT"
-ENV_FILE="deploy/.env.rehearse" # git-ignored; the same file `make rehearse` makes, so the key matches the data volume
-COMPOSE=(docker compose -p stayguard-rehearse -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "$ENV_FILE" --profile backup)
+ENV_FILE="$REHEARSE_ENV_FILE" # git-ignored; the same file `make rehearse` makes, so the key matches the data volume
+COMPOSE=(docker compose -p "$REHEARSE_PROJECT" -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "$ENV_FILE" --profile backup)
 DATE="$(date +%F)"
 OUT="docs/rehearsal"
 mkdir -p "$OUT"
@@ -30,22 +32,16 @@ DOMAIN=localhost
 ACME_EMAIL=rehearse@example.invalid
 BACKUP_S3_ACCESS_KEY=rehearse-$(openssl rand -hex 4)
 BACKUP_S3_SECRET_KEY=$(openssl rand -hex 16)
-BACKUP_S3_BUCKET=stayguard-rehearse
+BACKUP_S3_BUCKET=$REHEARSE_PROJECT
 ENV
 fi
 set -a; . "$ENV_FILE"; set +a
 
-# One run at a time on this machine: two runs share the compose project, and the second one's `up --build` recreates the API under the first.
-LOCK="${TMPDIR:-/tmp}/stayguard-rehearse-test.lock"
-if ! mkdir "$LOCK" 2>/dev/null; then
-	if kill -0 "$(cat "$LOCK/pid" 2>/dev/null)" 2>/dev/null; then echo "FAIL: another rehearse-test is running (pid $(cat "$LOCK/pid")); wait for it" >&2; exit 3; fi
-	rm -rf "$LOCK"; mkdir "$LOCK"
-fi
-echo $$ >"$LOCK/pid"
+rehearse_lock "make rehearse-test"
 log="$(mktemp)"; tenant_file="$(mktemp)"; pins_file="$(mktemp)"
 cleanup() {
 	status=$?
-	rm -rf "$LOCK"
+	rehearse_unlock
 	rm -f "$log" "$tenant_file"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file.set"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file"
@@ -55,22 +51,26 @@ cleanup() {
 trap cleanup EXIT
 
 echo "== starting or reusing the rehearse stack on :$PORT"
+# The image under test must be this commit: a failed build is a failure of the run, never a warning, and the containers must be running
+# the image that was just built (not an older one left over).
+commit="$(git rev-parse --short HEAD)"
 if ! "${COMPOSE[@]}" up -d --build db api jobs >"$log" 2>&1; then
-	# A broken image build must not hide itself. Retry once with a rehearsal-only Dockerfile that also copies contracts/ (web tests import
-	# ../contracts/*.json, which the product Dockerfile leaves out); say loudly that main does not build as it stands.
-	echo "WARNING: the product image build FAILED on this commit:" >&2
-	grep -i -E 'error TS|ERROR' "$log" | tail -n 3 >&2
-	fix="$(mktemp -d)"
-	sed 's|^COPY web/ ./$|COPY web/ ./\nCOPY contracts/ /contracts/|' deploy/Dockerfile >"$fix/Dockerfile"
-	printf 'services:\n  api:\n    build:\n      dockerfile: %s/Dockerfile\n  migrate:\n    build:\n      dockerfile: %s/Dockerfile\n  jobs:\n    build:\n      dockerfile: %s/Dockerfile\n' "$fix" "$fix" "$fix" >"$fix/override.yaml"
-	if "${COMPOSE[@]}" -f "$fix/override.yaml" up -d --build db api jobs >"$log" 2>&1; then
-		echo "WARNING: built with the rehearsal-only Dockerfile fix (contracts/ copied); the results are for this commit anyway." >&2
-	else
-		echo "WARNING: still no build; testing the images already running, which are NOT this commit." >&2
-		"${COMPOSE[@]}" up -d db api jobs >/dev/null 2>&1 || true
-	fi
-	rm -rf "$fix"
+	echo "FAIL: the image build failed on commit $commit, so there is no image of this commit to test:" >&2
+	grep -i -E 'error TS|ERROR|failed' "$log" | tail -n 5 >&2
+	exit 4
 fi
+for svc in api jobs; do
+	cid="$("${COMPOSE[@]}" ps -q "$svc" | head -n 1)"
+	want="$(docker image inspect "$REHEARSE_PROJECT-$svc" --format '{{.Id}}' 2>/dev/null || true)"
+	have="$(docker inspect "$cid" --format '{{.Image}}' 2>/dev/null || true)"
+	if [ -z "$want" ] || [ "$want" != "$have" ]; then
+		echo "FAIL: the $svc container is not running the image built from commit $commit ($have, expected $want)" >&2
+		exit 4
+	fi
+done
+dirty="$(git status --porcelain -- api web/src web/messages web/public web/package.json deploy/Dockerfile contracts | head -n 3)"
+[ -z "$dirty" ] || echo "NOTE: uncommitted product changes are in this image (commit $commit plus):" $dirty >&2
+export RH_COMMIT="$commit$([ -z "$dirty" ] || echo '+dirty')"
 for _ in $(seq 120); do curl -fsS "$BASE/readyz" >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS "$BASE/readyz" >/dev/null || { echo "FAIL: the API did not become ready" >&2; "${COMPOSE[@]}" logs --tail 20 api >&2; exit 1; }
 # The jobs service would raise the partial and unpaid alerts on its own clock; the specs raise them on purpose and count them.
@@ -111,7 +111,7 @@ secret="$(openssl rand -hex 24)"
 python3 scripts/smoke/set-secret.py "$secret" "${COMPOSE[@]}" run --rm api sepay set-secret --tenant "$code" >/dev/null
 
 # Handed to the specs; the compose words let a spec restart the api and run `jobs run` through the same project.
-export E2E_BASE_URL="$BASE" RH_GUESTHOUSE="$code" RH_HOOK_PATH="$hook" RH_SEPAY_SECRET="$secret" RH_ACCOUNT_NO=1017588888 \
+export E2E_BASE_URL="$BASE" RH_PROJECT="$REHEARSE_PROJECT" RH_GUESTHOUSE="$code" RH_HOOK_PATH="$hook" RH_SEPAY_SECRET="$secret" RH_ACCOUNT_NO=1017588888 \
 	RH_PINS_FILE="$pins_file" RH_DATE="$DATE" RH_OUT="$PWD/$OUT" RH_ROOT="$PWD" RH_ENV_FILE="$ENV_FILE"
 rm -rf "$OUT/evidence-$DATE"
 if [ -n "${RH_ENV_OUT:-}" ]; then

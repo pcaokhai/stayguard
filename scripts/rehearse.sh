@@ -3,7 +3,7 @@
 # 127.0.0.1:$REHEARSE_PORT (default 18090) for a Cloudflare tunnel, with a fake test guesthouse imported through the installer
 # commands. Prints the sign-in codes, the one-time PINs and the webhook path ONCE: they are not stored anywhere readable later.
 #   make rehearse-down          stop and delete everything (database, bucket, secrets file)
-#   REHEARSE_PORT=18090         the local port
+#   REHEARSE_PORT=18090         the local port (18090 in the main clone, its own in other clones); REHEARSE_PROJECT the compose project
 #   SEPAY_SECRET=...            the secret SePay signs with (else a random one is made and printed once)
 #   REHEARSE_ACCOUNT_NO / REHEARSE_BANK_BIN / REHEARSE_ACCOUNT_NAME   receiving account for the QR (else a fake one)
 #   REHEARSE_BACKUP=1           also take one backup, to rclone's built-in S3 server (official rclone image), or with EXTERNAL_S3=1
@@ -12,11 +12,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PORT="${REHEARSE_PORT:-18090}"
-export REHEARSE_PORT="$PORT" REHEARSE_S3_PORT="${REHEARSE_S3_PORT:-19100}"
-ENV_FILE="deploy/.env.rehearse" # git-ignored (.env.*); generated once so the key matches the data volume
+. scripts/rehearse-env.sh
+rehearse_lock "make rehearse"
+PORT="$REHEARSE_PORT"
+ENV_FILE="$REHEARSE_ENV_FILE" # git-ignored (.env.*); generated once so the key matches the data volume
 CODE="rehearse"
-COMPOSE=(docker compose -p stayguard-rehearse -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "$ENV_FILE" --profile backup)
+COMPOSE=(docker compose -p "$REHEARSE_PROJECT" -f deploy/compose.prod.yaml -f deploy/compose.rehearse.yaml --env-file "$ENV_FILE" --profile backup)
 
 if [ ! -s "$ENV_FILE" ]; then
 	umask 077
@@ -28,7 +29,7 @@ DOMAIN=localhost
 ACME_EMAIL=rehearse@example.invalid
 BACKUP_S3_ACCESS_KEY=rehearse-$(openssl rand -hex 4)
 BACKUP_S3_SECRET_KEY=$(openssl rand -hex 16)
-BACKUP_S3_BUCKET=stayguard-rehearse
+BACKUP_S3_BUCKET=$REHEARSE_PROJECT
 ENV
 fi
 set -a; . "$ENV_FILE"; set +a
@@ -57,7 +58,7 @@ curl -fsS "http://localhost:$PORT/readyz" >/dev/null || { echo "FAIL: the API di
 if curl -fsS "http://localhost:$PORT/vi/" | grep -qi "demo"; then echo "FAIL: the demo role picker is in this build" >&2; exit 1; fi
 
 tenant_file="$(mktemp)"; log="$(mktemp)"
-trap 'rm -f "$tenant_file" "$log"' EXIT
+trap 'rm -f "$tenant_file" "$log"; rehearse_unlock' EXIT
 python3 - "$tenant_file" <<'PY'
 import json, os, sys
 t = json.load(open("scripts/smoke/tenant.json"))

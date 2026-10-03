@@ -3,7 +3,7 @@
 It never touches a row marked manual (any cell reading "manual"), never overwrites a formula, and edits the sheet XML in place, so
 styles, formulas, validation and everything else in the workbook stay as Khai saved them. No third-party packages.
 
-usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.xlsx] [--date YYYY-MM-DD] [--map pass=,fail=Lỗi,skip=]
+usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.xlsx] [--date YYYY-MM-DD] [--map pass=Đạt,fail=Lỗi,skip=] [--needs-eyes docs/rehearsal/needs-eyes.txt]
        scripts/rehearsal-sync.py --selftest
 Without a CSV it uses the newest docs/rehearsal/results-*.csv. The sheet needs a header row with ID, Status, Date and Notes cells."""
 import argparse, csv, datetime, glob, os, re, shutil, sys, tempfile, zipfile
@@ -81,7 +81,13 @@ def set_cell(row_xml, letters, rownum, text, default_style=""):
     return row_xml.replace("</row>", new + "</row>"), True
 
 
-def sync(xlsx, results, date, status_map):
+def read_needs_eyes(path):
+    if not path or not os.path.exists(path):
+        return set()
+    return {ln.split("#")[0].strip() for ln in open(path, encoding="utf-8") if ln.split("#")[0].strip()}
+
+
+def sync(xlsx, results, date, status_map, needs_eyes=frozenset()):
     z = zipfile.ZipFile(xlsx)
     sst = shared_strings(z)
     changed, report = {}, []
@@ -127,11 +133,18 @@ def sync(xlsx, results, date, status_map):
                 return rm.group(0)
             r, wrote = results[rid], []
             status = status_map.get(r["status"], "")
+            if r["status"] == "pass" and rid in needs_eyes:
+                status = ""  # a person must look: the note only
             detail = (r["notes"] or "").strip()
-            line = f"{AUTO} {shown}: {r['status']}" + (f" ({detail})" if detail else "") + f", chưa thử tay; bằng chứng {r['evidence']}"
+            if r["status"] == "pass" and status:
+                line = f"{AUTO} {shown}"
+            elif r["status"] == "pass":
+                line = f"{AUTO} {shown}: pass, cần người xem; bằng chứng {r['evidence']}"
+            else:
+                line = f"{AUTO} {shown}: {r['status']}" + (f" ({detail})" if detail else "") + f"; bằng chứng {r['evidence']}"
             kept = [ln for ln in note_now.split("\n") if ln and not ln.startswith(AUTO)]
             values = {"notes": "\n".join(kept + [line])}
-            if status:  # a pass never writes Đạt: only a person who saw it does
+            if status:
                 values["status"] = status
                 values["date"] = serial
             for key, letters in cols.items():
@@ -185,15 +198,15 @@ def selftest():
         z.writestr("xl/worksheets/sheet1.xml", sheet)
     res = {k: {"id": k, "status": st, "notes": n, "evidence": "ev/" + k} for k, st, n in
            [("TT-01", "pass", ""), ("TT-02", "fail", "boom"), ("TT-03", "fail", ""), ("TT-04", "fail", "x"), ("TT-05", "pass", ""), ("TT-06", "fail", "z")]}
-    sync(x, res, "2026-10-03", {"pass": "", "fail": "Lỗi", "skip": ""})
+    sync(x, res, "2026-10-03", {"pass": "Đạt", "fail": "Lỗi", "skip": ""}, {"TT-05"})
     out = zipfile.ZipFile(x).read("xl/worksheets/sheet1.xml").decode()
     r = lambda n: out.split(f'<row r="{n}">')[1].split("</row>")[0]
-    assert "Đạt" in r(2) and "<v>46298</v>" in r(2) and "QA tự động 03/10/2026: pass" in r(2), r(2)  # a pass never touches Đạt or the date
+    assert ">Đạt<" in r(2) and "QA tự động 03/10/2026</t>" in r(2), r(2)  # a pass writes Đạt and the date, note only "QA tự động <date>"
     assert ">Lỗi<" in r(3) and "ghi tay" in r(3) and "(cũ)" not in r(3) and "boom" in r(3), r(3)  # tester's note kept, old auto line replaced
     assert f"<v>{(datetime.date(2026, 10, 3) - datetime.date(1899, 12, 30)).days}</v>" in r(3), r(3)
     assert "QA tự động" not in r(4) and ">giữ<" in r(4), r(4)  # the manual row
     assert "<f>1+1</f>" in r(5) and "Lỗi" not in r(5), r(5)  # formula kept
-    assert ">Chưa làm<" in r(6) and "pass" in r(6), r(6)  # status untouched on a pass
+    assert ">Chưa làm<" in r(6) and "cần người xem" in r(6) and "Đạt" not in r(6), r(6)  # needs-eyes: a note, never Đạt
     assert "QA tự động" not in r(7) and ">Bỏ qua<" in r(7) and "Lỗi" not in r(7), r(7)  # out of scope: never written
     shutil.rmtree(d)
     print("selftest ok")
@@ -207,12 +220,13 @@ if __name__ == "__main__":
     ap.add_argument("csv", nargs="?")
     ap.add_argument("--xlsx", default="docs/rehearsal/checklist.xlsx")
     ap.add_argument("--date")
-    ap.add_argument("--map", default="pass=,fail=Lỗi,skip=")
+    ap.add_argument("--map", default="pass=Đạt,fail=Lỗi,skip=")
+    ap.add_argument("--needs-eyes", default="docs/rehearsal/needs-eyes.txt")
     a = ap.parse_args()
     path = a.csv or max(glob.glob("docs/rehearsal/results-*.csv"), default=None)
     if not path or not os.path.exists(a.xlsx):
         sys.exit(f"need a results CSV and {a.xlsx} (Khai commits the checklist there first)")
     day = a.date or (re.search(r"results-(\d{4}-\d{2}-\d{2})", path) or [None, ""])[1]
     smap = dict(p.split("=") for p in a.map.split(","))
-    for line in sync(a.xlsx, read_results(path), day, smap):
+    for line in sync(a.xlsx, read_results(path), day, smap, read_needs_eyes(a.needs_eyes)):
         print(line)

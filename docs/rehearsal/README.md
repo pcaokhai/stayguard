@@ -24,7 +24,11 @@ SePay secret with `sepay set-secret`, and runs the specs. Files run in name orde
 
 Scope: portfolio demo, no real customer. Rows the checklist marks Bỏ qua are never written by the sync, and nothing needing a real phone, printer or bank is automated.
 The CSV ends with a `# demo-check` section: one line per suite (spec file) with status, pass, fail, skip and seconds. Open bugs are in `bugs.md`.
-Only one run at a time: the runner takes a lock, because two runs share the compose project.
+One stack per clone: `scripts/rehearse-env.sh` gives the main clone (the directory named `stayguard`) the project `stayguard-rehearse` and port 18090, and every other
+clone its own project `stayguard-rehearse-<dir>` and port (18100 + a number from the path), with its own `deploy/.env.rehearse`. Set `REHEARSE_PROJECT` / `REHEARSE_PORT` to override.
+One run at a time per stack: `make rehearse-test`, `make demo-check`, `make rehearse` and `make rehearse-down` take `deploy/.rehearse.lock` and refuse (exit 3) while another holds it,
+printing what holds it, its pid and since when. The destructive specs (API restart, late webhook) therefore never overlap another run. The runner exits 4, not just warns, when the
+image it would test is not this commit (build failed, or the containers run an older image); the CSV records the commit.
 
 ## Case ids
 
@@ -68,7 +72,8 @@ is 300 s by default, so it is refused with 401 and nothing is paid; the same tra
 
 `scripts/rehearsal-sync.py` reads the newest `results-*.csv` and, for rows whose Mã matches, keeps one line "QA tự động <date>: <pass|fail> …,
 chưa thử tay; bằng chứng <path>" in Ghi chú, bằng chứng (the tester's own text stays). A failure also sets Trạng thái to Lỗi and Ngày thử; a pass
-never writes Đạt (only a person who saw it does), and a skip writes nothing. Rows with a cell reading "manual" or "[thủ công]" in the notes are left alone,
+writes Đạt with the note "QA tự động <date>" (Demo scope: Khai decided), except the ids in `needs-eyes.txt` (GD-03 to GD-07, UI-01, TD-05, TD-08), which only get a note
+asking for a person to look; a skip writes nothing, and rows set to Bỏ qua are never written. Rows with a cell reading "manual" or "[thủ công]" in the notes are left alone,
 formulas are never overwritten, and the sheet XML is edited in place so styles and validation stay. `--selftest` checks it.
 
 ## Visual sweep
