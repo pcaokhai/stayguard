@@ -436,7 +436,11 @@
       "ACCOUNT_LOCKED": "Khóa đến {until}",
       "fallback": "{kind}",
       "REFUND_PENDING": "Chờ hoàn {amount} cho khách",
-      "SEPAY_UPDATED": "Người cài đặt đã cập nhật kết nối SePay lúc {when}"
+      "SEPAY_UPDATED": "Người cài đặt đã cập nhật kết nối SePay lúc {when}",
+      "DAMAGE_REPORTED": "Báo hư hỏng: {what}",
+      "LEAVE_REQUESTED": "Xin nghỉ {kind}, {from} – {to}",
+      "STOCKTAKE_DIFFERENCE": "Kiểm kho lệch {items} mặt hàng, tổng {amount}",
+      "UNUSED_ROOM_REPORT": "Phòng báo trống nhưng có dấu hiệu đã dùng"
     },
     "resolved": "Đã giải quyết lúc {time}",
     "resolvedBy": "Đã giải quyết lúc {time} · {how}",

@@ -436,7 +436,11 @@
       "ACCOUNT_LOCKED": "Locked until {until}",
       "fallback": "{kind}",
       "REFUND_PENDING": "{amount} to refund to the guest",
-      "SEPAY_UPDATED": "The installer updated the SePay connection at {when}"
+      "SEPAY_UPDATED": "The installer updated the SePay connection at {when}",
+      "DAMAGE_REPORTED": "Damage reported: {what}",
+      "LEAVE_REQUESTED": "Leave requested ({kind}), {from} – {to}",
+      "STOCKTAKE_DIFFERENCE": "Stocktake: {items} items off, total {amount}",
+      "UNUSED_ROOM_REPORT": "Room reported vacant but looks used"
     },
     "resolved": "Resolved at {time}",
     "resolvedBy": "Resolved at {time} · {how}",

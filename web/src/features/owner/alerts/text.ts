@@ -7,6 +7,12 @@ export type Alert = components["schemas"]["Alert"];
 
 const time = (v?: string) => (v && /^\d{4}-\d\d-\d\dT/.test(v) ? clockOf(v) : (v ?? ""));
 const amount = (n?: number | null) => (n == null ? "" : formatVnd(n));
+// Label for an enum value, or "" when the message files have none: raw codes never reach the screen.
+const labelOf = (prefix: string, value?: string) => {
+  const key = `${prefix}.${value}`;
+  return value && t(key as MessageKey) !== key ? t(key as MessageKey) : "";
+};
+const SEVERITY: Record<string, string> = { LOCK_ROOM: "lock", STILL_RENTABLE: "rentable" };
 const money = (v?: string) => (v ? formatVnd(Number(v)) : "");
 
 // The API sends a deposit refund the desk still owes as PAYMENT_UNPAID with details.refundDue; it is a
@@ -56,11 +62,28 @@ export function alertDetails(a: Alert): string {
     case "CASH_OVER":
       return tf(`alerts.text.${a.kind}` as MessageKey, { got: amount(a.amount) }) + reason;
     case "UNUSED_ROOM_REPORT":
-      return d.note ?? "";
+      return d.note || t("alerts.text.UNUSED_ROOM_REPORT");
+    case "DAMAGE_REPORTED":
+      return tf("alerts.text.DAMAGE_REPORTED", {
+        what: [labelOf("damage", d.category), labelOf("damage", SEVERITY[d.severity ?? ""])]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    case "LEAVE_REQUESTED":
+      return tf("alerts.text.LEAVE_REQUESTED", {
+        kind: labelOf("leave", d.kind).toLowerCase(),
+        from: d.from ? formatDayMonth(d.from) : "",
+        to: d.to ? formatDayMonth(d.to) : "",
+      });
+    case "STOCKTAKE_DIFFERENCE":
+      return tf("alerts.text.STOCKTAKE_DIFFERENCE", {
+        items: d.items ?? "",
+        amount: amount(a.amount),
+      });
     case "ACCOUNT_LOCKED":
       return tf("alerts.text.ACCOUNT_LOCKED", { until: time(d.lockedUntil) });
     default:
-      return Object.values(d).join(" · ");
+      return ""; // an unknown kind shows no detail rather than raw enum values
   }
 }
 
