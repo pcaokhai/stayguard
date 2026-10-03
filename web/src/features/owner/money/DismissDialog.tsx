@@ -55,7 +55,7 @@ export function DismissDialog({ tx, onClose }: { tx: Tx; onClose: () => void }) 
           placeholder={t("money.dismissHint")}
           aria-invalid={!!shown}
           rows={3}
-          className="min-h-24 rounded-[10px] bg-card text-[15px] font-normal"
+          className="field-sizing-fixed h-28 resize-none rounded-[10px] bg-card text-[15px] font-normal [overflow-wrap:anywhere]"
         />
       </label>
       <p className="flex justify-between text-[13px]">
