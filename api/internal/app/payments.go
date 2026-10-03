@@ -277,12 +277,16 @@ func (p *Payments) Simulate(ctx context.Context, c Caller, id string) (PaymentVi
 	return out, err
 }
 
-// RecordIgnored stores a bank event that must not settle anything (an outgoing transfer, or money to an account that
-// is not the tenant's). The row says UNMATCHED, deduplicated like every event; no alert is raised.
+// RecordIgnored stores a bank event that must not settle anything (an outgoing transfer, or money to an account that is not the
+// tenant's). The row says IGNORED, deduplicated like every event: it is kept for audit, never listed as unmatched money, raises no
+// alert and cannot be linked to an invoice.
 func (p *Payments) RecordIgnored(ctx context.Context, ev PaymentEvent) error {
 	return p.uow.Do(ctx, ev.TenantID, func(ctx context.Context, tx Tx) error {
-		_, err := p.repo.InsertEvent(ctx, tx, p.ids.New(eventIDPrefix), ev)
-		return err
+		fresh, err := p.repo.InsertEvent(ctx, tx, p.ids.New(eventIDPrefix), ev)
+		if err != nil || !fresh {
+			return err
+		}
+		return p.repo.SetEventResult(ctx, tx, ev, payment.ResultIgnored)
 	})
 }
 

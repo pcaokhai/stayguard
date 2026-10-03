@@ -19,6 +19,8 @@ const (
 	ResultMismatch  = "MISMATCH"
 	ResultPartial   = "PARTIAL"
 	ResultUnmatched = "UNMATCHED"
+	// ResultIgnored is outgoing money or money to another account: stored for audit and dedupe, never listed and never linkable.
+	ResultIgnored   = "IGNORED"
 	ResultDuplicate = "DUPLICATE_IGNORED"
 )
 

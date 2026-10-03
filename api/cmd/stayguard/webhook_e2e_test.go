@@ -100,8 +100,8 @@ func TestSepayWebhook_SG703(t *testing.T) {
 	if st, body := r.webhook(hookID, hookSecret, now, sample, ""); st != 200 || body != `{"success": true}` {
 		t.Fatalf("documented sample: %d %s", st, body)
 	}
-	if r.events("UNMATCHED") != 1 || r.status("invoices", r.invoice) != "OPEN" {
-		t.Fatal("a transfer for another account stays unmatched and settles nothing")
+	if r.events("IGNORED") != 1 || r.status("invoices", r.invoice) != "OPEN" {
+		t.Fatal("a transfer for another account is ignored and settles nothing")
 	}
 
 	// Bad signature, tampered body, wrong secret, stale timestamp, unknown hook: nothing is stored.
@@ -128,20 +128,20 @@ func TestSepayWebhook_SG703(t *testing.T) {
 	if st, _ := r.webhook("nope", hookSecret, now, good, ""); st != 404 {
 		t.Errorf("unknown hook: %d", st)
 	}
-	if r.events("SETTLED")+r.events("UNMATCHED")+r.events("MISMATCH") != 1 || r.status("invoices", r.invoice) != "OPEN" {
+	if r.events("SETTLED")+r.events("UNMATCHED")+r.events("MISMATCH")+r.events("IGNORED") != 1 || r.status("invoices", r.invoice) != "OPEN" {
 		t.Fatal("a rejected webhook must store and settle nothing")
 	}
 	if n := r.e.count(`SELECT count(*) FROM app.tenants WHERE id = $1 AND sepay_signature_ok = false`, r.tenant); n != 1 {
 		t.Error("a failed check is visible in the status")
 	}
 
-	// Outgoing money with the right code and amount is stored as UNMATCHED and ignored, and raises no alert.
+	// Outgoing money with the right code and amount is stored as IGNORED, and raises no alert.
 	alerts := r.e.count(`SELECT count(*) FROM app.alerts WHERE tenant_id = $1`, r.tenant)
 	out := r.sepayBody(t, 1002, "out", r.balance, "CK "+r.code)
 	if st, body := r.webhook(hookID, hookSecret, now, out, ""); st != 200 || body != `{"success": true}` {
 		t.Fatalf("outgoing: %d %s", st, body)
 	}
-	if r.status("invoices", r.invoice) != "OPEN" || r.events("UNMATCHED") != 2 || r.e.count(`SELECT count(*) FROM app.alerts WHERE tenant_id = $1`, r.tenant) != alerts {
+	if r.status("invoices", r.invoice) != "OPEN" || r.events("IGNORED") != 2 || r.events("UNMATCHED") != 0 || r.e.count(`SELECT count(*) FROM app.alerts WHERE tenant_id = $1`, r.tenant) != alerts {
 		t.Fatal("outgoing transfers settle nothing and raise nothing")
 	}
 	// Money to an account that is not the tenant's settles nothing either.
