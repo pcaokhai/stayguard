@@ -37,9 +37,18 @@ WHERE tenant_id = @tenant_id AND id = @event_id
 FOR UPDATE;
 
 -- name: ListAuditLogs :many
-SELECT a.id, a.created_at, coalesce(u.name, '') AS actor_name, coalesce(u.role, '') AS actor_role, a.action, a.after
+-- room_code and bill_code are resolved here from entity_type and entity_id (stay, invoice, payment, room), so rows
+-- written before the documents carried them are filled too.
+SELECT a.id, a.created_at, coalesce(u.name, '') AS actor_name, coalesce(u.role, '') AS actor_role, a.action, a.after,
+       coalesce(ru.code, '')::text AS room_code, coalesce(inv.bill_code, '')::text AS bill_code
 FROM app.audit_logs a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
+LEFT JOIN app.payments pm ON pm.tenant_id = a.tenant_id AND a.entity_type = 'payment' AND pm.id = a.entity_id
+LEFT JOIN app.invoices inv ON inv.tenant_id = a.tenant_id
+     AND ((a.entity_type = 'invoice' AND inv.id = a.entity_id) OR (a.entity_type = 'payment' AND inv.id = pm.invoice_id)
+          OR (a.entity_type = 'stay' AND inv.stay_id = a.entity_id))
+LEFT JOIN app.stays st ON st.tenant_id = a.tenant_id AND st.id = CASE WHEN a.entity_type = 'stay' THEN a.entity_id ELSE inv.stay_id END
+LEFT JOIN app.units ru ON ru.tenant_id = a.tenant_id AND ru.id = CASE WHEN a.entity_type = 'room' THEN a.entity_id ELSE st.unit_id END
 WHERE a.tenant_id = @tenant_id AND a.created_at >= @from_at AND a.created_at < @to_at
   AND (sqlc.narg(actor_id)::text IS NULL OR a.actor_id = sqlc.narg(actor_id)::text)
   AND (cardinality(@prefixes::text[]) = 0 OR a.action LIKE ANY(@prefixes::text[]))

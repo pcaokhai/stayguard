@@ -48,6 +48,7 @@ type AuditRow struct {
 	ID, ActorName, ActorRole, Action string
 	At                               time.Time
 	After                            []byte
+	Room, Bill                       string // resolved at read time from the entity; empty when the entity has none
 }
 
 // AuditFilter: Prefixes are action prefixes of one category (empty means every category).

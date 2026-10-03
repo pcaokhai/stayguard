@@ -98,7 +98,7 @@ func (MonitorRepo) AuditLogs(ctx context.Context, tx app.Tx, f app.AuditFilter) 
 	}
 	out := make([]app.AuditRow, len(rows))
 	for i, r := range rows {
-		out[i] = app.AuditRow{ID: r.ID, At: r.CreatedAt.Time, ActorName: r.ActorName, ActorRole: r.ActorRole, Action: r.Action, After: r.After}
+		out[i] = app.AuditRow{ID: r.ID, At: r.CreatedAt.Time, ActorName: r.ActorName, ActorRole: r.ActorRole, Action: r.Action, After: r.After, Room: r.RoomCode, Bill: r.BillCode}
 	}
 	return out, nil
 }

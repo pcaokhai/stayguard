@@ -90,9 +90,16 @@ func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]ListA
 }
 
 const listAuditLogs = `-- name: ListAuditLogs :many
-SELECT a.id, a.created_at, coalesce(u.name, '') AS actor_name, coalesce(u.role, '') AS actor_role, a.action, a.after
+SELECT a.id, a.created_at, coalesce(u.name, '') AS actor_name, coalesce(u.role, '') AS actor_role, a.action, a.after,
+       coalesce(ru.code, '')::text AS room_code, coalesce(inv.bill_code, '')::text AS bill_code
 FROM app.audit_logs a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
+LEFT JOIN app.payments pm ON pm.tenant_id = a.tenant_id AND a.entity_type = 'payment' AND pm.id = a.entity_id
+LEFT JOIN app.invoices inv ON inv.tenant_id = a.tenant_id
+     AND ((a.entity_type = 'invoice' AND inv.id = a.entity_id) OR (a.entity_type = 'payment' AND inv.id = pm.invoice_id)
+          OR (a.entity_type = 'stay' AND inv.stay_id = a.entity_id))
+LEFT JOIN app.stays st ON st.tenant_id = a.tenant_id AND st.id = CASE WHEN a.entity_type = 'stay' THEN a.entity_id ELSE inv.stay_id END
+LEFT JOIN app.units ru ON ru.tenant_id = a.tenant_id AND ru.id = CASE WHEN a.entity_type = 'room' THEN a.entity_id ELSE st.unit_id END
 WHERE a.tenant_id = $1 AND a.created_at >= $2 AND a.created_at < $3
   AND ($4::text IS NULL OR a.actor_id = $4::text)
   AND (cardinality($5::text[]) = 0 OR a.action LIKE ANY($5::text[]))
@@ -122,8 +129,12 @@ type ListAuditLogsRow struct {
 	ActorRole string
 	Action    string
 	After     []byte
+	RoomCode  string
+	BillCode  string
 }
 
+// room_code and bill_code are resolved here from entity_type and entity_id (stay, invoice, payment, room), so rows
+// written before the documents carried them are filled too.
 func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]ListAuditLogsRow, error) {
 	rows, err := q.db.Query(ctx, listAuditLogs,
 		arg.TenantID,
@@ -150,6 +161,8 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 			&i.ActorRole,
 			&i.Action,
 			&i.After,
+			&i.RoomCode,
+			&i.BillCode,
 		); err != nil {
 			return nil, err
 		}

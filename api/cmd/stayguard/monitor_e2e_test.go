@@ -112,6 +112,17 @@ func TestMonitorE2E_LinkUnmatchedTransfer_SG903(t *testing.T) {
 	if items, _ := parse(raw)["items"].([]any); st != 200 || len(items) != 1 || items[0].(map[string]any)["action"] != "payment.linked" {
 		t.Fatalf("audit log: %d %s", st, raw)
 	}
+	// The activity log names the room and the bill even though the stored documents carry only ids.
+	st, raw = e.send("GET", fmt.Sprintf("/v1/owner/audit-logs?from=%s&to=%s", day, day), r.token, "", nil)
+	seen := map[string]map[string]any{}
+	for _, it := range parse(raw)["items"].([]any) {
+		m := it.(map[string]any)
+		seen[m["action"].(string)], _ = m["details"].(map[string]any)
+	}
+	if st != 200 || seen["payment.linked"]["room"] != "A102" || seen["payment.linked"]["bill"] != r.code ||
+		seen["stay.check_in"]["room"] != "A102" || seen["stay.checked_out"]["room"] != "A102" || seen["stay.checked_out"]["bill"] != r.code {
+		t.Fatalf("room and bill in the activity log: %d %v", st, seen)
+	}
 	if st, _ = e.send("GET", fmt.Sprintf("/v1/owner/audit-logs?from=%s&to=%s&category=NOPE", day, day), r.token, "", nil); st != 422 {
 		t.Fatalf("unknown category: %d", st)
 	}

@@ -224,11 +224,23 @@ func (m *Monitor) ListAuditLogs(ctx context.Context, c Caller, q AuditQuery) (Au
 		out.Items = make([]AuditEntryView, len(rows))
 		for i, r := range rows {
 			out.Items[i] = AuditEntryView{ID: r.ID, ActorName: r.ActorName, ActorRole: r.ActorRole, Category: auditCategoryOf(r.Action),
-				Action: r.Action, At: r.At.UTC(), Details: auditDetails(r.After)}
+				Action: r.Action, At: r.At.UTC(), Details: AuditDetailsOf(r)}
 		}
 		return nil
 	})
 	return out, err
+}
+
+// AuditDetailsOf is what the activity log shows for a row: the scalar values of its "after" document, plus the room and
+// the bill resolved from the entity. A detail the document already has is never replaced.
+func AuditDetailsOf(r AuditRow) map[string]string {
+	out := auditDetails(r.After)
+	for k, v := range map[string]string{"room": r.Room, "bill": r.Bill} {
+		if _, has := out[k]; !has && v != "" {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // auditDetails flattens the top-level scalar values of an audit row's "after" document into display strings.
