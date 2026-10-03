@@ -1,4 +1,4 @@
-import { cfg, expect, formSignIn, NEW_PIN, oneTimePin, test, uiLogin } from "./helpers";
+import { cfg, expect, formSignIn, NEW_PIN, oneTimePin, sleep, test, uiLogin } from "./helpers";
 
 // Roles, sign-in and sessions (docs/15 §2 and rules 12 and 13).
 test("RL-01 a page the role may not open shows the no-permission screen and keeps the person signed in", async ({
