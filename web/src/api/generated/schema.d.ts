@@ -1887,6 +1887,18 @@ export interface components {
             pricingVersion: number;
             /** @description Set while the stay is checked out and its invoice is not paid. */
             pendingPayment?: components["schemas"]["PendingPayment"] | null;
+            /** @description The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE. */
+            invoice?: components["schemas"]["Invoice"];
+            /**
+             * @description Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
+             * @enum {string}
+             */
+            paymentState?: "PAID" | "AWAITING_PAYMENT" | "REFUND_PENDING";
+            /**
+             * Format: date-time
+             * @description When the invoice was settled; null until then.
+             */
+            paidAt?: string | null;
             guestId?: components["schemas"]["GuestIdIndicators"];
         };
         AddExtrasRequest: {

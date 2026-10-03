@@ -22,9 +22,9 @@ UPDATE app.stays SET status = 'CHECKED_OUT', check_out_at = @at
 WHERE tenant_id = @tenant_id AND id = @stay_id AND status = 'ACTIVE';
 
 -- name: GetInvoiceByStay :one
-SELECT id, stay_id, bill_code, status, quote, total, created_at
-FROM app.invoices
-WHERE tenant_id = @tenant_id AND stay_id = @stay_id;
+SELECT i.id, i.stay_id, i.bill_code, i.status, app.reconciled_quote(i.quote, i.total, i.status, s.deposit)::jsonb AS quote, i.total, i.created_at, i.paid_at
+FROM app.invoices i JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
+WHERE i.tenant_id = @tenant_id AND i.stay_id = @stay_id;
 
 -- name: InsertInvoice :exec
 -- status is OPEN and created_at comes from the argument, never from now().
@@ -37,10 +37,10 @@ SELECT EXISTS (SELECT 1 FROM app.invoices WHERE tenant_id = @tenant_id AND bill_
 -- name: GetStayPendingPayment :one
 -- The open invoice of a stay with the money so far: paid is the deposit plus bank money that did not settle it yet.
 SELECT iv.id AS invoice_id, iv.total, iv.created_at,
-       coalesce((iv.quote->>'depositPaid')::bigint, 0)::bigint AS deposit,
-       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS refund_due,
+       st.deposit::bigint AS deposit,
+       greatest(st.deposit - iv.total, 0)::bigint AS refund_due,
        coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS received,
        coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
                  ORDER BY p.created_at DESC LIMIT 1), '')::text AS payment_id
-FROM app.invoices iv
+FROM app.invoices iv JOIN app.stays st ON st.tenant_id = iv.tenant_id AND st.id = iv.stay_id
 WHERE iv.tenant_id = @tenant_id AND iv.stay_id = @stay_id AND iv.status = 'OPEN';

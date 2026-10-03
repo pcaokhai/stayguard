@@ -12,6 +12,7 @@ import (
 
 	"github.com/pcaokhai/stayguard/api/internal/domain/invoice"
 	"github.com/pcaokhai/stayguard/api/internal/domain/room"
+	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
 func (e *billEnv) checkout(id, key string) (InvoiceView, bool, error) {
@@ -67,15 +68,11 @@ func TestCheckoutRepeat_SG205_AC3(t *testing.T) {
 		t.Fatalf("same key: %v %v", err, replayed)
 	}
 	e.clock.now = e.clock.now.Add(72 * time.Hour)
-	other, replayed, err := e.checkout("st1", callID(2))
-	if err != nil || replayed || !reflect.DeepEqual(first, other) {
-		t.Fatalf("different key must return the same invoice: %v %v\n%+v\n%+v", err, replayed, first, other)
+	if _, replayed, err = e.checkout("st1", callID(2)); !errors.Is(err, stay.ErrNotActive) || replayed {
+		t.Fatalf("a finished stay answers STAY_NOT_ACTIVE under a new key: %v %v", err, replayed)
 	}
 	if e.repo.insertedInvs != 1 || len(e.repo.invoices[tenantA]) != 1 || e.repo.markCount != 1 || len(e.audit.entries) != 1 {
 		t.Fatalf("repeat wrote again: invoices=%d marks=%d audits=%d", e.repo.insertedInvs, e.repo.markCount, len(e.audit.entries))
-	}
-	if _, _, err := e.checkout("st1", callID(2)); err != nil {
-		t.Fatalf("the second key must now replay: %v", err)
 	}
 	for _, k := range []string{"", strings.Repeat("k", 65)} {
 		if _, _, err := e.checkout("st1", k); !errors.Is(err, ErrInvalidIdempotencyKey) {
@@ -196,9 +193,8 @@ func TestInvoiceQuoteFrozen_SG205_AC5(t *testing.T) {
 	}
 	before := string(e.repo.invoices[tenantA]["st1"].Quote)
 	e.clock.now = e.clock.now.Add(30 * 24 * time.Hour)
-	later, _, err := e.checkout("st1", callID(2))
-	if err != nil || !reflect.DeepEqual(first.Quote, later.Quote) || string(e.repo.invoices[tenantA]["st1"].Quote) != before {
-		t.Fatalf("quote moved with the clock: %v", err)
+	if _, _, err = e.checkout("st1", callID(2)); !errors.Is(err, stay.ErrNotActive) || string(e.repo.invoices[tenantA]["st1"].Quote) != before {
+		t.Fatalf("a later check-out must refuse and leave the frozen quote alone: %v", err)
 	}
 	if first.Quote.RefundDue == 0 {
 		t.Fatalf("the deposit exceeds the total, a refund is due: %+v", first.Quote)

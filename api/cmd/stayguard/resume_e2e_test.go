@@ -98,10 +98,13 @@ func TestCheckoutTime_FixedOnlyOnConfirmation_FU(t *testing.T) {
 		t.Fatalf("checkout: %d %s", st, raw)
 	}
 	e.clock.set(confirm.Add(2 * time.Hour))
-	st, raw = e.checkout(desk, stay, newKey()) // opened again later: the same frozen invoice
-	again := parse(raw)
-	if st != 201 || again["id"] != inv["id"] || again["billCode"] != inv["billCode"] {
-		t.Fatalf("a second checkout must return the same invoice and bill code: %d %s", st, raw)
+	st, raw = e.checkout(desk, stay, newKey()) // pressed again with a new key: a finished stay, nothing changes
+	if st != 409 || parse(raw)["code"] != "STAY_NOT_ACTIVE" || e.count(`SELECT count(*) FROM app.invoices WHERE stay_id = $1`, stay) != 1 {
+		t.Fatalf("a second checkout must create nothing: %d %s", st, raw)
+	}
+	st, raw = e.send("GET", "/v1/stays/"+stay, desk, "", nil) // the frozen invoice and bill code come from getStay
+	if gi, _ := parse(raw)["invoice"].(map[string]any); st != 200 || gi["id"] != inv["id"] || gi["billCode"] != inv["billCode"] {
+		t.Fatalf("getStay returns the same invoice and bill code: %d %s", st, raw)
 	}
 	var outAt time.Time
 	if err := e.owner.QueryRow(context.Background(), `SELECT check_out_at FROM app.stays WHERE id = $1`, stay).Scan(&outAt); err != nil || !outAt.Equal(confirm) {
@@ -128,9 +131,8 @@ func TestUnsettledCheckout_StaysOnTheMapAndResumes_FU(t *testing.T) {
 	if st != 200 || gp == nil || num(gp["refundDue"]) != r.refund || num(gp["deposit"]) != bigDeposit || gp["createdAt"] != pp["createdAt"] {
 		t.Fatalf("getStay pendingPayment: %d %s", st, raw)
 	}
-	// Resuming: opening checkout again is the same invoice, and the refund can still be confirmed.
-	st, raw = r.e.checkout(r.desk, r.stay, newKey())
-	if again := parse(raw); st != 201 || again["id"] != r.invoice || again["billCode"] != r.code {
+	// Resuming: getStay gives the same invoice and bill code, and the refund can still be confirmed.
+	if gi, _ := parse(raw)["invoice"].(map[string]any); st != 200 || gi["id"] != r.invoice || gi["billCode"] != r.code || parse(raw)["paymentState"] != "REFUND_PENDING" {
 		t.Fatalf("resume: %d %s", st, raw)
 	}
 	if st, raw = r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.desk, newKey(), map[string]any{"method": "CASH"}); st != 201 {

@@ -28,9 +28,9 @@ func (q *Queries) BillCodeTaken(ctx context.Context, arg BillCodeTakenParams) (b
 }
 
 const getInvoiceByStay = `-- name: GetInvoiceByStay :one
-SELECT id, stay_id, bill_code, status, quote, total, created_at
-FROM app.invoices
-WHERE tenant_id = $1 AND stay_id = $2
+SELECT i.id, i.stay_id, i.bill_code, i.status, app.reconciled_quote(i.quote, i.total, i.status, s.deposit)::jsonb AS quote, i.total, i.created_at, i.paid_at
+FROM app.invoices i JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
+WHERE i.tenant_id = $1 AND i.stay_id = $2
 `
 
 type GetInvoiceByStayParams struct {
@@ -46,6 +46,7 @@ type GetInvoiceByStayRow struct {
 	Quote     []byte
 	Total     int64
 	CreatedAt pgtype.Timestamptz
+	PaidAt    pgtype.Timestamptz
 }
 
 func (q *Queries) GetInvoiceByStay(ctx context.Context, arg GetInvoiceByStayParams) (GetInvoiceByStayRow, error) {
@@ -59,18 +60,19 @@ func (q *Queries) GetInvoiceByStay(ctx context.Context, arg GetInvoiceByStayPara
 		&i.Quote,
 		&i.Total,
 		&i.CreatedAt,
+		&i.PaidAt,
 	)
 	return i, err
 }
 
 const getStayPendingPayment = `-- name: GetStayPendingPayment :one
 SELECT iv.id AS invoice_id, iv.total, iv.created_at,
-       coalesce((iv.quote->>'depositPaid')::bigint, 0)::bigint AS deposit,
-       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS refund_due,
+       st.deposit::bigint AS deposit,
+       greatest(st.deposit - iv.total, 0)::bigint AS refund_due,
        coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS received,
        coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
                  ORDER BY p.created_at DESC LIMIT 1), '')::text AS payment_id
-FROM app.invoices iv
+FROM app.invoices iv JOIN app.stays st ON st.tenant_id = iv.tenant_id AND st.id = iv.stay_id
 WHERE iv.tenant_id = $1 AND iv.stay_id = $2 AND iv.status = 'OPEN'
 `
 

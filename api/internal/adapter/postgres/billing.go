@@ -98,7 +98,7 @@ func (BillingRepo) InvoiceByStay(ctx context.Context, tx app.Tx, stayID string) 
 		return app.InvoiceRecord{}, false, wrap("select invoice", err)
 	}
 	return app.InvoiceRecord{ID: r.ID, StayID: r.StayID, BillCode: r.BillCode, Status: r.Status, Quote: r.Quote,
-		Total: r.Total, CreatedAt: r.CreatedAt.Time}, true, nil
+		Total: r.Total, CreatedAt: r.CreatedAt.Time, PaidAt: timePtr(r.PaidAt)}, true, nil
 }
 
 // InsertInvoice maps a unique violation of the bill code to app.ErrBillCodeConflict (the use case retries);

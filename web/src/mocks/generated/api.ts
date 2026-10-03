@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.4.0
+ * OpenAPI spec version: 1.5.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -348,6 +348,37 @@ export interface Quote {
   lines: BillLine[];
 }
 
+/**
+ * Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
+ */
+export type StayPaymentState = typeof StayPaymentState[keyof typeof StayPaymentState];
+
+
+export const StayPaymentState = {
+  PAID: 'PAID',
+  AWAITING_PAYMENT: 'AWAITING_PAYMENT',
+  REFUND_PENDING: 'REFUND_PENDING',
+} as const;
+
+export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
+
+
+export const InvoiceStatus = {
+  OPEN: 'OPEN',
+  PAID: 'PAID',
+} as const;
+
+export interface Invoice {
+  id: string;
+  stayId: string;
+  roomCode: string;
+  /** Short reference such as PH0930A101, used as the transfer note */
+  billCode?: string;
+  status: InvoiceStatus;
+  createdAt: string;
+  quote: Quote;
+}
+
 export interface GuestIdIndicators {
   hasIdNumber: boolean;
   hasFrontPhoto: boolean;
@@ -372,6 +403,15 @@ export interface Stay {
   pricingVersion: number;
   /** Set while the stay is checked out and its invoice is not paid. */
   pendingPayment?: PendingPayment | null;
+  /** The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE. */
+  invoice?: Invoice;
+  /** Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect). */
+  paymentState?: StayPaymentState;
+  /**
+     * When the invoice was settled; null until then.
+     * @nullable
+     */
+  paidAt?: string | null;
   guestId?: GuestIdIndicators;
 }
 
@@ -387,25 +427,6 @@ export type AddExtrasRequestItemsItem = {
 export interface AddExtrasRequest {
   /** @minItems 1 */
   items: AddExtrasRequestItemsItem[];
-}
-
-export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
-
-
-export const InvoiceStatus = {
-  OPEN: 'OPEN',
-  PAID: 'PAID',
-} as const;
-
-export interface Invoice {
-  id: string;
-  stayId: string;
-  roomCode: string;
-  /** Short reference such as PH0930A101, used as the transfer note */
-  billCode?: string;
-  status: InvoiceStatus;
-  createdAt: string;
-  quote: Quote;
 }
 
 export interface CreatePaymentRequest {

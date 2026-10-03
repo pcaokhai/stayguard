@@ -2,7 +2,7 @@
 
 import { Banknote, QrCode } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppFrame } from "@/components/shell/AppFrame";
 import { TopBar } from "@/components/shell/TopBar";
 import { QueryError } from "@/components/StateView";
@@ -31,28 +31,14 @@ export function CheckoutView() {
   const [checkoutKey] = useState(newIdempotencyKey);
   // Idempotency-Key must be a UUID, and the same key with another body is a 409: one key per method.
   const payKeys = useRef<Partial<Record<"CASH" | "TRANSFER", string>>>({});
-  const started = useRef(false);
   const pay = useCreatePayment();
   const s = stay.data;
-  const invoice = checkout.data;
-
   // Opening this screen only quotes: the stay is still open and nothing changes on the server. The check-out time and the invoice
   // are fixed by the request sent when the receptionist confirms a payment or the refund (server clock). A stay that was already
-  // checked out and left unsettled resumes here: repeating the request returns the same invoice and bill code.
-  useEffect(() => {
-    if (s?.status === "CHECKED_OUT" && !started.current) {
-      started.current = true;
-      checkout.mutate(checkoutKey);
-    }
-  }, [s?.status, checkout, checkoutKey]);
+  // checked out and left unsettled resumes from getStay, which carries the frozen invoice and bill code; a finished stay is
+  // read-only, so check-out is never sent for it.
+  const invoice = checkout.data ?? s?.invoice;
 
-  if (checkout.isError && s?.status === "CHECKED_OUT")
-    // resuming failed: nothing to show but a retry
-    return (
-      <AppFrame tabs={false}>
-        <QueryError onRetry={() => checkout.mutate(checkoutKey)} />
-      </AppFrame>
-    );
   const q = invoice?.quote ?? (s?.status === "ACTIVE" ? s.quote : undefined);
   const mins = s?.checkOutAt ? minutesBetween(s.checkInAt, s.checkOutAt) : undefined;
   const busy = pay.isPending || checkout.isPending;
@@ -60,7 +46,7 @@ export function CheckoutView() {
   // method choice, which would look like starting over and could open a second QR for the same bill.
   const pend = s?.pendingPayment;
   const resumable =
-    s?.status === "CHECKED_OUT" && !!pend && (!!pend.paymentId || pend.received > pend.deposit);
+    s?.status === "CHECKED_OUT" && !!pend && (!!pend.paymentId || pend.received > 0);
 
   // Confirming: freeze the bill (idempotent), then record the payment or refund with its own key.
   const choose = async (method: "CASH" | "TRANSFER") => {

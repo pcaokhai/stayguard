@@ -380,7 +380,7 @@ func (q *Queries) ListStaleUnpaid(ctx context.Context, arg ListStaleUnpaidParams
 
 const lockInvoiceForPayment = `-- name: LockInvoiceForPayment :one
 
-SELECT i.id, i.status, i.bill_code, i.stay_id, i.quote, u.building_id
+SELECT i.id, i.status, i.bill_code, i.stay_id, app.reconciled_quote(i.quote, i.total, i.status, s.deposit)::jsonb AS quote, u.building_id
 FROM app.invoices i
 JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
 JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id

@@ -15,13 +15,20 @@ func toStay(d app.StayDetail) gen.Stay {
 			Quantity: int(e.Quantity), ServiceCode: e.ServiceCode, UnitAmount: e.UnitAmount,
 		}
 	}
-	return gen.Stay{
+	out := gen.Stay{
 		Id: d.ID, RoomId: d.RoomID, RoomCode: d.RoomCode, RentalType: gen.RentalType(d.RentalType),
 		Status: gen.StayStatus(d.Status), CheckInAt: d.CheckInAt, CheckOutAt: d.CheckOutAt,
 		GuestName: d.GuestName, GuestPhone: d.GuestPhone, GuestId: &gen.GuestIdIndicators{HasIdNumber: d.GuestID.HasIDNumber, HasFrontPhoto: d.GuestID.HasFrontPhoto, HasBackPhoto: d.GuestID.HasBackPhoto},
 		Deposit: d.Deposit, Extras: extras, Quote: toQuote(d.Quote), PricingVersion: d.PricingVersion,
-		PendingPayment: toPendingPayment(d.PendingPayment),
+		PendingPayment: toPendingPayment(d.PendingPayment), PaidAt: d.PaidAt,
 	}
+	if d.Invoice != nil {
+		inv := toInvoice(*d.Invoice)
+		out.Invoice = &inv
+		state := gen.StayPaymentState(d.PaymentState)
+		out.PaymentState = &state
+	}
+	return out
 }
 
 func toPendingPayment(p *app.PendingPayment) *gen.PendingPayment {

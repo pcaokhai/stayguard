@@ -39,6 +39,7 @@ type fakeStayRepo struct {
 	markErr  error
 	calls    int
 	locks    int
+	invoice  *InvoiceRecord // what InvoiceByStay returns
 }
 
 func (r *fakeStayRepo) Room(_ context.Context, tx Tx, id string, forUpdate bool) (CheckInRoom, bool, error) {
@@ -233,4 +234,11 @@ func mustLoc(t *testing.T) *time.Location {
 
 func (r *fakeStayRepo) PendingPayment(context.Context, Tx, string) (*PendingPayment, error) {
 	return nil, nil
+}
+
+func (r *fakeStayRepo) InvoiceByStay(context.Context, Tx, string) (InvoiceRecord, bool, error) {
+	if r.invoice == nil {
+		return InvoiceRecord{}, false, nil
+	}
+	return *r.invoice, true, nil
 }

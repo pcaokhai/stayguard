@@ -32,6 +32,10 @@ type StayDetail struct {
 	PricingVersion int               `json:"pricingVersion"`
 	// PendingPayment is set while the stay is checked out and its invoice is not paid.
 	PendingPayment *PendingPayment `json:"pendingPayment,omitempty"`
+	// Invoice, PaymentState and PaidAt are set once the stay is checked out: the frozen invoice, and where it stands.
+	Invoice      *InvoiceView `json:"invoice,omitempty"`
+	PaymentState string       `json:"paymentState,omitempty"`
+	PaidAt       *time.Time   `json:"paidAt,omitempty"`
 }
 
 type ExtraView struct {

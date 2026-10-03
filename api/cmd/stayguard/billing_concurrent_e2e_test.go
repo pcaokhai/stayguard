@@ -76,19 +76,19 @@ func TestCheckoutConcurrent_SG205_AC3(t *testing.T) {
 	first, second := e.openStay(token, 1, nil), e.openStay(token, 2, nil)
 	e.clock.set(fixedCheckIn.Add(billDay))
 
-	// Distinct keys: every racer gets the same invoice; one row; the stay is checked out once.
-	bodies := make([]string, 10)
+	// Distinct keys: exactly one racer checks the stay out (201); the others find a finished stay (409 STAY_NOT_ACTIVE).
+	var created atomic.Int64
 	race(10, func(i int) {
-		st, raw := e.checkout(token, first, newKey())
-		if st != 201 {
+		switch st, raw := e.checkout(token, first, newKey()); {
+		case st == 201:
+			created.Add(1)
+		case st == 409 && problemCode(raw) == "STAY_NOT_ACTIVE":
+		default:
 			t.Errorf("racer %d: %s", i, describe(st, raw))
 		}
-		bodies[i] = string(raw)
 	})
-	for i, b := range bodies {
-		if parse([]byte(b))["id"] != parse([]byte(bodies[0]))["id"] || parse([]byte(b))["billCode"] != parse([]byte(bodies[0]))["billCode"] {
-			t.Errorf("racer %d saw another invoice: %s vs %s", i, b, bodies[0])
-		}
+	if created.Load() != 1 {
+		t.Errorf("%d racers created an invoice, want 1", created.Load())
 	}
 	if e.count(`SELECT count(*) FROM app.invoices WHERE stay_id = $1`, first) != 1 ||
 		e.count(`SELECT count(*) FROM app.stays WHERE id = $1 AND status = 'CHECKED_OUT'`, first) != 1 ||
@@ -132,7 +132,7 @@ func TestExtrasVsCheckoutRace_SG205_AC4(t *testing.T) {
 		var added atomic.Int64
 		race(9, func(i int) {
 			if i%3 == 0 {
-				if st, raw := e.checkout(token, id, newKey()); st != 201 {
+				if st, raw := e.checkout(token, id, newKey()); st != 201 && !(st == 409 && problemCode(raw) == "STAY_NOT_ACTIVE") {
 					t.Errorf("round %d checkout: %s", round, describe(st, raw))
 				}
 				return

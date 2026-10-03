@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pcaokhai/stayguard/api/internal/domain/invoice"
 	"github.com/pcaokhai/stayguard/api/internal/domain/stay"
 )
 
@@ -30,9 +31,7 @@ func (s *Stays) GetStay(ctx context.Context, c Caller, stayID string) (StayDetai
 			return err
 		}
 		if rec.Status == string(stay.StatusCheckedOut) {
-			if out.PendingPayment, err = s.repo.PendingPayment(ctx, tx, rec.ID); err != nil {
-				return fmt.Errorf("pending payment: %w", err)
-			}
+			return s.finish(ctx, tx, rec, &out)
 		}
 		return nil
 	})
@@ -64,4 +63,41 @@ func quoteInstant(rec StayRecord, now time.Time) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("stay %s has no check-out time", rec.ID)
 	}
 	return *rec.CheckOutAt, nil
+}
+
+// Payment states of a checked-out stay.
+const (
+	PaymentStatePaid            = "PAID"
+	PaymentStateAwaitingPayment = "AWAITING_PAYMENT"
+	PaymentStateRefundPending   = "REFUND_PENDING"
+)
+
+// finish adds what a finished stay shows: the frozen invoice (its quote is the bill, never re-priced), where the payment stands,
+// and what is still open.
+func (s *Stays) finish(ctx context.Context, tx Tx, rec StayRecord, out *StayDetail) error {
+	inv, ok, err := s.repo.InvoiceByStay(ctx, tx, rec.ID)
+	if err != nil {
+		return fmt.Errorf("invoice: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("stay %s is checked out without an invoice", rec.ID)
+	}
+	view, err := invoiceViewOf(inv, rec.RoomCode)
+	if err != nil {
+		return err
+	}
+	out.Invoice, out.Quote, out.PaidAt = &view, view.Quote, utcPtr(inv.PaidAt)
+	switch {
+	case inv.Status == string(invoice.StatusPaid):
+		out.PaymentState = PaymentStatePaid
+		return nil
+	case view.Quote.BalanceDue == 0 && view.Quote.RefundDue > 0:
+		out.PaymentState = PaymentStateRefundPending
+	default:
+		out.PaymentState = PaymentStateAwaitingPayment
+	}
+	if out.PendingPayment, err = s.repo.PendingPayment(ctx, tx, rec.ID); err != nil {
+		return fmt.Errorf("pending payment: %w", err)
+	}
+	return nil
 }

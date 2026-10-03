@@ -70,6 +70,10 @@ func TestGetStayQuote_SG203_AC6(t *testing.T) {
 		e.s.clock = fixedClock{tc.now}
 		tc.rec.ID, tc.rec.CheckInAt = "st1", in
 		seedStay(e, tc.rec)
+		if tc.rec.Status == "CHECKED_OUT" { // a checked-out stay always has its frozen invoice
+			q, _ := json.Marshal(expectedDetail(t, tc.rec, *tc.rec.CheckOutAt))
+			e.repo.invoice = &InvoiceRecord{ID: "iv1", StayID: "st1", BillCode: "PH1", Status: "OPEN", Quote: q, CreatedAt: *tc.rec.CheckOutAt}
+		}
 		got, err := e.s.GetStay(context.Background(), e.caller, "st1")
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)

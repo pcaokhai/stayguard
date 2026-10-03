@@ -63,6 +63,8 @@ type StayRepo interface {
 	Timezone(ctx context.Context, tx Tx) (string, error)
 	// PendingPayment is the open invoice of a checked-out stay with its money so far; nil when there is none.
 	PendingPayment(ctx context.Context, tx Tx, stayID string) (*PendingPayment, error)
+	// InvoiceByStay is the frozen invoice of a checked-out stay.
+	InvoiceByStay(ctx context.Context, tx Tx, stayID string) (InvoiceRecord, bool, error)
 }
 
 // NewExtra is the row inserted when an extra is added; the amount (quantity times unit) is computed by the adapter.
@@ -87,6 +89,7 @@ type InvoiceRecord struct {
 	Quote                        []byte
 	Total                        int64
 	CreatedAt                    time.Time
+	PaidAt                       *time.Time
 }
 
 // ErrBillCodeConflict: InsertInvoice hit the unique bill code of the tenant (a concurrent check-out took

@@ -165,3 +165,7 @@ func (StayRepo) PendingPayment(ctx context.Context, tx app.Tx, stayID string) (*
 	}
 	return app.NewPendingPayment(r.PaymentID, r.Total, r.Deposit, r.Received, r.RefundDue, r.CreatedAt.Time), nil
 }
+
+func (StayRepo) InvoiceByStay(ctx context.Context, tx app.Tx, stayID string) (app.InvoiceRecord, bool, error) {
+	return BillingRepo{}.InvoiceByStay(ctx, tx, stayID)
+}

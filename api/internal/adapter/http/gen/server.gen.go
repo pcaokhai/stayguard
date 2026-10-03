@@ -871,6 +871,27 @@ func (e StaffStatus) Valid() bool {
 	}
 }
 
+// Defines values for StayPaymentState.
+const (
+	StayPaymentStateAWAITINGPAYMENT StayPaymentState = "AWAITING_PAYMENT"
+	StayPaymentStatePAID            StayPaymentState = "PAID"
+	StayPaymentStateREFUNDPENDING   StayPaymentState = "REFUND_PENDING"
+)
+
+// Valid indicates whether the value is a known member of the StayPaymentState enum.
+func (e StayPaymentState) Valid() bool {
+	switch e {
+	case StayPaymentStateAWAITINGPAYMENT:
+		return true
+	case StayPaymentStatePAID:
+		return true
+	case StayPaymentStateREFUNDPENDING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StayListItemState.
 const (
 	StayListItemStateINSTAY     StayListItemState = "IN_STAY"
@@ -2274,6 +2295,15 @@ type Stay struct {
 	GuestPhone string             `json:"guestPhone"`
 	Id         string             `json:"id"`
 
+	// Invoice The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE.
+	Invoice *Invoice `json:"invoice,omitempty"`
+
+	// PaidAt When the invoice was settled; null until then.
+	PaidAt *time.Time `json:"paidAt,omitempty"`
+
+	// PaymentState Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
+	PaymentState *StayPaymentState `json:"paymentState,omitempty"`
+
 	// PendingPayment Set while the stay is checked out and its invoice is not paid.
 	PendingPayment *PendingPayment `json:"pendingPayment,omitempty"`
 
@@ -2285,6 +2315,9 @@ type Stay struct {
 	RoomId         string     `json:"roomId"`
 	Status         StayStatus `json:"status"`
 }
+
+// StayPaymentState Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
+type StayPaymentState string
 
 // StayListItem defines model for StayListItem.
 type StayListItem struct {

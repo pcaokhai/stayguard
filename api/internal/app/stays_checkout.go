@@ -29,7 +29,7 @@ var emptyBodyHash = RequestHash([]byte("{}"))
 func checkoutRoute(stayID string) string { return fmt.Sprintf(routeCheckoutFmt, stayID) }
 
 // Checkout ends an ACTIVE stay: it freezes the quote into an invoice with a bill code. A stay that is
-// already CHECKED_OUT returns its invoice, also under a new key. The room is not touched: it stays
+// already CHECKED_OUT answers 409 STAY_NOT_ACTIVE (the same key still replays the original answer); getStay returns its invoice. The room is not touched: it stays
 // OCCUPIED until the invoice is paid (SG-302).
 func (b *Billing) Checkout(ctx context.Context, c Caller, stayID, retryID string) (InvoiceView, bool, error) {
 	const op = "checkoutStay"
@@ -85,21 +85,10 @@ func (b *Billing) checkoutLocked(ctx context.Context, tx Tx, c Caller, stayID st
 	if err != nil {
 		return InvoiceView{}, fmt.Errorf("stay status: %w", err)
 	}
-	if status == stay.StatusCheckedOut {
-		return b.existingInvoice(ctx, tx, rec)
+	if status == stay.StatusCheckedOut { // a finished stay is read-only; getStay returns its frozen invoice
+		return InvoiceView{}, stay.ErrNotActive
 	}
 	return b.freeze(ctx, tx, c, rec)
-}
-
-func (b *Billing) existingInvoice(ctx context.Context, tx Tx, rec StayRecord) (InvoiceView, error) {
-	inv, ok, err := b.stays.InvoiceByStay(ctx, tx, rec.ID)
-	if err != nil {
-		return InvoiceView{}, fmt.Errorf("invoice: %w", err)
-	}
-	if !ok { // a checked-out stay always has one: this is a server fault, not a 404
-		return InvoiceView{}, fmt.Errorf("stay %s is checked out without an invoice", rec.ID)
-	}
-	return invoiceViewOf(inv, rec.RoomCode)
 }
 
 // freeze prices the stay at the server clock, stores the invoice and marks the stay CHECKED_OUT.

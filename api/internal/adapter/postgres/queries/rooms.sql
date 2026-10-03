@@ -12,8 +12,8 @@ SELECT u.id, u.code, u.building_id, f.id AS floor_id, f.name AS floor_name, f.le
        s.id AS stay_id, s.rental_type AS stay_rental_type, s.guest_name AS stay_guest_name,
        s.check_in_at AS stay_check_in_at, s.rate_plan_snapshot AS stay_rate_plan_snapshot, s.check_out_at AS stay_check_out_at,
        iv.id AS inv_id, coalesce(iv.total, 0)::bigint AS inv_total,
-       coalesce((iv.quote->>'depositPaid')::bigint, 0)::bigint AS inv_deposit,
-       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS inv_refund_due, iv.created_at AS inv_created_at,
+       coalesce(s.deposit, 0)::bigint AS inv_deposit,
+       greatest(coalesce(s.deposit, 0) - coalesce(iv.total, 0), 0)::bigint AS inv_refund_due, iv.created_at AS inv_created_at,
        coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS inv_received,
        coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
                  ORDER BY p.created_at DESC LIMIT 1), '')::text AS inv_payment_id

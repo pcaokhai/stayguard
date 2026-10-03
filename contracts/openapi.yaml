@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.4.0
+  version: 1.5.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -3988,6 +3988,22 @@ components:
           oneOf:
           - $ref: '#/components/schemas/PendingPayment'
           - type: 'null'
+        invoice:
+          description: The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE.
+          $ref: '#/components/schemas/Invoice'
+        paymentState:
+          description: Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
+          type: string
+          enum:
+          - PAID
+          - AWAITING_PAYMENT
+          - REFUND_PENDING
+        paidAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When the invoice was settled; null until then.
         guestId:
           $ref: '#/components/schemas/GuestIdIndicators'
     AddExtrasRequest:

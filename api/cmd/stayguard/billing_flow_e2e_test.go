@@ -81,9 +81,10 @@ func TestBillingFlowE2E_SG205_AC5(t *testing.T) {
 		t.Errorf("invoice extras = %v", inv["quote"])
 	}
 
-	// Repeat with a different key: the identical invoice. Extras on the checked-out stay: 409.
-	if st2, raw2 := e.checkout(token, id, newKey()); st2 != 201 || string(raw2) != string(raw) {
-		t.Errorf("repeat checkout: %s", describe(st2, raw2))
+	// Repeat with the same key: the identical answer. With a different key the stay is finished: 409, no second invoice.
+	// Extras on the checked-out stay: 409.
+	if st2, raw2 := e.checkout(token, id, newKey()); st2 != 409 || problemCode(raw2) != "STAY_NOT_ACTIVE" {
+		t.Errorf("repeat checkout with a new key: %s", describe(st2, raw2))
 	}
 	if st2, raw2 := e.addExtras(token, id, newKey(), extrasBody("WATER", 1)); st2 != 409 || problemCode(raw2) != "STAY_NOT_ACTIVE" {
 		t.Errorf("extras after checkout: %s", describe(st2, raw2))
