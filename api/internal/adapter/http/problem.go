@@ -216,6 +216,8 @@ func mapPaymentError(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, app.ErrInvoiceNotOpen):
 		writeProblem(w, http.StatusConflict, "Conflict", "INVOICE_NOT_OPEN")
+	case errors.Is(err, app.ErrEventNotDismissable):
+		writeProblem(w, http.StatusConflict, "Conflict", "EVENT_NOT_DISMISSABLE")
 	case errors.Is(err, app.ErrEventNotLinkable):
 		writeProblem(w, http.StatusConflict, "Conflict", "EVENT_NOT_LINKABLE")
 	case errors.Is(err, app.ErrLinkAmount):

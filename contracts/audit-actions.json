@@ -155,6 +155,10 @@
     "category": "MONEY",
     "details": ["amount", "bill", "invoiceId", "method", "room"]
   },
+  "payment.dismissed": {
+    "category": "MONEY",
+    "details": ["amount", "eventId", "note"]
+  },
   "payment.linked": {
     "category": "MONEY",
     "details": ["amount", "bill", "eventId", "invoiceId", "paymentId", "room"]

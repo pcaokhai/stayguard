@@ -447,7 +447,8 @@
     "resolution": {
       "PAID": "paid",
       "REFUNDED": "refunded",
-      "LINKED": "linked"
+      "LINKED": "linked",
+      "DISMISSED": "dismissed"
     }
   },
   "activity": {
@@ -547,6 +548,7 @@
       "expense_updated": "Updated expense {amount}",
       "leave_decided": "Decided a leave request",
       "leave_requested": "Requested leave",
+      "payment_dismissed": "Dismissed an unmatched transfer of {amount}: {note}",
       "payment_linked": "Linked {amount} to bill {bill}",
       "payroll_line_updated": "Updated a payroll line",
       "payroll_paid": "Marked payroll paid for {month}",

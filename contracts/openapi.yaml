@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.9.0
+  version: 1.10.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -2826,6 +2826,47 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/Unprocessable'
+  /v1/owner/payment-events/{eventId}/dismiss:
+    post:
+      tags:
+      - Payments
+      operationId: dismissUnmatchedTransfer
+      summary: Close an unmatched bank transfer that belongs to no bill
+      x-story: SG-903
+      x-access: OWNER
+      x-release: full
+      description: 'OWNER only; a note saying why is required. Only an unmatched inbound transfer can be dismissed (409 EVENT_NOT_DISMISSABLE otherwise, also for a transfer already dismissed under another key); the same Idempotency-Key replays the same answer. The event is kept as DISMISSED for audit, its UNMATCHED_TRANSFER alert is resolved (resolution DISMISSED), nothing is settled, and it is audited as payment.dismissed.'
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DismissTransferRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DismissedTransfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
   /v1/owner/alerts:
     get:
       tags:
@@ -4255,6 +4296,7 @@ components:
           - PAID
           - REFUNDED
           - LINKED
+          - DISMISSED
           - null
     PaymentSummary:
       type: object
@@ -5995,6 +6037,32 @@ components:
       - invoiceId
       properties:
         invoiceId: *id005
+    DismissTransferRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - note
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why the transfer is closed (sent by mistake, refunded, not ours).
+    DismissedTransfer:
+      type: object
+      required:
+      - eventId
+      - result
+      - note
+      properties:
+        eventId:
+          type: string
+        result:
+          type: string
+          enum:
+          - DISMISSED
+        note:
+          type: string
     BuildingStatus:
       type: object
       required:

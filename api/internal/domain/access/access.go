@@ -171,6 +171,7 @@ var rules = map[string]rule{
 	"removeService":            {roles: owner, scope: ScopeOwnerOnly},
 	"listInvoices":             {roles: owner, scope: ScopeOwnerOnly},
 	"linkTransferToInvoice":    {roles: owner, scope: ScopeOwnerOnly},
+	"dismissUnmatchedTransfer": {roles: owner, scope: ScopeOwnerOnly},
 	"listAuditLogs":            {roles: owner, scope: ScopeOwnerOnly},
 	"resetStaffPin":            {roles: ownerManager, scope: ScopeNone},
 	"lockStaff":                {roles: ownerManager, scope: ScopeNone},

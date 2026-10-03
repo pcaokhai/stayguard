@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.9.0
+ * OpenAPI spec version: 1.10.0
  */
 import {
   faker
@@ -53,6 +53,7 @@ import type {
   CreateFloor201,
   CreateRooms201,
   CreateStaffResponse,
+  DismissedTransfer,
   Expense,
   ExpenseMonth,
   GetStayTimeline200,
@@ -167,11 +168,11 @@ export const getCompleteHousekeepingTaskResponseMock = (overrideResponse: Partia
 
 export const getReportRoomUsageResponseMock = (overrideResponse: Partial<Extract<Alert, object>> = {}): Alert => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
-      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED'] as const), null]), ...overrideResponse})
+      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED','DISMISSED'] as const), null]), ...overrideResponse})
 
 export const getGetOwnerOverviewResponseMock = (overrideResponse: Partial<Extract<OwnerOverview, object>> = {}): OwnerOverview => ({date: faker.date.past().toISOString().slice(0, 10), revenueTotal: faker.number.int(), transfersReceived: faker.number.int(), cashExpected: faker.number.int(), byBuilding: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), revenue: faker.number.int()})), occupancy: {occupiedRooms: faker.number.int(), totalRooms: faker.number.int(), overdueRooms: faker.number.int()}, alerts: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
-      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED'] as const), null])})), latestPayments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({paymentId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), amount: faker.number.int(), at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), buildings: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), totalRooms: faker.number.int(), occupied: faker.number.int(), vacant: faker.number.int(), toClean: faker.number.int(), overdue: faker.number.int(), maintenance: faker.number.int(), occupancyPct: faker.number.float({fractionDigits: 2}), revenueToday: faker.number.int()})), undefined]), attention: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({kind: faker.helpers.arrayElement(['OVERDUE_ROOM','LONG_TO_CLEAN','OVERPAID','PAYMENT_MISMATCH','PAYMENT_PARTIAL','PAYMENT_UNPAID','REFUND_PENDING','UNMATCHED_TRANSFER','CASH_SHORT','LEAVE_PENDING','TICKET_OPEN'] as const), ref: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), minutes: faker.helpers.arrayElement([faker.number.int(), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,])})), undefined]), ...overrideResponse})
+      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED','DISMISSED'] as const), null])})), latestPayments: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({paymentId: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.string.alpha({length: {min: 10, max: 20}}), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), amount: faker.number.int(), at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), buildings: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), code: faker.string.alpha({length: {min: 10, max: 20}}), totalRooms: faker.number.int(), occupied: faker.number.int(), vacant: faker.number.int(), toClean: faker.number.int(), overdue: faker.number.int(), maintenance: faker.number.int(), occupancyPct: faker.number.float({fractionDigits: 2}), revenueToday: faker.number.int()})), undefined]), attention: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({kind: faker.helpers.arrayElement(['OVERDUE_ROOM','LONG_TO_CLEAN','OVERPAID','PAYMENT_MISMATCH','PAYMENT_PARTIAL','PAYMENT_UNPAID','REFUND_PENDING','UNMATCHED_TRANSFER','CASH_SHORT','LEAVE_PENDING','TICKET_OPEN'] as const), ref: faker.string.alpha({length: {min: 10, max: 20}}), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), minutes: faker.helpers.arrayElement([faker.number.int(), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,])})), undefined]), ...overrideResponse})
 
 export const getListStaffPermissionsResponseMock = (overrideResponse: Partial<Extract<ListStaffPermissions200, object>> = {}): ListStaffPermissions200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.helpers.arrayElement(Object.values(Role)), access: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({buildingId: faker.string.alpha({length: {min: 10, max: 20}}), level: faker.helpers.arrayElement(Object.values(PermissionLevel))}))})), ...overrideResponse})
 
@@ -317,9 +318,11 @@ export const getListTransactionsResponseMock = (overrideResponse: Partial<Extrac
 
 export const getLinkTransferToInvoiceResponseMock = (overrideResponse: Partial<Extract<Transaction, object>> = {}): Transaction => ({id: faker.string.alpha({length: {min: 10, max: 20}}), at: faker.date.past().toISOString().slice(0, 19) + 'Z', amount: faker.number.int(), method: faker.helpers.arrayElement(Object.values(PaymentMethod)), roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), billCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), reconciliation: faker.helpers.arrayElement(['MATCHED','MISMATCH','UNMATCHED','CASH'] as const), transferNote: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), paymentEventId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAYMENT','CASH_REFUND'] as const), undefined]), receivedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), settledAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
+export const getDismissUnmatchedTransferResponseMock = (overrideResponse: Partial<Extract<DismissedTransfer, object>> = {}): DismissedTransfer => ({eventId: faker.string.alpha({length: {min: 10, max: 20}}), result: faker.helpers.arrayElement(['DISMISSED'] as const), note: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
+
 export const getListAlertsResponseMock = (overrideResponse: Partial<Extract<ListAlerts200, object>> = {}): ListAlerts200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(AlertKind)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', roomCode: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), shiftId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), stayId: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), actorName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), amount: faker.helpers.arrayElement([faker.number.int(),null,]), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
-      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED'] as const), null])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+      }, undefined]), resolvedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), resolution: faker.helpers.arrayElement([faker.helpers.arrayElement(['PAID','REFUNDED','LINKED','DISMISSED'] as const), null])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 export const getListAuditLogsResponseMock = (overrideResponse: Partial<Extract<ListAuditLogs200, object>> = {}): ListAuditLogs200 => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), at: faker.date.past().toISOString().slice(0, 19) + 'Z', actorName: faker.string.alpha({length: {min: 10, max: 20}}), actorRole: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(Role)), undefined]), category: faker.helpers.arrayElement(['MONEY','STAY_TIME','ACCESS_STAFF','RATES_SETTINGS','SHIFT','STOCK','MAINTENANCE','INSTALLER','GUEST_ID'] as const), action: faker.string.alpha({length: {min: 10, max: 20}}), details: faker.helpers.arrayElement([{
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
@@ -1383,6 +1386,18 @@ export const getLinkTransferToInvoiceMockHandler = (overrideResponse?: Transacti
   }, options)
 }
 
+export const getDismissUnmatchedTransferMockHandler = (overrideResponse?: DismissedTransfer | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<DismissedTransfer> | DismissedTransfer), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/owner/payment-events/:eventId/dismiss', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getDismissUnmatchedTransferResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListAlertsMockHandler = (overrideResponse?: ListAlerts200 | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListAlerts200> | ListAlerts200), options?: RequestHandlerOptions) => {
   return http.get('*/v1/owner/alerts', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -1620,6 +1635,7 @@ export const getStayGuardAPIMock = () => [
   getListInvoicesMockHandler(),
   getListTransactionsMockHandler(),
   getLinkTransferToInvoiceMockHandler(),
+  getDismissUnmatchedTransferMockHandler(),
   getListAlertsMockHandler(),
   getMarkAlertReadMockHandler(),
   getListAuditLogsMockHandler(),

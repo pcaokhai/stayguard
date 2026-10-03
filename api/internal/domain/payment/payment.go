@@ -20,7 +20,9 @@ const (
 	ResultPartial   = "PARTIAL"
 	ResultUnmatched = "UNMATCHED"
 	// ResultIgnored is outgoing money or money to another account: stored for audit and dedupe, never listed and never linkable.
-	ResultIgnored   = "IGNORED"
+	ResultIgnored = "IGNORED"
+	// ResultDismissed is an unmatched inbound transfer the owner closed with a note.
+	ResultDismissed = "DISMISSED"
 	ResultDuplicate = "DUPLICATE_IGNORED"
 )
 

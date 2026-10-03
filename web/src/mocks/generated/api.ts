@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.9.0
+ * OpenAPI spec version: 1.10.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -532,6 +532,7 @@ export const AlertResolution = {
   PAID: 'PAID',
   REFUNDED: 'REFUNDED',
   LINKED: 'LINKED',
+  DISMISSED: 'DISMISSED',
 } as const;
 
 export interface Alert {
@@ -1726,6 +1727,28 @@ export interface Transaction {
 
 export interface LinkTransferRequest {
   invoiceId: string;
+}
+
+export interface DismissTransferRequest {
+  /**
+     * Why the transfer is closed (sent by mistake, refunded, not ours).
+     * @minLength 1
+     * @maxLength 500
+     */
+  note: string;
+}
+
+export type DismissedTransferResult = typeof DismissedTransferResult[keyof typeof DismissedTransferResult];
+
+
+export const DismissedTransferResult = {
+  DISMISSED: 'DISMISSED',
+} as const;
+
+export interface DismissedTransfer {
+  eventId: string;
+  result: DismissedTransferResult;
+  note: string;
 }
 
 export type AuditEntryCategory = typeof AuditEntryCategory[keyof typeof AuditEntryCategory];
@@ -8242,6 +8265,92 @@ const res = await fetch(getLinkTransferToInvoiceUrl(eventId),
 
   const data: linkTransferToInvoiceResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as linkTransferToInvoiceResponse
+}
+
+
+
+export type dismissUnmatchedTransferResponse200 = {
+  data: DismissedTransfer
+  status: 200
+}
+
+export type dismissUnmatchedTransferResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type dismissUnmatchedTransferResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type dismissUnmatchedTransferResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type dismissUnmatchedTransferResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type dismissUnmatchedTransferResponse422 = {
+  data: UnprocessableResponse
+  status: 422
+}
+
+export type dismissUnmatchedTransferResponseSuccess = (dismissUnmatchedTransferResponse200) & {
+  headers: Headers;
+};
+export type dismissUnmatchedTransferResponseError = (dismissUnmatchedTransferResponse401 | dismissUnmatchedTransferResponse403 | dismissUnmatchedTransferResponse404 | dismissUnmatchedTransferResponse409 | dismissUnmatchedTransferResponse422) & {
+  headers: Headers;
+};
+
+export type dismissUnmatchedTransferResponse = (dismissUnmatchedTransferResponseSuccess | dismissUnmatchedTransferResponseError)
+
+export const getDismissUnmatchedTransferUrl = (eventId: string,) => {
+
+
+
+
+  return `/v1/owner/payment-events/${eventId}/dismiss`
+}
+
+/**
+ * OWNER only; a note saying why is required. Only an unmatched inbound transfer can be dismissed (409 EVENT_NOT_DISMISSABLE otherwise, also for a transfer already dismissed under another key); the same Idempotency-Key replays the same answer. The event is kept as DISMISSED for audit, its UNMATCHED_TRANSFER alert is resolved (resolution DISMISSED), nothing is settled, and it is audited as payment.dismissed.
+ * @summary Close an unmatched bank transfer that belongs to no bill
+ */
+export const dismissUnmatchedTransfer = async (eventId: string,
+    dismissTransferRequest: DismissTransferRequest, options?: RequestInit): Promise<dismissUnmatchedTransferResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getDismissUnmatchedTransferUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(dismissTransferRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: dismissUnmatchedTransferResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as dismissUnmatchedTransferResponse
 }
 
 

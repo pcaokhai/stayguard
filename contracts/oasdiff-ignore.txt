@@ -33,3 +33,9 @@ GET /v1/owner/overview added the new `REFUND_PENDING` enum value to the `alerts/
 GET /v1/owner/overview added the new `REFUND_PENDING` enum value to the `attention/items/kind` response property for the response status `200`
 # REFUND_PENDING alert kind (1.6.0): the web is the only client and ships in the same commit; Khai asked for it.
 POST /v1/rooms/{roomId}/usage-reports added the new `REFUND_PENDING` enum value to the `kind` response property for the response status `201`
+# DISMISSED alert resolution (1.10.0, dismissUnmatchedTransfer): the web is the only client and ships in the same commit; Khai approved it.
+GET /v1/owner/alerts added the new `DISMISSED` enum value to the `items/items/resolution` response property for the response status `200`
+# DISMISSED alert resolution (1.10.0, dismissUnmatchedTransfer): the web is the only client and ships in the same commit; Khai approved it.
+GET /v1/owner/overview added the new `DISMISSED` enum value to the `alerts/items/resolution` response property for the response status `200`
+# DISMISSED alert resolution (1.10.0, dismissUnmatchedTransfer): the web is the only client and ships in the same commit; Khai approved it.
+POST /v1/rooms/{roomId}/usage-reports added the new `DISMISSED` enum value to the `resolution` response property for the response status `201`

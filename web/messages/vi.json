@@ -447,7 +447,8 @@
     "resolution": {
       "PAID": "đã thu tiền",
       "REFUNDED": "đã hoàn tiền",
-      "LINKED": "đã gán phiếu"
+      "LINKED": "đã gán phiếu",
+      "DISMISSED": "đã bỏ qua"
     }
   },
   "activity": {
@@ -547,6 +548,7 @@
       "expense_updated": "Sửa khoản chi {amount}",
       "leave_decided": "Xử lý đơn nghỉ phép",
       "leave_requested": "Gửi đơn nghỉ phép",
+      "payment_dismissed": "Bỏ qua khoản chuyển khoản không rõ {amount}: {note}",
       "payment_linked": "Gán khoản {amount} vào phiếu {bill}",
       "payroll_line_updated": "Sửa dòng lương",
       "payroll_paid": "Chốt trả lương tháng {month}",

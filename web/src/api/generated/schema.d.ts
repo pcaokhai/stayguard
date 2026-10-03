@@ -1450,6 +1450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/owner/payment-events/{eventId}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close an unmatched bank transfer that belongs to no bill
+         * @description OWNER only; a note saying why is required. Only an unmatched inbound transfer can be dismissed (409 EVENT_NOT_DISMISSABLE otherwise, also for a transfer already dismissed under another key); the same Idempotency-Key replays the same answer. The event is kept as DISMISSED for audit, its UNMATCHED_TRANSFER alert is resolved (resolution DISMISSED), nothing is settled, and it is audited as payment.dismissed.
+         */
+        post: operations["dismissUnmatchedTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/owner/alerts": {
         parameters: {
             query?: never;
@@ -2004,7 +2024,7 @@ export interface components {
              */
             resolvedAt?: string | null;
             /** @enum {string|null} */
-            resolution?: "PAID" | "REFUNDED" | "LINKED" | null;
+            resolution?: "PAID" | "REFUNDED" | "LINKED" | "DISMISSED" | null;
         };
         PaymentSummary: {
             paymentId: string;
@@ -2673,6 +2693,16 @@ export interface components {
         };
         LinkTransferRequest: {
             invoiceId: string;
+        };
+        DismissTransferRequest: {
+            /** @description Why the transfer is closed (sent by mistake, refunded, not ours). */
+            note: string;
+        };
+        DismissedTransfer: {
+            eventId: string;
+            /** @enum {string} */
+            result: "DISMISSED";
+            note: string;
         };
         BuildingStatus: {
             buildingId: string;
@@ -5303,6 +5333,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+        };
+    };
+    dismissUnmatchedTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissedTransfer"];
                 };
             };
             401: components["responses"]["Unauthorized"];

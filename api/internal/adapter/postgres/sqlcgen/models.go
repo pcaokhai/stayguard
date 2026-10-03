@@ -213,6 +213,9 @@ type AppPaymentEvent struct {
 	Result        string
 	ReceivedAt    pgtype.Timestamptz
 	InvoiceID     pgtype.Text
+	DismissedNote pgtype.Text
+	DismissedBy   pgtype.Text
+	DismissedAt   pgtype.Timestamptz
 }
 
 type AppPayrollLine struct {

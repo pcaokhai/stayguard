@@ -13,6 +13,7 @@ type MonitorService interface {
 	MarkAlertRead(ctx context.Context, c app.Caller, alertID string) error
 	ListTransactions(ctx context.Context, c app.Caller, q app.TransactionsQuery) (app.TransactionPage, error)
 	LinkTransfer(ctx context.Context, c app.Caller, eventID, retryID, invoiceID string) (app.TransactionRow, error)
+	DismissTransfer(ctx context.Context, c app.Caller, eventID, retryID, note string) (app.DismissedTransfer, error)
 	ListAuditLogs(ctx context.Context, c app.Caller, q app.AuditQuery) (app.AuditPage, error)
 	ListInvoices(ctx context.Context, c app.Caller, amount *int64) ([]app.InvoiceCandidate, error)
 }
@@ -164,4 +165,16 @@ func toInvoiceCandidates(rows []app.InvoiceCandidate) []gen.InvoiceCandidate {
 		}
 	}
 	return items
+}
+
+func (s Server) DismissUnmatchedTransfer(ctx context.Context, req gen.DismissUnmatchedTransferRequestObject) (gen.DismissUnmatchedTransferResponseObject, error) {
+	c, err := s.featureCaller(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.monitor.DismissTransfer(ctx, c, req.EventId, req.Params.IdempotencyKey.String(), req.Body.Note)
+	if err != nil {
+		return nil, err
+	}
+	return gen.DismissUnmatchedTransfer200JSONResponse{EventId: out.EventID, Result: gen.DismissedTransferResultDISMISSED, Note: out.Note}, nil
 }

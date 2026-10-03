@@ -142,3 +142,8 @@ UPDATE app.payment_events pe SET result = 'SETTLED', invoice_id = @invoice_id
 FROM app.payments p
 WHERE pe.tenant_id = @tenant_id AND pe.result = 'MISMATCH' AND p.tenant_id = pe.tenant_id AND p.invoice_id = @invoice_id
   AND p.transaction_id = pe.external_id;
+
+-- name: DismissPaymentEvent :execrows
+-- Only an UNMATCHED event can be dismissed; the note and who did it stay on the row.
+UPDATE app.payment_events SET result = 'DISMISSED', dismissed_note = @note, dismissed_by = sqlc.narg(dismissed_by), dismissed_at = @dismissed_at
+WHERE tenant_id = @tenant_id AND id = @event_id AND result = 'UNMATCHED';

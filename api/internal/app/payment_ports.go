@@ -17,6 +17,8 @@ var (
 	ErrLinkAmount = errors.New("event amount is not the remaining balance")
 	// ErrEventNotLinkable: the bank event was already settled or linked, so linking it again is refused (HTTP 409).
 	ErrEventNotLinkable = errors.New("payment event is not an unmatched transfer")
+	// ErrEventNotDismissable: only an unmatched transfer can be dismissed (HTTP 409 EVENT_NOT_DISMISSABLE).
+	ErrEventNotDismissable = errors.New("payment event is not an unmatched transfer")
 )
 
 // PayInvoice is the invoice as payment needs it, locked for the transaction.
@@ -86,6 +88,8 @@ type PaymentRepo interface {
 	// StaleUnpaid lists open invoices with a balance, checked out at or before the cutoff, with no bank money and no
 	// PAYMENT_UNPAID alert yet.
 	StaleUnpaid(ctx context.Context, tx Tx, before time.Time) ([]StaleUnpaid, error)
+	// DismissEvent closes an UNMATCHED event with the owner's note; false when it was not UNMATCHED any more.
+	DismissEvent(ctx context.Context, tx Tx, eventID, note, byUserID string, at time.Time) (bool, error)
 	// SetTransferReceived records the cumulative bank money on a pending transfer; it stays PENDING.
 	SetTransferReceived(ctx context.Context, tx Tx, paymentID string, received int64) error
 	// SettleTransfer and MarkMismatch return ErrPaymentNotPending when no pending transfer was updated.

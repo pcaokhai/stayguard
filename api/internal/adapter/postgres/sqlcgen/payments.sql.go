@@ -11,6 +11,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const dismissPaymentEvent = `-- name: DismissPaymentEvent :execrows
+UPDATE app.payment_events SET result = 'DISMISSED', dismissed_note = $1, dismissed_by = $2, dismissed_at = $3
+WHERE tenant_id = $4 AND id = $5 AND result = 'UNMATCHED'
+`
+
+type DismissPaymentEventParams struct {
+	Note        pgtype.Text
+	DismissedBy pgtype.Text
+	DismissedAt pgtype.Timestamptz
+	TenantID    pgtype.Text
+	EventID     string
+}
+
+// Only an UNMATCHED event can be dismissed; the note and who did it stay on the row.
+func (q *Queries) DismissPaymentEvent(ctx context.Context, arg DismissPaymentEventParams) (int64, error) {
+	result, err := q.db.Exec(ctx, dismissPaymentEvent,
+		arg.Note,
+		arg.DismissedBy,
+		arg.DismissedAt,
+		arg.TenantID,
+		arg.EventID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const expirePendingForInvoice = `-- name: ExpirePendingForInvoice :exec
 UPDATE app.payments SET status = 'EXPIRED'
 WHERE tenant_id = $1 AND invoice_id = $2 AND status = 'PENDING'

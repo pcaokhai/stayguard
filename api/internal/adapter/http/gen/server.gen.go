@@ -21,6 +21,7 @@ import (
 
 // Defines values for AlertResolution.
 const (
+	AlertResolutionDISMISSED   AlertResolution = "DISMISSED"
 	AlertResolutionLINKED      AlertResolution = "LINKED"
 	AlertResolutionLessThannil AlertResolution = "<nil>"
 	AlertResolutionPAID        AlertResolution = "PAID"
@@ -30,6 +31,8 @@ const (
 // Valid indicates whether the value is a known member of the AlertResolution enum.
 func (e AlertResolution) Valid() bool {
 	switch e {
+	case AlertResolutionDISMISSED:
+		return true
 	case AlertResolutionLINKED:
 		return true
 	case AlertResolutionLessThannil:
@@ -322,6 +325,21 @@ func (e DamageReportRequestSeverity) Valid() bool {
 	case LOCKROOM:
 		return true
 	case STILLRENTABLE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DismissedTransferResult.
+const (
+	DismissedTransferResultDISMISSED DismissedTransferResult = "DISMISSED"
+)
+
+// Valid indicates whether the value is a known member of the DismissedTransferResult enum.
+func (e DismissedTransferResult) Valid() bool {
+	switch e {
+	case DismissedTransferResultDISMISSED:
 		return true
 	default:
 		return false
@@ -1586,6 +1604,22 @@ type DamageReportRequest struct {
 // DamageReportRequestSeverity defines model for DamageReportRequest.Severity.
 type DamageReportRequestSeverity string
 
+// DismissTransferRequest defines model for DismissTransferRequest.
+type DismissTransferRequest struct {
+	// Note Why the transfer is closed (sent by mistake, refunded, not ours).
+	Note string `json:"note"`
+}
+
+// DismissedTransfer defines model for DismissedTransfer.
+type DismissedTransfer struct {
+	EventId string                  `json:"eventId"`
+	Note    string                  `json:"note"`
+	Result  DismissedTransferResult `json:"result"`
+}
+
+// DismissedTransferResult defines model for DismissedTransfer.Result.
+type DismissedTransferResult string
+
 // EditCheckInRequest defines model for EditCheckInRequest.
 type EditCheckInRequest struct {
 	NewCheckInAt time.Time                    `json:"newCheckInAt"`
@@ -2815,6 +2849,12 @@ type GetOwnerOverviewParams struct {
 	Date *openapi_types.Date `form:"date,omitempty" json:"date,omitempty"`
 }
 
+// DismissUnmatchedTransferParams defines parameters for DismissUnmatchedTransfer.
+type DismissUnmatchedTransferParams struct {
+	// IdempotencyKey Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // LinkTransferToInvoiceParams defines parameters for LinkTransferToInvoice.
 type LinkTransferToInvoiceParams struct {
 	// IdempotencyKey Client-generated UUID. Same key and body returns the first result; same key with a different body returns 409.
@@ -3105,6 +3145,9 @@ type DeclineLeaveJSONRequestBody DeclineLeaveJSONBody
 // UpdateTicketJSONRequestBody defines body for UpdateTicket for application/json ContentType.
 type UpdateTicketJSONRequestBody = UpdateTicketRequest
 
+// DismissUnmatchedTransferJSONRequestBody defines body for DismissUnmatchedTransfer for application/json ContentType.
+type DismissUnmatchedTransferJSONRequestBody = DismissTransferRequest
+
 // LinkTransferToInvoiceJSONRequestBody defines body for LinkTransferToInvoice for application/json ContentType.
 type LinkTransferToInvoiceJSONRequestBody = LinkTransferRequest
 
@@ -3322,6 +3365,9 @@ type ServerInterface interface {
 	// GetOwnerOverview Revenue, cash expected, occupancy, alerts and latest payments for a day
 	// (GET /v1/owner/overview)
 	GetOwnerOverview(w http.ResponseWriter, r *http.Request, params GetOwnerOverviewParams)
+	// DismissUnmatchedTransfer Close an unmatched bank transfer that belongs to no bill
+	// (POST /v1/owner/payment-events/{eventId}/dismiss)
+	DismissUnmatchedTransfer(w http.ResponseWriter, r *http.Request, eventId string, params DismissUnmatchedTransferParams)
 	// LinkTransferToInvoice Link an unmatched bank transfer to an unpaid invoice
 	// (POST /v1/owner/payment-events/{eventId}/link)
 	LinkTransferToInvoice(w http.ResponseWriter, r *http.Request, eventId string, params LinkTransferToInvoiceParams)
@@ -3753,6 +3799,12 @@ func (_ Unimplemented) UpdateTicket(w http.ResponseWriter, r *http.Request, tick
 // GetOwnerOverview Revenue, cash expected, occupancy, alerts and latest payments for a day
 // (GET /v1/owner/overview)
 func (_ Unimplemented) GetOwnerOverview(w http.ResponseWriter, r *http.Request, params GetOwnerOverviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DismissUnmatchedTransfer Close an unmatched bank transfer that belongs to no bill
+// (POST /v1/owner/payment-events/{eventId}/dismiss)
+func (_ Unimplemented) DismissUnmatchedTransfer(w http.ResponseWriter, r *http.Request, eventId string, params DismissUnmatchedTransferParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5473,6 +5525,60 @@ func (siw *ServerInterfaceWrapper) GetOwnerOverview(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetOwnerOverview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DismissUnmatchedTransfer operation middleware
+func (siw *ServerInterfaceWrapper) DismissUnmatchedTransfer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "eventId" -------------
+	var eventId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventId", chi.URLParam(r, "eventId"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "eventId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DismissUnmatchedTransferParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DismissUnmatchedTransfer(w, r, eventId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8205,6 +8311,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/owner/payment-events/{eventId}/link", wrapper.LinkTransferToInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/owner/payment-events/{eventId}/dismiss", wrapper.DismissUnmatchedTransfer)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/owner/alerts", wrapper.ListAlerts)
@@ -11056,6 +11165,110 @@ func (response GetOwnerOverview403ApplicationProblemPlusJSONResponse) VisitGetOw
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransferRequestObject struct {
+	EventId string `json:"eventId"`
+	Params  DismissUnmatchedTransferParams
+	Body    *DismissUnmatchedTransferJSONRequestBody
+}
+
+type DismissUnmatchedTransferResponseObject interface {
+	VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error
+}
+
+type DismissUnmatchedTransfer200JSONResponse DismissedTransfer
+
+func (response DismissUnmatchedTransfer200JSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransfer401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DismissUnmatchedTransfer401ApplicationProblemPlusJSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransfer403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DismissUnmatchedTransfer403ApplicationProblemPlusJSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransfer404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DismissUnmatchedTransfer404ApplicationProblemPlusJSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransfer409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DismissUnmatchedTransfer409ApplicationProblemPlusJSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DismissUnmatchedTransfer422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableApplicationProblemPlusJSONResponse
+}
+
+func (response DismissUnmatchedTransfer422ApplicationProblemPlusJSONResponse) VisitDismissUnmatchedTransferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -15853,6 +16066,9 @@ type StrictServerInterface interface {
 	// GetOwnerOverview Revenue, cash expected, occupancy, alerts and latest payments for a day
 	// (GET /v1/owner/overview)
 	GetOwnerOverview(ctx context.Context, request GetOwnerOverviewRequestObject) (GetOwnerOverviewResponseObject, error)
+	// DismissUnmatchedTransfer Close an unmatched bank transfer that belongs to no bill
+	// (POST /v1/owner/payment-events/{eventId}/dismiss)
+	DismissUnmatchedTransfer(ctx context.Context, request DismissUnmatchedTransferRequestObject) (DismissUnmatchedTransferResponseObject, error)
 	// LinkTransferToInvoice Link an unmatched bank transfer to an unpaid invoice
 	// (POST /v1/owner/payment-events/{eventId}/link)
 	LinkTransferToInvoice(ctx context.Context, request LinkTransferToInvoiceRequestObject) (LinkTransferToInvoiceResponseObject, error)
@@ -17230,6 +17446,40 @@ func (sh *strictHandler) GetOwnerOverview(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetOwnerOverviewResponseObject); ok {
 		if err := validResponse.VisitGetOwnerOverviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DismissUnmatchedTransfer operation middleware
+func (sh *strictHandler) DismissUnmatchedTransfer(w http.ResponseWriter, r *http.Request, eventId string, params DismissUnmatchedTransferParams) {
+	var request DismissUnmatchedTransferRequestObject
+
+	request.EventId = eventId
+	request.Params = params
+
+	var body DismissUnmatchedTransferJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DismissUnmatchedTransfer(ctx, request.(DismissUnmatchedTransferRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DismissUnmatchedTransfer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DismissUnmatchedTransferResponseObject); ok {
+		if err := validResponse.VisitDismissUnmatchedTransferResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

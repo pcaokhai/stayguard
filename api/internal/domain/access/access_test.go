@@ -42,7 +42,7 @@ var want = map[string]struct{ roles, need string }{
 	"getExpenseMonth": {"O", "-"}, "createExpense": {"O", "-"}, "updateExpense": {"O", "-"}, "deleteExpense": {"O", "-"}, "getIncomeCostReport": {"O", "-"},
 	"updateProperty": {"O", "-"}, "listBankAccounts": {"O", "-"}, "createBankAccount": {"O", "-"}, "makeDefaultBankAccount": {"O", "-"},
 	"removeBankAccount": {"O", "-"}, "createBuilding": {"O", "-"}, "updateBuilding": {"O", "-"}, "createFloor": {"O", "-"}, "createRooms": {"O", "-"},
-	"updateRatePlan": {"O", "-"}, "removeService": {"O", "-"}, "linkTransferToInvoice": {"O", "-"}, "listInvoices": {"O", "-"}, "listAuditLogs": {"O", "-"},
+	"updateRatePlan": {"O", "-"}, "removeService": {"O", "-"}, "linkTransferToInvoice": {"O", "-"}, "dismissUnmatchedTransfer": {"O", "-"}, "listInvoices": {"O", "-"}, "listAuditLogs": {"O", "-"},
 }
 
 var public = []string{"createDemoSession", "getHealth", "getReadiness", "receiveBankWebhook", "receiveBankWebhookLegacy", "signIn"}
@@ -195,7 +195,7 @@ func TestAuthorizer_SG1101_AC2_TableMatchesContract(t *testing.T) {
 func TestAuthorizer_SG1101_AC2_ManagerExclusions(t *testing.T) {
 	for _, op := range []string{"listBankAccounts", "createBankAccount", "makeDefaultBankAccount", "removeBankAccount", "removeStaff",
 		"getPayroll", "updatePayrollLine", "markPayrollPaid", "getExpenseMonth", "createExpense", "updateExpense", "deleteExpense",
-		"linkTransferToInvoice", "updateStaff", "createStaff"} {
+		"linkTransferToInvoice", "dismissUnmatchedTransfer", "updateStaff", "createStaff"} {
 		if err := (Authorizer{}).Check(op, RoleManager, EDIT); !errors.Is(err, ErrRoleForbidden) {
 			t.Errorf("%s: manager got %v, want ROLE_FORBIDDEN", op, err)
 		}

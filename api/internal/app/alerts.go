@@ -41,9 +41,10 @@ type AlertWriter interface {
 
 // Resolutions of an alert: how it stopped needing the owner.
 const (
-	ResolutionPaid     = "PAID"
-	ResolutionRefunded = "REFUNDED"
-	ResolutionLinked   = "LINKED"
+	ResolutionPaid      = "PAID"
+	ResolutionRefunded  = "REFUNDED"
+	ResolutionLinked    = "LINKED"
+	ResolutionDismissed = "DISMISSED"
 )
 
 // moneyAlertKinds are the alerts about one stay's invoice; they resolve when the invoice is settled.

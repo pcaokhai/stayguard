@@ -304,3 +304,13 @@ func (PaymentRepo) StaleUnpaid(ctx context.Context, tx app.Tx, before time.Time)
 	}
 	return out, nil
 }
+
+func (PaymentRepo) DismissEvent(ctx context.Context, tx app.Tx, eventID, note, byUserID string, at time.Time) (bool, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := sqlcgen.New(t).DismissPaymentEvent(ctx, sqlcgen.DismissPaymentEventParams{TenantID: pgtype.Text{String: t.tenant, Valid: true}, EventID: eventID,
+		Note: pgtype.Text{String: note, Valid: true}, DismissedBy: optText(byUserID), DismissedAt: ts(at)})
+	return n == 1, wrap("dismiss payment event", err)
+}
