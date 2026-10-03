@@ -15,6 +15,9 @@ export const cfg = {
   root: process.env.RH_ROOT ?? "",
   envFile: process.env.RH_ENV_FILE ?? "deploy/.env.rehearse",
 };
+// A 1x1 PNG: the smallest picture the photo upload accepts.
+const PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 export const configured = Boolean(cfg.hook);
 export const NEW_PIN = "482916"; // not a run, not a repeated digit
 const SECRET_KEYS = /pin|token|idNumber|number|secret|authorization/i;
@@ -262,6 +265,24 @@ export class Api {
     return (await this.get(owner, `/v1/owner/audit-logs?from=${day(-1)}&to=${day(1)}${q}`)).body
       .items;
   }
+  /** The alerts of one kind for one bill (details.billCode), open and resolved. */
+  async alertsFor(owner: Who, kind: string, billCode: string): Promise<any[]> {
+    return (await this.alerts(owner)).filter(
+      (a) => a.kind === kind && a.details?.billCode === billCode,
+    );
+  }
+  /** Uploads a tiny PNG as the ID photo of one side. */
+  async uploadIdPhoto(w: Who, stayId: string, side: "FRONT" | "BACK") {
+    const res = await this.request.put(`${cfg.base}/v1/stays/${stayId}/guest-id/photos/${side}`, {
+      headers: { authorization: `Bearer ${w.token}`, "idempotency-key": randomUUID() },
+      multipart: {
+        file: { name: "id.png", mimeType: "image/png", buffer: Buffer.from(PNG, "base64") },
+      },
+      failOnStatusCode: false,
+    });
+    this.log.push(`PUT guest-id photo ${side} -> ${res.status()}`);
+    return { status: res.status(), body: await res.json().catch(() => null) };
+  }
   async shift(w: Who) {
     return this.get(w, "/v1/shifts/current");
   }
@@ -398,7 +419,14 @@ const compose = (args: string[], input?: string) =>
       "backup",
       ...args,
     ],
-    { cwd: cfg.root, input, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 180_000 },
+    {
+      cwd: cfg.root,
+      input,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: 180_000,
+      stdio: ["pipe", "pipe", "pipe"],
+    },
   );
 export const stack = {
   stopApi: () => compose(["stop", "api"]),
@@ -406,7 +434,7 @@ export const stack = {
   restartApi: () => compose(["restart", "api"]),
   logs: (service = "api") => compose(["logs", "--no-color", service]),
   /** `stayguard jobs run`, once. Output is counts only. */
-  jobsOnce: () => compose(["run", "--rm", "-T", "api", "jobs", "run"]),
+  jobsOnce: () => compose(["run", "--rm", "-T", "--no-deps", "api", "jobs", "run"]),
   async ready() {
     await expect
       .poll(async () => (await fetch(`${cfg.base}/readyz`).catch(() => ({ status: 0 }))).status, {
@@ -415,6 +443,11 @@ export const stack = {
       .toBe(200);
   },
 };
+/** Backdates one invoice, then runs the jobs once: what the alert rules would see after the waiting. Returns the jobs' own summary. */
+export function raiseAlerts(kind: "partial" | "unpaid", billCode: string, minutes: number) {
+  backdate(kind, billCode, minutes);
+  return stack.jobsOnce();
+}
 /** scripts/rehearsal-backdate.sh: moves the time of one invoice back in the rehearsal database only (it refuses elsewhere). */
 export function backdate(kind: "partial" | "unpaid", billCode: string, minutes: number) {
   return execFileSync("scripts/rehearsal-backdate.sh", [kind, billCode, String(minutes)], {
