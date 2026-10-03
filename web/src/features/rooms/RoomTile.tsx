@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { components } from "../../api/generated/schema";
 import { Pulse } from "@/components/motion";
 import { localized, lp } from "../../lib/locale";
-import { t, type MessageKey } from "../../lib/t";
+import { t, tf, type MessageKey } from "../../lib/t";
 import { cn } from "@/lib/utils";
 import { formatVnd } from "../../lib/money";
 import { formatElapsed, tileStatus } from "./status";
@@ -20,8 +20,12 @@ const RENTAL: Record<string, MessageKey> = {
 
 function subline(room: Room): string {
   const stay = room.activeStay;
-  if (stay?.pendingPayment)
-    return `${t("pay.remaining")} ${formatVnd(stay.pendingPayment.remaining)}`;
+  if (stay?.pendingPayment) {
+    const { remaining, refundDue } = stay.pendingPayment;
+    if (remaining > 0) return tf("rooms.stillShort", { amount: formatVnd(remaining) });
+    if (refundDue > 0) return tf("rooms.refundPending", { amount: formatVnd(refundDue) });
+    return t("rooms.checkBill"); // pending but nothing owed either way: never "still ₫0"
+  }
   if (stay)
     return `${t(RENTAL[stay.rentalType])} · ${formatElapsed(stay.elapsedMinutes, t("rooms.hourUnit"))}`;
   if (room.status === "TO_CLEAN") return t("rooms.justLeft");

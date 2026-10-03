@@ -41,7 +41,10 @@
     "maintenanceSub": "This room is in maintenance.",
     "roleMANAGER": "Guesthouse manager",
     "awaitingPayment": "Awaiting payment",
-    "panelLoadFailed": "Could not load the room"
+    "panelLoadFailed": "Could not load the room",
+    "stillShort": "Still to pay {amount}",
+    "refundPending": "Refund pending {amount}",
+    "checkBill": "Check the bill"
   },
   "stay": {
     "back": "Back",
@@ -299,7 +302,8 @@
     "pinRequired": "Enter all 6 digits of the PIN",
     "wrong": "The guesthouse code, user name or PIN is not right.",
     "failed": "Could not sign in. Check your connection and try again.",
-    "language": "Language"
+    "language": "Language",
+    "sessionEnded": "Your session has ended. Sign in again."
   },
   "locked": {
     "title": "Account temporarily locked",
@@ -365,7 +369,8 @@
     "resume": "Continue payment",
     "resumeCash": "Take cash",
     "pendingTotal": "Invoice total",
-    "resumeFailed": "Could not reopen the payment. Try again."
+    "resumeFailed": "Could not reopen the payment. Try again.",
+    "checkBillNote": "This bill has nothing left to pay and nothing to refund. Ask the owner to check it."
   },
   "alerts": {
     "title": "Alerts",

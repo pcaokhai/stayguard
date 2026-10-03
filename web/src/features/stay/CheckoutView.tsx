@@ -15,6 +15,7 @@ import { formatVnd } from "../../lib/money";
 import { t, tf } from "../../lib/t";
 import { formatClock, minutesBetween } from "../../lib/time";
 import { FlowSplit } from "../rooms/FlowSplit";
+import { ResumePayment } from "../rooms/ResumePayment";
 import { useCheckout, useCreatePayment, useStay } from "./hooks";
 import { billLineLabel } from "./labels";
 
@@ -55,9 +56,19 @@ export function CheckoutView() {
   const q = invoice?.quote ?? (s?.status === "ACTIVE" ? s.quote : undefined);
   const mins = s?.checkOutAt ? minutesBetween(s.checkInAt, s.checkOutAt) : undefined;
   const busy = pay.isPending || checkout.isPending;
+  // A checked-out stay with a payment already started (or bank money in) resumes that payment: never the fresh
+  // method choice, which would look like starting over and could open a second QR for the same bill.
+  const pend = s?.pendingPayment;
+  const resumable =
+    s?.status === "CHECKED_OUT" && !!pend && (!!pend.paymentId || pend.received > pend.deposit);
 
   // Confirming: freeze the bill (idempotent), then record the payment or refund with its own key.
   const choose = async (method: "CASH" | "TRANSFER") => {
+    if (method === "TRANSFER" && pend?.paymentId) {
+      // an existing transfer payment is reused: same payment, same bill code
+      router.push(lp(`/pay?payment=${pend.paymentId}&room=${s?.roomId ?? ""}`));
+      return;
+    }
     try {
       const inv = invoice ?? (await checkout.mutateAsync(checkoutKey));
       const p = await pay.mutateAsync({
@@ -131,48 +142,59 @@ export function CheckoutView() {
                 <span className="text-[34px] leading-none">{formatVnd(q.balanceDue)}</span>
               </p>
             </Card>
-            <h2 className="mt-2 font-semibold">{t("checkout.payWith")}</h2>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {q.refundDue === 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  loading={busy}
-                  disabled={q.balanceDue === 0}
-                  onClick={() => choose("TRANSFER")}
-                  className={`${option} border-2 border-primary`}
-                >
-                  <span className="flex items-center gap-2 text-base font-bold">
-                    <QrCode aria-hidden="true" />
-                    {t("checkout.qr")}
-                  </span>
-                  <span className="text-[13px] font-normal text-muted-foreground">
-                    {t("checkout.qrSub")}
-                  </span>
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                loading={busy}
-                onClick={() => choose("CASH")}
-                className={option}
-              >
-                <span className="flex items-center gap-2 text-base font-bold">
-                  <Banknote aria-hidden="true" />
-                  {q.refundDue > 0
-                    ? tf("checkout.refund", { amount: formatVnd(q.refundDue) })
-                    : t("checkout.cash")}
-                </span>
-                <span className="text-[13px] font-normal text-muted-foreground">
-                  {t(q.refundDue > 0 ? "checkout.refundSub" : "checkout.cashSub")}
-                </span>
-              </Button>
-            </div>
-            {(pay.isError || checkout.isError) && (
-              <p role="alert" className="text-sm text-warn">
-                {t("checkout.failed")}
-              </p>
+            {resumable && s?.pendingPayment ? (
+              <ResumePayment
+                stayId={s.id}
+                roomId={s.roomId}
+                pending={s.pendingPayment}
+                readOnly={false}
+              />
+            ) : (
+              <>
+                <h2 className="mt-2 font-semibold">{t("checkout.payWith")}</h2>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {q.refundDue === 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      loading={busy}
+                      disabled={q.balanceDue === 0}
+                      onClick={() => choose("TRANSFER")}
+                      className={`${option} border-2 border-primary`}
+                    >
+                      <span className="flex items-center gap-2 text-base font-bold">
+                        <QrCode aria-hidden="true" />
+                        {t("checkout.qr")}
+                      </span>
+                      <span className="text-[13px] font-normal text-muted-foreground">
+                        {t("checkout.qrSub")}
+                      </span>
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    loading={busy}
+                    onClick={() => choose("CASH")}
+                    className={option}
+                  >
+                    <span className="flex items-center gap-2 text-base font-bold">
+                      <Banknote aria-hidden="true" />
+                      {q.refundDue > 0
+                        ? tf("checkout.refund", { amount: formatVnd(q.refundDue) })
+                        : t("checkout.cash")}
+                    </span>
+                    <span className="text-[13px] font-normal text-muted-foreground">
+                      {t(q.refundDue > 0 ? "checkout.refundSub" : "checkout.cashSub")}
+                    </span>
+                  </Button>
+                </div>
+                {(pay.isError || checkout.isError) && (
+                  <p role="alert" className="text-sm text-warn">
+                    {t("checkout.failed")}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

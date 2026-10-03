@@ -143,3 +143,11 @@ The script sets the viewport, opens the route, waits for the network to settle a
 - Focus visible on every control (shadcn ring); dialogs trap focus; sheets close with Esc and swipe.
 - Colour is never the only signal: every status has text.
 - Contrast ≥ 4.5:1 for text; status badges already meet it.
+
+## 8. Sessions, tabs and permissions
+
+- The session token lives in `sessionStorage`, which is **per browser tab**: a new tab (or a copied link opened in a new tab) starts signed out. That is intended (a shared front-desk computer forgets the person when the tab closes). It is not a bug to fix with `localStorage`.
+- A tab without a valid session gets a 401 from the API; the app then goes to `/sign-in?reason=expired&next=<page>`, shows "Your session has ended. Sign in again." and, after signing in, returns to `next` (same app and language only). Only a 401 does this.
+- A signed-in person without the role for a page (for example a receptionist on any `/owner/...` URL, guarded by `OwnerGuard`, or a 403 from the API) sees the "no permission" screen in the same tab with a back button; the session is kept.
+- Covered by `e2e/smoke.then-awaiting.spec.ts` (run through `make smoke`).
+

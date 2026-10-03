@@ -41,7 +41,10 @@
     "maintenanceSub": "Phòng đang bảo trì.",
     "roleMANAGER": "Quản lý nhà nghỉ",
     "awaitingPayment": "Chờ thanh toán",
-    "panelLoadFailed": "Không tải được thông tin phòng"
+    "panelLoadFailed": "Không tải được thông tin phòng",
+    "stillShort": "Còn thiếu {amount}",
+    "refundPending": "Chờ hoàn {amount}",
+    "checkBill": "Cần kiểm tra phiếu"
   },
   "stay": {
     "back": "Quay lại",
@@ -299,7 +302,8 @@
     "pinRequired": "Nhập đủ 6 số PIN",
     "wrong": "Mã nhà nghỉ, tên đăng nhập hoặc PIN chưa đúng.",
     "failed": "Không đăng nhập được. Kiểm tra mạng rồi thử lại.",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "sessionEnded": "Phiên đăng nhập đã kết thúc. Hãy đăng nhập lại."
   },
   "locked": {
     "title": "Tài khoản tạm khóa",
@@ -365,7 +369,8 @@
     "resume": "Tiếp tục thanh toán",
     "resumeCash": "Thu tiền mặt",
     "pendingTotal": "Tổng hóa đơn",
-    "resumeFailed": "Không mở lại được thanh toán. Thử lại."
+    "resumeFailed": "Không mở lại được thanh toán. Thử lại.",
+    "checkBillNote": "Phiếu này chưa còn thiếu hay cần hoàn tiền. Nhờ chủ kiểm tra phiếu."
   },
   "alerts": {
     "title": "Cảnh báo",

@@ -19,7 +19,10 @@ const auth: Middleware = {
     const ownError = /\/v1\/(auth\/sign-in|me\/pin)$/.test(response.url);
     if (response.status === 401 && typeof window !== "undefined" && !ownError) {
       clearSession();
-      window.location.assign(lp("/sign-in"));
+      // Only a 401 ends the session (a 403 is "no permission" and keeps it); say why and remember where to return.
+      const back = encodeURIComponent(window.location.pathname + window.location.search);
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full reload also drops every cached query
+      window.location.assign(`${lp("/sign-in")}?reason=expired&next=${back}`);
     }
     return response;
   },

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { api, idempotencyHeader, newIdempotencyKey } from "../../lib/api";
 import { lp } from "../../lib/locale";
 import { formatVnd } from "../../lib/money";
-import { t } from "../../lib/t";
+import { t, tf } from "../../lib/t";
 
 type Pending = components["schemas"]["PendingPayment"];
 const row = "flex justify-between gap-3 text-sm";
@@ -49,6 +49,8 @@ export function ResumePayment({
   readOnly: boolean;
 }) {
   const resume = useResume(stayId, roomId, pending);
+  const refund = pending.remaining === 0 && pending.refundDue > 0;
+  const check = pending.remaining === 0 && pending.refundDue === 0;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2 rounded-xl border border-warn-line bg-warn-bg p-3.5 text-warn-ink">
@@ -60,29 +62,44 @@ export function ResumePayment({
           <span>{t("pay.receivedSoFar")}</span>
           <span>{formatVnd(pending.received)}</span>
         </p>
-        <p className="flex items-baseline justify-between gap-3 font-bold">
-          <span>{t("pay.remaining")}</span>
-          <span className="text-[26px] leading-none">{formatVnd(pending.remaining)}</span>
-        </p>
+        {!check && (
+          <p className="flex items-baseline justify-between gap-3 font-bold">
+            <span>{refund ? t("panel.refundDue") : t("pay.remaining")}</span>
+            <span className="text-[26px] leading-none">
+              {formatVnd(refund ? pending.refundDue : pending.remaining)}
+            </span>
+          </p>
+        )}
+        {check && <p className="font-semibold">{t("rooms.checkBill")}</p>}
       </div>
-      {!readOnly && (
+      {check && <p className="text-sm text-muted-foreground">{t("panel.checkBillNote")}</p>}
+      {!readOnly && !check && (
         <>
-          <Button
-            size="lg"
-            loading={resume.isPending && resume.variables === "TRANSFER"}
-            onClick={() => resume.mutate("TRANSFER")}
-          >
-            <QrCode aria-hidden="true" />
-            {t("panel.resume")}
-          </Button>
-          <Button
-            variant="outline"
-            loading={resume.isPending && resume.variables === "CASH"}
-            onClick={() => resume.mutate("CASH")}
-          >
-            <Banknote aria-hidden="true" />
-            {t("panel.resumeCash")}
-          </Button>
+          {refund ? (
+            <Button size="lg" loading={resume.isPending} onClick={() => resume.mutate("CASH")}>
+              <Banknote aria-hidden="true" />
+              {tf("checkout.refund", { amount: formatVnd(pending.refundDue) })}
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="lg"
+                loading={resume.isPending && resume.variables === "TRANSFER"}
+                onClick={() => resume.mutate("TRANSFER")}
+              >
+                <QrCode aria-hidden="true" />
+                {t("panel.resume")}
+              </Button>
+              <Button
+                variant="outline"
+                loading={resume.isPending && resume.variables === "CASH"}
+                onClick={() => resume.mutate("CASH")}
+              >
+                <Banknote aria-hidden="true" />
+                {t("panel.resumeCash")}
+              </Button>
+            </>
+          )}
           {resume.isError && (
             <p role="alert" className="text-sm text-warn">
               {t("panel.resumeFailed")}

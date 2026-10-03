@@ -99,7 +99,7 @@ async function ownerSees(browser: import("@playwright/test").Browser, room: RegE
     await expect(panel.getByRole("button", { name: "Continue payment" })).toBeVisible();
   } else {
     await tile.getByRole("link").click();
-    await expect(owner).toHaveURL(/\/en\/stay\?id=/);
+    await expect(owner).toHaveURL(/\/en\/(stay\?id=|checkout\?stay=)/);
     await expect(owner.getByRole("link", { name: "Check out" })).toHaveCount(0);
     await expect(owner.getByRole("button", { name: "Continue payment" })).toBeVisible();
     await expect(owner.locator("body")).not.toContainText("maintenance");
@@ -145,7 +145,7 @@ test("transfer chosen, left unpaid: awaiting payment on the map, resume the same
 
   // the stay has no Check out, only Continue payment on the same bill code
   await tile.getByRole("link").click();
-  await expect(page).toHaveURL(/\/en\/stay\?id=/);
+  await expect(page).toHaveURL(/\/en\/(stay\?id=|checkout\?stay=)/);
   await expect(page.getByRole("link", { name: "Check out" })).toHaveCount(0);
   await page.getByRole("button", { name: "Continue payment" }).click();
   await expect(page.getByText("Transfer note")).toBeVisible();
@@ -159,7 +159,7 @@ test("transfer chosen, left unpaid: awaiting payment on the map, resume the same
   await clean(page, /A103/);
 });
 
-test("checked out without choosing a method, desktop panel: Continue payment creates the payment and settles by webhook", async ({
+test("transfer chosen, left unpaid, desktop panel (receptionist and owner): resume and settle by webhook", async ({
   page,
   request,
   browser,
@@ -170,7 +170,8 @@ test("checked out without choosing a method, desktop panel: Continue payment cre
   await signIn(page);
   await checkIn(page, /A102/, "No Method Guest", "0912345677");
   await page.getByRole("link", { name: "Check out" }).click();
-  await expect(page.getByText("Guest pays by")).toBeVisible(); // leave without choosing
+  await page.getByRole("button", { name: /Bank transfer/ }).click();
+  await expect(page.getByText("Transfer note")).toBeVisible(); // leave without paying
 
   await ownerSees(browser, /A102/, 1280); // owner, desktop
 
@@ -192,4 +193,81 @@ test("checked out without choosing a method, desktop panel: Continue payment cre
   await expect(page).toHaveURL(/\/en\/paid\?payment=/, { timeout: 20_000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await clean(page, /A102/);
+});
+
+test("after a reload a checked-out room resumes the same payment, never the fresh checkout form", async ({
+  page,
+  request,
+}) => {
+  test.skip(!configured, "needs the stack and test guesthouse that `make smoke` creates");
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page);
+  await checkIn(page, /A101/, "Reload Guest", "0912345678");
+  const stayUrl = page.url();
+  await page.getByRole("link", { name: "Check out" }).click();
+  await page.getByRole("button", { name: /Bank transfer/ }).click();
+  await expect(page.getByText("Transfer note")).toBeVisible();
+  const note = (await page.locator("body").innerText()).match(/Transfer note\s+(\S+)/)?.[1] ?? "";
+
+  // reload the room map, click the room: the resume panel, not the checkout form
+  await page.goto("/en/rooms");
+  await page.reload();
+  await page.locator("li", { hasText: /A101/ }).first().getByRole("link").click();
+  await expect(page.getByRole("button", { name: "Continue payment" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Bank transfer/ })).toHaveCount(0);
+
+  // the checkout URL itself (reloaded or bookmarked) resumes too; the QR belongs to the same bill code
+  await page.goto(stayUrl.replace("/stay?id=", "/checkout?stay="));
+  await expect(page.getByRole("button", { name: "Continue payment" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Bank transfer/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Continue payment" }).click();
+  await expect(page.getByText("Transfer note")).toBeVisible();
+  const text = await page.locator("body").innerText();
+  expect(text.match(/Transfer note\s+(\S+)/)?.[1], "same payment, same bill code").toBe(note);
+  await deliver(request, note, vnd(text.match(/₫[\d,]+/)?.[0] ?? ""));
+  await expect(page).toHaveURL(/\/en\/paid\?payment=/, { timeout: 20_000 });
+  await clean(page, /A101/);
+});
+
+test("a receptionist on an owner-only page keeps the session; only a 401 goes to sign-in, with the return URL", async ({
+  page,
+  browser,
+}) => {
+  test.skip(!configured, "needs the stack and test guesthouse that `make smoke` creates");
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page);
+  for (const url of ["/en/owner", "/en/owner/staff", "/en/owner/reports", "/en/owner/stays"]) {
+    await page.goto(url);
+    await expect(page.getByText("You do not have access here")).toBeVisible({ timeout: 15_000 });
+    await expect(page).toHaveURL(new RegExp(url));
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("stayguard.session")),
+      "the session is kept",
+    ).not.toBeNull();
+  }
+  await page.getByRole("link", { name: "Back to room map" }).click();
+  await expect(page).toHaveURL(/\/en\/rooms/);
+  await expect(page.locator("li", { hasText: /A10/ }).first()).toBeVisible();
+
+  // a real 401 (bad token) goes to sign-in, says why and keeps the return URL
+  await page.evaluate(() => {
+    const s = JSON.parse(sessionStorage.getItem("stayguard.session")!);
+    sessionStorage.setItem("stayguard.session", JSON.stringify({ ...s, accessToken: "expired" }));
+  });
+  await page.goto("/en/owner/staff");
+  await expect(page).toHaveURL(/\/en\/sign-in\?.*next=/);
+  await expect(page.getByText("Your session has ended. Sign in again.")).toBeVisible();
+  await page.locator('input[name="guesthouseCode"]').fill(env("SMOKE_GUESTHOUSE"));
+  await page.locator('input[name="username"]').fill("linh");
+  await typePin(page, 2, NEW_PIN);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/en\/owner\/staff/); // back where they were going
+
+  // a new tab has its own sessionStorage: it says the session ended instead of failing silently
+  const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(env("E2E_BASE_URL") + "/en/rooms");
+  await expect(fresh).toHaveURL(/\/en\/sign-in/);
+  await expect(fresh.getByText("Your session has ended. Sign in again.")).toBeVisible();
 });

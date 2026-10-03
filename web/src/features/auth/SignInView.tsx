@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Info, Lock, Shield } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -30,6 +30,11 @@ type Values = z.infer<typeof schema>;
 
 export function SignInView() {
   const router = useRouter();
+  const params = useSearchParams();
+  const expired = params.get("reason") === "expired";
+  // Return to where the 401 interrupted, only inside this app and this language.
+  const next = params.get("next");
+  const back = next && next.startsWith(`${lp("/")}/`) && !next.startsWith("//") ? next : null;
   const signIn = useSignIn();
   const [shake, setShake] = useState(0);
   const [locked, setLocked] = useState<{ until: Date; account: string } | null>(null);
@@ -48,7 +53,7 @@ export function SignInView() {
             if (s.mustChangePin) {
               rememberPin(v.pin);
               router.replace(lp("/set-pin"));
-            } else router.replace(lp(homeFor(s.user.role)));
+            } else router.replace(back ?? lp(homeFor(s.user.role)));
           },
           onError: (e) => {
             form.setValue("pin", "");
@@ -84,6 +89,14 @@ export function SignInView() {
           <h1 className="text-[28px] font-bold leading-tight">{t("auth.title")}</h1>
           <p className="pt-1 text-[15px] text-ink-2 lg:hidden">{t("auth.lead")}</p>
         </div>
+        {expired && (
+          <p
+            role="status"
+            className="rounded-xl border border-warn-line bg-warn-bg p-3 text-sm font-semibold text-warn-ink"
+          >
+            {t("auth.sessionEnded")}
+          </p>
+        )}
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           <Field
             id="code"
