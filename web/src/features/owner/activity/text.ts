@@ -31,7 +31,20 @@ export const CATEGORY_TONE: Record<Category, string> = {
   GUEST_ID: "border-line bg-maint-bg text-maint",
 };
 
-const MONEY = new Set(["amount", "difference", "expected", "received"]);
+const MONEY = new Set([
+  "amount",
+  "difference",
+  "expected",
+  "received",
+  "total",
+  "deposit",
+  "balanceDue",
+  "refundDue",
+  "counted",
+  "floatLeft",
+  "bonus",
+  "deduction",
+]);
 const isIso = (v: string) => /^\d{4}-\d\d-\d\dT/.test(v);
 
 // Turns the stable action code plus its details into one line; unknown codes show the code itself.
@@ -41,8 +54,7 @@ export function actionText(e: AuditEntry): string {
   if (template === key) return tf("activity.act.fallback", { action: e.action });
   const vars: Record<string, string> = {};
   for (const [k, v] of Object.entries(e.details ?? {})) {
-    const money = MONEY.has(k) || (e.action === "rate.updated" && (k === "from" || k === "to"));
-    vars[k] = money ? formatVnd(Number(v)) : isIso(v) ? clockOf(v) : v;
+    vars[k] = MONEY.has(k) ? formatVnd(Number(v)) : isIso(v) ? clockOf(v) : v;
   }
   return dropUnresolved(tf(key as MessageKey, vars));
 }
