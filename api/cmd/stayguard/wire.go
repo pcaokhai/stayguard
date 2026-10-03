@@ -224,12 +224,25 @@ func newStayOps(cfg config.Config, uow app.UnitOfWork, idem app.IdempotencyStore
 }
 
 // Sign-in rate limits: a legitimate front desk signs in a few times a day, so these only stop guessing.
-const signInRateEvery = time.Minute
+// The production limits; config.Load sets them too, and a Config built by hand (tests) leaves them zero.
+const (
+	signInPerIPDefault   = 20
+	signInPerCodeDefault = 60
+	signInRateEvery      = time.Minute
+)
+
+func orDefault(n, def int) int {
+	if n <= 0 {
+		return def
+	}
+	return n
+}
 
 // newAuth builds PIN sign-in with per-IP and per-guesthouse-code rate limits.
 func newAuth(cfg config.Config, sessions *app.Sessions, pool *pgxpool.Pool, audit app.AuditWriter, clk app.Clock) (*app.Auth, error) {
 	return app.NewAuth(sessions, postgres.NewTenantResolver(pool), postgres.NewAuthRepo(), crypto.NewPinHasher(cfg.DataEncryptionKey), audit, postgres.AlertWriter{},
-		ratelimit.New(cfg.SignInPerIP, signInRateEvery, clk.Now), ratelimit.New(cfg.SignInPerCode, signInRateEvery, clk.Now))
+		ratelimit.New(orDefault(cfg.SignInPerIP, signInPerIPDefault), signInRateEvery, clk.Now),
+		ratelimit.New(orDefault(cfg.SignInPerCode, signInPerCodeDefault), signInRateEvery, clk.Now))
 }
 
 // newStaff builds the staff use cases; the shift repository tells removeStaff whether the person still has a shift open.
