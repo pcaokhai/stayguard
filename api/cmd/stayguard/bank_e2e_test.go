@@ -87,6 +87,10 @@ func TestInstallerCLI_ImportAndSepay_SG703(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM app.audit_logs WHERE action = 'INSTALLER_TENANT_IMPORTED'`); n != 1 {
 		t.Fatal("import audit entry missing")
 	}
+	// A customer's guesthouse never gets the trial's sample money: no transfers, no shifts, no alerts.
+	if n := e.count(`SELECT (SELECT count(*) FROM app.payment_events) + (SELECT count(*) FROM app.shifts) + (SELECT count(*) FROM app.alerts)`); n != 0 {
+		t.Fatalf("an import carries %d sample money rows", n)
+	}
 	// The imported owner signs in with the one-time PIN and must change it; the receptionist has building access A.
 	owner := e.callAs("riverside", "mai", pins[0][2])
 	if owner.status != 200 || owner.body["mustChangePin"] != true {

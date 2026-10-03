@@ -2,9 +2,12 @@ package postgres
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pcaokhai/stayguard/api/internal/adapter/postgres/sqlcgen"
 	"github.com/pcaokhai/stayguard/api/internal/app"
+	"github.com/pcaokhai/stayguard/api/internal/domain/access"
+	"github.com/pcaokhai/stayguard/api/internal/domain/payment"
 )
 
 // DemoSeedRepo implements app.DemoSeedRepo. The tenant always comes from the Tx.
@@ -71,5 +74,43 @@ func (DemoSeedRepo) InsertDemoData(ctx context.Context, tx app.Tx, d app.DemoDat
 			return err
 		}
 	}
-	return nil
+	if d.FrontDeskID == "" { // an installer import and a seed without sample money have none
+		return nil
+	}
+	return insertDemoMoney(ctx, tx, t, d)
+}
+
+// insertDemoMoney writes the sample bank events, their alerts and the closed shift through the repositories the use cases use.
+// The front-desk user is the one the role picker would create for RECEPTIONIST (userFor finds it by role).
+func insertDemoMoney(ctx context.Context, tx app.Tx, t Tx, d app.DemoData) error {
+	if _, err := (IdentityRepo{}).CreateUser(ctx, tx, d.FrontDeskID, strings.ToLower(string(access.RoleReceptionist)), access.RoleReceptionist, "vi"); err != nil {
+		return err
+	}
+	if err := (IdentityRepo{}).GrantAllBuildings(ctx, tx, d.FrontDeskID, access.EDIT); err != nil {
+		return err
+	}
+	for _, e := range d.Events {
+		if _, err := (PaymentRepo{}).InsertEvent(ctx, tx, e.ID, e.Event); err != nil {
+			return err
+		}
+		if err := (PaymentRepo{}).SetEventResult(ctx, tx, e.Event, payment.ResultUnmatched); err != nil {
+			return err
+		}
+	}
+	q := sqlcgen.New(t)
+	for _, a := range d.Alerts {
+		if err := (AlertWriter{}).Raise(ctx, tx, a.Draft); err != nil {
+			return err
+		}
+		if a.Read {
+			_, err := q.MarkAlertRead(ctx, sqlcgen.MarkAlertReadParams{ReadAt: ts(a.At), ReadBy: optText(d.FrontDeskID), TenantID: t.tenant, AlertID: a.Draft.ID})
+			if err != nil {
+				return wrap("mark sample alert read", err)
+			}
+		}
+	}
+	if _, err := (ShiftRepo{}).Open(ctx, tx, d.Shift.NewShift); err != nil {
+		return err
+	}
+	return (ShiftRepo{}).Close(ctx, tx, d.Shift.Close)
 }

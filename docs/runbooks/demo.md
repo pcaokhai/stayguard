@@ -7,7 +7,7 @@ There are two ways to get a guesthouse to show. They are different stacks with d
 | Server | `DEMO_MODE=1` (the public demo, `deploy/compose.demo.override.yaml`) | `DEMO_MODE=0`, real PIN sign-in, own compose project `stayguard-demo` on `http://localhost:18200` |
 | Web build | `NEXT_PUBLIC_DEMO_MODE=1` (the default) | `NEXT_PUBLIC_DEMO_MODE=0` |
 | Sign in | pick a role on `/vi`; each visitor gets a new empty-ish trial tenant (24 h) | guesthouse `demo` plus user name and PIN |
-| Data | `DemoSeeder` (`api/internal/app/demo_seed.go`, `contracts/fixtures/demo-tenant-seed.json`): 35 rooms, rate plans, services, 11 sample stays, one extras line | the installer import (`scripts/demo/tenant.json`) plus a worked day (`scripts/demo/populate.py`) |
+| Data | `DemoSeeder` (`api/internal/app/demo_seed.go`, `contracts/fixtures/demo-tenant-seed.json`): 35 rooms, rate plans, services, 11 sample stays, one extras line, two unmatched bank transfers (one unread alert, one read), one closed morning shift with the drawer counted exactly | the installer import (`scripts/demo/tenant.json`) plus a worked day (`scripts/demo/populate.py`) |
 | Staff and PINs | none (roles only) | owner, manager, two receptionists, housekeeping |
 | Payment simulator | yes | **no** |
 
@@ -62,10 +62,10 @@ The rooms and codes are fixed, so a script can refer to them (vacant for a live 
 | --- | --- | --- |
 | Room map, check-in, extras, check-out, QR payment, cleaning | yes (with the simulator) | yes (signed webhooks) |
 | Sign-in, account, PIN change, staff list, access | no (roles only) | yes |
-| Owner overview, stays and history | partly (sample stays, one invoice) | yes |
-| Transactions (Giao dịch) | empty until the trial tenant gets sample transactions | yes |
-| Alerts (Cảnh báo) | empty until it gets a sample alert | yes |
-| Shift review (Đối soát ca) | empty until it gets a closed shift | yes |
+| Owner overview, stays and history | partly (sample stays, no invoice) | yes |
+| Transactions (Giao dịch) | two sample bank transfers (unmatched, so the owner can link them) | yes |
+| Alerts (Cảnh báo) | one unread alert (unmatched transfer) and one read | yes |
+| Shift review (Đối soát ca) | one closed shift (morning, no difference) | yes |
 | Activity log | only what the visitor does | yes |
 | Expenses, payroll, roster, reports, maintenance | empty | yes |
 | Guest ID viewer | only after the visitor enters an ID number | yes |

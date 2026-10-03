@@ -14,13 +14,20 @@ import (
 	"github.com/pcaokhai/stayguard/api/internal/app"
 )
 
-func newSeededEnv(t *testing.T) *env {
+// newSeededEnv is the trial seed without the sample money: the money-path tests count transfers, alerts and shifts from zero.
+func newSeededEnv(t *testing.T) *env { return newSeededEnvWith(t, true) }
+
+func newSeededEnvWith(t *testing.T, withoutMoney bool) *env {
 	t.Helper()
 	enc, err := crypto.NewAESGCM(testDataKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newEnvWith(t, newRooms, app.NewDemoSeeder(postgres.DemoSeedRepo{}, enc, ids.New(time.Now)))
+	seeder := app.NewDemoSeeder(postgres.DemoSeedRepo{}, enc, ids.New(time.Now))
+	if withoutMoney {
+		seeder = seeder.WithoutSampleMoney()
+	}
+	return newEnvWith(t, newRooms, seeder)
 }
 
 func TestDemoSeed_A1(t *testing.T) {
@@ -114,5 +121,46 @@ func TestDemoSeedA101HasBalance_A1(t *testing.T) {
 	inv, _ := parse(raw)["id"].(string)
 	if st, raw := e.send("POST", "/v1/invoices/"+inv+"/payments", tok, newKey(), map[string]any{"method": "TRANSFER"}); st != 201 {
 		t.Fatalf("transfer: %d %s", st, raw)
+	}
+}
+
+// The Giao dịch, Cảnh báo and Đối soát ca screens of the public demo are not empty: a few bank transactions, one open alert
+// and one closed shift come with every new trial tenant.
+func TestDemoSeed_BankAlertShift_A2(t *testing.T) {
+	e := newSeededEnvWith(t, false)
+	owner := e.demo("OWNER", "vi", "")
+	token, tenant := owner.str("accessToken"), owner.str("tenantId")
+	day := e.clock.Now().In(time.FixedZone("ICT", 7*3600)).Format("2006-01-02")
+
+	st, raw := e.send("GET", "/v1/owner/transactions?from="+day+"&to="+day, token, "", nil)
+	items, _ := parse(raw)["items"].([]any)
+	if st != 200 || len(items) < 2 {
+		t.Fatalf("transactions: %d %s", st, raw)
+	}
+	for _, it := range items {
+		if m := it.(map[string]any); m["method"] != "TRANSFER" || m["reconciliation"] != "UNMATCHED" {
+			t.Errorf("sample transaction: %v", m)
+		}
+	}
+	st, raw = e.send("GET", "/v1/owner/alerts?unread=true", token, "", nil)
+	alerts, _ := parse(raw)["items"].([]any)
+	if st != 200 || len(alerts) != 1 || alerts[0].(map[string]any)["kind"] != "UNMATCHED_TRANSFER" {
+		t.Fatalf("open alerts: %d %s", st, raw)
+	}
+	st, raw = e.send("GET", "/v1/owner/shifts", token, "", nil)
+	shifts, _ := parse(raw)["items"].([]any)
+	if st != 200 || len(shifts) != 1 {
+		t.Fatalf("closed shifts: %d %s", st, raw)
+	}
+
+	// The seeded front-desk user is the one the role picker hands out: no second receptionist, and the role still works.
+	rec := e.demo("RECEPTIONIST", "vi", tenant)
+	if rec.status != 201 || e.count(`SELECT count(*) FROM app.users WHERE tenant_id = $1 AND role = 'RECEPTIONIST'`, tenant) != 1 {
+		t.Fatalf("receptionist session: %d", rec.status)
+	}
+	// A second tenant gets its own rows, and nothing is shared.
+	other := e.demo("OWNER", "vi", "")
+	if n := e.count(`SELECT count(*) FROM app.payment_events WHERE tenant_id = $1`, other.str("tenantId")); n != 2 {
+		t.Fatalf("second tenant has %d sample events, want 2", n)
 	}
 }

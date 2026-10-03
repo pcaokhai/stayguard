@@ -38,6 +38,28 @@ type DemoData struct {
 	Services                 []DemoService
 	Stays                    []NewStay
 	Extras                   []NewExtra
+	// The sample money side, so the transactions, alerts and shift review screens are not empty: bank transfers nobody
+	// matched (each with its alert; only the newest is unread) and one closed shift of the front-desk user.
+	FrontDeskID string
+	Events      []DemoEvent
+	Alerts      []DemoAlert
+	Shift       DemoShift
+}
+
+type DemoEvent struct {
+	ID    string
+	Event PaymentEvent
+}
+
+type DemoAlert struct {
+	Draft AlertDraft
+	At    time.Time
+	Read  bool
+}
+
+type DemoShift struct {
+	NewShift
+	Close ShiftClose
 }
 
 type DemoBuilding struct{ ID, Code, Name string }
@@ -66,13 +88,21 @@ type DemoSeedRepo interface {
 
 // DemoSeeder fills a new trial tenant from the embedded seed.
 type DemoSeeder struct {
-	repo DemoSeedRepo
-	enc  Encryptor
-	ids  IDGenerator
+	repo      DemoSeedRepo
+	enc       Encryptor
+	ids       IDGenerator
+	skipMoney bool
 }
 
 func NewDemoSeeder(repo DemoSeedRepo, enc Encryptor, ids IDGenerator) *DemoSeeder {
-	return &DemoSeeder{repo, enc, ids}
+	return &DemoSeeder{repo: repo, enc: enc, ids: ids}
+}
+
+// WithoutSampleMoney is for tests of the money paths, which count transfers, alerts and shifts from zero.
+func (d *DemoSeeder) WithoutSampleMoney() *DemoSeeder {
+	c := *d
+	c.skipMoney = true
+	return &c
 }
 
 type seedFile struct {
@@ -188,7 +218,43 @@ func (d *DemoSeeder) build(tenantID string, now time.Time) (DemoData, error) {
 	if err != nil {
 		return DemoData{}, err
 	}
-	return d.addExtras(out, now)
+	if out, err = d.addExtras(out, now); err != nil {
+		return DemoData{}, err
+	}
+	if d.skipMoney {
+		return out, nil
+	}
+	return d.addMoney(out, tenantID, now), nil
+}
+
+// sampleTransfers are bank transfers with no bill code in the note, newest first.
+var sampleTransfers = []struct {
+	amount  int64
+	content string
+	ago     time.Duration
+}{{150000, "chuyen khoan tien phong", 40 * time.Minute}, {80000, "tra tien nuoc", 90 * time.Minute}}
+
+// addMoney adds the unmatched transfers with their alerts and one closed morning shift whose drawer was counted exactly.
+func (d *DemoSeeder) addMoney(out DemoData, tenantID string, now time.Time) DemoData {
+	for i, tr := range sampleTransfers {
+		eventID := d.ids.New(eventIDPrefix)
+		at := now.Add(-tr.ago)
+		out.Events = append(out.Events, DemoEvent{ID: eventID, Event: PaymentEvent{TenantID: tenantID, Provider: "sepay",
+			ExternalID: d.ids.New("demo"), Content: tr.content, Amount: tr.amount, ReceivedAt: at}})
+		amount := tr.amount
+		out.Alerts = append(out.Alerts, DemoAlert{Draft: AlertDraft{ID: d.ids.New("al"), Kind: AlertUnmatchedTransfer, Amount: &amount,
+			Details: map[string]string{"transferNote": tr.content, "eventId": eventID}}, At: at, Read: i > 0})
+	}
+	out.FrontDeskID = d.ids.New(userPrefix)
+	opened, closed := now.Add(-8*time.Hour), now.Add(-time.Hour)
+	const float = int64(200000) // taken to the safe at close, so the next shift opens with nothing in the drawer
+	out.Shift = DemoShift{
+		NewShift: NewShift{ID: d.ids.New("sh"), UserID: out.FrontDeskID, Code: "MORNING", OpenedAt: opened, OpeningFloat: float},
+		Close: ShiftClose{At: closed, Expected: float, Counted: float, FloatLeft: 0,
+			CountsJSON: []byte(`[{"denomination":100000,"quantity":2}]`)},
+	}
+	out.Shift.Close.ShiftID = out.Shift.ID
+	return out
 }
 
 // demoAccount is the trial's receiving account: connected and default, because the simulator stands in for SePay.
