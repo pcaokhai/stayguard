@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.11.0
+  version: 1.12.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -4594,6 +4594,17 @@ components:
           - string
           - 'null'
           format: date-time
+        closedByName:
+          type: string
+          description: Who closed the shift (a shift is closed by its own person).
+        closedByRole:
+          type: string
+          description: Their role, for example RECEPTIONIST.
+        floatLeft:
+          description: What they left in the drawer for the next shift. There is no "handed to" recipient in the system.
+          oneOf:
+          - $ref: '#/components/schemas/Vnd'
+          - type: 'null'
         cashPayments:
           type: array
           items:

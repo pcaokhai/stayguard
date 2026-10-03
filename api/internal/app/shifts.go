@@ -59,6 +59,10 @@ type ShiftReview struct {
 	CashPayments     []CashPaymentRow
 	ShiftsWithDiff   int64
 	TotalShort       int64
+	// ClosedByName and ClosedByRole are the person whose shift it was (a shift is closed by its own person); FloatLeft is what they
+	// left in the drawer. The system has no "handed to" recipient.
+	ClosedByName, ClosedByRole string
+	FloatLeft                  *int64
 }
 
 type PayoutInput struct {
@@ -554,7 +558,8 @@ func (s *Shifts) review(ctx context.Context, tx Tx, sh ShiftRecord, buildings []
 		return ShiftReview{}, fmt.Errorf("staff history: %w", err)
 	}
 	r := ShiftReview{Shift: v, CountedCash: *sh.Counted, Difference: *sh.Difference, Reason: sh.Reason,
-		ReasonRecordedAt: utcPtr(sh.ReasonAt), CashPayments: make([]CashPaymentRow, len(rows)), ShiftsWithDiff: withDiff, TotalShort: short}
+		ReasonRecordedAt: utcPtr(sh.ReasonAt), CashPayments: make([]CashPaymentRow, len(rows)), ShiftsWithDiff: withDiff, TotalShort: short,
+		ClosedByName: sh.UserName, ClosedByRole: sh.UserRole, FloatLeft: sh.FloatLeft}
 	for i, row := range rows {
 		r.CashPayments[i] = CashPaymentRow{RoomCode: row.RoomCode, RentalType: row.RentalType, At: row.At.UTC(), Amount: row.Amount, ByOwner: row.ByOwner}
 	}

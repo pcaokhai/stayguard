@@ -2363,11 +2363,20 @@ type ShiftReview struct {
 		RoomCode   string     `json:"roomCode"`
 	} `json:"cashPayments"`
 
+	// ClosedByName Who closed the shift (a shift is closed by its own person).
+	ClosedByName *string `json:"closedByName,omitempty"`
+
+	// ClosedByRole Their role, for example RECEPTIONIST.
+	ClosedByRole *string `json:"closedByRole,omitempty"`
+
 	// CountedCash Whole Vietnamese dong
 	CountedCash Vnd `json:"countedCash"`
 
 	// Difference Whole Vietnamese dong
-	Difference       Vnd        `json:"difference"`
+	Difference Vnd `json:"difference"`
+
+	// FloatLeft What they left in the drawer for the next shift. There is no "handed to" recipient in the system.
+	FloatLeft        *Vnd       `json:"floatLeft,omitempty"`
 	Reason           *string    `json:"reason,omitempty"`
 	ReasonRecordedAt *time.Time `json:"reasonRecordedAt,omitempty"`
 	Shift            Shift      `json:"shift"`

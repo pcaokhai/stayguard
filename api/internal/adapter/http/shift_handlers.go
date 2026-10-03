@@ -110,7 +110,7 @@ func toShift(v app.ShiftView) gen.Shift {
 
 func toShiftReview(r app.ShiftReview) gen.ShiftReview {
 	out := gen.ShiftReview{Shift: toShift(r.Shift), CountedCash: r.CountedCash, Difference: r.Difference, Reason: r.Reason,
-		ReasonRecordedAt: r.ReasonRecordedAt}
+		ReasonRecordedAt: r.ReasonRecordedAt, ClosedByName: &r.ClosedByName, ClosedByRole: &r.ClosedByRole, FloatLeft: r.FloatLeft}
 	out.CashPayments = make([]struct {
 		Amount     gen.Vnd        `json:"amount"`
 		At         time.Time      `json:"at"`

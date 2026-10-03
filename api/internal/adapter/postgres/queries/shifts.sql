@@ -39,7 +39,7 @@ WHERE tenant_id = @tenant_id AND id = @shift_id AND status = 'OPEN';
 
 -- name: GetShiftByID :one
 SELECT s.id, s.user_id, u.name AS user_name, s.status, s.shift_code, s.opened_at, s.closed_at, s.opening_float,
-       s.expected_cash, s.counted_cash, s.difference, s.reason, s.reason_recorded_at, s.float_left
+       s.expected_cash, s.counted_cash, s.difference, s.reason, s.reason_recorded_at, s.float_left, u.role AS user_role
 FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.user_id
 WHERE s.tenant_id = @tenant_id AND s.id = @shift_id;
 

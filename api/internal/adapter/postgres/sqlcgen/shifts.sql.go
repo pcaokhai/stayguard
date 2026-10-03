@@ -54,7 +54,7 @@ func (q *Queries) CloseShift(ctx context.Context, arg CloseShiftParams) (int64, 
 
 const getShiftByID = `-- name: GetShiftByID :one
 SELECT s.id, s.user_id, u.name AS user_name, s.status, s.shift_code, s.opened_at, s.closed_at, s.opening_float,
-       s.expected_cash, s.counted_cash, s.difference, s.reason, s.reason_recorded_at, s.float_left
+       s.expected_cash, s.counted_cash, s.difference, s.reason, s.reason_recorded_at, s.float_left, u.role AS user_role
 FROM app.shifts s JOIN app.users u ON u.tenant_id = s.tenant_id AND u.id = s.user_id
 WHERE s.tenant_id = $1 AND s.id = $2
 `
@@ -79,6 +79,7 @@ type GetShiftByIDRow struct {
 	Reason           pgtype.Text
 	ReasonRecordedAt pgtype.Timestamptz
 	FloatLeft        pgtype.Int8
+	UserRole         string
 }
 
 func (q *Queries) GetShiftByID(ctx context.Context, arg GetShiftByIDParams) (GetShiftByIDRow, error) {
@@ -99,6 +100,7 @@ func (q *Queries) GetShiftByID(ctx context.Context, arg GetShiftByIDParams) (Get
 		&i.Reason,
 		&i.ReasonRecordedAt,
 		&i.FloatLeft,
+		&i.UserRole,
 	)
 	return i, err
 }

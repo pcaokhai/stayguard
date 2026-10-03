@@ -2131,6 +2131,12 @@ export interface components {
             reason?: string | null;
             /** Format: date-time */
             reasonRecordedAt?: string | null;
+            /** @description Who closed the shift (a shift is closed by its own person). */
+            closedByName?: string;
+            /** @description Their role, for example RECEPTIONIST. */
+            closedByRole?: string;
+            /** @description What they left in the drawer for the next shift. There is no "handed to" recipient in the system. */
+            floatLeft?: components["schemas"]["Vnd"] | null;
             cashPayments: {
                 roomCode: string;
                 rentalType: components["schemas"]["RentalType"];

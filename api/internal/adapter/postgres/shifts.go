@@ -145,6 +145,7 @@ func (ShiftRepo) ByID(ctx context.Context, tx app.Tx, shiftID string) (app.Shift
 	}
 	rec := app.ShiftRecord{ID: r.ID, UserID: r.UserID, UserName: r.UserName, Status: r.Status, Code: r.ShiftCode,
 		OpenedAt: r.OpenedAt.Time, ClosedAt: timePtr(r.ClosedAt), OpeningFloat: r.OpeningFloat, ReasonAt: timePtr(r.ReasonRecordedAt)}
+	rec.UserRole, rec.FloatLeft = r.UserRole, intPtr(r.FloatLeft)
 	rec.Expected, rec.Counted, rec.Difference = intPtr(r.ExpectedCash), intPtr(r.CountedCash), intPtr(r.Difference)
 	if r.Reason.Valid {
 		rec.Reason = &r.Reason.String

@@ -12,6 +12,8 @@ var ErrShiftNotOpen = errors.New("shift is not open")
 // ShiftRecord is a stored shift. Expected, Counted and Difference are set once it is closed.
 type ShiftRecord struct {
 	ID, UserID, UserName, Status, Code string
+	UserRole                           string // role of the person whose shift it is: the one who closes it
+	FloatLeft                          *int64 // what the closer left in the drawer; nil while open
 	OpenedAt                           time.Time
 	ClosedAt                           *time.Time
 	OpeningFloat                       int64

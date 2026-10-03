@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.11.0
+ * OpenAPI spec version: 1.12.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -782,6 +782,12 @@ export interface ShiftReview {
   reason?: string | null;
   /** @nullable */
   reasonRecordedAt?: string | null;
+  /** Who closed the shift (a shift is closed by its own person). */
+  closedByName?: string;
+  /** Their role, for example RECEPTIONIST. */
+  closedByRole?: string;
+  /** What they left in the drawer for the next shift. There is no "handed to" recipient in the system. */
+  floatLeft?: Vnd | null;
   cashPayments: ShiftReviewCashPaymentsItem[];
   staffHistory: ShiftReviewStaffHistory;
 }
