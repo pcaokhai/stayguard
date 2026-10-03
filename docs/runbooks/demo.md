@@ -16,7 +16,7 @@ There are two ways to get a guesthouse to show. They are different stacks with d
 Wipes the stack `stayguard-demo` (never `stayguard-rehearse`; the stack is its own compose project and database volume), builds it,
 migrates, imports the guesthouse with the installer command (`stayguard tenant import`), stores a SePay test secret
 (`stayguard sepay set-secret`), then works the guesthouse through the public API. Nothing is written to the database directly.
-Run it again any time: everything is deleted first (about a minute). `DEMO_PORT` (default 18200) and `DEMO_DB_PORT` (18201) move the ports.
+Run it again any time: everything is deleted first (about a minute). The stack is per clone, named like the rehearse stack (`scripts/rehearse-env.sh`): the main clone (directory `stayguard`) uses project `stayguard-demo` on port 18200 (database 18201); any other clone uses `stayguard-demo-<directory>` and a port from 20000 up made from its path, and the script prints the address. `DEMO_PROJECT`, `DEMO_PORT` and `DEMO_DB_PORT` move the ports.
 
 It prints the sign-in details at the end:
 

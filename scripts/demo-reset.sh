@@ -3,14 +3,23 @@
 # (`tenant import`, `sepay set-secret`) create the guesthouse and a script then works it through the public API (check-in, extras,
 # check-out, cash and QR payments by signed SePay webhooks, cleaning, a damage report, expenses, roster, a closed shift).
 # What it creates: docs/runbooks/demo.md. Needs docker, python3, openssl. Test data only; never use it for real guests.
-#   DEMO_PORT=18200    the local port (the database is on DEMO_DB_PORT, default 18201)
+# One demo stack per clone, named like the rehearse stack (scripts/rehearse-env.sh): the main clone (the directory named "stayguard")
+# gets project stayguard-demo on port 18200 (database 18201); any other clone gets stayguard-demo-<dir> and a port made from its path
+# (20000 and up, clear of the rehearse range). It never uses the rehearse project. Set DEMO_PROJECT, DEMO_PORT, DEMO_DB_PORT by hand to override.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PORT="${DEMO_PORT:-18200}"
-export SMOKE_PORT="$PORT" SMOKE_DB_PORT="${DEMO_DB_PORT:-18201}"
+. scripts/rehearse-env.sh # clone_name, clone_slug, clone_n; this script never takes the rehearse lock or touches that stack
+if [ "$clone_name" = stayguard ]; then
+	: "${DEMO_PROJECT:=stayguard-demo}" "${DEMO_PORT:=18200}" "${DEMO_DB_PORT:=18201}"
+else
+	: "${DEMO_PROJECT:=stayguard-demo-$clone_slug}" "${DEMO_PORT:=$((20000 + clone_n * 2))}" "${DEMO_DB_PORT:=$((20001 + clone_n * 2))}"
+fi
+case "$DEMO_PROJECT" in stayguard-rehearse*) echo "REFUSED: $DEMO_PROJECT is a rehearse project" >&2; exit 1 ;; esac
+PORT="$DEMO_PORT"
+export SMOKE_PORT="$PORT" SMOKE_DB_PORT="$DEMO_DB_PORT"
 BASE="http://localhost:$PORT"
-COMPOSE=(docker compose -p stayguard-demo -f deploy/compose.yaml -f deploy/compose.smoke.override.yaml)
+COMPOSE=(docker compose -p "$DEMO_PROJECT" -f deploy/compose.yaml -f deploy/compose.smoke.override.yaml)
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 

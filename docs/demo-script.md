@@ -6,7 +6,7 @@ Legend: ✅ walked in the running app and/or covered by a named automated test �
 
 ## Set up
 
-1. `make demo-reset` (about a minute; `http://localhost:18200`). Sign in on `/vi` with guesthouse code **`demo`**.
+1. `make demo-reset` (about a minute; it prints the address, `http://localhost:18200` in the main clone). Sign in on `/vi` with guesthouse code **`demo`**.
 2. Two laptops or two browser profiles: one for the receptionist, one for the owner (one sign-in per person).
 3. Accounts (demo only, from the runbook): **`linh`** receptionist, PIN 260814 · **`owner`** owner, PIN 482915 · `mina` manager, `viv` receptionist (building B), `hoa` housekeeping.
 4. Vacant rooms to use live: **A301**, **A304**, **B101**. Already prepared by the reset: **A106** (short transfer, remainder open), **A202** (QR shown, unpaid), **A201** (overdue).
