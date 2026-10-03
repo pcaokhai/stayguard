@@ -12,7 +12,8 @@ FOR UPDATE OF i;
 
 -- name: GetPaymentByID :one
 SELECT p.id, p.invoice_id, p.method, p.status, p.amount, p.received_amount, p.paid_at, p.transaction_id,
-       i.bill_code, u.building_id
+       i.bill_code, u.building_id, p.created_at,
+       coalesce((SELECT pr.qr_expiry_minutes FROM app.properties pr WHERE pr.tenant_id = p.tenant_id LIMIT 1), 30)::int AS qr_expiry_minutes
 FROM app.payments p
 JOIN app.invoices i ON i.tenant_id = p.tenant_id AND i.id = p.invoice_id
 JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
@@ -21,7 +22,8 @@ WHERE p.tenant_id = @tenant_id AND p.id = @payment_id;
 
 -- name: GetPendingPaymentForInvoice :one
 SELECT p.id, p.invoice_id, p.method, p.status, p.amount, p.received_amount, p.paid_at, p.transaction_id,
-       i.bill_code, u.building_id
+       i.bill_code, u.building_id, p.created_at,
+       coalesce((SELECT pr.qr_expiry_minutes FROM app.properties pr WHERE pr.tenant_id = p.tenant_id LIMIT 1), 30)::int AS qr_expiry_minutes
 FROM app.payments p
 JOIN app.invoices i ON i.tenant_id = p.tenant_id AND i.id = p.invoice_id
 JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id

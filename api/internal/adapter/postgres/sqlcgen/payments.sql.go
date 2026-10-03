@@ -73,7 +73,8 @@ func (q *Queries) GetDefaultBankAccount(ctx context.Context, tenantID string) (G
 
 const getPaymentByID = `-- name: GetPaymentByID :one
 SELECT p.id, p.invoice_id, p.method, p.status, p.amount, p.received_amount, p.paid_at, p.transaction_id,
-       i.bill_code, u.building_id
+       i.bill_code, u.building_id, p.created_at,
+       coalesce((SELECT pr.qr_expiry_minutes FROM app.properties pr WHERE pr.tenant_id = p.tenant_id LIMIT 1), 30)::int AS qr_expiry_minutes
 FROM app.payments p
 JOIN app.invoices i ON i.tenant_id = p.tenant_id AND i.id = p.invoice_id
 JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
@@ -87,16 +88,18 @@ type GetPaymentByIDParams struct {
 }
 
 type GetPaymentByIDRow struct {
-	ID             string
-	InvoiceID      string
-	Method         string
-	Status         string
-	Amount         int64
-	ReceivedAmount pgtype.Int8
-	PaidAt         pgtype.Timestamptz
-	TransactionID  pgtype.Text
-	BillCode       string
-	BuildingID     string
+	ID              string
+	InvoiceID       string
+	Method          string
+	Status          string
+	Amount          int64
+	ReceivedAmount  pgtype.Int8
+	PaidAt          pgtype.Timestamptz
+	TransactionID   pgtype.Text
+	BillCode        string
+	BuildingID      string
+	CreatedAt       pgtype.Timestamptz
+	QrExpiryMinutes int32
 }
 
 func (q *Queries) GetPaymentByID(ctx context.Context, arg GetPaymentByIDParams) (GetPaymentByIDRow, error) {
@@ -113,13 +116,16 @@ func (q *Queries) GetPaymentByID(ctx context.Context, arg GetPaymentByIDParams) 
 		&i.TransactionID,
 		&i.BillCode,
 		&i.BuildingID,
+		&i.CreatedAt,
+		&i.QrExpiryMinutes,
 	)
 	return i, err
 }
 
 const getPendingPaymentForInvoice = `-- name: GetPendingPaymentForInvoice :one
 SELECT p.id, p.invoice_id, p.method, p.status, p.amount, p.received_amount, p.paid_at, p.transaction_id,
-       i.bill_code, u.building_id
+       i.bill_code, u.building_id, p.created_at,
+       coalesce((SELECT pr.qr_expiry_minutes FROM app.properties pr WHERE pr.tenant_id = p.tenant_id LIMIT 1), 30)::int AS qr_expiry_minutes
 FROM app.payments p
 JOIN app.invoices i ON i.tenant_id = p.tenant_id AND i.id = p.invoice_id
 JOIN app.stays s ON s.tenant_id = i.tenant_id AND s.id = i.stay_id
@@ -133,16 +139,18 @@ type GetPendingPaymentForInvoiceParams struct {
 }
 
 type GetPendingPaymentForInvoiceRow struct {
-	ID             string
-	InvoiceID      string
-	Method         string
-	Status         string
-	Amount         int64
-	ReceivedAmount pgtype.Int8
-	PaidAt         pgtype.Timestamptz
-	TransactionID  pgtype.Text
-	BillCode       string
-	BuildingID     string
+	ID              string
+	InvoiceID       string
+	Method          string
+	Status          string
+	Amount          int64
+	ReceivedAmount  pgtype.Int8
+	PaidAt          pgtype.Timestamptz
+	TransactionID   pgtype.Text
+	BillCode        string
+	BuildingID      string
+	CreatedAt       pgtype.Timestamptz
+	QrExpiryMinutes int32
 }
 
 func (q *Queries) GetPendingPaymentForInvoice(ctx context.Context, arg GetPendingPaymentForInvoiceParams) (GetPendingPaymentForInvoiceRow, error) {
@@ -159,6 +167,8 @@ func (q *Queries) GetPendingPaymentForInvoice(ctx context.Context, arg GetPendin
 		&i.TransactionID,
 		&i.BillCode,
 		&i.BuildingID,
+		&i.CreatedAt,
+		&i.QrExpiryMinutes,
 	)
 	return i, err
 }

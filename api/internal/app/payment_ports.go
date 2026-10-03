@@ -34,6 +34,8 @@ type PaymentRecord struct {
 	ReceivedAmount                                      *int64
 	PaidAt                                              *time.Time
 	TransactionID                                       *string
+	CreatedAt                                           time.Time
+	QRExpiryMinutes                                     int // the property's qrExpiryMinutes
 }
 
 // PendingTransfer is an open transfer the payment-event handler may match.

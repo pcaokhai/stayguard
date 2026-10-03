@@ -36,7 +36,7 @@ func (PaymentRepo) LockInvoice(ctx context.Context, tx app.Tx, invoiceID string)
 
 func toPaymentRecord(r sqlcgen.GetPaymentByIDRow) app.PaymentRecord {
 	rec := app.PaymentRecord{ID: r.ID, InvoiceID: r.InvoiceID, Method: r.Method, Status: r.Status, Amount: r.Amount,
-		BillCode: r.BillCode, BuildingID: r.BuildingID}
+		BillCode: r.BillCode, BuildingID: r.BuildingID, CreatedAt: r.CreatedAt.Time.UTC(), QRExpiryMinutes: int(r.QrExpiryMinutes)}
 	if r.ReceivedAmount.Valid {
 		rec.ReceivedAmount = &r.ReceivedAmount.Int64
 	}

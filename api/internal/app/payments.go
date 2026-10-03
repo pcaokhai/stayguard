@@ -216,8 +216,14 @@ func (p *Payments) createTransfer(ctx context.Context, tx Tx, c Caller, inv PayI
 	}
 	if pend, ok, err := p.repo.PendingForInvoice(ctx, tx, inv.ID); err != nil {
 		return PaymentView{}, fmt.Errorf("pending payment: %w", err)
-	} else if ok { // one pending transfer per invoice: show the same QR again
+	} else if ok && !p.qrExpired(pend) { // one pending transfer per invoice: show the same QR again
 		return p.view(ctx, tx, pend)
+	} else if ok {
+		// The QR expired: the old payment is replaced by a new one for the same bill code. What the bank already sent stays counted
+		// (it is summed from the bank events, not from the payment row).
+		if err := p.repo.ExpirePending(ctx, tx, inv.ID); err != nil {
+			return PaymentView{}, fmt.Errorf("expire pending: %w", err)
+		}
 	}
 	n := NewPayment{ID: p.ids.New(paymentIDPrefix), InvoiceID: inv.ID, BillCode: inv.BillCode, Amount: amount, At: now}
 	if err := p.repo.InsertPendingTransfer(ctx, tx, n); err != nil {
@@ -226,8 +232,16 @@ func (p *Payments) createTransfer(ctx context.Context, tx Tx, c Caller, inv PayI
 	if err := p.auditPayment(ctx, tx, c.UserID, auditPayCreated, n.ID, payment.MethodTransfer, inv.ID, amount); err != nil {
 		return PaymentView{}, err
 	}
-	return p.view(ctx, tx, PaymentRecord{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodTransfer,
-		Status: payment.StatusPending, Amount: amount, BillCode: inv.BillCode})
+	rec := PaymentRecord{ID: n.ID, InvoiceID: inv.ID, Method: payment.MethodTransfer, Status: payment.StatusPending, Amount: amount, BillCode: inv.BillCode}
+	if got, err := p.repo.ReceivedForInvoice(ctx, tx, inv.ID); err != nil {
+		return PaymentView{}, fmt.Errorf("received for invoice: %w", err)
+	} else if got > 0 { // a replacement payment starts with the money the bank already sent
+		if err := p.repo.SetTransferReceived(ctx, tx, n.ID, got); err != nil {
+			return PaymentView{}, err
+		}
+		rec.ReceivedAmount = &got
+	}
+	return p.view(ctx, tx, rec)
 }
 
 // GetPayment is the polling read the web app calls every 3 seconds.
@@ -419,15 +433,28 @@ func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentVie
 	if r.Method != payment.MethodTransfer || r.Status != payment.StatusPending {
 		return v, nil
 	}
-	if r.ReceivedAmount != nil {
-		v.Remaining = max(r.Amount-*r.ReceivedAmount, 0)
-	} else {
-		v.Remaining = r.Amount
+	if p.qrExpired(r) { // derived on read; the stored row stays PENDING, so money to this bill code is still recorded
+		v.Status = payment.StatusExpired
+		v.Remaining = 0
+		return v, nil
 	}
+	got, err := p.repo.ReceivedForInvoice(ctx, tx, r.InvoiceID) // what the bank already sent for this bill
+	if err != nil {
+		return PaymentView{}, fmt.Errorf("received for invoice: %w", err)
+	}
+	v.Remaining = max(r.Amount-got, 0)
 	r.Amount = v.Remaining // the QR asks for what is still owed, with the same bill code
 	qr, err := p.qr(ctx, tx, r)
 	v.QR = qr
 	return v, err
+}
+
+// qrExpired reports whether a pending transfer is older than the property's qrExpiryMinutes (server clock, strictly older).
+func (p *Payments) qrExpired(r PaymentRecord) bool {
+	if r.QRExpiryMinutes <= 0 || r.CreatedAt.IsZero() {
+		return false
+	}
+	return p.clock.Now().After(r.CreatedAt.Add(time.Duration(r.QRExpiryMinutes) * time.Minute))
 }
 
 func (p *Payments) qr(ctx context.Context, tx Tx, r PaymentRecord) (*PaymentQR, error) {
