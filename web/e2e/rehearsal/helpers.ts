@@ -37,20 +37,34 @@ const mask = (v: unknown): unknown =>
   Array.isArray(v)
     ? v.map(mask)
     : v && typeof v === "object"
-      ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, SECRET_KEYS.test(k) && typeof x === "string" ? "***" : mask(x)]))
+      ? Object.fromEntries(
+          Object.entries(v).map(([k, x]) => [
+            k,
+            SECRET_KEYS.test(k) && typeof x === "string" ? "***" : mask(x),
+          ]),
+        )
       : v;
 
 export class Api {
   readonly log: string[] = [];
   constructor(readonly request: APIRequestContext) {}
 
-  async call(who: Who | null, method: string, path: string, body?: unknown, o: Opts = {}): Promise<Res> {
+  async call(
+    who: Who | null,
+    method: string,
+    path: string,
+    body?: unknown,
+    o: Opts = {},
+  ): Promise<Res> {
     const headers: Record<string, string> = { ...(o.headers ?? {}) };
     if (who) headers.authorization = `Bearer ${who.token}`;
     if (method !== "GET" && method !== "HEAD") headers["idempotency-key"] = o.key ?? randomUUID();
     const res = await this.request.fetch(cfg.base + path, {
       method,
-      headers: body === undefined && o.raw === undefined ? headers : { "content-type": "application/json", ...headers },
+      headers:
+        body === undefined && o.raw === undefined
+          ? headers
+          : { "content-type": "application/json", ...headers },
       data: o.raw ?? (body === undefined ? undefined : JSON.stringify(body)),
       failOnStatusCode: false,
     });
@@ -77,7 +91,8 @@ export class Api {
     if (cached) return cached;
     const one = (readJson(cfg.pinsFile) as Record<string, string>)[user];
     const known = chosenPin(user);
-    const signIn = (pin: string) => this.post(null, "/v1/auth/sign-in", { guesthouseCode: cfg.guesthouse, username: user, pin });
+    const signIn = (pin: string) =>
+      this.post(null, "/v1/auth/sign-in", { guesthouseCode: cfg.guesthouse, username: user, pin });
     let r = await signIn(known ?? one);
     if (r.status === 401 && !known) r = await signIn(NEW_PIN); // a hand run already chose it
     expect(r.status, `sign-in as ${user}`).toBe(200);
@@ -89,7 +104,12 @@ export class Api {
       r = await signIn(NEW_PIN);
       expect(r.status).toBe(200);
     }
-    const who = { user, token: r.body.accessToken as string, id: r.body.user.id as string, role: r.body.user.role as string };
+    const who = {
+      user,
+      token: r.body.accessToken as string,
+      id: r.body.user.id as string,
+      role: r.body.user.role as string,
+    };
     tokens.set(user, who);
     return who;
   }
@@ -109,7 +129,10 @@ export class Api {
     expect(r, "a vacant room is left in the rehearsal building").toBeTruthy();
     return r;
   }
-  async checkIn(w: Who, o: { room?: any; deposit?: number; rentalType?: string; name?: string; idNumber?: string } = {}) {
+  async checkIn(
+    w: Who,
+    o: { room?: any; deposit?: number; rentalType?: string; name?: string; idNumber?: string } = {},
+  ) {
     const room = o.room ?? (await this.vacantRoom(w));
     const r = await this.post(w, `/v1/rooms/${room.id}/stays`, {
       rentalType: o.rentalType ?? "HOURLY",
@@ -122,7 +145,9 @@ export class Api {
     return r.body;
   }
   async addWater(w: Who, stayId: string, qty: number) {
-    const r = await this.post(w, `/v1/stays/${stayId}/extras`, { items: [{ code: "WATER", quantity: qty }] });
+    const r = await this.post(w, `/v1/stays/${stayId}/extras`, {
+      items: [{ serviceCode: "WATER", quantity: qty }],
+    });
     expect(r.status, "extras").toBeLessThan(300);
   }
   async checkout(w: Who, stayId: string) {
@@ -137,7 +162,13 @@ export class Api {
     const invoice = await this.checkout(w, stay.id);
     const p = await this.post(w, `/v1/invoices/${invoice.id}/payments`, { method: "TRANSFER" });
     expect(p.status, "start transfer").toBe(201);
-    return { stay, invoice, payment: p.body, note: invoice.billCode as string, amount: p.body.amount as number };
+    return {
+      stay,
+      invoice,
+      payment: p.body,
+      note: invoice.billCode as string,
+      amount: p.body.amount as number,
+    };
   }
   async getStay(w: Who, id: string) {
     return (await this.get(w, `/v1/stays/${id}`)).body;
@@ -155,6 +186,12 @@ export class Api {
   }
   async overview(owner: Who) {
     return (await this.get(owner, "/v1/owner/overview")).body;
+  }
+  /** The activity log for yesterday to tomorrow (the API wants a date range). */
+  async audit(owner: Who, q = ""): Promise<any[]> {
+    const day = (d: number) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10);
+    return (await this.get(owner, `/v1/owner/audit-logs?from=${day(-1)}&to=${day(1)}${q}`)).body
+      .items;
   }
   async shift(w: Who) {
     return this.get(w, "/v1/shifts/current");
@@ -176,7 +213,10 @@ export class Api {
     const body = JSON.stringify({
       id,
       gateway: "Vietcombank",
-      transactionDate: new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 19).replace("T", " "),
+      transactionDate: new Date(Date.now() + 7 * 3600_000)
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " "),
       accountNumber: o.accountNumber ?? cfg.account,
       subAccount: "", // the virtual-account field SePay always sends
       code: null,
@@ -188,14 +228,24 @@ export class Api {
       referenceCode: `FT${id}`,
     });
     const timestamp = String(Math.floor(Date.now() / 1000) - (o.ageSeconds ?? 0));
-    const signature = "sha256=" + createHmac("sha256", o.secret ?? cfg.secret).update(`${timestamp}.${body}`).digest("hex");
+    const signature =
+      "sha256=" +
+      createHmac("sha256", o.secret ?? cfg.secret)
+        .update(`${timestamp}.${body}`)
+        .digest("hex");
     const res = await this.request.post(cfg.base + cfg.hook, {
       data: body,
-      headers: { "content-type": "application/json", "x-sepay-signature": signature, "x-sepay-timestamp": timestamp },
+      headers: {
+        "content-type": "application/json",
+        "x-sepay-signature": signature,
+        "x-sepay-timestamp": timestamp,
+      },
       failOnStatusCode: false,
     });
     const text = await res.text();
-    this.log.push(`WEBHOOK ${o.type ?? "in"} ${o.amount} "${(o.note ?? o.content ?? "").slice(0, 40)}" id=${id} age=${o.ageSeconds ?? 0}s\n  -> ${res.status()} ${text.slice(0, 200)}`);
+    this.log.push(
+      `WEBHOOK ${o.type ?? "in"} ${o.amount} "${(o.note ?? o.content ?? "").slice(0, 40)}" id=${id} age=${o.ageSeconds ?? 0}s\n  -> ${res.status()} ${text.slice(0, 200)}`,
+    );
     let parsed: any = text;
     try {
       parsed = JSON.parse(text);
@@ -205,7 +255,11 @@ export class Api {
     return { status: res.status(), body: parsed, id };
   }
   /** Delivers an incoming transfer and expects SePay's {"success": true}. */
-  async pay(note: string, amount: number, extra: Parameters<Api["deliver"]>[0] extends infer T ? Partial<T> : never = {}) {
+  async pay(
+    note: string,
+    amount: number,
+    extra: Parameters<Api["deliver"]>[0] extends infer T ? Partial<T> : never = {},
+  ) {
     const r = await this.deliver({ note, amount, ...extra });
     expect(r.status, "the webhook must be accepted").toBe(200);
     expect(r.body).toEqual({ success: true });
@@ -213,7 +267,9 @@ export class Api {
   }
   /** Waits for the payment to reach a status (the screen polls every 3 s; the API settles at once). */
   async untilPayment(w: Who, id: string, status: string) {
-    await expect.poll(async () => (await this.payment(w, id)).status, { timeout: 15_000 }).toBe(status);
+    await expect
+      .poll(async () => (await this.payment(w, id)).status, { timeout: 15_000 })
+      .toBe(status);
   }
 }
 
@@ -224,7 +280,8 @@ export const test = base.extend<{ api: Api }>({
     const api = new Api(request);
     // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright's fixture callback, not a React hook
     await use(api);
-    if (api.log.length) await testInfo.attach("api.log", { body: api.log.join("\n"), contentType: "text/plain" });
+    if (api.log.length)
+      await testInfo.attach("api.log", { body: api.log.join("\n"), contentType: "text/plain" });
   },
 });
 export { expect };
@@ -240,7 +297,20 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const compose = (args: string[], input?: string) =>
   execFileSync(
     "docker",
-    ["compose", "-p", "stayguard-rehearse", "-f", "deploy/compose.prod.yaml", "-f", "deploy/compose.rehearse.yaml", "--env-file", cfg.envFile, "--profile", "backup", ...args],
+    [
+      "compose",
+      "-p",
+      "stayguard-rehearse",
+      "-f",
+      "deploy/compose.prod.yaml",
+      "-f",
+      "deploy/compose.rehearse.yaml",
+      "--env-file",
+      cfg.envFile,
+      "--profile",
+      "backup",
+      ...args,
+    ],
     { cwd: cfg.root, input, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 180_000 },
   );
 export const stack = {
@@ -251,7 +321,11 @@ export const stack = {
   /** `stayguard jobs run`, once. Output is counts only. */
   jobsOnce: () => compose(["run", "--rm", "-T", "api", "jobs", "run"]),
   async ready() {
-    await expect.poll(async () => (await fetch(`${cfg.base}/readyz`).catch(() => ({ status: 0 }))).status, { timeout: 90_000 }).toBe(200);
+    await expect
+      .poll(async () => (await fetch(`${cfg.base}/readyz`).catch(() => ({ status: 0 }))).status, {
+        timeout: 90_000,
+      })
+      .toBe(200);
   },
 };
 /** scripts/rehearsal-backdate.sh: moves the time of one invoice back in the rehearsal database only (it refuses elsewhere). */
