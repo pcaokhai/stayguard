@@ -7,13 +7,15 @@ usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.
        scripts/rehearsal-sync.py --selftest
 Without a CSV it uses the newest docs/rehearsal/results-<date>-<this clone>.csv. The sheet needs a header row with ID, Status, Date and Notes cells."""
 import argparse, csv, datetime, glob, os, re, shutil, sys, tempfile, zipfile
+from xml.sax.saxutils import escape, unescape
 
 
 def clone_results(pattern_dir="docs/rehearsal"):
-    """The newest results file of THIS clone: results-<date>-<slug>.csv, the slug made from the clone's directory name like scripts/rehearse-env.sh."""
+    """The newest FULL run of THIS clone: results-<date>-<slug>.csv (slug made from the clone's directory name like scripts/rehearse-env.sh)
+    that has the "# demo-check" section. A partial run is written to ...-partial.csv and never read here."""
     slug = os.environ.get("REHEARSE_SLUG") or re.sub(r"^-+|-+$", "", re.sub(r"[^a-z0-9]", "-", os.path.basename(os.getcwd()).lower()))
-    return max(glob.glob(f"{pattern_dir}/results-*-{slug}.csv"), default=None)
-from xml.sax.saxutils import escape, unescape
+    full = [f for f in glob.glob(f"{pattern_dir}/results-*-{slug}.csv") if "# demo-check" in open(f, encoding="utf-8").read()]
+    return max(full, default=None)
 
 CELL = re.compile(r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)', re.S)
 ROW = re.compile(r'(<row r="(\d+)"[^>]*?)(?:/>|>(.*?)</row>)', re.S)

@@ -8,6 +8,7 @@ const out = process.env.RH_OUT ?? "docs/rehearsal";
 const date = process.env.RH_DATE ?? "local";
 const slug = process.env.RH_SLUG ?? "local"; // the clone: two clones never write the same file
 const stem = `${date}-${slug}`;
+const csvName = `results-${stem}${process.env.RH_PARTIAL ? "-partial" : ""}.csv`; // a partial run never replaces a full one
 const evidence = join(out, `evidence-${stem}`);
 const csv = (v: string) => `"${v.replace(/"/g, '""')}"`;
 
@@ -68,7 +69,7 @@ class CsvReporter implements Reporter {
         `${n},${c.fail ? "fail" : "pass"},${c.pass},${c.fail},${c.skip},${c.secs.toFixed(1)}`,
     );
     writeFileSync(
-      join(out, `results-${stem}.csv`),
+      join(out, csvName),
       [
         "id,title,status,duration_s,evidence,notes",
         ...this.rows,

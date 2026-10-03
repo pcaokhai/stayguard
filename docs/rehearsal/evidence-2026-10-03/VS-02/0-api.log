@@ -1,6 +1,0 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh4f632b","username":"linh","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T02:59:21.322987Z","mustChangePin":true,"tenantId":"tn_01M414DCJD57KM1TTGRGGPVHWZ","user":{"id":"us_01M414DCSJ6K1TZM2BH72VFKCN","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
-PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
-  -> 204 ""
-GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M414DCJD57KM1TTGRGGPVHWZ","name":"Rehearsal Test rh4f632b","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M414DCSJ6K1TZM2BH72VFKCN","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}

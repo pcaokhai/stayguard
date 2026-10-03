@@ -1,8 +1,0 @@
-GET /v1/me 
-<<<<<<< HEAD
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT"},{"buildingId":"bd_01M41350FJF710ZZT3G022KJ0X","level":"NONE"}],"tenant":{"currency":"VND","id":"tn_01M41331K01RB67HH96BE2W4GB","name":"Rehearsal Test rh840297","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M41331VA5T2FYVKM2A092P0N","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
-=======
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","level":"EDIT"},{"buildingId":"bd_01M414GK2MYQDCZJZR9132YZET","level":"NONE"}],"tenant":{"currency":"VND","id":"tn_01M414DCJD57KM1TTGRGGPVHWZ","name":"Rehearsal Test rh4f632b","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M414DCSJ6K1TZM2BH72VFKCN","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
->>>>>>> 952da7a (test(rehearsal): coverage report, bill-line stays for ui-lint, gap specs, sync preview on a copy, unapproved visual baselines)
-GET /v1/owner/overview 
-  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}

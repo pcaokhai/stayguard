@@ -321,6 +321,7 @@ test("TT-26 the reopened checkout shows the real deposit", async ({ api, page })
   await api.checkout(r, stay.id);
   await uiLogin(page, r);
   await page.goto(`/en/checkout?stay=${stay.id}`);
+  await expect(page.getByText("Deposit paid")).toBeVisible(); // wait for the checkout screen itself, not the map it may flash
   await expect(page.locator("body")).toContainText("250,000");
   await expect(page.locator("body")).not.toContainText("100,000");
   expect((await api.getStay(r, stay.id)).quote.depositPaid).toBe(250_000);

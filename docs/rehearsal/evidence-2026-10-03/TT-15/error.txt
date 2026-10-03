@@ -1,6 +1,0 @@
-Error: the payment is EXPIRED once the QR is older than its lifetime
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: "EXPIRED"
-Received: "PENDING"

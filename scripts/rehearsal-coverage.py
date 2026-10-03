@@ -7,9 +7,11 @@ import argparse, collections, csv, glob, importlib.util, os, re, sys, zipfile
 
 
 def clone_results(pattern_dir="docs/rehearsal"):
-    """The newest results file of THIS clone: results-<date>-<slug>.csv, the slug made from the clone's directory name like scripts/rehearse-env.sh."""
+    """The newest FULL run of THIS clone: results-<date>-<slug>.csv (slug made from the clone's directory name like scripts/rehearse-env.sh)
+    that has the "# demo-check" section. A partial run is written to ...-partial.csv and never read here."""
     slug = os.environ.get("REHEARSE_SLUG") or re.sub(r"^-+|-+$", "", re.sub(r"[^a-z0-9]", "-", os.path.basename(os.getcwd()).lower()))
-    return max(glob.glob(f"{pattern_dir}/results-*-{slug}.csv"), default=None)
+    full = [f for f in glob.glob(f"{pattern_dir}/results-*-{slug}.csv") if "# demo-check" in open(f, encoding="utf-8").read()]
+    return max(full, default=None)
 
 here = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("rsync", os.path.join(here, "rehearsal-sync.py"))

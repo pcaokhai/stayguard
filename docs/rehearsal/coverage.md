@@ -18,8 +18,8 @@ Checklist `docs/rehearsal/checklist.xlsx` against `docs/rehearsal/results-2026-1
 | Bảo mật webhook | 5 | 4 | 1 | 0 | 0 |
 | Vận hành, sao lưu | 7 | 4 | 0 | 3 | 0 |
 | Giao diện, thiết bị | 7 | 5 | 2 | 0 | 0 |
-| Go-live | 19 | 0 | 9 | 10 | 0 |
-| **All** | **149** | **109** | **22** | **18** | **0** |
+| Go-live | 16 | 0 | 6 | 10 | 0 |
+| **All** | **146** | **109** | **19** | **18** | **0** |
 
 ## Rows
 
@@ -40,113 +40,113 @@ Checklist `docs/rehearsal/checklist.xlsx` against `docs/rehearsal/results-2026-1
 | TT-02 | Thanh toán | Nội dung không có mã phiếu thì Chưa rõ phiếu | Đạt | pass |  |
 | TT-03 | Thanh toán | Gán khoản chưa rõ phiếu vào phiếu đúng số tiền | Đạt | pass |  |
 | TT-04 | Thanh toán | Gán vào phiếu sai số tiền bị từ chối | Đạt | pass |  |
-| TT-05 | Thanh toán | Lễ tân không gán được tiền | Chưa làm | pass |  |
-| TT-06 | Thanh toán | Một khoản không gán được hai lần | Chưa làm | pass |  |
-| TT-07 | Thanh toán | Chuyển thiếu: QR cho phần còn lại | Chưa làm | pass |  |
-| TT-08 | Thanh toán | Chuyển bù đủ thì Đã thanh toán | Lỗi | pass |  |
-| TT-09 | Thanh toán | Chuyển thiếu để quá 15 phút thì có cảnh báo Chưa thu đủ | Chưa làm | pass |  |
-| TT-10 | Thanh toán | Chuyển thừa | Chưa làm | pass |  |
-| TT-11 | Thanh toán | Giao dịch tiền ra bị bỏ qua | Chờ thử lại | pass |  |
-| TT-12 | Thanh toán | Gửi lại cùng giao dịch không tạo trùng | Chưa làm | pass |  |
+| TT-05 | Thanh toán | Lễ tân không gán được tiền | Đạt | pass |  |
+| TT-06 | Thanh toán | Một khoản không gán được hai lần | Đạt | pass |  |
+| TT-07 | Thanh toán | Chuyển thiếu: QR cho phần còn lại | Đạt | pass |  |
+| TT-08 | Thanh toán | Chuyển bù đủ thì Đã thanh toán | Đạt | pass |  |
+| TT-09 | Thanh toán | Chuyển thiếu để quá 15 phút thì có cảnh báo Chưa thu đủ | Đạt | pass |  |
+| TT-10 | Thanh toán | Chuyển thừa | Đạt | pass |  |
+| TT-11 | Thanh toán | Giao dịch tiền ra bị bỏ qua | Đạt | pass |  |
+| TT-12 | Thanh toán | Gửi lại cùng giao dịch không tạo trùng | Đạt | pass |  |
 | TT-13 | Thanh toán | Cọc lớn hơn hóa đơn thì hoàn tiền mặt | Đạt | pass |  |
 | TT-14 | Thanh toán | Thanh toán tiền mặt | Đạt | pass |  |
-| TT-15 | Thanh toán | QR hết hạn | Chưa làm | fail |  |
+| TT-15 | Thanh toán | QR hết hạn | Lỗi | pass |  |
 | TT-16 | Thanh toán | Quét QR bằng app ngân hàng thật (không chuyển tiền) | Bỏ qua | - | Bỏ qua |
-| TT-17 | Thanh toán | Tiền vào tài khoản khác không tính cho phiếu | Chờ thử lại | pass |  |
-| TT-18 | Thanh toán | Thu tiền mặt cho phần còn thiếu sau khi chuyển thiếu | Chưa làm | pass |  |
-| TT-19 | Thanh toán | Trả phòng rồi rời màn thanh toán, quay lại sơ đồ | Chờ thử lại | pass |  |
+| TT-17 | Thanh toán | Tiền vào tài khoản khác không tính cho phiếu | Đạt | pass |  |
+| TT-18 | Thanh toán | Thu tiền mặt cho phần còn thiếu sau khi chuyển thiếu | Đạt | pass |  |
+| TT-19 | Thanh toán | Trả phòng rồi rời màn thanh toán, quay lại sơ đồ | Đạt | pass |  |
 | TT-20 | Thanh toán | Phiếu trả phòng không có tiền sau 30 phút | Đạt | pass |  |
 | TT-21 | Thanh toán | Cọc lớn hơn hóa đơn, rời màn trước khi bấm Hoàn lại | Chờ thử lại | pass |  |
 | TT-22 | Thanh toán | Mở màn trả phòng, để vài phút rồi mới thu tiền | Chờ thử lại | pass |  |
-| TT-23 | Thanh toán | Sau khi tải lại trang, mở phòng đã trả phòng mà chưa thanh toán | Chờ thử lại | pass |  |
-| TT-24 | Thanh toán | Mở lượt ở đã trả phòng từ nút Xem trong cảnh báo | Chờ thử lại | pass |  |
+| TT-23 | Thanh toán | Sau khi tải lại trang, mở phòng đã trả phòng mà chưa thanh toán | Đạt | pass |  |
+| TT-24 | Thanh toán | Mở lượt ở đã trả phòng từ nút Xem trong cảnh báo | Đạt | pass |  |
 | TT-25 | Thanh toán | Giờ ngân hàng và dòng hoàn tiền ở Giao dịch | Đạt | pass |  |
-| TT-26 | Thanh toán | Màn trả phòng mở lại hiện đúng tiền cọc | Chờ thử lại | pass |  |
-| TT-27 | Thanh toán | Cảnh báo hoàn tiền không ghi là chưa thu | Chờ thử lại | pass |  |
+| TT-26 | Thanh toán | Màn trả phòng mở lại hiện đúng tiền cọc | Chờ thử lại | fail |  |
+| TT-27 | Thanh toán | Cảnh báo hoàn tiền không ghi là chưa thu | Đạt | pass |  |
 | TT-28 | Thanh toán | QR và webhook cho tài khoản bắt buộc VA | Bỏ qua | - | Bỏ qua |
-| TT-29 | Thanh toán | Ô phòng chờ thanh toán không ghi &quot;Còn thiếu 0đ&quot; | Chờ thử lại | pass |  |
+| TT-29 | Thanh toán | Ô phòng chờ thanh toán không ghi &quot;Còn thiếu 0đ&quot; | Đạt | pass |  |
 | CA-01 | Ca và tiền mặt | Ca mở khi có thao tác tiền mặt đầu tiên | Đạt | pass |  |
-| CA-02 | Ca và tiền mặt | Ghi khoản chi | Chưa làm | pass |  |
-| CA-03 | Ca và tiền mặt | Kết ca đếm đủ, không có phiếu chưa thu đủ | Chưa làm | pass |  |
-| CA-04 | Ca và tiền mặt | Kết ca thiếu tiền | Chưa làm | pass |  |
-| CA-05 | Ca và tiền mặt | Kết ca khi còn phiếu chưa thu đủ | Chưa làm | pass |  |
-| CA-06 | Ca và tiền mặt | Ca đã kết bị khóa | Chưa làm | pass |  |
-| CA-07 | Ca và tiền mặt | Chủ thu tiền mặt từ sơ đồ phòng của chủ | Chưa làm | pass |  |
-| CA-08 | Ca và tiền mặt | Đối soát ca | Chưa làm | fail |  |
-| CA-09 | Ca và tiền mặt | Xóa nhân viên khi đang có ca mở | Chưa làm | pass |  |
-| CA-10 | Ca và tiền mặt | Tiền mặt phải có khớp giữa Kết ca và Tổng quan | Chờ thử lại | pass |  |
-| CA-11 | Ca và tiền mặt | Kết ca xem được từng khoản tạo nên số tiền mặt | Chờ thử lại | pass |  |
+| CA-02 | Ca và tiền mặt | Ghi khoản chi | Đạt | pass |  |
+| CA-03 | Ca và tiền mặt | Kết ca đếm đủ, không có phiếu chưa thu đủ | Đạt | pass |  |
+| CA-04 | Ca và tiền mặt | Kết ca thiếu tiền | Đạt | pass |  |
+| CA-05 | Ca và tiền mặt | Kết ca khi còn phiếu chưa thu đủ | Đạt | pass |  |
+| CA-06 | Ca và tiền mặt | Ca đã kết bị khóa | Đạt | pass |  |
+| CA-07 | Ca và tiền mặt | Chủ thu tiền mặt từ sơ đồ phòng của chủ | Đạt | pass |  |
+| CA-08 | Ca và tiền mặt | Đối soát ca | Lỗi | pass |  |
+| CA-09 | Ca và tiền mặt | Xóa nhân viên khi đang có ca mở | Đạt | pass |  |
+| CA-10 | Ca và tiền mặt | Tiền mặt phải có khớp giữa Kết ca và Tổng quan | Đạt | pass |  |
+| CA-11 | Ca và tiền mặt | Kết ca xem được từng khoản tạo nên số tiền mặt | Đạt | pass |  |
 | LO-01 | Lượt ở | Nhận phòng không có giấy tờ | Đạt | pass |  |
-| LO-02 | Lượt ở | Thêm dịch vụ | Chưa làm | pass |  |
-| LO-03 | Lượt ở | Sửa giờ vào | Chưa làm | pass |  |
-| LO-04 | Lượt ở | Giờ trả phòng không sửa được | Chưa làm | pass |  |
-| LO-05 | Lượt ở | Chuyển phòng | Chưa làm | pass |  |
+| LO-02 | Lượt ở | Thêm dịch vụ | Đạt | pass |  |
+| LO-03 | Lượt ở | Sửa giờ vào | Đạt | pass |  |
+| LO-04 | Lượt ở | Giờ trả phòng không sửa được | Đạt | pass |  |
+| LO-05 | Lượt ở | Chuyển phòng | Đạt | pass |  |
 | LO-06 | Lượt ở | Biên lai in khổ 80 mm | Chưa làm | - | manual: printer |
 | LO-07 | Lượt ở | Lịch sử lượt ở | Đạt | pass |  |
-| LO-08 | Lượt ở | Lịch sử và diễn biến của một lượt ở | Chưa làm | pass |  |
-| LO-09 | Lượt ở | Tìm kiếm lịch sử | Chưa làm | pass |  |
+| LO-08 | Lượt ở | Lịch sử và diễn biến của một lượt ở | Đạt | pass |  |
+| LO-09 | Lượt ở | Tìm kiếm lịch sử | Đạt | pass |  |
 | LO-10 | Lượt ở | Số điện thoại khi nhận phòng | Đạt | pass |  |
-| DP-01 | Dọn phòng, bảo trì | Đánh dấu phòng đã dọn | Chưa làm | pass |  |
-| DP-02 | Dọn phòng, bảo trì | Chủ hoặc quản lý đánh dấu dọn từ sơ đồ của chủ | Chưa làm | pass |  |
-| DP-03 | Dọn phòng, bảo trì | Danh sách dọn theo thời gian chờ | Chưa làm | pass |  |
-| DP-04 | Dọn phòng, bảo trì | Báo hư hỏng và khóa phòng | Chưa làm | pass |  |
-| DP-05 | Dọn phòng, bảo trì | Khóa phòng đang có khách bị từ chối | Chưa làm | pass |  |
-| DP-06 | Dọn phòng, bảo trì | Nhập chi phí sửa và hoàn thành phiếu | Chưa làm | pass |  |
-| DP-07 | Dọn phòng, bảo trì | Sửa chi phí sau khi phiếu đã Xong | Chưa làm | pass |  |
-| DP-08 | Dọn phòng, bảo trì | Báo phòng có dấu hiệu đã dùng | Chưa làm | pass |  |
-| DP-09 | Dọn phòng, bảo trì | Chạm phòng Cần dọn trên sơ đồ có đủ hành động | Chờ thử lại | pass |  |
-| GT-01 | Giấy tờ khách | Thu CCCD khi nhận phòng | Chưa làm | pass |  |
-| GT-02 | Giấy tờ khách | Lễ tân không xem lại được số và ảnh | Chưa làm | pass |  |
-| GT-03 | Giấy tờ khách | Số CCCD che sẵn, có nút Hiện | Chờ thử lại | pass |  |
-| GT-04 | Giấy tờ khách | Xem, tải, xóa ảnh CCCD | Chưa làm | pass |  |
-| GT-05 | Giấy tờ khách | Quản lý chỉ xem được khi có quyền xem tòa | Chưa làm | pass |  |
-| GT-06 | Giấy tờ khách | Cờ chỉ báo trong danh sách đúng | Chưa làm | pass |  |
-| GT-07 | Giấy tờ khách | Ảnh quá lớn hoặc không phải ảnh | Chưa làm | pass |  |
-| GT-08 | Giấy tờ khách | Số và ảnh không lọt vào log | Chưa làm | pass |  |
-| GT-09 | Giấy tờ khách | Tự xóa sau N ngày | Chưa làm | pass |  |
-| DN-01 | Đăng nhập, quyền | Sai PIN 5 lần thì khóa | Chưa làm | pass |  |
-| DN-02 | Đăng nhập, quyền | Sai mã nhà nghỉ, tên đăng nhập hoặc PIN cho cùng một thông báo | Chưa làm | pass |  |
-| DN-03 | Đăng nhập, quyền | PIN dễ đoán bị từ chối | Chưa làm | pass |  |
+| DP-01 | Dọn phòng, bảo trì | Đánh dấu phòng đã dọn | Đạt | pass |  |
+| DP-02 | Dọn phòng, bảo trì | Chủ hoặc quản lý đánh dấu dọn từ sơ đồ của chủ | Đạt | pass |  |
+| DP-03 | Dọn phòng, bảo trì | Danh sách dọn theo thời gian chờ | Đạt | pass |  |
+| DP-04 | Dọn phòng, bảo trì | Báo hư hỏng và khóa phòng | Đạt | pass |  |
+| DP-05 | Dọn phòng, bảo trì | Khóa phòng đang có khách bị từ chối | Đạt | pass |  |
+| DP-06 | Dọn phòng, bảo trì | Nhập chi phí sửa và hoàn thành phiếu | Đạt | pass |  |
+| DP-07 | Dọn phòng, bảo trì | Sửa chi phí sau khi phiếu đã Xong | Đạt | pass |  |
+| DP-08 | Dọn phòng, bảo trì | Báo phòng có dấu hiệu đã dùng | Đạt | pass |  |
+| DP-09 | Dọn phòng, bảo trì | Chạm phòng Cần dọn trên sơ đồ có đủ hành động | Đạt | pass |  |
+| GT-01 | Giấy tờ khách | Thu CCCD khi nhận phòng | Đạt | pass |  |
+| GT-02 | Giấy tờ khách | Lễ tân không xem lại được số và ảnh | Đạt | pass |  |
+| GT-03 | Giấy tờ khách | Số CCCD che sẵn, có nút Hiện | Đạt | pass |  |
+| GT-04 | Giấy tờ khách | Xem, tải, xóa ảnh CCCD | Đạt | pass |  |
+| GT-05 | Giấy tờ khách | Quản lý chỉ xem được khi có quyền xem tòa | Đạt | pass |  |
+| GT-06 | Giấy tờ khách | Cờ chỉ báo trong danh sách đúng | Đạt | pass |  |
+| GT-07 | Giấy tờ khách | Ảnh quá lớn hoặc không phải ảnh | Đạt | pass |  |
+| GT-08 | Giấy tờ khách | Số và ảnh không lọt vào log | Đạt | pass |  |
+| GT-09 | Giấy tờ khách | Tự xóa sau N ngày | Đạt | pass |  |
+| DN-01 | Đăng nhập, quyền | Sai PIN 5 lần thì khóa | Đạt | pass |  |
+| DN-02 | Đăng nhập, quyền | Sai mã nhà nghỉ, tên đăng nhập hoặc PIN cho cùng một thông báo | Đạt | pass |  |
+| DN-03 | Đăng nhập, quyền | PIN dễ đoán bị từ chối | Đạt | pass |  |
 | DN-04 | Đăng nhập, quyền | Nhập lại PIN chủ cho thao tác nhạy cảm | Chưa làm | - | manual: unsafe, wrong owner PINs would lock the only owner |
-| DN-05 | Đăng nhập, quyền | Quản lý không tác động lên chủ hoặc quản lý khác | Chưa làm | pass |  |
-| DN-06 | Đăng nhập, quyền | Quản lý vào thẳng sơ đồ phòng | Chưa làm | pass |  |
-| DN-07 | Đăng nhập, quyền | Lễ tân không vào được trang của chủ | Chờ thử lại | pass |  |
-| DN-08 | Đăng nhập, quyền | Buồng phòng chỉ thấy màn buồng phòng | Chưa làm | pass |  |
-| DN-09 | Đăng nhập, quyền | Đổi PIN, khóa, xóa người dùng thu hồi phiên | Chưa làm | pass |  |
-| DN-10 | Đăng nhập, quyền | Xóa nhân viên vẫn giữ lịch sử | Chưa làm | pass |  |
-| DN-11 | Đăng nhập, quyền | Đăng xuất | Chưa làm | pass |  |
-| DN-12 | Đăng nhập, quyền | Quyền theo tòa | Chưa làm | pass |  |
-| DN-13 | Đăng nhập, quyền | Mở link trong tab mới không phải đăng nhập lại | Chờ thử lại | pass |  |
-| DN-14 | Đăng nhập, quyền | Lễ tân mở trang chỉ của chủ trong cùng tab | Chờ thử lại | pass |  |
-| TD-01 | Chủ: theo dõi | Tổng quan khớp số liệu | Chờ thử lại | pass |  |
-| TD-02 | Chủ: theo dõi | Mục Cần xử lý ngay | Chưa làm | pass |  |
-| TD-03 | Chủ: theo dõi | Cảnh báo | Chưa làm | pass |  |
-| TD-04 | Chủ: theo dõi | Nhật ký thao tác | Chờ thử lại | pass |  |
+| DN-05 | Đăng nhập, quyền | Quản lý không tác động lên chủ hoặc quản lý khác | Đạt | pass |  |
+| DN-06 | Đăng nhập, quyền | Quản lý vào thẳng sơ đồ phòng | Đạt | pass |  |
+| DN-07 | Đăng nhập, quyền | Lễ tân không vào được trang của chủ | Đạt | pass |  |
+| DN-08 | Đăng nhập, quyền | Buồng phòng chỉ thấy màn buồng phòng | Đạt | pass |  |
+| DN-09 | Đăng nhập, quyền | Đổi PIN, khóa, xóa người dùng thu hồi phiên | Đạt | pass |  |
+| DN-10 | Đăng nhập, quyền | Xóa nhân viên vẫn giữ lịch sử | Đạt | pass |  |
+| DN-11 | Đăng nhập, quyền | Đăng xuất | Đạt | pass |  |
+| DN-12 | Đăng nhập, quyền | Quyền theo tòa | Đạt | pass |  |
+| DN-13 | Đăng nhập, quyền | Mở link trong tab mới không phải đăng nhập lại | Đạt | pass |  |
+| DN-14 | Đăng nhập, quyền | Lễ tân mở trang chỉ của chủ trong cùng tab | Đạt | pass |  |
+| TD-01 | Chủ: theo dõi | Tổng quan khớp số liệu | Đạt | pass |  |
+| TD-02 | Chủ: theo dõi | Mục Cần xử lý ngay | Đạt | pass |  |
+| TD-03 | Chủ: theo dõi | Cảnh báo | Đạt | pass |  |
+| TD-04 | Chủ: theo dõi | Nhật ký thao tác | Đạt | pass |  |
 | TD-05 | Chủ: theo dõi | Sơ đồ phòng của chủ không có thao tác ca | Chưa làm | pass | automated, needs eyes |
-| TD-06 | Chủ: theo dõi | Cảnh báo tự đóng khi việc đã xong | Chờ thử lại | pass |  |
-| TD-07 | Chủ: theo dõi | Nút Xem trong cảnh báo mở dòng thời gian của chủ | Chờ thử lại | pass |  |
+| TD-06 | Chủ: theo dõi | Cảnh báo tự đóng khi việc đã xong | Đạt | pass |  |
+| TD-07 | Chủ: theo dõi | Nút Xem trong cảnh báo mở dòng thời gian của chủ | Đạt | pass |  |
 | TD-08 | Chủ: theo dõi | Cảnh báo cập nhật SePay đọc được | Chờ thử lại | pass | automated, needs eyes |
-| CD-01 | Chủ: cài đặt, tài chính, nhân sự | Tài khoản nhận tiền: thêm, mặc định, xóa | Chưa làm | pass |  |
-| CD-02 | Chủ: cài đặt, tài chính, nhân sự | Bảng giá: xem thử và lưu | Chưa làm | pass |  |
-| CD-03 | Chủ: cài đặt, tài chính, nhân sự | Tòa, tầng, phòng | Chưa làm | pass |  |
-| CD-04 | Chủ: cài đặt, tài chính, nhân sự | Mặt hàng và kho | Chưa làm | pass |  |
-| CD-05 | Chủ: cài đặt, tài chính, nhân sự | Nhân viên: chức vụ, quyền dùng app, hợp đồng | Chưa làm | pass |  |
-| CD-06 | Chủ: cài đặt, tài chính, nhân sự | Lương: nghỉ ốm có lương | Chưa làm | pass |  |
-| CD-07 | Chủ: cài đặt, tài chính, nhân sự | Lịch ca và xin nghỉ | Chưa làm | pass |  |
-| CD-08 | Chủ: cài đặt, tài chính, nhân sự | Chi phí | Chưa làm | pass |  |
-| CD-09 | Chủ: cài đặt, tài chính, nhân sự | Báo cáo thu chi theo khoảng tháng | Chưa làm | pass |  |
-| CD-10 | Chủ: cài đặt, tài chính, nhân sự | Cài đặt tự xóa giấy tờ và số ngày lễ tân xem lịch sử | Chưa làm | pass |  |
-| BM-01 | Bảo mật webhook | Webhook không chữ ký bị từ chối | Chưa làm | pass |  |
-| BM-02 | Bảo mật webhook | Mã hook sai | Chưa làm | pass |  |
-| BM-03 | Bảo mật webhook | Khóa SePay không xuất hiện trong log | Chưa làm | pass |  |
+| CD-01 | Chủ: cài đặt, tài chính, nhân sự | Tài khoản nhận tiền: thêm, mặc định, xóa | Đạt | pass |  |
+| CD-02 | Chủ: cài đặt, tài chính, nhân sự | Bảng giá: xem thử và lưu | Đạt | pass |  |
+| CD-03 | Chủ: cài đặt, tài chính, nhân sự | Tòa, tầng, phòng | Đạt | pass |  |
+| CD-04 | Chủ: cài đặt, tài chính, nhân sự | Mặt hàng và kho | Đạt | pass |  |
+| CD-05 | Chủ: cài đặt, tài chính, nhân sự | Nhân viên: chức vụ, quyền dùng app, hợp đồng | Đạt | pass |  |
+| CD-06 | Chủ: cài đặt, tài chính, nhân sự | Lương: nghỉ ốm có lương | Đạt | pass |  |
+| CD-07 | Chủ: cài đặt, tài chính, nhân sự | Lịch ca và xin nghỉ | Đạt | pass |  |
+| CD-08 | Chủ: cài đặt, tài chính, nhân sự | Chi phí | Đạt | pass |  |
+| CD-09 | Chủ: cài đặt, tài chính, nhân sự | Báo cáo thu chi theo khoảng tháng | Đạt | pass |  |
+| CD-10 | Chủ: cài đặt, tài chính, nhân sự | Cài đặt tự xóa giấy tờ và số ngày lễ tân xem lịch sử | Đạt | pass |  |
+| BM-01 | Bảo mật webhook | Webhook không chữ ký bị từ chối | Đạt | pass |  |
+| BM-02 | Bảo mật webhook | Mã hook sai | Đạt | pass |  |
+| BM-03 | Bảo mật webhook | Khóa SePay không xuất hiện trong log | Đạt | pass |  |
 | BM-04 | Bảo mật webhook | Webhook gửi lại muộn | Bỏ qua | pass |  |
 | BM-05 | Bảo mật webhook | Bộ test webhook tự động | Chưa làm | - | covered by make test-api-int (Go), run by make demo-check |
 | VH-01 | Vận hành, sao lưu | Sao lưu lên S3 thật | Bỏ qua | - | Bỏ qua |
-| VH-02 | Vận hành, sao lưu | Job chạy mỗi 5 phút | Chưa làm | pass |  |
-| VH-03 | Vận hành, sao lưu | Đổi khóa mã hóa thì server từ chối khởi động | Chưa làm | pass |  |
+| VH-02 | Vận hành, sao lưu | Job chạy mỗi 5 phút | Đạt | pass |  |
+| VH-03 | Vận hành, sao lưu | Đổi khóa mã hóa thì server từ chối khởi động | Đạt | pass |  |
 | VH-04 | Vận hành, sao lưu | Bản production không có bộ chọn demo | Bỏ qua | - | Bỏ qua |
-| VH-05 | Vận hành, sao lưu | Sức khỏe dịch vụ | Chưa làm | pass |  |
-| VH-06 | Vận hành, sao lưu | Khởi động lại vẫn đăng nhập được | Chưa làm | pass |  |
+| VH-05 | Vận hành, sao lưu | Sức khỏe dịch vụ | Đạt | pass |  |
+| VH-06 | Vận hành, sao lưu | Khởi động lại vẫn đăng nhập được | Đạt | pass |  |
 | VH-07 | Vận hành, sao lưu | Dọn sạch stack diễn tập | Bỏ qua | - | Bỏ qua |
 | GD-01 | Giao diện, thiết bị | Điện thoại thật: nhận phòng đến QR | Chưa làm | - | manual: real phone |
 | GD-02 | Giao diện, thiết bị | Điện thoại thật: Tổng quan và tab Thêm | Chưa làm | - | manual: real phone |
@@ -171,6 +171,3 @@ Checklist `docs/rehearsal/checklist.xlsx` against `docs/rehearsal/results-2026-1
 | GL-14 | Go-live | Dữ liệu demo đủ để mọi màn của chủ có nội dung | Chưa làm | - | go-live, real world |
 | GL-15 | Go-live | Mỗi lượt vào demo có dữ liệu riêng và tự dọn | Chưa làm | - | go-live, real world |
 | GL-16 | Go-live | Gói giới thiệu portfolio: README, ảnh chụp, video kịch bản | Chưa làm | - | go-live, real world |
-| GL-13 | Go-live | README, ảnh chụp màn hình và kịch bản demo 3 phút | Chưa làm | - | go-live, real world |
-| GL-14 | Go-live | Đặt lại dữ liệu demo bằng một lệnh | Chưa làm | - | go-live, real world |
-| GL-15 | Go-live | Luồng SePay test mode quay thành video ngắn | Chưa làm | - | go-live, real world |

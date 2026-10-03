@@ -1,8 +1,0 @@
-PUT /v1/me/locale {"locale":"en"}
-  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"CSRF_REJECTED"}
-PUT /v1/me/locale {"locale":"en"}
-  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"CSRF_REJECTED"}
-PUT /v1/me/locale {"locale":"en"}
-  -> 204 ""
-PUT /v1/me/locale {"locale":"en"}
-  -> 204 ""

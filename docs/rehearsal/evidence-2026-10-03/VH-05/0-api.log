@@ -1,4 +1,0 @@
-GET /readyz 
-  -> 200 {"status":"ready"}
-GET /healthz 
-  -> 200 {"status":"ok"}

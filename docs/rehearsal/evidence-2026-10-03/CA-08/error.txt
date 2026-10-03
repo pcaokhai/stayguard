@@ -1,6 +1,0 @@
-Error: the review says who the shift was handed to
-
-expect(received).toContain(expected) // indexOf
-
-Expected substring: "Rehearsal R20"
-Received string:    "{\"cashPayments\":[{\"amount\":50000,\"at\":\"2026-10-03T15:01:04.446587Z\",\"rentalType\":\"HOURLY\",\"roomCode\":\"A144\"}],\"countedCash\":40000,\"difference\":-10000,\"reason\":\"Rehearsal: change given to a guest\",\"reasonRecordedAt\":\"2026-10-03T15:01:04.454737Z\",\"shift\":{\"buildingIds\":[\"bd_01M414DCJDHG63XAS4DVYE35FD\",\"bd_01M414GK2MYQDCZJZR9132YZET\"],\"cashIn\":50000,\"cashOut\":0,\"closedAt\":\"2026-10-03T15:01:04.454737Z\",\"expectedCash\":50000,\"id\":\"sh_01M414GW9Y80374YBGYEZ3K9RR\",\"movements\":[{\"amount\":50000,\"at\":\"2026-10-03T15:01:04.446587Z\",\"byOwner\":false,\"kind\":\"DEPOSIT\",\"roomCode\":\"A144\"}],\"openedAt\":\"2026-10-03T15:01:04.446587Z\",\"openingFloat\":0,\"status\":\"CLOSED\",\"transfersReceived\":0,\"unpaidInvoices\":[],\"userId\":\"us_01M414DGF1A2W3XMDHGHCFXSE7\",\"userName\":\"Rehearsal R18\"},\"staffHistory\":{\"shiftsWithDifference\":1,\"totalShort\":10000}}"

@@ -88,3 +88,5 @@ main screens of the owner, manager, receptionist, housekeeping and signed-out vi
 
 Results files are per clone (`<clone>` is the directory name, as in `scripts/rehearse-env.sh`) and are git-ignored (`results-*.csv`) except the one file Khai names
 in `.gitignore`; `evidence-<date>-<clone>/` has the same suffix. `rehearsal-sync.py` and `rehearsal-coverage.py` read this clone's newest one.
+A run with `RH_ONLY` is partial and writes `results-<date>-<clone>-partial.csv`; `rehearsal-sync.py` and `rehearsal-coverage.py` read only the newest FULL run of this clone
+(a file with the `# demo-check` section). `evidence-*/` is git-ignored (only `baseline/` is kept in git).

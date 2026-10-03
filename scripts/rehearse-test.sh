@@ -3,7 +3,7 @@
 # project $REHEARSE_PROJECT and port $REHEARSE_PORT, see scripts/rehearse-env.sh: stayguard-rehearse and 18090 in the main clone, their own
 # in every other clone) with a FRESH guesthouse every run. No clicking, no real money, no real keys: payments arrive as signed webhooks,
 # time-based cases backdate the rehearsal database only.
-# Writes docs/rehearsal/results-<date>-<clone>.csv and docs/rehearsal/evidence-<date>-<clone>/ (screenshots, API logs).
+# Writes docs/rehearsal/results-<date>-<clone>.csv (-partial.csv when RH_ONLY is set) and docs/rehearsal/evidence-<date>-<clone>/ (screenshots, API logs).
 #   RH_ONLY='TT-0'     only the tests whose title matches this regular expression
 #   RH_SHOTS=1         afterwards, also the visual sweep (scripts/rehearsal-shots.sh)
 #   RH_ENV_OUT=file    only prepare: write `export RH_...` lines to file (and keep the pins file) so a spec can be run by hand
@@ -111,6 +111,8 @@ secret="$(openssl rand -hex 24)"
 python3 scripts/smoke/set-secret.py "$secret" "${COMPOSE[@]}" run --rm api sepay set-secret --tenant "$code" >/dev/null
 
 # Handed to the specs; the compose words let a spec restart the api and run `jobs run` through the same project.
+# A run with RH_ONLY is partial: its file ends in -partial.csv, and the sync and coverage tools never read it.
+export RH_PARTIAL="${RH_ONLY:+1}"
 export E2E_BASE_URL="$BASE" RH_PROJECT="$REHEARSE_PROJECT" RH_GUESTHOUSE="$code" RH_HOOK_PATH="$hook" RH_SEPAY_SECRET="$secret" RH_ACCOUNT_NO=1017588888 \
 	RH_PINS_FILE="$pins_file" RH_DATE="$DATE" RH_SLUG="$REHEARSE_SLUG" RH_OUT="$PWD/$OUT" RH_ROOT="$PWD" RH_ENV_FILE="$ENV_FILE"
 rm -rf "$OUT/evidence-$DATE-$REHEARSE_SLUG"
@@ -128,8 +130,8 @@ rc=${PIPESTATUS[0]}
 set -e
 cd ..
 rm -rf "$OUT/evidence-$DATE-$REHEARSE_SLUG/_pw"
-echo "== results: $OUT/results-$DATE-$REHEARSE_SLUG.csv"
-python3 - "$OUT/results-$DATE-$REHEARSE_SLUG.csv" <<'PY'
+echo "== results: $OUT/results-$DATE-$REHEARSE_SLUG${RH_ONLY:+-partial}.csv"
+python3 - "$OUT/results-$DATE-$REHEARSE_SLUG${RH_ONLY:+-partial}.csv" <<'PY'
 import collections, csv, sys
 n = collections.Counter(r["status"] for r in csv.DictReader(open(sys.argv[1])) if r["id"] and not r["id"].startswith("#") and r["id"] != "suite")
 print(f"pass {n['pass']}  fail {n['fail']}  skip {n['skip']}")
