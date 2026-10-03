@@ -27,10 +27,24 @@ type Opts = { key?: string; headers?: Record<string, string>; raw?: string };
 const tokens = new Map<string, Who>();
 const setFile = () => `${cfg.pinsFile}.set`;
 const readJson = (p: string) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : {});
+export const oneTimePin = (user: string): string =>
+  (readJson(cfg.pinsFile) as Record<string, string>)[user];
 export const chosenPin = (user: string): string | undefined => readJson(setFile())[user];
 export const rememberPin = (user: string, pin: string) =>
   writeFileSync(setFile(), JSON.stringify({ ...readJson(setFile()), [user]: pin }));
 export const forgetSession = (user: string) => tokens.delete(user);
+
+// Sign-in allows 20 tries a minute per address (the UI form's too): stay under it instead of failing a case on a 429.
+const recentSignIns: number[] = [];
+export async function beforeSignIn() {
+  for (;;) {
+    const now = Date.now();
+    while (recentSignIns.length && now - recentSignIns[0] > 60_000) recentSignIns.shift();
+    if (recentSignIns.length < 15) break;
+    await sleep(recentSignIns[0] + 60_500 - now);
+  }
+  recentSignIns.push(Date.now());
+}
 
 const clip = (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v ?? "")).slice(0, 600);
 const mask = (v: unknown): unknown =>
@@ -56,6 +70,7 @@ export class Api {
     body?: unknown,
     o: Opts = {},
   ): Promise<Res> {
+    if (path === "/v1/auth/sign-in") await beforeSignIn();
     const headers: Record<string, string> = { ...(o.headers ?? {}) };
     if (who) headers.authorization = `Bearer ${who.token}`;
     if (method !== "GET" && method !== "HEAD") headers["idempotency-key"] = o.key ?? randomUUID();
@@ -89,7 +104,7 @@ export class Api {
   async as(user: string): Promise<Who> {
     const cached = tokens.get(user);
     if (cached) return cached;
-    const one = (readJson(cfg.pinsFile) as Record<string, string>)[user];
+    const one = oneTimePin(user);
     const known = chosenPin(user);
     // 20 sign-ins per minute per address: wait out a 429 instead of failing a case for it.
     const signIn = async (pin: string): Promise<Res> => {
@@ -123,6 +138,35 @@ export class Api {
     };
     tokens.set(user, who);
     return who;
+  }
+
+  /** A new receptionist made by the owner; the one-time PIN is shown once, here. */
+  async newStaff(owner: Who, username: string, appAccess = "RECEPTIONIST") {
+    await this.rooms(owner); // learns the building
+    const r = await this.post(owner, "/v1/owner/staff", {
+      name: `Rehearsal ${username}`,
+      username,
+      position: appAccess === "MANAGER" ? "MANAGER" : "FRONT_DESK",
+      appAccess,
+      contract: {
+        payType: "MONTHLY",
+        rate: 6_000_000,
+        fixedAllowance: 0,
+        standardShifts: 26,
+        startDate: "2026-01-01",
+        annualLeaveDays: 12,
+      },
+      buildingAccess: [{ buildingId: this.buildingId, level: "EDIT" }],
+    });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    return { id: r.body.staff.id as string, username, pin: r.body.oneTimePin.pin as string };
+  }
+  signInRaw(user: string, pin: string) {
+    return this.post(null, "/v1/auth/sign-in", {
+      guesthouseCode: cfg.guesthouse,
+      username: user,
+      pin,
+    });
   }
 
   // ---- the front-desk flow, by API ----
@@ -314,6 +358,24 @@ export { expect };
 /** Gives a page the person's session, the way the browser has it after sign-in (HttpOnly cookie, no token in the page). */
 export async function uiLogin(page: Page, who: Who) {
   await page.context().addCookies([{ name: "sg_session", value: who.token, url: cfg.base }]);
+}
+/** The sign-in form as a person uses it. A one-time PIN leads to the page where the person chooses their own. */
+export async function formSignIn(page: Page, user: string, pin: string, chooseNew = false) {
+  await page.goto("/en/sign-in");
+  await page.locator('input[name="guesthouseCode"]').fill(cfg.guesthouse);
+  await page.locator('input[name="username"]').fill(user);
+  await page.locator("input").nth(2).click();
+  await page.keyboard.type(pin);
+  await beforeSignIn();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  if (!chooseNew) return;
+  await page.waitForURL(/set-pin/);
+  await page.locator("input").nth(0).click();
+  await page.keyboard.type(NEW_PIN);
+  await page.locator("input").nth(1).click();
+  await page.keyboard.type(NEW_PIN);
+  await page.getByRole("button", { name: "Save PIN and continue" }).click();
+  rememberPin(user, NEW_PIN);
 }
 export const vnd = (text: string) => Number(text.replace(/[^\d]/g, ""));
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
