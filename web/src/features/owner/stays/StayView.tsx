@@ -16,6 +16,7 @@ import { localized } from "@/lib/locale";
 import { t, tf, type MessageKey } from "@/lib/t";
 import { GuestIdPanel } from "../../guestid/GuestIdPanel";
 import { useStay } from "../../stay/hooks";
+import { billLineLabel } from "../../stay/labels";
 import { clockOf, formatDayMonth } from "../format";
 import { useTimeline } from "./hooks";
 import { dotTone, eventText } from "./timeline";
@@ -98,11 +99,7 @@ export function StayView() {
       <h2 className={heading}>{t("ownerStays.bill")}</h2>
       <dl className="text-[15px]">
         {q.lines.map((l) => (
-          <Row
-            key={l.code}
-            k={t(`ownerStays.line.${l.code}` as MessageKey)}
-            v={formatVnd(l.amount)}
-          />
+          <Row key={l.code} k={billLineLabel(l.code)} v={formatVnd(l.amount)} />
         ))}
         {s.extras.map((x) => (
           <Row

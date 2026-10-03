@@ -116,7 +116,12 @@
     "FIRST_HOUR": "Giờ đầu",
     "EXTRA_HOUR": "Giờ tiếp theo",
     "OVERNIGHT": "Qua đêm",
-    "DAILY": "Theo ngày"
+    "DAILY": "Theo ngày",
+    "EARLY_CHECKIN_HOUR": "Giờ nhận sớm",
+    "LATE_CHECKOUT_HOUR": "Giờ trả muộn",
+    "EARLY_CHECKIN_FEE": "Phụ thu nhận sớm",
+    "LATE_CHECKOUT_FEE": "Phụ thu trả muộn",
+    "OTHER": "Khoản khác"
   },
   "pay": {
     "title": "Thanh toán",
@@ -857,12 +862,6 @@
     "balance": "Còn phải thu",
     "extraQty": "{name} × {qty}",
     "notFound": "Không tìm thấy lượt ở này.",
-    "line": {
-      "FIRST_HOUR": "Tiền phòng (giờ đầu)",
-      "EXTRA_HOUR": "Giờ thêm",
-      "OVERNIGHT": "Qua đêm",
-      "DAILY": "Theo ngày"
-    },
     "ev": {
       "CHECKED_IN": "Nhận phòng · {rental}",
       "CHECK_IN_EDITED": "Sửa giờ vào {old} → {new}",

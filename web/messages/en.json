@@ -116,7 +116,12 @@
     "FIRST_HOUR": "First hour",
     "EXTRA_HOUR": "Additional hours",
     "OVERNIGHT": "Overnight",
-    "DAILY": "Daily"
+    "DAILY": "Daily",
+    "EARLY_CHECKIN_HOUR": "Early check-in hours",
+    "LATE_CHECKOUT_HOUR": "Late check-out hours",
+    "EARLY_CHECKIN_FEE": "Early check-in fee",
+    "LATE_CHECKOUT_FEE": "Late check-out fee",
+    "OTHER": "Other charge"
   },
   "pay": {
     "title": "Pay by QR code",
@@ -857,12 +862,6 @@
     "balance": "Balance due",
     "extraQty": "{name} × {qty}",
     "notFound": "This stay was not found.",
-    "line": {
-      "FIRST_HOUR": "Room (first hour)",
-      "EXTRA_HOUR": "Extra hours",
-      "OVERNIGHT": "Overnight",
-      "DAILY": "Daily"
-    },
     "ev": {
       "CHECKED_IN": "Checked in · {rental}",
       "CHECK_IN_EDITED": "Edited check-in {old} → {new}",
