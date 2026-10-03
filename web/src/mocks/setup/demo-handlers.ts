@@ -541,7 +541,74 @@ const AUDIT = [
   },
 ];
 
+const TRANSACTIONS = [
+  {
+    id: "tx1",
+    at: ago(5),
+    amount: 123000,
+    method: "TRANSFER",
+    roomCode: null,
+    billCode: null,
+    reconciliation: "UNMATCHED",
+    transferNote: "Chuyen tien phong nha trang ngay mai khong ghi ma phieu dat coc",
+    paymentEventId: "pe1",
+    kind: "PAYMENT",
+    receivedAt: ago(5),
+  },
+  {
+    id: "tx2",
+    at: ago(40),
+    amount: 150000,
+    method: "TRANSFER",
+    roomCode: "B203",
+    billCode: "PH1003B203",
+    reconciliation: "MATCHED",
+    kind: "PAYMENT",
+    receivedAt: ago(40),
+  },
+  {
+    id: "tx3",
+    at: ago(90),
+    amount: 200000,
+    method: "TRANSFER",
+    roomCode: "A101",
+    billCode: "PH1003A101",
+    reconciliation: "MISMATCH",
+    kind: "PAYMENT",
+    receivedAt: ago(90),
+  },
+  {
+    id: "tx4",
+    at: ago(120),
+    amount: 80000,
+    method: "CASH",
+    roomCode: "A102",
+    billCode: "PH1003A102",
+    reconciliation: "CASH",
+    shiftId: "sh1",
+    kind: "PAYMENT",
+  },
+  {
+    id: "tx5",
+    at: ago(150),
+    amount: -100000,
+    method: "CASH",
+    roomCode: "A103",
+    billCode: "PH1003A103",
+    reconciliation: "CASH",
+    shiftId: "sh1",
+    kind: "CASH_REFUND",
+  },
+];
+
 export const demoHandlers = [
+  http.get("*/v1/owner/transactions", ({ request }) => {
+    const q = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
+    return json({
+      items: TRANSACTIONS.filter((x) => !q || JSON.stringify(x).toLowerCase().includes(q)),
+      nextCursor: null,
+    });
+  }),
   http.post("*/v1/auth/sign-in", async ({ request }) => {
     const b = (await request.json()) as { guesthouseCode: string; username: string; pin: string };
     if (wrongPins >= 5)

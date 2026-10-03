@@ -86,7 +86,7 @@ export function TransactionsView() {
         <Button
           variant="outline"
           size="lg"
-          className="flex-1 font-bold"
+          className="w-full whitespace-nowrap font-bold lg:w-auto"
           onClick={() => setLinking(x)}
         >
           {t("money.link")}
@@ -94,7 +94,7 @@ export function TransactionsView() {
         <Button
           variant="outline"
           size="lg"
-          className="flex-1 font-bold"
+          className="w-full whitespace-nowrap font-bold lg:w-auto"
           onClick={() => setDismissing(x)}
         >
           {t("money.dismiss")}
@@ -183,7 +183,7 @@ export function TransactionsView() {
                     {tf("money.noteText", { note: x.transferNote })}
                   </p>
                 )}
-                {actions(x, "mt-1")}
+                {actions(x, "mt-1 flex-col")}
               </Card>
             ))}
           </StaggerList>
@@ -232,7 +232,7 @@ export function TransactionsView() {
                             {x.reconciliation === "UNMATCHED" && x.transferNote
                               ? tf("money.noteText", { note: x.transferNote })
                               : ""}
-                            {actions(x)}
+                            {actions(x, "flex-col shrink-0 lg:flex-row")}
                           </span>
                         </td>
                       </tr>
