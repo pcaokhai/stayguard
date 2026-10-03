@@ -16,3 +16,8 @@ api/bin/
 .shots/
 !.env.prod.example
 deploy/.rehearse-backups/
+
+# rehearsal evidence: keep the CSV and index, not the heavy files
+docs/rehearsal/evidence-*/**/*.webm
+docs/rehearsal/evidence-*/**/*.zip
+docs/rehearsal/shots-*/

@@ -1,7 +1,7 @@
 # StayGuard task runner. Targets not yet built print the story that adds them and fail.
 COMPOSE := docker compose -f deploy/compose.yaml
 
-.PHONY: gen-api gen-sqlc gen-sqlc-docker gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e smoke backup-test rehearse rehearse-down
+.PHONY: gen-api gen-sqlc gen-sqlc-docker gen-web up down test test-api test-api-int test-web lint lint-api lint-web fmt fmt-api fmt-web licenses gen contracts migrate e2e smoke backup-test rehearse rehearse-down rehearse-test
 
 # Local data encryption key, created once and never committed (deploy/.env.local is git-ignored).
 deploy/.env.local:
@@ -103,3 +103,6 @@ rehearse-down:
 
 e2e:
 	$(call not_yet,SG-603)
+# The rehearsal checklist as Playwright specs against the rehearse stack with a fresh guesthouse; results in docs/rehearsal.
+rehearse-test:
+	scripts/rehearse-test.sh
