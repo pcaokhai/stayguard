@@ -9,6 +9,8 @@
 # partial: payment_events.received_at of that invoice's PARTIAL events, minus N minutes   (raises PAYMENT_PARTIAL after 15)
 # unpaid:  invoices.created_at (the check-out time), minus N minutes                        (raises PAYMENT_UNPAID or REFUND_PENDING after 30)
 # stay:    stays.check_in_at and check_out_at, minus N minutes                                 (guest ID retention: 40 days = 57600)
+# checkin: stays.check_in_at of a stay still IN the room (second argument is the stay id), minus N minutes (early / late bill lines)
+# payment: payments.created_at of that bill's payments, minus N minutes                       (the QR expires after qrExpiryMinutes)
 # Then run the jobs once: `docker compose -p $REHEARSE_PROJECT ... run --rm api jobs run` (rehearse-test does it) and read the alerts.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -16,10 +18,10 @@ cd "$(dirname "$0")/.."
 . scripts/rehearse-env.sh
 PROJECT="$REHEARSE_PROJECT" # this clone's rehearse stack; nothing else
 kind="${1:-}"; bill="${2:-}"; mins="${3:-}"; code="${RH_TENANT:-}"
-[ -n "$kind" ] && [ -n "$bill" ] && [ -n "$mins" ] && [ -n "$code" ] || { sed -n 2,14p "$0" >&2; exit 2; }
-case "$kind" in partial | unpaid | stay) ;; *) echo "kind must be partial, unpaid or stay" >&2; exit 2 ;; esac
+[ -n "$kind" ] && [ -n "$bill" ] && [ -n "$mins" ] && [ -n "$code" ] || { sed -n 2,16p "$0" >&2; exit 2; }
+case "$kind" in partial | unpaid | stay | checkin | payment) ;; *) echo "kind must be partial, unpaid, stay, checkin or payment" >&2; exit 2 ;; esac
 [[ "$mins" =~ ^[0-9]{1,6}$ ]] || { echo "minutes must be a whole number" >&2; exit 2; }
-[[ "$bill" =~ ^[A-Z0-9]{4,24}$ ]] || { echo "not a bill code: $bill" >&2; exit 2; }
+[[ "$bill" =~ ^[A-Za-z0-9_]{4,40}$ ]] || { echo "not a bill code or stay id: $bill" >&2; exit 2; }
 [[ "$code" =~ ^(rehearse|rh[0-9a-f]{6})$ ]] || { echo "REFUSED: $code is not a rehearsal guesthouse" >&2; exit 1; }
 if [ -n "${COMPOSE_PROJECT_NAME:-}" ] && [ "$COMPOSE_PROJECT_NAME" != "$PROJECT" ]; then
 	echo "REFUSED: COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME, this only runs on $PROJECT" >&2; exit 1
@@ -65,6 +67,28 @@ WITH hit AS (
   UPDATE app.stays s SET check_in_at = s.check_in_at - make_interval(mins => :mins), check_out_at = s.check_out_at - make_interval(mins => :mins)
   FROM app.invoices iv JOIN app.tenants t ON t.id = iv.tenant_id
   WHERE s.tenant_id = iv.tenant_id AND s.id = iv.stay_id AND iv.bill_code = :'bill' AND t.guesthouse_code = :'code'
+  RETURNING 1)
+SELECT count(*) FROM hit;
+SQL
+)" ;;
+checkin)
+	out="$(sql <<'SQL'
+SET session_replication_role = replica;
+WITH hit AS (
+  UPDATE app.stays s SET check_in_at = s.check_in_at - make_interval(mins => :mins)
+  FROM app.tenants t
+  WHERE t.id = s.tenant_id AND s.id = :'bill' AND s.status = 'ACTIVE' AND t.guesthouse_code = :'code'
+  RETURNING 1)
+SELECT count(*) FROM hit;
+SQL
+)" ;;
+payment)
+	out="$(sql <<'SQL'
+SET session_replication_role = replica;
+WITH hit AS (
+  UPDATE app.payments p SET created_at = p.created_at - make_interval(mins => :mins)
+  FROM app.invoices iv JOIN app.tenants t ON t.id = iv.tenant_id
+  WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND iv.bill_code = :'bill' AND t.guesthouse_code = :'code'
   RETURNING 1)
 SELECT count(*) FROM hit;
 SQL

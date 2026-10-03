@@ -1,5 +1,9 @@
 GET /v1/owner/property 
+<<<<<<< HEAD
   -> 200 {"address":"1 Test Street","frontDeskHistoryDays":7,"guesthouseCode":"rh840297","idRetentionDays":30,"name":"Rehearsal Test rh840297","phone":"0900000000","qrExpiryMinutes":30}
+=======
+  -> 200 {"address":"1 Test Street","frontDeskHistoryDays":7,"guesthouseCode":"rh4f632b","idRetentionDays":30,"name":"Rehearsal Test rh4f632b","phone":"0900000000","qrExpiryMinutes":30}
+>>>>>>> 952da7a (test(rehearsal): coverage report, bill-line stays for ui-lint, gap specs, sync preview on a copy, unapproved visual baselines)
 GET /v1/stays?date=2026-10-02 
   -> 200 {"items":[]}
 GET /v1/stays?date=2026-09-21 

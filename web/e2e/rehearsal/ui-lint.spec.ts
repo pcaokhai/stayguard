@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { expect, test, uiLogin, type Who } from "./helpers";
+import { expect, knownStays, test, uiLogin, type Who } from "./helpers";
 
 // UI-01 (proposed new checklist row): every screen of every role, in vi and en at 390 and 1280, must read like a finished product.
 // The routes are the ones scripts/rehearsal-shots.sh sweeps; the sessions are the ones rehearsal-session.py makes.
@@ -87,16 +87,17 @@ test("UI-01 every screen of every role reads like a finished product", async ({
     const who: Who = await api.as(user);
     const stay = ((await api.get(who, `/v1/stays?date=${new Date().toISOString().slice(0, 10)}`))
       .body?.items ?? [])[0]?.id;
-    const all = stay
-      ? [
-          ...routes,
-          role === "receptionist"
-            ? `/stay?id=${stay}`
-            : /owner|manager/.test(role)
-              ? `/owner/stay?id=${stay}`
-              : "",
-        ]
-      : routes;
+    // One stay per bill-line kind (bill-lines.spec.ts): the owner's stay page; the front desk's stay, checkout and receipt.
+    const made = knownStays();
+    const forRole = made.flatMap((k) =>
+      role === "receptionist"
+        ? [`/stay?id=${k.stayId}`, `/checkout?stay=${k.stayId}`, `/receipt?invoice=${k.invoiceId}`]
+        : /owner|manager/.test(role)
+          ? [`/owner/stay?id=${k.stayId}`]
+          : [],
+    );
+    const all = [...routes, ...forRole];
+    void stay;
     for (const width of WIDTHS) {
       const ctx = await browser.newContext({
         viewport: { width, height: width > 600 ? 900 : 844 },
@@ -133,6 +134,10 @@ test("UI-01 every screen of every role reads like a finished product", async ({
           for (const [pattern, re] of CHECKS) {
             const m = text.match(re);
             if (m) add(pattern, `"${m[0]}"`);
+          }
+          if (/\/(stay|checkout|receipt)\b/.test(route)) {
+            const code = text.match(UPPER_SNAKE)?.[0];
+            if (code) add("raw bill code", `"${code}"`);
           }
           for (const d of await listProblems(page, route)) add("activity/alerts list", d);
           for (const e of consoleErrors) add("console/page error", e);

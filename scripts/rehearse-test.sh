@@ -43,7 +43,7 @@ cleanup() {
 	status=$?
 	rehearse_unlock
 	rm -f "$log" "$tenant_file"
-	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file.set"
+	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file.set" "$pins_file.stays"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file"
 	if [ "${RH_KEEP_JOBS:-0}" != 1 ]; then "${COMPOSE[@]}" up -d jobs >/dev/null 2>&1 || true; fi
 	exit "$status"
@@ -85,8 +85,8 @@ t["name"] = t["property"]["name"] = "Rehearsal Test " + sys.argv[2]
 t["bankAccount"]["accountName"] = "REHEARSAL TEST"
 t["buildings"] = [{"code": "A", "name": "Building A", "floors": 4, "roomsPerFloor": 50}]
 contract = {"payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12}
-# One receptionist per concern (r1..r16) so shift cases never share a drawer, and one housekeeper.
-for i in range(1, 17):
+# One receptionist per concern (r1..r20) so shift cases never share a drawer, and one housekeeper.
+for i in range(1, 21):
     t["staff"].append({"name": f"Rehearsal R{i}", "username": f"r{i}", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
                        "contract": contract, "buildingAccess": {"A": "EDIT"}})
 t["staff"].append({"name": "Rehearsal Housekeeper", "username": "hk", "position": "HOUSEKEEPING", "appAccess": "HOUSEKEEPING",

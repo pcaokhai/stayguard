@@ -1,4 +1,5 @@
 GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&q=check_in 
+<<<<<<< HEAD
   -> 200 {"items":[{"action":"stay.check_in","actorName":"Rehearsal R14","actorRole":"RECEPTIONIST","at":"2026-10-03T14:37:06.985096Z","category":"STAY_TIME","details":{"deposit":"10000","pricingVersion":"3","room":"A132","roomId":"un_01M41331K1Y6RSRV6X1ZYNR7K5","status":"ACTIVE","stayId":"st_01M41350H9NBYRQ7R49GTZZPWA"},"id":"au_01M41350H9KDC66Q281V6EA261"},{"action":"stay.check_in","actorName":"Rehearsal R14","actorRole":"RECEPTIONIST","at":"2026-10-03T14:37:06.950178Z","category":"STAY_TIME","details":{"deposit":"10000","pricingVersion":"3","room":"A131","roomId":"un_01M41331K1GP3VT41A2DH03WSD","sta
 GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&q=link 
   -> 200 {"items":[{"action":"payment.linked","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T14:36:14.890725Z","category":"MONEY","details":{"amount":"70000","bill":"PH1003A105","eventId":"pe_01M4133DGV6ZQ171P3H6PEVRD5","invoiceId":"iv_01M4133DGHND54B3J692B59C7F","paymentId":"pm_01M4133DGP45Z0NRA1WT4NRX44","room":"A105"},"id":"au_01M4133DNF0FDRX38SKCJ2MMS2"}]}
@@ -20,4 +21,27 @@ POST /v1/owner/audit-logs/au_01M41350RGRZJ7HE5CYVRAY5KA {}
   -> 404 404 page not found
 
 DELETE /v1/owner/audit-logs/au_01M41350RGRZJ7HE5CYVRAY5KA 
+=======
+  -> 200 {"items":[{"action":"stay.check_in","actorName":"Rehearsal R14","actorRole":"RECEPTIONIST","at":"2026-10-03T15:00:55.095075Z","category":"STAY_TIME","details":{"deposit":"10000","pricingVersion":"3","room":"A137","roomId":"un_01M414DCJDGWKC5J23C9FJJ32K","status":"ACTIVE","stayId":"st_01M414GK5QP2NQPDVDVQM3HBAS"},"id":"au_01M414GK5Q08E97N46VEXRK4D2"},{"action":"stay.check_in","actorName":"Rehearsal R14","actorRole":"RECEPTIONIST","at":"2026-10-03T15:00:55.032652Z","category":"STAY_TIME","details":{"deposit":"10000","pricingVersion":"3","room":"A136","roomId":"un_01M414DCJDSTXH5F06GR5XJ1H8","sta
+GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&q=link 
+  -> 200 {"items":[{"action":"payment.linked","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:03.562655Z","category":"MONEY","details":{"amount":"70000","bill":"PH1003A105","eventId":"pe_01M414F0PVKCZNXM8ZQ5W5VPWD","invoiceId":"iv_01M414F0PJ5XEHK4QNKBJBA09V","paymentId":"pm_01M414F0PPG2PEY877HXPBX7HN","room":"A105"},"id":"au_01M414F0VDZD1R5EA0PVBQS489"}]}
+GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&q=GUEST_ID 
+  -> 200 {"items":[{"action":"GUEST_ID_RETENTION_DELETED","actorName":"","at":"2026-10-03T15:00:06.570338Z","category":"GUEST_ID","details":{"bill":"PH1003A115","retentionDays":"30","room":"A115"},"id":"au_01M414F3SB39SYE0H9X5AD0QT4"},{"action":"GUEST_ID_PHOTO_SET","actorName":"Rehearsal R16","actorRole":"RECEPTIONIST","at":"2026-10-03T15:00:06.047544Z","category":"GUEST_ID","details":{"bill":"PH1003A115","room":"A115","side":"FRONT"},"id":"au_01M414F38ZNCSYRCBETHD604CP"},{"action":"GUEST_ID_PHOTO_DELETED","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:05.354475Z","category":"GUES
+GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04 
+  -> 200 {"items":[{"action":"expense.updated","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.398455Z","category":"MONEY","details":{"amount":"160000","category":"SUPPLIES","expenseId":"ex_01M414GKETH48KB1JAF7Q8BPC6","month":"2026-10"},"id":"au_01M414GKF63KD0QCF8JPAYPNV8"},{"action":"expense.created","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.388434Z","category":"MONEY","details":{"amount":"300000","category":"INTERNET_TV","expenseId":"ex_01M414GKEWJJG1J7X7J2X7K64Q","month":"2026-10"},"id":"au_01M414GKEWFHNQ9FHJHQ8TE735"},{"action":"expense.created"
+GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&category=MONEY 
+  -> 200 {"items":[{"action":"expense.updated","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.398455Z","category":"MONEY","details":{"amount":"160000","category":"SUPPLIES","expenseId":"ex_01M414GKETH48KB1JAF7Q8BPC6","month":"2026-10"},"id":"au_01M414GKF63KD0QCF8JPAYPNV8"},{"action":"expense.created","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.388434Z","category":"MONEY","details":{"amount":"300000","category":"INTERNET_TV","expenseId":"ex_01M414GKEWJJG1J7X7J2X7K64Q","month":"2026-10"},"id":"au_01M414GKEWFHNQ9FHJHQ8TE735"},{"action":"expense.created"
+GET /v1/owner/audit-logs?from=2026-10-02&to=2026-10-04&actorId= 
+  -> 200 {"items":[{"action":"expense.updated","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.398455Z","category":"MONEY","details":{"amount":"160000","category":"SUPPLIES","expenseId":"ex_01M414GKETH48KB1JAF7Q8BPC6","month":"2026-10"},"id":"au_01M414GKF63KD0QCF8JPAYPNV8"},{"action":"expense.created","actorName":"Smoke Owner","actorRole":"OWNER","at":"2026-10-03T15:00:55.388434Z","category":"MONEY","details":{"amount":"300000","category":"INTERNET_TV","expenseId":"ex_01M414GKEWJJG1J7X7J2X7K64Q","month":"2026-10"},"id":"au_01M414GKEWFHNQ9FHJHQ8TE735"},{"action":"expense.created"
+PUT /v1/owner/audit-logs/au_01M414GKF63KD0QCF8JPAYPNV8 {}
+  -> 404 404 page not found
+
+PATCH /v1/owner/audit-logs/au_01M414GKF63KD0QCF8JPAYPNV8 {}
+  -> 404 404 page not found
+
+POST /v1/owner/audit-logs/au_01M414GKF63KD0QCF8JPAYPNV8 {}
+  -> 404 404 page not found
+
+DELETE /v1/owner/audit-logs/au_01M414GKF63KD0QCF8JPAYPNV8 
+>>>>>>> 952da7a (test(rehearsal): coverage report, bill-line stays for ui-lint, gap specs, sync preview on a copy, unapproved visual baselines)
   -> 404 404 page not found

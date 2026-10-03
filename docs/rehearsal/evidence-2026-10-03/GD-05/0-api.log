@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 POST /v1/auth/sign-in {"guesthouseCode":"rh840297","username":"r15","pin":"***"}
   -> 200 {"accessToken":"***","expiresAt":"2026-10-04T02:36:32.926298Z","mustChangePin":true,"tenantId":"tn_01M41331K01RB67HH96BE2W4GB","user":{"id":"us_01M413357GG90P2NQFCAMBYDD5","locale":"vi","name":"Rehearsal R15","role":"RECEPTIONIST"}}
 PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
@@ -15,4 +16,23 @@ POST /v1/stays/st_01M4133ZWZT2PE2XVCAHGAEC9Z/checkout
 POST /v1/invoices/iv_01M4133ZX7J50SGFA8HWRAEGCR/payments {"method":"TRANSFER"}
   -> 201 {"amount":70000,"id":"pm_01M4133ZXAFF61ZSJEHTEF88M5","invoiceId":"iv_01M4133ZX7J50SGFA8HWRAEGCR","method":"TRANSFER","qr":{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","amount":70000,"payload":"00020101021238540010A00000072701240006970436011010175888880208QRIBFTTA53037045405700005802VN62140810PH1003A112630407B1","transferNote":"PH1003A112"},"remaining":70000,"status":"PENDING"}
 WEBHOOK in 70000 "PH1003A112" id=1791038193706406 age=0s
+=======
+POST /v1/auth/sign-in {"guesthouseCode":"rh4f632b","username":"r15","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T03:00:20.882432Z","mustChangePin":true,"tenantId":"tn_01M414DCJD57KM1TTGRGGPVHWZ","user":{"id":"us_01M414DFXXG0CSR5TH5P4WFK4W","locale":"vi","name":"Rehearsal R15","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M414DCJD57KM1TTGRGGPVHWZ","name":"Rehearsal Test rh4f632b","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M414DFXXG0CSR5TH5P4WFK4W","locale":"vi","name":"Rehearsal R15","role":"RECEPTIONIST"}}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":0,"occupied":10,"overdue":0,"toClean":6,"vacant":184},"floors":[{"id":"fl_01M414DCJDZ46FG27AXMPC4E8H","name":"1","order":1},{"id":"fl_01M414DCJD8Q9DQWV3K822ZM76","name":"2","order":2},{"id":"fl_01M414DCJDA1TVV2S9MZF01RRE","name":"3","order":3},{"id":"fl_01M414DCJDWRQ3Q2M4VMPQGF82","name":"4","order":4}],"id":"bd_01M414DCJDHG63XAS4DVYE35FD","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M414DCJDHG63XAS4DVYE35FD/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","code":"A101","floor":1,"floorId":"fl_01M414DCJDZ46FG27AXMPC4E8H","floorName":"1","id":"un_01M414DCJD0THNDEP8AJ8FAJGB","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","code":"A102","floor":1,"floorId":"fl_01M414DCJDZ46FG27AXMPC4E8H","floorName":"1","id":"un_01M414DCJDGMT12WJ6CSZQ6B94","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M414DCJDHG63XAS4DVYE35FD","code":"A103","floor
+POST /v1/rooms/un_01M414DCJD7Y5V0ZQ0KYBXN115/stays {"rentalType":"HOURLY","guestName":"Rehearsal Guest","guestPhone":"0912345678","deposit":10000}
+  -> 201 {"checkInAt":"2026-10-03T15:00:21.513334Z","deposit":10000,"extras":[],"guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","guestPhone":"0912345678","id":"st_01M414FJC9GA9MK4NF74KZ0CMD","pricingVersion":1,"quote":{"asOf":"2026-10-03T15:00:21.513334Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"rentalType":"HOURLY","roomCode":"A117","roomId":"un_01M414DCJD7Y5V0ZQ0KYBXN115","status":"ACTIVE"
+POST /v1/stays/st_01M414FJC9GA9MK4NF74KZ0CMD/checkout 
+  -> 201 {"billCode":"PH1003A117","createdAt":"2026-10-03T15:00:21.521411Z","id":"iv_01M414FJCH9PSPRZ8MNWQT8VD2","quote":{"asOf":"2026-10-03T15:00:21.521411Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"roomCode":"A117","status":"OPEN","stayId":"st_01M414FJC9GA9MK4NF74KZ0CMD"}
+POST /v1/invoices/iv_01M414FJCH9PSPRZ8MNWQT8VD2/payments {"method":"TRANSFER"}
+  -> 201 {"amount":70000,"id":"pm_01M414FJCQCAVNDNM5Z0PEXESX","invoiceId":"iv_01M414FJCH9PSPRZ8MNWQT8VD2","method":"TRANSFER","qr":{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","amount":70000,"payload":"00020101021238540010A00000072701240006970436011010175888880208QRIBFTTA53037045405700005802VN62140810PH1003A117630424E6","transferNote":"PH1003A117"},"remaining":70000,"status":"PENDING"}
+WEBHOOK in 70000 "PH1003A117" id=1791039621674492 age=0s
+>>>>>>> 952da7a (test(rehearsal): coverage report, bill-line stays for ui-lint, gap specs, sync preview on a copy, unapproved visual baselines)
   -> 200 {"success": true}

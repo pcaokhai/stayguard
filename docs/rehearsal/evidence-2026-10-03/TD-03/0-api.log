@@ -1,6 +1,14 @@
 GET /v1/owner/alerts 
+<<<<<<< HEAD
   -> 200 {"items":[{"actorName":"Rehearsal R14","amount":6000,"createdAt":"2026-10-03T14:37:06.974464Z","details":{"items":"1","stocktake":"st_01M41350GYE9A745YQ6FM9VFWX"},"id":"al_01M41350GZ9KRHAZTZN3Y2YS66","kind":"STOCKTAKE_DIFFERENCE","read":false},{"actorName":"Rehearsal R13","createdAt":"2026-10-03T14:37:05.133596Z","details":{"newTime":"2026-10-03T14:17:05Z","oldTime":"2026-10-03T14:37:05Z","reasonCode":"WRONG_TIME"},"id":"al_01M4134YQEZTFSB9TQST7G2QZQ","kind":"STAY_TIME_EDITED","read":false,"roomCode":"A117","stayId":"st_01M4134YQBRC85S50RBPQG7RT6"},{"actorName":"Rehearsal R15","createdAt":"202
 POST /v1/owner/alerts/al_01M4133DGWCGNENGDJ678NGD5F/read 
   -> 204 ""
 GET /v1/owner/alerts 
   -> 200 {"items":[{"actorName":"Rehearsal R14","amount":6000,"createdAt":"2026-10-03T14:37:06.974464Z","details":{"items":"1","stocktake":"st_01M41350GYE9A745YQ6FM9VFWX"},"id":"al_01M41350GZ9KRHAZTZN3Y2YS66","kind":"STOCKTAKE_DIFFERENCE","read":false},{"actorName":"Rehearsal R13","createdAt":"2026-10-03T14:37:05.133596Z","details":{"newTime":"2026-10-03T14:17:05Z","oldTime":"2026-10-03T14:37:05Z","reasonCode":"WRONG_TIME"},"id":"al_01M4134YQEZTFSB9TQST7G2QZQ","kind":"STAY_TIME_EDITED","read":false,"roomCode":"A117","stayId":"st_01M4134YQBRC85S50RBPQG7RT6"},{"actorName":"Rehearsal R15","createdAt":"202
+=======
+  -> 200 {"items":[{"actorName":"Rehearsal R14","amount":6000,"createdAt":"2026-10-03T15:00:55.071593Z","details":{"items":"1","stocktake":"st_01M414GK4Z9CTAKTEX9DGJSNVZ"},"id":"al_01M414GK50YAR151MAYAH0BSEP","kind":"STOCKTAKE_DIFFERENCE","read":false},{"actorName":"Rehearsal R13","createdAt":"2026-10-03T15:00:52.899142Z","details":{"newTime":"2026-10-03T14:40:52Z","oldTime":"2026-10-03T15:00:52Z","reasonCode":"WRONG_TIME"},"id":"al_01M414GH1424XA4868NC05NNRZ","kind":"STAY_TIME_EDITED","read":false,"roomCode":"A122","stayId":"st_01M414GH0Y4TT5JG59YATEGRFZ"},{"actorName":"Rehearsal R15","createdAt":"202
+POST /v1/owner/alerts/al_01M414F0PWQ60K7GCEMG0JDBEC/read 
+  -> 204 ""
+GET /v1/owner/alerts 
+  -> 200 {"items":[{"actorName":"Rehearsal R14","amount":6000,"createdAt":"2026-10-03T15:00:55.071593Z","details":{"items":"1","stocktake":"st_01M414GK4Z9CTAKTEX9DGJSNVZ"},"id":"al_01M414GK50YAR151MAYAH0BSEP","kind":"STOCKTAKE_DIFFERENCE","read":false},{"actorName":"Rehearsal R13","createdAt":"2026-10-03T15:00:52.899142Z","details":{"newTime":"2026-10-03T14:40:52Z","oldTime":"2026-10-03T15:00:52Z","reasonCode":"WRONG_TIME"},"id":"al_01M414GH1424XA4868NC05NNRZ","kind":"STAY_TIME_EDITED","read":false,"roomCode":"A122","stayId":"st_01M414GH0Y4TT5JG59YATEGRFZ"},{"actorName":"Rehearsal R15","createdAt":"202
+>>>>>>> 952da7a (test(rehearsal): coverage report, bill-line stays for ui-lint, gap specs, sync preview on a copy, unapproved visual baselines)

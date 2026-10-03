@@ -114,8 +114,12 @@ test("CA-05 closing with an invoice that is not fully paid needs a reason", asyn
 test("CA-07 cash the owner moves on an open shift lands on it, marked by owner", async ({
   api,
 }) => {
-  const w = await api.as("r9");
   const owner = await api.as("owner");
+  // The owner's cash goes on the latest-opened shift that can edit the building, so a brand-new receptionist makes the target certain.
+  const u = await api.newStaff(owner, "ca07user");
+  const s = await api.signInRaw(u.username, u.pin);
+  const w = { user: u.username, token: s.body.accessToken, id: u.id, role: "RECEPTIONIST" };
+  await api.put(w, "/v1/me/pin", { currentPin: u.pin, newPin: "246802" });
   const stay = await api.checkIn(w, { deposit: 500_000 });
   const invoice = await api.checkout(w, stay.id);
   const before = (await api.shift(w)).body;

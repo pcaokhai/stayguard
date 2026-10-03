@@ -11,6 +11,9 @@ export default defineConfig({
   retries: 0,
   timeout: 120_000,
   outputDir: `${out}/evidence-${date}/_pw`,
+  // Visual baselines go to docs/rehearsal/baseline, one file per screen and width, the same on every machine.
+  snapshotPathTemplate: "{testDir}/../../../docs/rehearsal/baseline/{arg}{ext}",
+  expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: "disabled" } },
   reporter: [["list"], ["./csv-reporter.ts"]],
   use: {
     baseURL: process.env.E2E_BASE_URL,

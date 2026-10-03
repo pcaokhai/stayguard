@@ -212,6 +212,35 @@ def selftest():
     print("selftest ok")
 
 
+def preview(xlsx, csv_path, out, day, smap, eyes):
+    """Runs the sync on a COPY of the workbook (never the original) and writes what would change, grouped by old and new status."""
+    import collections, importlib.util
+    spec = importlib.util.spec_from_file_location("cov", os.path.join(os.path.dirname(os.path.abspath(__file__)), "rehearsal-coverage.py"))
+    cov_src = open(spec.origin, encoding="utf-8").read().replace("\nmain()\n", "\n")  # load the reader without running the report
+    cov = type(sys)("cov")
+    cov.__dict__["__file__"] = spec.origin
+    exec(compile(cov_src, spec.origin, "exec"), cov.__dict__)
+    copy = os.path.join(tempfile.mkdtemp(), "checklist-copy.xlsx")
+    shutil.copy(xlsx, copy)
+    before = {r["id"]: r["status"] for r in cov.rows(copy)}
+    log = sync(copy, read_results(csv_path), day, smap, eyes)
+    after = {r["id"]: r["status"] for r in cov.rows(copy)}
+    changed = collections.defaultdict(list)
+    for rid, old in before.items():
+        if after.get(rid) != old:
+            changed[(old, after[rid])].append(rid)
+    note_only = [ln.split(":")[0].split("!")[1] for ln in log if "-> notes" in ln and ln.split(":")[0].split("!")[1] not in {i for v in changed.values() for i in v}]
+    left = [ln for ln in log if "left alone" in ln]
+    lines = ["# Sync preview", "", f"Made by `scripts/rehearsal-sync.py --preview` on a COPY of `{xlsx}` with `{csv_path}`. **The real file is unchanged;** Khai approves before it is.", "",
+             f"Rows whose status changes: **{sum(len(v) for v in changed.values())}**. Rows that only get a note: **{len(note_only)}**. Rows left alone (Bỏ qua or manual): **{len(left)}**.", "",
+             "## Status changes", "", "| Old | New | Rows | Ids |", "| --- | --- | ---: | --- |"]
+    for (old, new), ids in sorted(changed.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        lines.append(f"| {old or '(empty)'} | {new} | {len(ids)} | {', '.join(ids)} |")
+    lines += ["", "## Note only (cases that need eyes, or a pass already Đạt)", "", ", ".join(note_only) or "none", "", "## Left alone", "", "\n".join(f"- {ln}" for ln in left) or "none", ""]
+    open(out, "w", encoding="utf-8").write("\n".join(lines))
+    print(f"{out}: {sum(len(v) for v in changed.values())} status changes, {len(note_only)} note only, {len(left)} left alone (original untouched)")
+
+
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         selftest()
@@ -222,11 +251,15 @@ if __name__ == "__main__":
     ap.add_argument("--date")
     ap.add_argument("--map", default="pass=Đạt,fail=Lỗi,skip=")
     ap.add_argument("--needs-eyes", default="docs/rehearsal/needs-eyes.txt")
+    ap.add_argument("--preview", help="write a summary of the changes to this file, working on a copy; the workbook is not touched")
     a = ap.parse_args()
     path = a.csv or max(glob.glob("docs/rehearsal/results-*.csv"), default=None)
     if not path or not os.path.exists(a.xlsx):
         sys.exit(f"need a results CSV and {a.xlsx} (Khai commits the checklist there first)")
     day = a.date or (re.search(r"results-(\d{4}-\d{2}-\d{2})", path) or [None, ""])[1]
     smap = dict(p.split("=") for p in a.map.split(","))
+    if a.preview:
+        preview(a.xlsx, path, a.preview, day, smap, read_needs_eyes(a.needs_eyes))
+        sys.exit(0)
     for line in sync(a.xlsx, read_results(path), day, smap, read_needs_eyes(a.needs_eyes)):
         print(line)

@@ -449,9 +449,17 @@ export const stack = {
       .toBe(200);
   },
 };
+// Stays made for the UI lint: one per bill-line kind. The data specs record them here and ui-lint visits each.
+const staysFile = () => `${cfg.pinsFile}.stays`;
+export type KnownStay = { kind: string; stayId: string; invoiceId: string; user: string };
+export const knownStays = (): KnownStay[] =>
+  existsSync(staysFile()) ? JSON.parse(readFileSync(staysFile(), "utf8")) : [];
+export const rememberStay = (s: KnownStay) =>
+  writeFileSync(staysFile(), JSON.stringify([...knownStays(), s]));
+
 /** Backdates one invoice, then runs the jobs once: what the alert rules would see after the waiting. Returns the jobs' own summary. */
 export function raiseAlerts(
-  kind: "partial" | "unpaid" | "stay",
+  kind: "partial" | "unpaid" | "stay" | "checkin" | "payment",
   billCode: string,
   minutes: number,
 ) {
@@ -459,7 +467,11 @@ export function raiseAlerts(
   return stack.jobsOnce();
 }
 /** scripts/rehearsal-backdate.sh: moves the time of one invoice back in the rehearsal database only (it refuses elsewhere). */
-export function backdate(kind: "partial" | "unpaid" | "stay", billCode: string, minutes: number) {
+export function backdate(
+  kind: "partial" | "unpaid" | "stay" | "checkin" | "payment",
+  billCode: string,
+  minutes: number,
+) {
   return execFileSync("scripts/rehearsal-backdate.sh", [kind, billCode, String(minutes)], {
     cwd: cfg.root,
     encoding: "utf8",

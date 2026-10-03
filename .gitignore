@@ -22,3 +22,4 @@ docs/rehearsal/evidence-*/**/*.webm
 docs/rehearsal/evidence-*/**/*.zip
 docs/rehearsal/shots-*/
 deploy/.rehearse.lock/
+__pycache__/

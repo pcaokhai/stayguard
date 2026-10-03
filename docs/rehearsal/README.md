@@ -49,6 +49,10 @@ Proposed new rows (not in the sheet yet):
 | BM-06 | SePay's real retry behaviour (manual) | `z3-time.spec.ts` |
 | VH-08 | The backdate helper refuses to run outside the rehearsal stack | `z3-time.spec.ts` |
 
+Also in this run: `coverage.md` (every checklist row, automated or why not; `scripts/rehearsal-coverage.py`), `sync-preview.md` (what the sync would change, made on a copy;
+the real workbook is changed only after Khai approves), `baseline/` (visual baselines VS-01 to VS-12, not approved) and `bill-lines.spec.ts` (BL-01 to BL-05, a stay for each bill-line
+kind; `ui-lint` visits the owner stay page, the front-desk stay page, checkout and receipt of each).
+
 ## Time-based cases (never wait)
 
 `scripts/rehearsal-backdate.sh <partial|unpaid> <billCode> <minutes>` with `RH_TENANT=<guesthouse code>` moves one invoice's records back in
