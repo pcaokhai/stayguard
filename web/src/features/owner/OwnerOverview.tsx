@@ -159,7 +159,7 @@ export function OwnerOverview() {
             <Kpi tone="ok" label={t("owner.transfers")} sub={t("owner.autoReconciled")}>
               <RollingMoney value={o.transfersReceived} />
             </Kpi>
-            <Kpi label={t("owner.cash")} sub={t("owner.inOpenShifts")}>
+            <Kpi label={t("owner.cash")} sub={t("owner.cashIncludes")}>
               <RollingMoney value={o.cashExpected} />
             </Kpi>
             <Kpi

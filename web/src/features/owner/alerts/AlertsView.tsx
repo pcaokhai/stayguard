@@ -31,7 +31,9 @@ import {
   alertHref,
   alertKind,
   FILTERS,
+  isResolved,
   kindLabel,
+  resolvedLine,
   roomOrShift,
   type Alert,
 } from "./text";
@@ -159,7 +161,10 @@ export function AlertsView() {
             <>
               <StaggerList className="flex flex-col gap-3 md:hidden">
                 {rows.map((a) => (
-                  <Card key={a.id} className="gap-1.5 p-4 shadow-none">
+                  <Card
+                    key={a.id}
+                    className={cn("gap-1.5 p-4 shadow-none", isResolved(a) && "opacity-60")}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <KindPill a={a} />
                       <span className="flex items-center gap-1.5 text-[13px] text-ink-2">
@@ -175,6 +180,9 @@ export function AlertsView() {
                     </div>
                     <p className="text-[17px] font-bold">{roomOrShift(a)}</p>
                     <p className="text-[15px]">{alertDetails(a)}</p>
+                    {resolvedLine(a) && (
+                      <p className="text-[13px] font-bold text-ok">{resolvedLine(a)}</p>
+                    )}
                     <p className="text-[13px] text-muted-foreground">
                       {tf("alerts.by", { name: by(a) })}
                     </p>
@@ -215,7 +223,13 @@ export function AlertsView() {
                     </TableHeader>
                     <TableBody>
                       {rows.map((a) => (
-                        <TableRow key={a.id} className="transition-colors duration-100">
+                        <TableRow
+                          key={a.id}
+                          className={cn(
+                            "transition-colors duration-100",
+                            isResolved(a) && "opacity-60",
+                          )}
+                        >
                           <TableCell className="py-3 pl-5">
                             <span className="flex items-center gap-1.5">
                               {unreadIds.has(a.id) && (
@@ -234,6 +248,11 @@ export function AlertsView() {
                           <TableCell className="font-bold">{roomOrShift(a)}</TableCell>
                           <TableCell className="max-w-[320px] whitespace-normal text-[14px]">
                             {alertDetails(a)}
+                            {resolvedLine(a) && (
+                              <span className="mt-0.5 block text-[12px] font-bold text-ok">
+                                {resolvedLine(a)}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell>{by(a)}</TableCell>
                           <TableCell className="pr-5">

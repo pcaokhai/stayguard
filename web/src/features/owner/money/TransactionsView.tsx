@@ -20,26 +20,26 @@ import { useMe } from "../../session/useMe";
 import { clockOf } from "../format";
 import { useTransactions } from "./hooks";
 import { LinkSheet } from "./LinkSheet";
+import {
+  amountLine,
+  inTab,
+  methodLine,
+  needsAction,
+  settledNote,
+  shownTime,
+  type Tab,
+  type Tx,
+} from "./rows";
 
-type Transaction = components["schemas"]["Transaction"];
-type Tab = "all" | "transfer" | "cash" | "needs";
 const TABS: Tab[] = ["all", "transfer", "cash", "needs"];
 
-const TONE: Record<Transaction["reconciliation"], string> = {
+const TONE: Record<Tx["reconciliation"], string> = {
   MATCHED: "border-ok-line bg-ok-bg text-ok",
   MISMATCH: "border-warn-line bg-warn-bg text-warn-ink",
   UNMATCHED: "border-dirty-line bg-dirty-bg text-dirty",
   CASH: "border-line bg-maint-bg text-maint",
 };
-const needsAction = (x: Transaction) =>
-  x.reconciliation === "MISMATCH" || x.reconciliation === "UNMATCHED";
-const inTab = (x: Transaction, tab: Tab) =>
-  tab === "all" ||
-  (tab === "transfer" && x.method === "TRANSFER") ||
-  (tab === "cash" && x.method === "CASH") ||
-  (tab === "needs" && needsAction(x));
-
-function Pill({ x }: { x: Transaction }) {
+function Pill({ x }: { x: Tx }) {
   return (
     <span
       className={cn(
@@ -51,15 +51,13 @@ function Pill({ x }: { x: Transaction }) {
     </span>
   );
 }
-const method = (x: Transaction) =>
-  x.method === "TRANSFER" ? t("money.transfer") : t("money.cash");
-const roomBill = (x: Transaction) => `${x.roomCode || "—"} · ${x.billCode || "—"}`;
+const roomBill = (x: Tx) => `${x.roomCode || "—"} · ${x.billCode || "—"}`;
 
 export function TransactionsView() {
   const [tab, setTab] = useState<Tab>("all");
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
-  const [linking, setLinking] = useState<Transaction | null>(null);
+  const [linking, setLinking] = useState<Tx | null>(null);
   useEffect(() => {
     const id = setTimeout(() => setQ(text.trim()), 300);
     return () => clearTimeout(id);
@@ -78,7 +76,7 @@ export function TransactionsView() {
       </AppFrame>
     );
 
-  const linkButton = (x: Transaction, className?: string) =>
+  const linkButton = (x: Tx, className?: string) =>
     canLink &&
     x.reconciliation === "UNMATCHED" &&
     x.paymentEventId && (
@@ -152,12 +150,14 @@ export function TransactionsView() {
             {rows.map((x) => (
               <Card key={x.id} className="gap-1.5 p-4 shadow-none">
                 <div className="flex items-center justify-between gap-2">
-                  <b className="text-[19px]">{formatVnd(x.amount)}</b>
+                  <b className={cn("text-[19px]", x.amount < 0 && "text-destructive")}>
+                    {amountLine(x)}
+                  </b>
                   <Pill x={x} />
                 </div>
                 <p className="flex justify-between text-[14px] text-ink-2">
                   <span>
-                    {clockOf(x.at)} · {method(x)}
+                    {shownTime(x)} · {methodLine(x)}
                   </span>
                   <span>{roomBill(x)}</span>
                 </p>
@@ -190,10 +190,21 @@ export function TransactionsView() {
                         key={x.id}
                         className="h-[54px] border-t border-border transition-colors duration-100 hover:bg-sunken/50"
                       >
-                        <td className="px-3 pl-5">{clockOf(x.at)}</td>
+                        <td className="px-3 pl-5 leading-tight">
+                          {shownTime(x)}
+                          {settledNote(x) && (
+                            <span className="block text-[12px] text-muted-foreground">
+                              {settledNote(x)}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-3">
-                          <b className="block text-[15px]">{formatVnd(x.amount)}</b>
-                          <span className="text-[12px] text-muted-foreground">{method(x)}</span>
+                          <b
+                            className={cn("block text-[15px]", x.amount < 0 && "text-destructive")}
+                          >
+                            {amountLine(x)}
+                          </b>
+                          <span className="text-[12px] text-muted-foreground">{methodLine(x)}</span>
                         </td>
                         <td className="px-3 font-mono text-[13px]">{roomBill(x)}</td>
                         <td className="px-3">
@@ -226,7 +237,7 @@ export function TransactionsView() {
   );
 }
 
-function downloadCsv(rows: Transaction[]) {
+function downloadCsv(rows: Tx[]) {
   const cell = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const lines = rows.map((x) =>
     [x.at, String(x.amount), x.method, x.roomCode ?? "", x.billCode ?? "", x.reconciliation]

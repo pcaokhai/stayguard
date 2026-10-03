@@ -65,6 +65,17 @@ export function alertDetails(a: Alert): string {
 }
 
 export const kindLabel = (a: Alert) => t(`alerts.kind.${alertKind(a)}` as MessageKey);
+export const isResolved = (a: Alert) => !!a.resolvedAt;
+
+// "Đã giải quyết lúc HH:MM · đã thu tiền": a resolved alert stays in the list, muted, with how it ended.
+export function resolvedLine(a: Alert): string | null {
+  if (!a.resolvedAt) return null;
+  const time = clockOf(a.resolvedAt);
+  return a.resolution
+    ? tf("alerts.resolvedBy", { time, how: t(`alerts.resolution.${a.resolution}` as MessageKey) })
+    : tf("alerts.resolved", { time });
+}
+
 export const roomOrShift = (a: Alert) => a.roomCode || a.details?.shiftName || "—";
 
 // Where "Open" goes: a stay-related alert opens the owner's stay timeline, never the front-desk stay page.

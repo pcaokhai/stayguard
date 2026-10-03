@@ -240,7 +240,8 @@
     "bell": "Cảnh báo",
     "noPayments": "Chưa có khoản nào hôm nay.",
     "quick": "Lối tắt",
-    "maintShort": "Bảo trì"
+    "maintShort": "Bảo trì",
+    "cashIncludes": "gồm quỹ đầu ca và tiền cọc"
   },
   "state": {
     "retry": "Thử lại",
@@ -434,6 +435,13 @@
       "fallback": "{kind}",
       "REFUND_PENDING": "Chờ hoàn {amount} cho khách",
       "SEPAY_UPDATED": "Người cài đặt đã cập nhật kết nối SePay lúc {when}"
+    },
+    "resolved": "Đã giải quyết lúc {time}",
+    "resolvedBy": "Đã giải quyết lúc {time} · {how}",
+    "resolution": {
+      "PAID": "đã thu tiền",
+      "REFUNDED": "đã hoàn tiền",
+      "LINKED": "đã gán phiếu"
     }
   },
   "activity": {
@@ -685,7 +693,9 @@
     "amountMismatch": "Số tiền không khớp phiếu này.",
     "linkFailed": "Chưa gán được. Thử lại.",
     "invoiceNotOpen": "Phiếu này đã thanh toán",
-    "mismatchLine": "Khoản này {amount}, phiếu còn {balance}"
+    "mismatchLine": "Khoản này {amount}, phiếu còn {balance}",
+    "settledAt": "gán lúc {time}",
+    "cashRefund": "Hoàn tiền mặt"
   },
   "shifts": {
     "title": "Các ca đã đóng",

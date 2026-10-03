@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { setLocale } from "@/lib/locale";
-import { alertDetails, alertHref, alertKind, kindLabel, type Alert } from "./text";
+import {
+  alertDetails,
+  alertHref,
+  alertKind,
+  isResolved,
+  kindLabel,
+  resolvedLine,
+  type Alert,
+} from "./text";
 
 const base = { id: "a1", createdAt: "2026-10-03T07:05:00Z", roomCode: "A101", stayId: "st1" };
 const mk = (kind: string, extra: Partial<Alert> = {}): Alert =>
@@ -77,6 +85,37 @@ describe("where Xem goes", () => {
     );
     expect(alertHref(mk("UNMATCHED_TRANSFER", { stayId: null, roomCode: null }))).toBe(
       "/owner/transactions",
+    );
+  });
+});
+
+describe.each(["vi", "en"] as const)("resolved alerts in %s", (locale) => {
+  beforeEach(() => setLocale(locale));
+  const pick = (vi: string, en: string) => (locale === "vi" ? vi : en);
+  const at = new Date(2026, 9, 3, 14, 5).toISOString();
+
+  test("an unresolved alert has no resolved line", () => {
+    expect(resolvedLine(mk("PAYMENT_UNPAID", { resolvedAt: null, resolution: null }))).toBeNull();
+    expect(isResolved(mk("PAYMENT_UNPAID", { resolvedAt: null }))).toBe(false);
+  });
+
+  test("a resolved alert says when and how", () => {
+    const a = mk("PAYMENT_UNPAID", { resolvedAt: at, resolution: "PAID" });
+    expect(isResolved(a)).toBe(true);
+    expect(resolvedLine(a)).toBe(
+      pick("Đã giải quyết lúc 14:05 · đã thu tiền", "Resolved at 14:05 · paid"),
+    );
+    expect(
+      resolvedLine(mk("REFUND_PENDING", { resolvedAt: at, resolution: "REFUNDED" })),
+    ).toContain(pick("đã hoàn tiền", "refunded"));
+    expect(
+      resolvedLine(mk("UNMATCHED_TRANSFER", { resolvedAt: at, resolution: "LINKED" })),
+    ).toContain(pick("đã gán phiếu", "linked"));
+  });
+
+  test("a resolved alert without a known resolution still shows the time", () => {
+    expect(resolvedLine(mk("OVERPAID", { resolvedAt: at, resolution: null }))).toBe(
+      pick("Đã giải quyết lúc 14:05", "Resolved at 14:05"),
     );
   });
 });

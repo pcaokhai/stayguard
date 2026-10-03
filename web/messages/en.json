@@ -240,7 +240,8 @@
     "bell": "Alerts",
     "noPayments": "No payments yet today.",
     "quick": "Shortcuts",
-    "maintShort": "Maint."
+    "maintShort": "Maint.",
+    "cashIncludes": "includes the shift float and deposits"
   },
   "state": {
     "retry": "Retry",
@@ -434,6 +435,13 @@
       "fallback": "{kind}",
       "REFUND_PENDING": "{amount} to refund to the guest",
       "SEPAY_UPDATED": "The installer updated the SePay connection at {when}"
+    },
+    "resolved": "Resolved at {time}",
+    "resolvedBy": "Resolved at {time} · {how}",
+    "resolution": {
+      "PAID": "paid",
+      "REFUNDED": "refunded",
+      "LINKED": "linked"
     }
   },
   "activity": {
@@ -685,7 +693,9 @@
     "amountMismatch": "The amount does not match this bill.",
     "linkFailed": "Could not link. Try again.",
     "invoiceNotOpen": "This bill is already paid",
-    "mismatchLine": "This transfer is {amount}, the bill still needs {balance}"
+    "mismatchLine": "This transfer is {amount}, the bill still needs {balance}",
+    "settledAt": "linked at {time}",
+    "cashRefund": "Cash refund"
   },
   "shifts": {
     "title": "Closed shifts",
