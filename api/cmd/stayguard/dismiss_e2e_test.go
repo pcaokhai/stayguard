@@ -4,8 +4,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 // dismissUnmatchedTransfer: the owner closes an unmatched inbound transfer with a note (a typo, a refund, money that is not ours).
@@ -81,5 +83,33 @@ func TestDismissUnmatchedTransfer_OnlyUnmatched_FU(t *testing.T) {
 		if st, raw := r.e.send("POST", "/v1/owner/payment-events/"+id+"/dismiss", owner, newKey(), note); st != 409 {
 			t.Fatalf("%s: %d %s, want 409", id, st, raw)
 		}
+	}
+}
+
+// The audit entry of a dismissal carries the note, who did it and when, and the activity log lists it (category MONEY).
+func TestDismissUnmatchedTransfer_ActivityLogShowsIt_FU(t *testing.T) {
+	r := deskRig(t)
+	owner := r.ownerToken()
+	if res, err := r.handler().Settle(context.Background(), r.event("bank-d9", 31_000, "khong ro")); err != nil || res.Result != "UNMATCHED" {
+		t.Fatalf("unmatched: %+v %v", res, err)
+	}
+	id := r.eventID("test", "bank-d9")
+	at := r.e.clock.Now()
+	if st, raw := r.e.send("POST", "/v1/owner/payment-events/"+id+"/dismiss", owner, newKey(), map[string]any{"note": "guest sent it to the wrong house"}); st != 200 {
+		t.Fatalf("dismiss: %d %s", st, raw)
+	}
+	st, raw := r.e.send("GET", "/v1/owner/audit-logs?from="+time.Now().UTC().Add(-24*60*60e9).Format("2006-01-02")+"&to="+at.UTC().Add(48*60*60e9).Format("2006-01-02"), owner, "", nil)
+	var row map[string]any
+	for _, it := range parse(raw)["items"].([]any) {
+		if m := it.(map[string]any); m["action"] == "payment.dismissed" {
+			row = m
+		}
+	}
+	d, _ := row["details"].(map[string]any)
+	got, _ := time.Parse(time.RFC3339, fmt.Sprint(row["at"]))
+	if st != 200 || row == nil || row["category"] != "MONEY" || row["actorName"] == nil || row["actorName"] == "" || row["actorRole"] != "OWNER" || time.Since(got) > time.Minute || time.Until(got) > time.Minute || // audit rows are stamped by the database clock
+
+		d["note"] != "guest sent it to the wrong house" || d["amount"] != "31000" || d["eventId"] != id {
+		t.Fatalf("activity log row: %d %v", st, row)
 	}
 }
