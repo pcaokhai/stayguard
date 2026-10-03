@@ -596,7 +596,17 @@
     "failed": "Không kết ca được. Kiểm tra lý do và quỹ để lại rồi thử lại.",
     "noShift": "Bạn chưa có ca đang mở.",
     "less": "Giảm",
-    "more": "Tăng"
+    "more": "Tăng",
+    "mv": {
+      "OPENING_FLOAT": "Quỹ đầu ca",
+      "DEPOSIT": "Tiền cọc",
+      "PAYMENT": "Thu tiền",
+      "REFUND": "Hoàn tiền",
+      "PAYOUT": "Chi tiền"
+    },
+    "byOwner": "do chủ",
+    "showMovements": "Xem chi tiết",
+    "hideMovements": "Ẩn chi tiết"
   },
   "payout": {
     "title": "Ghi khoản chi",

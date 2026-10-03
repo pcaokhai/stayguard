@@ -266,6 +266,34 @@ const SHIFT = {
   transfersReceived: 2180000,
   buildingIds: ["A"],
   unpaidInvoices: [],
+  // The ledger behind the expected cash (the real API sends the same rows, in time order).
+  movements: [
+    {
+      at: ago(470),
+      roomCode: null,
+      billCode: null,
+      kind: "OPENING_FLOAT",
+      amount: 500000,
+      byOwner: false,
+    },
+    {
+      at: ago(400),
+      roomCode: "A101",
+      billCode: "PH0930A101",
+      kind: "DEPOSIT",
+      amount: 100000,
+      byOwner: false,
+    },
+    {
+      at: ago(300),
+      roomCode: "A101",
+      billCode: "PH0930A101",
+      kind: "PAYMENT",
+      amount: 1180000,
+      byOwner: false,
+    },
+    { at: ago(120), roomCode: null, billCode: null, kind: "PAYOUT", amount: -30000, byOwner: true },
+  ],
 };
 const id = (num: boolean, front: boolean, back: boolean) => ({
   hasIdNumber: num,

@@ -12,6 +12,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 type Stay = components["schemas"]["Stay"];
 const stay = (pendingPayment: Stay["pendingPayment"]): Stay => ({
   id: "s1",
+  invoiceId: "iv1",
+  billCode: "PH1003A103",
   roomId: "r1",
   roomCode: "A103",
   rentalType: "HOURLY",

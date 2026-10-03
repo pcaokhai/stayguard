@@ -16,17 +16,22 @@ const row = "flex justify-between gap-3 text-sm";
 // Reopens the payment of a checked-out stay. With a transfer payment already there the pay screen
 // opens on it; otherwise the invoice (checkout is idempotent) gets a payment through createPayment.
 // A fresh Idempotency-Key per user action; amounts are the API's.
-function useResume(stayId: string, roomId: string, pending: Pending) {
+function useResume(stayId: string, roomId: string, pending: Pending, invoiceId?: string) {
   const router = useRouter();
   return useMutation({
     mutationFn: async (method: "TRANSFER" | "CASH") => {
       if (method === "TRANSFER" && pending.paymentId) return { id: pending.paymentId, method };
-      const co = await api.POST("/v1/stays/{stayId}/checkout", {
-        params: { path: { stayId }, header: idempotencyHeader(newIdempotencyKey()) },
-      });
-      if (!co.data) throw new Error("checkoutStay failed");
+      // getStay carries the frozen invoice id; the idempotent check-out is only the fallback for an older API.
+      const invoice =
+        invoiceId ??
+        (
+          await api.POST("/v1/stays/{stayId}/checkout", {
+            params: { path: { stayId }, header: idempotencyHeader(newIdempotencyKey()) },
+          })
+        ).data?.id;
+      if (!invoice) throw new Error("no invoice");
       const pay = await api.POST("/v1/invoices/{invoiceId}/payments", {
-        params: { path: { invoiceId: co.data.id }, header: idempotencyHeader(newIdempotencyKey()) },
+        params: { path: { invoiceId: invoice }, header: idempotencyHeader(newIdempotencyKey()) },
         body: { method },
       });
       if (!pay.data) throw new Error("createPayment failed");
@@ -42,13 +47,15 @@ export function ResumePayment({
   roomId,
   pending,
   readOnly,
+  invoiceId,
 }: {
   stayId: string;
   roomId: string;
   pending: Pending;
   readOnly: boolean;
+  invoiceId?: string;
 }) {
-  const resume = useResume(stayId, roomId, pending);
+  const resume = useResume(stayId, roomId, pending, invoiceId);
   const refund = pending.remaining === 0 && pending.refundDue > 0;
   const check = pending.remaining === 0 && pending.refundDue === 0;
   return (

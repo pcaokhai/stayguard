@@ -134,6 +134,7 @@ export function CheckoutView() {
                 roomId={s.roomId}
                 pending={s.pendingPayment}
                 readOnly={false}
+                invoiceId={s.invoiceId}
               />
             ) : (
               <>

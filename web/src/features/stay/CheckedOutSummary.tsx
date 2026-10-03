@@ -1,13 +1,11 @@
 "use client";
 
 import { Receipt } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
 import type { components } from "../../api/generated/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api, idempotencyHeader, newIdempotencyKey } from "../../lib/api";
 import { localized, lp } from "../../lib/locale";
 import { formatVnd } from "../../lib/money";
 import { t, tf } from "../../lib/t";
@@ -22,21 +20,8 @@ const row = "flex justify-between gap-3 text-[15px]";
 // Nothing here acts on the stay (no check-out, extras, time edit or move) and nothing is "running": the bill
 // is the frozen one and every amount is the API's. Unpaid or refund pending offers the resume action instead.
 export function CheckedOutSummary({ stay }: { stay: Stay }) {
-  const router = useRouter();
   const q = stay.quote;
   const p = stay.pendingPayment;
-  // The invoice id is not on the stay: repeating the (idempotent) check-out returns the same invoice.
-  const receipt = useMutation({
-    mutationFn: async () => {
-      const { data } = await api.POST("/v1/stays/{stayId}/checkout", {
-        params: { path: { stayId: stay.id }, header: idempotencyHeader(newIdempotencyKey()) },
-      });
-      if (!data) throw new Error("checkoutStay failed");
-      return data.id;
-    },
-    onSuccess: (id) => router.push(lp(`/receipt?invoice=${id}`)),
-  });
-
   return (
     <div className="flex flex-col gap-3">
       <Card className="gap-2 p-5 shadow-none">
@@ -85,22 +70,22 @@ export function CheckedOutSummary({ stay }: { stay: Stay }) {
         </p>
       </Card>
       {p ? (
-        <ResumePayment stayId={stay.id} roomId={stay.roomId} pending={p} readOnly={false} />
+        <ResumePayment
+          stayId={stay.id}
+          roomId={stay.roomId}
+          pending={p}
+          readOnly={false}
+          invoiceId={stay.invoiceId}
+        />
       ) : (
-        <Button
-          variant="outline"
-          size="lg"
-          loading={receipt.isPending}
-          onClick={() => receipt.mutate()}
-        >
-          <Receipt aria-hidden="true" />
-          {t("stay.viewReceipt")}
-        </Button>
-      )}
-      {receipt.isError && (
-        <p role="alert" className="text-sm text-warn">
-          {t("receipt.failed")}
-        </p>
+        stay.invoiceId && (
+          <Button asChild variant="outline" size="lg">
+            <Link href={lp(`/receipt?invoice=${stay.invoiceId}`)}>
+              <Receipt aria-hidden="true" />
+              {t("stay.viewReceipt")}
+            </Link>
+          </Button>
+        )
       )}
     </div>
   );

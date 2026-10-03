@@ -21,6 +21,7 @@ import { useMe } from "../session/useMe";
 import { t, tf } from "../../lib/t";
 import { formatClock } from "../../lib/time";
 import { useCloseShift, useCurrentShift } from "./hooks";
+import { ShiftLine } from "./ShiftLine";
 
 const DENOMINATIONS = [500000, 200000, 100000, 50000, 20000, 10000] as const;
 const row = "flex justify-between gap-3 text-[15px]";
@@ -37,6 +38,7 @@ export function ShiftView() {
   const [floatLeft, setFloatLeft] = useState<string>();
   const s = shift.data;
   const user = useMe().data?.user;
+  const by = (...kinds: string[]) => (s?.movements ?? []).filter((m) => kinds.includes(m.kind));
 
   if (shift.isError)
     return (
@@ -97,18 +99,21 @@ export function ShiftView() {
           <div className="flex flex-1 flex-col gap-3 px-5 pb-8 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-5">
             <Card className="gap-2.5 p-5 shadow-none lg:col-start-1 lg:row-start-1">
               <h2 className="font-bold">{t("shift.expects")}</h2>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("shift.float")}</span>
-                <span>{formatVnd(s.openingFloat)}</span>
-              </p>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("shift.cashIn")}</span>
-                <span>{formatVnd(s.cashIn)}</span>
-              </p>
-              <p className={`${row} text-ink-2`}>
-                <span>{t("shift.cashOut")}</span>
-                <span>−{formatVnd(s.cashOut)}</span>
-              </p>
+              <ShiftLine
+                label={t("shift.float")}
+                value={formatVnd(s.openingFloat)}
+                movements={by("OPENING_FLOAT")}
+              />
+              <ShiftLine
+                label={t("shift.cashIn")}
+                value={formatVnd(s.cashIn)}
+                movements={by("DEPOSIT", "PAYMENT")}
+              />
+              <ShiftLine
+                label={t("shift.cashOut")}
+                value={`−${formatVnd(s.cashOut)}`}
+                movements={by("REFUND", "PAYOUT")}
+              />
               <Link
                 href={lp("/shift/payout")}
                 className="w-fit py-1 text-sm font-bold text-primary underline"

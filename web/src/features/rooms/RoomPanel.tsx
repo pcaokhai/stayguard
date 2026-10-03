@@ -71,7 +71,13 @@ function StayBody({ room, stayId, readOnly }: { room: Room; stayId: string; read
       {s.guestId &&
         (owner ? <OwnerIdRow stayId={s.id} ids={s.guestId} /> : <IdChips ids={s.guestId} />)}
       {pending ? (
-        <ResumePayment stayId={s.id} roomId={room.id} pending={pending} readOnly={readOnly} />
+        <ResumePayment
+          stayId={s.id}
+          roomId={room.id}
+          pending={pending}
+          readOnly={readOnly}
+          invoiceId={s.invoiceId}
+        />
       ) : null}
       {pending ? null : (
         <>

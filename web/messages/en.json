@@ -596,7 +596,17 @@
     "failed": "Could not close the shift. Check the reason and the float, then try again.",
     "noShift": "You have no open shift.",
     "less": "Less",
-    "more": "More"
+    "more": "More",
+    "mv": {
+      "OPENING_FLOAT": "Opening float",
+      "DEPOSIT": "Deposit",
+      "PAYMENT": "Payment",
+      "REFUND": "Refund",
+      "PAYOUT": "Payout"
+    },
+    "byOwner": "by owner",
+    "showMovements": "Show details",
+    "hideMovements": "Hide details"
   },
   "payout": {
     "title": "Record a payout",

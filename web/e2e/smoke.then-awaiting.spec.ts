@@ -333,7 +333,7 @@ test("a checked-out stay opened on /stay is a read-only summary; a reopened chec
   await page.goto(stayUrl);
   await expect(page.getByText(/Checked out at \d/)).toBeVisible();
   await expect(page.getByText("Paid", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "View receipt" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "View receipt" })).toBeVisible();
   await gone(page.locator("body"));
   await page.setViewportSize({ width: 390, height: 844 }); // tiles are links on a phone
   await clean(page, /A101/);

@@ -131,6 +131,9 @@ test("receptionist money path from check-in to closed shift, and the owner sees 
   // 7. Close the shift: the first cash action (the deposit) opened it, so the drawer should hold exactly that deposit.
   await page.goto("/en/shift");
   await expect(page.getByText("Close shift").first()).toBeVisible();
+  // The cash-taken line opens onto the ledger rows behind it: the deposit taken at check-in, with its room.
+  await page.getByRole("button", { name: /Cash taken this shift.*Show details/ }).click();
+  await expect(page.getByText(/A101 · Deposit/)).toBeVisible();
   await expect(page.getByText("Cash expected").locator("xpath=following::*[1]")).toContainText(
     "100,000",
   );
