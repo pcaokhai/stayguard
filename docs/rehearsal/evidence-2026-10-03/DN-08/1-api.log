@@ -1,0 +1,4 @@
+GET /v1/owner/overview 
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}
+GET /v1/shifts/current 
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}

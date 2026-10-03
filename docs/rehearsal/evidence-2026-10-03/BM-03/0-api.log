@@ -1,2 +1,0 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"linh","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:16.870402Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FGJDX8HANVYCKWHDQRH32","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}

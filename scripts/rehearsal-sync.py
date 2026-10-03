@@ -15,6 +15,7 @@ HEADERS = {"id": {"id", "ma", "mã"}, "status": {"status", "trang thai", "trạn
            "notes": {"notes", "note", "ghi chu", "ghi chú", "ghi chú, bằng chứng"}}
 AUTO = "QA tự động"  # prefix of the one line this script keeps in the notes cell
 MANUAL = {"manual", "thu cong", "thủ công"}
+SKIPPED = {"bỏ qua", "bo qua"}  # rows Khai set to Bỏ qua (out of scope): never written
 MANUAL_NOTE = re.compile(r"\[(manual|thủ công)\]", re.I)
 
 
@@ -117,6 +118,9 @@ def sync(xlsx, results, date, status_map):
             rid = cells.get(cols["id"], "")
             if rid not in results:
                 return rm.group(0)
+            if cells.get(cols["status"], "").lower() in SKIPPED:
+                report.append(f"{name}!{rid}: Bỏ qua, left alone")
+                return rm.group(0)
             note_now = cells.get(cols.get("notes", ""), "")
             if any(t.lower() in MANUAL for t in cells.values()) or MANUAL_NOTE.search(note_now):
                 report.append(f"{name}!{rid}: manual row, left alone")
@@ -171,6 +175,7 @@ def selftest():
         + row(4, [t("A4", "TT-03"), t("B4", "manual"), t("C4", "giữ")])
         + row(5, [t("A5", "TT-04"), '<c r="C5"><f>1+1</f><v>2</v></c>'])
         + row(6, [t("A6", "TT-05"), t("C6", "Chưa làm")])
+        + row(7, [t("A7", "TT-06"), t("C7", "Bỏ qua")])
         + "</sheetData></worksheet>"
     )
     with zipfile.ZipFile(x, "w") as z:
@@ -179,7 +184,7 @@ def selftest():
         z.writestr("xl/_rels/workbook.xml.rels", '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>')
         z.writestr("xl/worksheets/sheet1.xml", sheet)
     res = {k: {"id": k, "status": st, "notes": n, "evidence": "ev/" + k} for k, st, n in
-           [("TT-01", "pass", ""), ("TT-02", "fail", "boom"), ("TT-03", "fail", ""), ("TT-04", "fail", "x"), ("TT-05", "pass", "")]}
+           [("TT-01", "pass", ""), ("TT-02", "fail", "boom"), ("TT-03", "fail", ""), ("TT-04", "fail", "x"), ("TT-05", "pass", ""), ("TT-06", "fail", "z")]}
     sync(x, res, "2026-10-03", {"pass": "", "fail": "Lỗi", "skip": ""})
     out = zipfile.ZipFile(x).read("xl/worksheets/sheet1.xml").decode()
     r = lambda n: out.split(f'<row r="{n}">')[1].split("</row>")[0]
@@ -189,6 +194,7 @@ def selftest():
     assert "QA tự động" not in r(4) and ">giữ<" in r(4), r(4)  # the manual row
     assert "<f>1+1</f>" in r(5) and "Lỗi" not in r(5), r(5)  # formula kept
     assert ">Chưa làm<" in r(6) and "pass" in r(6), r(6)  # status untouched on a pass
+    assert "QA tự động" not in r(7) and ">Bỏ qua<" in r(7) and "Lỗi" not in r(7), r(7)  # out of scope: never written
     shutil.rmtree(d)
     print("selftest ok")
 

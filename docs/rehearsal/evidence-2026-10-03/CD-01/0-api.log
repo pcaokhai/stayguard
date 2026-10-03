@@ -1,0 +1,16 @@
+POST /v1/auth/sign-in {"guesthouseCode":"rh11ce74","username":"owner","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T23:43:53.073137Z","mustChangePin":false,"tenantId":"tn_01M40S5PXMPY7RENBTZJAW4FGE","user":{"id":"us_01M40S5PYE5NEH8MHM1FK2DB4H","locale":"en","name":"Smoke Owner","role":"OWNER"}}
+GET /v1/owner/bank-accounts 
+  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40S5PXM0558V83QKBKDF98N","isDefault":true,"lastWebhookAt":"2026-10-03T11:43:52.729843Z","sepayStatus":"CONNECTED"}]}
+POST /v1/owner/bank-accounts {"bankBin":"970436","accountNo":"2222233333","accountName":"SECOND DEMO","ownerPin":"***"}
+  -> 201 {"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40S7TMGNM0PE9AQ9A55VN1Z","isDefault":false,"sepayStatus":"PENDING"}
+GET /v1/owner/bank-accounts 
+  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40S5PXM0558V83QKBKDF98N","isDefault":true,"lastWebhookAt":"2026-10-03T11:43:52.729843Z","sepayStatus":"CONNECTED"},{"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40S7TMGNM0PE9AQ9A55VN1Z","isDefault":false,"sepayStatus":"PENDING"}]}
+POST /v1/owner/bank-accounts/ba_01M40S7TMGNM0PE9AQ9A55VN1Z/make-default {"ownerPin":"***"}
+  -> 409 {"type":"about:blank","title":"Conflict","status":409,"code":"CONFLICT"}
+POST /v1/owner/bank-accounts/ba_01M40S5PXM0558V83QKBKDF98N/remove {"ownerPin":"***"}
+  -> 409 {"type":"about:blank","title":"Conflict","status":409,"code":"CONFLICT"}
+POST /v1/owner/bank-accounts/ba_01M40S7TMGNM0PE9AQ9A55VN1Z/remove {"ownerPin":"***"}
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"OWNER_PIN_INVALID"}
+POST /v1/owner/bank-accounts/ba_01M40S7TMGNM0PE9AQ9A55VN1Z/remove {"ownerPin":"***"}
+  -> 204 ""

@@ -1,0 +1,12 @@
+Error: the screen says there is no connection
+
+expect(locator).toBeVisible() failed
+
+Locator: getByText(/no internet|offline|connection/i).first()
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - the screen says there is no connection getByText(/no internet|offline|connection/i).first() with timeout 5000ms
+  - waiting for getByText(/no internet|offline|connection/i).first()

@@ -1,6 +1,4 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"owner","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:15.606007Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FGJ7G486WZTCDJ8EGS4D6","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FGJ7G486WZTCDJ8EGS4D6","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40S5PXMRF3SZ1GQ5SFB9DDB","level":"EDIT"},{"buildingId":"bd_01M40S7W2N87FER69WG4BG38V7","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40S5PXMPY7RENBTZJAW4FGE","name":"Rehearsal Test rh11ce74","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40S5PYE5NEH8MHM1FK2DB4H","locale":"en","name":"Smoke Owner","role":"OWNER"}}
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FGJ7G486WZTCDJ8EGS4D6","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40S5PXMRF3SZ1GQ5SFB9DDB","level":"EDIT"},{"buildingId":"bd_01M40S7W2N87FER69WG4BG38V7","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40S5PXMPY7RENBTZJAW4FGE","name":"Rehearsal Test rh11ce74","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40S5PYE5NEH8MHM1FK2DB4H","locale":"en","name":"Smoke Owner","role":"OWNER"}}

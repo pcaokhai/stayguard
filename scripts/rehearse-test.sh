@@ -35,9 +35,17 @@ ENV
 fi
 set -a; . "$ENV_FILE"; set +a
 
+# One run at a time on this machine: two runs share the compose project, and the second one's `up --build` recreates the API under the first.
+LOCK="${TMPDIR:-/tmp}/stayguard-rehearse-test.lock"
+if ! mkdir "$LOCK" 2>/dev/null; then
+	if kill -0 "$(cat "$LOCK/pid" 2>/dev/null)" 2>/dev/null; then echo "FAIL: another rehearse-test is running (pid $(cat "$LOCK/pid")); wait for it" >&2; exit 3; fi
+	rm -rf "$LOCK"; mkdir "$LOCK"
+fi
+echo $$ >"$LOCK/pid"
 log="$(mktemp)"; tenant_file="$(mktemp)"; pins_file="$(mktemp)"
 cleanup() {
 	status=$?
+	rm -rf "$LOCK"
 	rm -f "$log" "$tenant_file"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file.set"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file"
@@ -75,10 +83,10 @@ t = json.load(open("scripts/smoke/tenant.json"))
 t["guesthouseCode"] = sys.argv[2]
 t["name"] = t["property"]["name"] = "Rehearsal Test " + sys.argv[2]
 t["bankAccount"]["accountName"] = "REHEARSAL TEST"
-t["buildings"] = [{"code": "A", "name": "Building A", "floors": 3, "roomsPerFloor": 40}]
+t["buildings"] = [{"code": "A", "name": "Building A", "floors": 4, "roomsPerFloor": 50}]
 contract = {"payType": "MONTHLY", "rate": 6000000, "fixedAllowance": 0, "standardShifts": 26, "startDate": "2026-01-01", "annualLeaveDays": 12}
-# One receptionist per concern (r1..r12) so shift cases never share a drawer, and one housekeeper.
-for i in range(1, 13):
+# One receptionist per concern (r1..r16) so shift cases never share a drawer, and one housekeeper.
+for i in range(1, 17):
     t["staff"].append({"name": f"Rehearsal R{i}", "username": f"r{i}", "position": "FRONT_DESK", "appAccess": "RECEPTIONIST",
                        "contract": contract, "buildingAccess": {"A": "EDIT"}})
 t["staff"].append({"name": "Rehearsal Housekeeper", "username": "hk", "position": "HOUSEKEEPING", "appAccess": "HOUSEKEEPING",
@@ -123,7 +131,7 @@ rm -rf "$OUT/evidence-$DATE/_pw"
 echo "== results: $OUT/results-$DATE.csv"
 python3 - "$OUT/results-$DATE.csv" <<'PY'
 import collections, csv, sys
-n = collections.Counter(r["status"] for r in csv.DictReader(open(sys.argv[1])))
+n = collections.Counter(r["status"] for r in csv.DictReader(open(sys.argv[1])) if r["id"] and not r["id"].startswith("#") and r["id"] != "suite")
 print(f"pass {n['pass']}  fail {n['fail']}  skip {n['skip']}")
 PY
 if [ "${RH_SHOTS:-0}" = 1 ]; then scripts/rehearsal-shots.sh; fi

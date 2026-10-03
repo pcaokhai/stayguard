@@ -1,6 +1,0 @@
-Error: not in the unmatched list
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: false
-Received: true

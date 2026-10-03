@@ -449,12 +449,16 @@ export const stack = {
   },
 };
 /** Backdates one invoice, then runs the jobs once: what the alert rules would see after the waiting. Returns the jobs' own summary. */
-export function raiseAlerts(kind: "partial" | "unpaid", billCode: string, minutes: number) {
+export function raiseAlerts(
+  kind: "partial" | "unpaid" | "stay",
+  billCode: string,
+  minutes: number,
+) {
   backdate(kind, billCode, minutes);
   return stack.jobsOnce();
 }
 /** scripts/rehearsal-backdate.sh: moves the time of one invoice back in the rehearsal database only (it refuses elsewhere). */
-export function backdate(kind: "partial" | "unpaid", billCode: string, minutes: number) {
+export function backdate(kind: "partial" | "unpaid" | "stay", billCode: string, minutes: number) {
   return execFileSync("scripts/rehearsal-backdate.sh", [kind, billCode, String(minutes)], {
     cwd: cfg.root,
     encoding: "utf8",

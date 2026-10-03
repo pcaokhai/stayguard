@@ -12,12 +12,21 @@ const csv = (v: string) => `"${v.replace(/"/g, '""')}"`;
 class CsvReporter implements Reporter {
   private rows: string[] = [];
   private counts = { pass: 0, fail: 0, skip: 0 };
+  private suites = new Map<string, { pass: number; fail: number; skip: number; secs: number }>();
 
   onTestEnd(test: TestCase, result: TestResult) {
     const id = test.title.split(" ")[0];
     const status =
       result.status === "passed" ? "pass" : result.status === "skipped" ? "skip" : "fail";
     this.counts[status] += 1;
+    const suite = test.location.file
+      .split("/")
+      .pop()!
+      .replace(/\.spec\.ts$/, "");
+    const sc = this.suites.get(suite) ?? { pass: 0, fail: 0, skip: 0, secs: 0 };
+    sc[status] += 1;
+    sc.secs += result.duration / 1000;
+    this.suites.set(suite, sc);
     const dir = join(evidence, id);
     mkdirSync(dir, { recursive: true });
     result.attachments.forEach((a, i) => {
@@ -51,9 +60,21 @@ class CsvReporter implements Reporter {
   onEnd(_result: FullResult) {
     rmSync(join(evidence, "_pw"), { recursive: true, force: true });
     mkdirSync(out, { recursive: true });
+    // The demo-check: one line per suite (spec file), after the cases.
+    const demo = [...this.suites].map(
+      ([n, c]) =>
+        `${n},${c.fail ? "fail" : "pass"},${c.pass},${c.fail},${c.skip},${c.secs.toFixed(1)}`,
+    );
     writeFileSync(
       join(out, `results-${date}.csv`),
-      ["id,title,status,duration_s,evidence,notes", ...this.rows].join("\n") + "\n",
+      [
+        "id,title,status,duration_s,evidence,notes",
+        ...this.rows,
+        "",
+        "# demo-check",
+        "suite,status,pass,fail,skip,duration_s",
+        ...demo,
+      ].join("\n") + "\n",
     );
     const c = this.counts;
     console.log(`rehearsal: pass ${c.pass}  fail ${c.fail}  skip ${c.skip}`);

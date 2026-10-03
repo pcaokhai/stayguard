@@ -1,2 +1,0 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"mina","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:18.359726Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FGJM783TGF3D47CD7EGMS","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}

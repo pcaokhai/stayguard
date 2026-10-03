@@ -22,12 +22,16 @@ SePay secret with `sepay set-secret`, and runs the specs. Files run in name orde
 - `evidence-<date>/<id>/`: screenshots (taken at the end of every UI case), `api.log` (every API call and webhook the case made, secrets and ID numbers masked), `error.txt` on failure. Videos and zips are git-ignored.
 - `shots-<date>/index.html`: the visual sweep contact sheet (git-ignored; open it locally).
 
+Scope: portfolio demo, no real customer. Rows the checklist marks Bỏ qua are never written by the sync, and nothing needing a real phone, printer or bank is automated.
+The CSV ends with a `# demo-check` section: one line per suite (spec file) with status, pass, fail, skip and seconds. Open bugs are in `bugs.md`.
+Only one run at a time: the runner takes a lock, because two runs share the compose project.
+
 ## Case ids
 
 The ids are the ones in `checklist.xlsx` (Mã). The title of each test starts with the id, and `scripts/rehearsal-sync.py` matches on it.
 Automated: TT-01 to TT-14, TT-17, TT-20, TT-23 to TT-27 (money); CA-01 to CA-07, CA-10 (shift); DP-01, DP-02, DP-04 to DP-06, DP-09
 (rooms); DN-01 to DN-07, DN-09, DN-12, DN-13 (roles); GT-02, GT-03, GT-05 (via DN-12), GT-06, GT-08 (guest ID); TD-02, TD-06;
-BM-01 to BM-04; VH-05, VH-06; CD-10.
+BM-01 to BM-04; VH-05, VH-06; CD-10; LO-01 to LO-05, LO-07 to LO-10; CD-01 to CD-05, CD-08, CD-09; TD-01, TD-03, TD-04, TD-05, TD-07, TD-08; GD-03 to GD-07; GT-01, GT-04, GT-07, GT-09; DN-08, DN-10, DN-11.
 
 Proposed new rows (not in the sheet yet):
 

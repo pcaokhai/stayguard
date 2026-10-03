@@ -1,0 +1,6 @@
+Error: the API says the alert was read
+
+expect(received).toMatch(expected)
+
+Expected pattern: /read/i
+Received string:  "{\"amount\":70000,\"createdAt\":\"2026-10-03T11:42:56.962973Z\",\"details\":{\"eventId\":\"pe_01M40S63E32MWNKSQZ0DVZ83S4\",\"transferNote\":\"no bill code, AL-05\"},\"id\":\"al_01M40S63E3JS1FK1QGT4GVK6D0\",\"kind\":\"UNMATCHED_TRANSFER\",\"resolution\":\"LINKED\",\"resolvedAt\":\"2026-10-03T11:42:57.112793Z\"}"

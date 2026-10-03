@@ -377,6 +377,13 @@ test("TT-17 a signed webhook for an account that is not the guesthouse's is igno
   const r = await api.as("r3");
   const owner = await api.as("owner");
   const q = await api.toQr(r);
+  const unmatched = async () =>
+    new Set(
+      (await api.transactions(owner))
+        .filter((t) => t.reconciliation === "UNMATCHED")
+        .map((t) => t.id),
+    );
+  const known = await unmatched();
   const stranger = await api.deliver({
     note: q.note,
     amount: q.amount,
@@ -388,18 +395,16 @@ test("TT-17 a signed webhook for an account that is not the guesthouse's is igno
     rows.some((t) => t.transferNote?.includes(q.note)),
     "not in the transactions list",
   ).toBe(false);
+  const nowUnmatched = await unmatched();
   expect(
-    rows.some((t) => t.reconciliation === "UNMATCHED" && t.amount === q.amount && !t.billCode),
-    "not in the unmatched list",
-  ).toBe(false);
+    [...nowUnmatched].filter((id) => !known.has(id)),
+    "no new unmatched row",
+  ).toEqual([]);
+  const needs = await api.transactions(owner, "?filter=NEEDS_ACTION");
+  expect(needs.filter((t) => t.transferNote?.includes(q.note))).toEqual([]);
   expect(
-    (await api.transactions(owner, "?filter=NEEDS_ACTION")).some(
-      (t) => t.amount === q.amount && t.reconciliation === "UNMATCHED",
-    ),
-  ).toBe(false);
-  expect(
-    (await api.alerts(owner)).some((a) => a.kind === "UNMATCHED_TRANSFER" && a.amount === q.amount),
-  ).toBe(false);
+    (await api.alerts(owner)).filter((a) => a.details?.transferNote?.includes(q.note)),
+  ).toEqual([]);
   expect((await api.payment(r, q.payment.id)).status, "pays nothing").toBe("PENDING");
   // And there is no event to link: a made-up id is refused.
   expect(

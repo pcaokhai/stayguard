@@ -1,0 +1,2 @@
+PUT /v1/me/locale {"locale":"en"}
+  -> 204 ""

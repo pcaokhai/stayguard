@@ -8,15 +8,16 @@
 #
 # partial: payment_events.received_at of that invoice's PARTIAL events, minus N minutes   (raises PAYMENT_PARTIAL after 15)
 # unpaid:  invoices.created_at (the check-out time), minus N minutes                        (raises PAYMENT_UNPAID or REFUND_PENDING after 30)
+# stay:    stays.check_in_at and check_out_at, minus N minutes                                 (guest ID retention: 40 days = 57600)
 # Then run the jobs once: `docker compose -p stayguard-rehearse ... run --rm api jobs run` (rehearse-test does it) and read the alerts.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PROJECT="stayguard-rehearse"
 kind="${1:-}"; bill="${2:-}"; mins="${3:-}"; code="${RH_TENANT:-}"
-[ -n "$kind" ] && [ -n "$bill" ] && [ -n "$mins" ] && [ -n "$code" ] || { sed -n 2,13p "$0" >&2; exit 2; }
-case "$kind" in partial | unpaid) ;; *) echo "kind must be partial or unpaid" >&2; exit 2 ;; esac
-[[ "$mins" =~ ^[0-9]{1,4}$ ]] || { echo "minutes must be a whole number" >&2; exit 2; }
+[ -n "$kind" ] && [ -n "$bill" ] && [ -n "$mins" ] && [ -n "$code" ] || { sed -n 2,14p "$0" >&2; exit 2; }
+case "$kind" in partial | unpaid | stay) ;; *) echo "kind must be partial, unpaid or stay" >&2; exit 2 ;; esac
+[[ "$mins" =~ ^[0-9]{1,6}$ ]] || { echo "minutes must be a whole number" >&2; exit 2; }
 [[ "$bill" =~ ^[A-Z0-9]{4,24}$ ]] || { echo "not a bill code: $bill" >&2; exit 2; }
 [[ "$code" =~ ^(rehearse|rh[0-9a-f]{6})$ ]] || { echo "REFUSED: $code is not a rehearsal guesthouse" >&2; exit 1; }
 if [ -n "${COMPOSE_PROJECT_NAME:-}" ] && [ "$COMPOSE_PROJECT_NAME" != "$PROJECT" ]; then
@@ -52,6 +53,17 @@ WITH hit AS (
   UPDATE app.invoices iv SET created_at = iv.created_at - make_interval(mins => :mins)
   FROM app.tenants t
   WHERE t.id = iv.tenant_id AND iv.bill_code = :'bill' AND t.guesthouse_code = :'code'
+  RETURNING 1)
+SELECT count(*) FROM hit;
+SQL
+)" ;;
+stay)
+	out="$(sql <<'SQL'
+SET session_replication_role = replica;
+WITH hit AS (
+  UPDATE app.stays s SET check_in_at = s.check_in_at - make_interval(mins => :mins), check_out_at = s.check_out_at - make_interval(mins => :mins)
+  FROM app.invoices iv JOIN app.tenants t ON t.id = iv.tenant_id
+  WHERE s.tenant_id = iv.tenant_id AND s.id = iv.stay_id AND iv.bill_code = :'bill' AND t.guesthouse_code = :'code'
   RETURNING 1)
 SELECT count(*) FROM hit;
 SQL
