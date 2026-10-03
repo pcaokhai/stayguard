@@ -1,35 +1,35 @@
 id,title,status,duration_s,evidence,notes
-TD-06,"TD-06 alerts close themselves when the issue is fixed (partial, unpaid, refund)",pass,2.8,"docs/rehearsal/evidence-2026-10-03/TD-06",""
-TD-02,"TD-02 'Cần xử lý' on the owner overview counts only open items",pass,1.0,"docs/rehearsal/evidence-2026-10-03/TD-02",""
-TD-09,"TD-09 'Cần xử lý' on Transactions counts only transfers still waiting for the owner",pass,0.3,"docs/rehearsal/evidence-2026-10-03/TD-09",""
-GT-01,"GT-01 the front desk records the number and both photos at check-in",pass,0.6,"docs/rehearsal/evidence-2026-10-03/GT-01",""
+TD-06,"TD-06 alerts close themselves when the issue is fixed (partial, unpaid, refund)",pass,3.2,"docs/rehearsal/evidence-2026-10-03/TD-06",""
+TD-02,"TD-02 'Cần xử lý' on the owner overview counts only open items",pass,1.1,"docs/rehearsal/evidence-2026-10-03/TD-02",""
+TD-09,"TD-09 'Cần xử lý' on Transactions counts only transfers still waiting for the owner",pass,0.4,"docs/rehearsal/evidence-2026-10-03/TD-09",""
+GT-01,"GT-01 the front desk records the number and both photos at check-in",pass,0.7,"docs/rehearsal/evidence-2026-10-03/GT-01",""
 GT-04,"GT-04 the owner can view, download and delete an ID photo, and each is logged",pass,0.0,"docs/rehearsal/evidence-2026-10-03/GT-04",""
-GT-05,"GT-05 a manager can read the record of a building they have access to; housekeeping cannot",pass,1.1,"docs/rehearsal/evidence-2026-10-03/GT-05",""
+GT-05,"GT-05 a manager can read the record of a building they have access to; housekeeping cannot",pass,1.3,"docs/rehearsal/evidence-2026-10-03/GT-05",""
 GT-07,"GT-07 a photo that is too large or not a picture is refused",pass,0.0,"docs/rehearsal/evidence-2026-10-03/GT-07",""
-GT-09,"GT-09 ID numbers and photos are deleted after the retention days by the daily job",pass,0.5,"docs/rehearsal/evidence-2026-10-03/GT-09",""
-DN-08,"DN-08 housekeeping only gets the housekeeping screens",pass,2.8,"docs/rehearsal/evidence-2026-10-03/DN-08",""
-DN-10,"DN-10 removing a person keeps their history",pass,1.0,"docs/rehearsal/evidence-2026-10-03/DN-10",""
-DN-11,"DN-11 signing out ends the session and clears the cookie",pass,0.5,"docs/rehearsal/evidence-2026-10-03/DN-11",""
-GD-03,"GD-03 on a tablet (834 px) the icon rail is on the left and the page does not scroll sideways",pass,5.9,"docs/rehearsal/evidence-2026-10-03/GD-03",""
+GT-09,"GT-09 ID numbers and photos are deleted after the retention days by the daily job",pass,0.6,"docs/rehearsal/evidence-2026-10-03/GT-09",""
+DN-08,"DN-08 housekeeping only gets the housekeeping screens",pass,2.9,"docs/rehearsal/evidence-2026-10-03/DN-08",""
+DN-10,"DN-10 removing a person keeps their history",pass,1.2,"docs/rehearsal/evidence-2026-10-03/DN-10",""
+DN-11,"DN-11 signing out ends the session and clears the cookie",pass,0.7,"docs/rehearsal/evidence-2026-10-03/DN-11",""
+GD-03,"GD-03 on a tablet (834 px) the icon rail is on the left and the page does not scroll sideways",pass,6.0,"docs/rehearsal/evidence-2026-10-03/GD-03",""
 GD-04,"GD-04 on a desktop (1280 px) the sidebar has groups and wide tables scroll inside their card",pass,4.7,"docs/rehearsal/evidence-2026-10-03/GD-04",""
-GD-05,"GD-05 with reduced motion the pay and paid screens still show everything",pass,4.7,"docs/rehearsal/evidence-2026-10-03/GD-05",""
-GD-06,"GD-06 English: switching the language leaves no Vietnamese or translation keys on the main screens",pass,8.7,"docs/rehearsal/evidence-2026-10-03/GD-06",""
+GD-05,"GD-05 with reduced motion the pay and paid screens still show everything",pass,4.6,"docs/rehearsal/evidence-2026-10-03/GD-05",""
+GD-06,"GD-06 English: switching the language leaves no Vietnamese or translation keys on the main screens",pass,8.6,"docs/rehearsal/evidence-2026-10-03/GD-06",""
 GD-07,"GD-07 offline on the payment screen shows it, and coming back creates no second payment",pass,14.1,"docs/rehearsal/evidence-2026-10-03/GD-07",""
-TD-05,"TD-05 the owner's room map has building chips and no shift actions",pass,0.2,"docs/rehearsal/evidence-2026-10-03/TD-05",""
+TD-05,"TD-05 the owner's room map has building chips and no shift actions",pass,0.3,"docs/rehearsal/evidence-2026-10-03/TD-05",""
 TD-07,"TD-07 the View button on a stay alert opens the owner's stay timeline",pass,0.7,"docs/rehearsal/evidence-2026-10-03/TD-07",""
 TD-08,"TD-08 the SePay update alert reads as a sentence, not as a raw timestamp",pass,3.2,"docs/rehearsal/evidence-2026-10-03/TD-08",""
 LO-01,"LO-01 check-in without ID papers works and takes the time from the server",pass,0.6,"docs/rehearsal/evidence-2026-10-03/LO-01",""
 LO-02,"LO-02 extras update the total and the stock",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-02",""
 LO-03,"LO-03 check-in time can be corrected within limits, with a reason, and the owner is told",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-03",""
 LO-04,"LO-04 there is no way to edit the check-out time",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-04",""
-LO-05,"LO-05 moving a guest keeps the time and extras, prices by the new room, and the old room needs cleaning",pass,0.1,"docs/rehearsal/evidence-2026-10-03/LO-05",""
+LO-05,"LO-05 moving a guest keeps the time and extras, prices by the new room, and the old room needs cleaning",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-05",""
 LO-07,"LO-07 stay history by day, with ID columns as flags and the day limit for the front desk",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-07",""
 LO-08,"LO-08 the owner sees one stay as a timeline",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-08",""
 LO-09,"LO-09 history search by room, guest name and phone",pass,0.0,"docs/rehearsal/evidence-2026-10-03/LO-09",""
 LO-10,"LO-10 the guest phone takes 9 to 11 digits with an optional 0 or +84",pass,0.1,"docs/rehearsal/evidence-2026-10-03/LO-10",""
-CD-01,"CD-01 bank accounts: new ones wait for SePay, the default cannot be removed",pass,0.9,"docs/rehearsal/evidence-2026-10-03/CD-01",""
+CD-01,"CD-01 bank accounts: new ones wait for SePay, the default cannot be removed",pass,1.0,"docs/rehearsal/evidence-2026-10-03/CD-01",""
 CD-02,"CD-02 a new price applies to later stays; a guest already in the room keeps the old one",pass,0.6,"docs/rehearsal/evidence-2026-10-03/CD-02",""
-CD-03,"CD-03 rooms by range, floors, buildings; a room with a guest cannot change type or be retired",pass,0.1,"docs/rehearsal/evidence-2026-10-03/CD-03",""
+CD-03,"CD-03 rooms by range, floors, buildings; a room with a guest cannot change type or be retired",pass,0.0,"docs/rehearsal/evidence-2026-10-03/CD-03",""
 CD-04,"CD-04 items and stock: opening quantity, restock, a stocktake difference alerts, a sold item stops selling",pass,0.0,"docs/rehearsal/evidence-2026-10-03/CD-04",""
 CD-05,"CD-05 a guard gets no sign-in; a receptionist's one-time PIN is shown once",pass,0.2,"docs/rehearsal/evidence-2026-10-03/CD-05",""
 CD-08,"CD-08 manual and monthly-repeating expenses; automatic lines cannot be edited by hand",pass,0.0,"docs/rehearsal/evidence-2026-10-03/CD-08",""
@@ -39,8 +39,8 @@ TD-03,"TD-03 alerts can be marked read; money and time alerts stay on the list",
 TD-04,"TD-04 the activity log: important actions are in it and nothing can edit or delete it",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TD-04",""
 GT-02,"GT-02 front desk and housekeeping see indicators only, never the number or the photo",pass,0.8,"docs/rehearsal/evidence-2026-10-03/GT-02",""
 GT-03,"GT-03 the owner sees a masked number, and a reveal is written to the activity log without the number",pass,0.0,"docs/rehearsal/evidence-2026-10-03/GT-03",""
-GT-08,"GT-08 no ID number appears in the container logs",pass,0.3,"docs/rehearsal/evidence-2026-10-03/GT-08",""
-TT-01,"TT-01 exact transfer pays the bill and the room goes to clean",pass,0.1,"docs/rehearsal/evidence-2026-10-03/TT-01",""
+GT-08,"GT-08 no ID number appears in the container logs",pass,0.2,"docs/rehearsal/evidence-2026-10-03/GT-08",""
+TT-01,"TT-01 exact transfer pays the bill and the room goes to clean",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-01",""
 TT-02,"TT-02 transfer without the bill code is unmatched and alerts the owner",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-02",""
 TT-03,"TT-03 owner links an unmatched transfer of the exact amount and the bill is paid",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-03",""
 TT-04,"TT-04 linking money of a different amount is refused",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-04",""
@@ -54,14 +54,14 @@ BM-02,"BM-02 a wrong hook id is refused",pass,0.0,"docs/rehearsal/evidence-2026-
 TT-10,"TT-10 overpaid transfer pays the bill and alerts the owner",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-10",""
 TT-11,"TT-11 an outgoing transfer is ignored",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-11",""
 TT-12,"TT-12 the same delivery twice is counted once",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-12",""
-TT-13,"TT-13 deposit larger than the bill is refunded in cash and lands on the shift",pass,0.1,"docs/rehearsal/evidence-2026-10-03/TT-13",""
-TT-23,"TT-23 leave the payment screen, reload, resume with the same bill code and no second payment",pass,4.3,"docs/rehearsal/evidence-2026-10-03/TT-23",""
+TT-13,"TT-13 deposit larger than the bill is refunded in cash and lands on the shift",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-13",""
+TT-23,"TT-23 leave the payment screen, reload, resume with the same bill code and no second payment",pass,4.2,"docs/rehearsal/evidence-2026-10-03/TT-23",""
 TT-26,"TT-26 the reopened checkout shows the real deposit",pass,0.2,"docs/rehearsal/evidence-2026-10-03/TT-26",""
 TT-24,"TT-24 a finished stay is read-only in the app and in the API",pass,0.2,"docs/rehearsal/evidence-2026-10-03/TT-24",""
 TT-25,"TT-25 transactions show the bank time and a negative cash refund line",pass,0.1,"docs/rehearsal/evidence-2026-10-03/TT-25",""
-TT-17,"TT-17 a signed webhook for an account that is not the guesthouse's is ignored, never unmatched or linkable",pass,0.0,"docs/rehearsal/evidence-2026-10-03/TT-17",""
-DP-01,"DP-01 a receptionist marks a room clean and it is vacant again",pass,0.1,"docs/rehearsal/evidence-2026-10-03/DP-01",""
-DP-02,"DP-02 the owner marks a room clean and it is vacant again",pass,0.1,"docs/rehearsal/evidence-2026-10-03/DP-02",""
+TT-17,"TT-17 a signed webhook for an account that is not the guesthouse's is ignored, never unmatched or linkable",pass,0.1,"docs/rehearsal/evidence-2026-10-03/TT-17",""
+DP-01,"DP-01 a receptionist marks a room clean and it is vacant again",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DP-01",""
+DP-02,"DP-02 the owner marks a room clean and it is vacant again",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DP-02",""
 DP-09,"DP-09 the to-clean screens offer clean, set maintenance and report damage",pass,0.6,"docs/rehearsal/evidence-2026-10-03/DP-09",""
 DP-04,"DP-04 a damage report that locks the room makes it maintenance, with a ticket and an alert",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DP-04",""
 DP-05,"DP-05 locking a room that has a guest is refused",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DP-05",""
@@ -73,44 +73,44 @@ CA-06,"CA-06 a closed shift is locked; more cash opens a new one",pass,0.6,"docs
 CA-04,"CA-04 closing short needs a reason and tells the owner",pass,0.6,"docs/rehearsal/evidence-2026-10-03/CA-04",""
 CA-05,"CA-05 closing with an invoice that is not fully paid needs a reason",pass,0.6,"docs/rehearsal/evidence-2026-10-03/CA-05",""
 CA-07,"CA-07 cash the owner moves on an open shift lands on it, marked by owner",pass,0.6,"docs/rehearsal/evidence-2026-10-03/CA-07",""
-CA-10,"CA-10 the shift screen and the owner overview show the same expected cash",pass,2.8,"docs/rehearsal/evidence-2026-10-03/CA-10",""
-CA-12,"CA-12 a float left in the drawer is not counted twice by the owner overview",pass,0.7,"docs/rehearsal/evidence-2026-10-03/CA-12",""
-UI-01,"UI-01 every screen of every role reads like a finished product",fail,233.0,"docs/rehearsal/evidence-2026-10-03/UI-01","Error: 1 problems — horizontal page scroll: 1  expect(received).toBe(expected) // Object.is equality"
-VH-06,"VH-06 restarting the API keeps people signed in",pass,1.3,"docs/rehearsal/evidence-2026-10-03/VH-06",""
+CA-10,"CA-10 the shift screen and the owner overview show the same expected cash",pass,3.0,"docs/rehearsal/evidence-2026-10-03/CA-10",""
+CA-12,"CA-12 a float left in the drawer is not counted twice by the owner overview",pass,0.6,"docs/rehearsal/evidence-2026-10-03/CA-12",""
+UI-01,"UI-01 every screen of every role reads like a finished product",pass,232.2,"docs/rehearsal/evidence-2026-10-03/UI-01",""
+VH-06,"VH-06 restarting the API keeps people signed in",pass,1.0,"docs/rehearsal/evidence-2026-10-03/VH-06",""
 VH-05,"VH-05 /readyz and /healthz answer 200",pass,0.0,"docs/rehearsal/evidence-2026-10-03/VH-05",""
-BM-03,"BM-03 PINs, the SePay secret, bank account numbers and session tokens are not in the logs",pass,0.4,"docs/rehearsal/evidence-2026-10-03/BM-03",""
+BM-03,"BM-03 PINs, the SePay secret, bank account numbers and session tokens are not in the logs",pass,0.2,"docs/rehearsal/evidence-2026-10-03/BM-03",""
 DN-07,"DN-07 a page the role may not open shows the no-permission screen and keeps the person signed in",pass,0.2,"docs/rehearsal/evidence-2026-10-03/DN-07",""
-DN-06,"DN-06 the manager lands on the room map",pass,1.1,"docs/rehearsal/evidence-2026-10-03/DN-06",""
-DN-05,"DN-05 the manager cannot act on the owner's own matters",pass,0.7,"docs/rehearsal/evidence-2026-10-03/DN-05",""
+DN-06,"DN-06 the manager lands on the room map",pass,0.8,"docs/rehearsal/evidence-2026-10-03/DN-06",""
+DN-05,"DN-05 the manager cannot act on the owner's own matters",pass,0.4,"docs/rehearsal/evidence-2026-10-03/DN-05",""
 DN-01,"DN-01 five wrong PINs lock the account and alert the owner; the owner unlocks it",pass,1.3,"docs/rehearsal/evidence-2026-10-03/DN-01",""
-DN-09,"DN-09 changing the PIN, locking or removing a person ends their other sessions",pass,59.6,"docs/rehearsal/evidence-2026-10-03/DN-09",""
-DN-13,"DN-13 a second browser tab keeps the session through the cookie",pass,1.1,"docs/rehearsal/evidence-2026-10-03/DN-13",""
+DN-09,"DN-09 changing the PIN, locking or removing a person ends their other sessions",pass,59.1,"docs/rehearsal/evidence-2026-10-03/DN-09",""
+DN-13,"DN-13 a second browser tab keeps the session through the cookie",pass,1.0,"docs/rehearsal/evidence-2026-10-03/DN-13",""
 DN-15,"DN-15 a cookie-authenticated write without X-Requested-With is rejected (CSRF)",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DN-15",""
 CD-10,"CD-10 a receptionist asking for stays older than the front-desk days is refused",pass,0.0,"docs/rehearsal/evidence-2026-10-03/CD-10",""
 GT-06,"GT-06 a receptionist's stay list carries ID indicator flags, never the number",pass,0.0,"docs/rehearsal/evidence-2026-10-03/GT-06",""
 DN-12,"DN-12 a manager sees only the buildings they have access to, with VIEW or more",pass,0.0,"docs/rehearsal/evidence-2026-10-03/DN-12",""
-DN-16,"DN-16 hitting the sign-in rate limit is not shown as a locked account",pass,68.1,"docs/rehearsal/evidence-2026-10-03/DN-16",""
+DN-16,"DN-16 hitting the sign-in rate limit is not shown as a locked account",pass,68.3,"docs/rehearsal/evidence-2026-10-03/DN-16",""
 DN-02,"DN-02 a wrong code, user name or PIN all get the same answer",pass,0.8,"docs/rehearsal/evidence-2026-10-03/DN-02",""
 DN-03,"DN-03 a PIN that is easy to guess is refused",pass,0.8,"docs/rehearsal/evidence-2026-10-03/DN-03",""
-TT-09,"TT-09 a short transfer raises one partial alert after 15 minutes, and only one",pass,1.6,"docs/rehearsal/evidence-2026-10-03/TT-09",""
-TT-20,"TT-20 a bill nobody paid raises one unpaid alert 30 minutes after check-out, and only one",pass,1.3,"docs/rehearsal/evidence-2026-10-03/TT-20",""
-TT-27,"TT-27 a deposit nobody gave back raises one refund alert 30 minutes after check-out, and no unpaid alert",pass,1.4,"docs/rehearsal/evidence-2026-10-03/TT-27",""
-BM-04,"BM-04 a webhook that arrives 6 minutes late is refused, a fresh delivery of the same transfer is accepted",pass,2.6,"docs/rehearsal/evidence-2026-10-03/BM-04",""
+TT-09,"TT-09 a short transfer raises one partial alert after 15 minutes, and only one",pass,1.4,"docs/rehearsal/evidence-2026-10-03/TT-09",""
+TT-20,"TT-20 a bill nobody paid raises one unpaid alert 30 minutes after check-out, and only one",pass,1.4,"docs/rehearsal/evidence-2026-10-03/TT-20",""
+TT-27,"TT-27 a deposit nobody gave back raises one refund alert 30 minutes after check-out, and no unpaid alert",pass,1.3,"docs/rehearsal/evidence-2026-10-03/TT-27",""
+BM-04,"BM-04 a webhook that arrives 6 minutes late is refused, a fresh delivery of the same transfer is accepted",pass,2.5,"docs/rehearsal/evidence-2026-10-03/BM-04",""
 BM-06,"BM-06 SePay's own retry schedule after a missed delivery",skip,0.0,"docs/rehearsal/evidence-2026-10-03/BM-06","manual: SePay real retry behaviour (retry schedule and whether it re-signs each attempt) needs a SePay test transfer"
 VH-08,"VH-08 the backdate helper refuses to run anywhere but the rehearsal stack",pass,0.0,"docs/rehearsal/evidence-2026-10-03/VH-08",""
 
 # demo-check
-# commit 1732b6d
+# commit 259ec73
 suite,status,pass,fail,skip,duration_s
-alerts,pass,3,0,0,4.1
-demo-gt,pass,8,0,0,6.6
+alerts,pass,3,0,0,4.7
+demo-gt,pass,8,0,0,7.2
 demo-ui,pass,8,0,0,42.2
-demo,pass,19,0,0,2.9
-guestid,pass,3,0,0,1.1
-money,pass,20,0,0,5.9
-rooms,pass,6,0,0,0.8
-shift,pass,9,0,0,7.8
-ui-lint,fail,0,1,0,233.0
-z1-ops,pass,3,0,0,1.7
-z2-roles,pass,13,0,0,133.8
-z3-time,pass,5,0,1,6.9
+demo,pass,19,0,0,2.7
+guestid,pass,3,0,0,1.0
+money,pass,20,0,0,5.7
+rooms,pass,6,0,0,0.7
+shift,pass,9,0,0,8.0
+ui-lint,pass,1,0,0,232.2
+z1-ops,pass,3,0,0,1.2
+z2-roles,pass,13,0,0,133.1
+z3-time,pass,5,0,1,6.7

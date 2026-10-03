@@ -1,4 +1,4 @@
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","level":"EDIT"},{"buildingId":"bd_01M40WZX03WDT424RP6RYTDWSV","level":"NONE"}],"tenant":{"currency":"VND","id":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","name":"Rehearsal Test rh7296d6","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40WXZPD2VEK0VYB8XCHJYHD","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT"},{"buildingId":"bd_01M41350FJF710ZZT3G022KJ0X","level":"NONE"}],"tenant":{"currency":"VND","id":"tn_01M41331K01RB67HH96BE2W4GB","name":"Rehearsal Test rh840297","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M41331VA5T2FYVKM2A092P0N","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
 GET /v1/owner/overview 
   -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}

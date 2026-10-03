@@ -1,6 +1,0 @@
-Error: 1 problems — horizontal page scroll: 1
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: 0
-Received: 1

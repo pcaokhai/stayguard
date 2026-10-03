@@ -85,7 +85,7 @@ func newEnvWith(t *testing.T, mk func(app.UnitOfWork, app.Clock) *app.Rooms, see
 		t.Fatalf("pool: %v", err)
 	}
 	t.Cleanup(pool.Close)
-	start := time.Now().UTC().Truncate(time.Second) // whole seconds: timestamptz keeps microseconds
+	start := testClockStart(time.Now())
 	clk := &fakeClock{t: start}
 	cfg := config.Config{DemoMode: true, SessionTTL: sessionTTL, TrialTTL: trialTTL, DataEncryptionKey: testDataKey, CheckInEnabled: true, CheckoutEnabled: true}
 	uow := postgres.NewUnitOfWork(pool)
@@ -370,4 +370,16 @@ func TestServerRunsAsAppRole_SG102_AC4(t *testing.T) {
 	if user != appRole || bypass || super {
 		t.Fatalf("server role = %s bypassrls=%v superuser=%v, want %s without privileges", user, bypass, super, appRole)
 	}
+}
+
+// testClockStart is the instant the test clock starts at: the latest 03:00 UTC (10:00 in Ho Chi Minh) that is not in the future, with whole
+// seconds (timestamptz keeps microseconds). Tests move the clock forward by hours; starting mid-morning keeps those hours on the
+// tenant's calendar day and on one UTC day, so the suite gives the same answer at any hour it is run (it used to fail after 21:00 local).
+func testClockStart(now time.Time) time.Time {
+	now = now.UTC().Truncate(time.Second)
+	start := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, time.UTC)
+	if start.After(now) {
+		start = start.AddDate(0, 0, -1)
+	}
+	return start
 }

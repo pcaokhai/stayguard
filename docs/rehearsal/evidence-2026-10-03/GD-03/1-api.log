@@ -1,6 +1,6 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh7296d6","username":"linh","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T00:48:43.350836Z","mustChangePin":true,"tenantId":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","user":{"id":"us_01M40WXZPD2VEK0VYB8XCHJYHD","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh840297","username":"linh","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T02:36:22.22584Z","mustChangePin":true,"tenantId":"tn_01M41331K01RB67HH96BE2W4GB","user":{"id":"us_01M41331VA5T2FYVKM2A092P0N","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
 PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
   -> 204 ""
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","name":"Rehearsal Test rh7296d6","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40WXZPD2VEK0VYB8XCHJYHD","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M41331K01RB67HH96BE2W4GB","name":"Rehearsal Test rh840297","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M41331VA5T2FYVKM2A092P0N","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}

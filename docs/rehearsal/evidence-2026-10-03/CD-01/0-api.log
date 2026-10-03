@@ -1,14 +1,14 @@
 GET /v1/owner/bank-accounts 
-  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40WXZFD09W101ZVE45G5JHK","isDefault":true,"lastWebhookAt":"2026-10-03T12:49:26.387366Z","sepayStatus":"CONNECTED"}]}
+  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M41331K1MBQSDHWADMNJ64Y2","isDefault":true,"lastWebhookAt":"2026-10-03T14:37:05.236753Z","sepayStatus":"CONNECTED"}]}
 POST /v1/owner/bank-accounts {"bankBin":"970436","accountNo":"2222233333","accountName":"SECOND DEMO","ownerPin":"***"}
-  -> 201 {"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40WZVNTC26819ZF1Z2RE450","isDefault":false,"sepayStatus":"PENDING"}
+  -> 201 {"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M4134Z3WAXVF3Y6YSW9EGSJZ","isDefault":false,"sepayStatus":"PENDING"}
 GET /v1/owner/bank-accounts 
-  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40WXZFD09W101ZVE45G5JHK","isDefault":true,"lastWebhookAt":"2026-10-03T12:49:26.387366Z","sepayStatus":"CONNECTED"},{"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M40WZVNTC26819ZF1Z2RE450","isDefault":false,"sepayStatus":"PENDING"}]}
-POST /v1/owner/bank-accounts/ba_01M40WZVNTC26819ZF1Z2RE450/make-default {"ownerPin":"***"}
+  -> 200 {"items":[{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M41331K1MBQSDHWADMNJ64Y2","isDefault":true,"lastWebhookAt":"2026-10-03T14:37:05.236753Z","sepayStatus":"CONNECTED"},{"accountName":"SECOND DEMO","accountNoMasked":"******3333","bankBin":"970436","bankName":"Vietcombank","id":"ba_01M4134Z3WAXVF3Y6YSW9EGSJZ","isDefault":false,"sepayStatus":"PENDING"}]}
+POST /v1/owner/bank-accounts/ba_01M4134Z3WAXVF3Y6YSW9EGSJZ/make-default {"ownerPin":"***"}
   -> 409 {"type":"about:blank","title":"Conflict","status":409,"code":"CONFLICT"}
-POST /v1/owner/bank-accounts/ba_01M40WXZFD09W101ZVE45G5JHK/remove {"ownerPin":"***"}
+POST /v1/owner/bank-accounts/ba_01M41331K1MBQSDHWADMNJ64Y2/remove {"ownerPin":"***"}
   -> 409 {"type":"about:blank","title":"Conflict","status":409,"code":"CONFLICT"}
-POST /v1/owner/bank-accounts/ba_01M40WZVNTC26819ZF1Z2RE450/remove {"ownerPin":"***"}
+POST /v1/owner/bank-accounts/ba_01M4134Z3WAXVF3Y6YSW9EGSJZ/remove {"ownerPin":"***"}
   -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"OWNER_PIN_INVALID"}
-POST /v1/owner/bank-accounts/ba_01M40WZVNTC26819ZF1Z2RE450/remove {"ownerPin":"***"}
+POST /v1/owner/bank-accounts/ba_01M4134Z3WAXVF3Y6YSW9EGSJZ/remove {"ownerPin":"***"}
   -> 204 ""

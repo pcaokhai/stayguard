@@ -1,22 +1,22 @@
-POST /v1/auth/sign-in {"guesthouseCode":"rh7296d6","username":"mina","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T00:48:37.335406Z","mustChangePin":true,"tenantId":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","user":{"id":"us_01M40WXZWY9ZAPC4YAVD5DVV1N","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh840297","username":"mina","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T02:36:15.646772Z","mustChangePin":true,"tenantId":"tn_01M41331K01RB67HH96BE2W4GB","user":{"id":"us_01M4133221G222TYKAVKFYQSDY","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
 PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
   -> 204 ""
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","name":"Rehearsal Test rh7296d6","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40WXZWY9ZAPC4YAVD5DVV1N","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
-POST /v1/auth/sign-in {"guesthouseCode":"rh7296d6","username":"hk","pin":"***"}
-  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T00:48:37.890439Z","mustChangePin":true,"tenantId":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","user":{"id":"us_01M40WY32G4ZGBD45AKTAVWMZZ","locale":"vi","name":"Rehearsal Housekeeper","role":"HOUSEKEEPING"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M41331K01RB67HH96BE2W4GB","name":"Rehearsal Test rh840297","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M4133221G222TYKAVKFYQSDY","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh840297","username":"hk","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T02:36:16.297798Z","mustChangePin":true,"tenantId":"tn_01M41331K01RB67HH96BE2W4GB","user":{"id":"us_01M41335K852JH2WC5CT5M31BX","locale":"vi","name":"Rehearsal Housekeeper","role":"HOUSEKEEPING"}}
 PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
   -> 204 ""
 GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40WXZFDC3MW29M7SQ5HW9VK","name":"Rehearsal Test rh7296d6","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40WY32G4ZGBD45AKTAVWMZZ","locale":"vi","name":"Rehearsal Housekeeper","role":"HOUSEKEEPING"}}
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M41331K01RB67HH96BE2W4GB","name":"Rehearsal Test rh840297","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M41335K852JH2WC5CT5M31BX","locale":"vi","name":"Rehearsal Housekeeper","role":"HOUSEKEEPING"}}
 GET /v1/buildings 
-  -> 200 {"items":[{"code":"A","counts":{"maintenance":0,"occupied":2,"overdue":0,"toClean":5,"vacant":193},"floors":[{"id":"fl_01M40WXZFD46BD6J3FBJ2NPM8A","name":"1","order":1},{"id":"fl_01M40WXZFDW689V2GMSAJ721K8","name":"2","order":2},{"id":"fl_01M40WXZFDXXG4WVDSZPE12YHB","name":"3","order":3},{"id":"fl_01M40WXZFDSF72A3ED1X9QZP1P","name":"4","order":4}],"id":"bd_01M40WXZFDSX288SJN4EAN9F2E","level":"EDIT","name":"Building A"}]}
-GET /v1/buildings/bd_01M40WXZFDSX288SJN4EAN9F2E/rooms 
-  -> 200 {"items":[{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","code":"A101","floor":1,"floorId":"fl_01M40WXZFD46BD6J3FBJ2NPM8A","floorName":"1","id":"un_01M40WXZFDQ0NBEC89PW0MK9G1","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","code":"A102","floor":1,"floorId":"fl_01M40WXZFD46BD6J3FBJ2NPM8A","floorName":"1","id":"un_01M40WXZFDFR0ABNC0VSCVNYRE","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40WXZFDSX288SJN4EAN9F2E","code":"A103","floor
-POST /v1/rooms/un_01M40WXZFD2N1NMRSHPW3DABHF/stays {"rentalType":"HOURLY","guestName":"Rehearsal Guest","guestPhone":"0912345678","deposit":10000,"idNumber":"***"}
-  -> 201 {"checkInAt":"2026-10-03T12:48:38.454696Z","deposit":10000,"extras":[],"guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":true},"guestName":"Rehearsal Guest","guestPhone":"0912345678","id":"st_01M40WYCHP38F1HSWFY4JMH0CV","pricingVersion":1,"quote":{"asOf":"2026-10-03T12:48:38.454696Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"rentalType":"HOURLY","roomCode":"A108","roomId":"un_01M40WXZFD2N1NMRSHPW3DABHF","status":"ACTIVE"}
-GET /v1/owner/stays/st_01M40WYCHP38F1HSWFY4JMH0CV/guest-id 
-  -> 200 {"back":null,"collectedAt":"2026-10-03T12:48:38.454696Z","deleteAfter":null,"front":null,"idNumberMasked":"***","indicators":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":true},"legalBasis":"STAY_DECLARATION"}
-GET /v1/owner/stays/st_01M40WYCHP38F1HSWFY4JMH0CV/guest-id 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":0,"occupied":2,"overdue":0,"toClean":5,"vacant":193},"floors":[{"id":"fl_01M41331K1QT3R4SGFWQN8PAG5","name":"1","order":1},{"id":"fl_01M41331K170YEX76HVGNGD8XJ","name":"2","order":2},{"id":"fl_01M41331K1VSV1YS3WM1J042D0","name":"3","order":3},{"id":"fl_01M41331K18FQEZA37V8EQXREQ","name":"4","order":4}],"id":"bd_01M41331K1NQJXD69A9ZKAZFBH","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M41331K1NQJXD69A9ZKAZFBH/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","code":"A101","floor":1,"floorId":"fl_01M41331K1QT3R4SGFWQN8PAG5","floorName":"1","id":"un_01M41331K1HJVYW3E5YCKP0BJ2","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","code":"A102","floor":1,"floorId":"fl_01M41331K1QT3R4SGFWQN8PAG5","floorName":"1","id":"un_01M41331K17RZ0DN56RCQ09M3V","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M41331K1NQJXD69A9ZKAZFBH","code":"A103","floor
+POST /v1/rooms/un_01M41331K1JYGT8VPVPE8QQQXX/stays {"rentalType":"HOURLY","guestName":"Rehearsal Guest","guestPhone":"0912345678","deposit":10000,"idNumber":"***"}
+  -> 201 {"checkInAt":"2026-10-03T14:36:16.937545Z","deposit":10000,"extras":[],"guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":true},"guestName":"Rehearsal Guest","guestPhone":"0912345678","id":"st_01M4133FN9XD9CPMF6X2M3M9HF","pricingVersion":1,"quote":{"asOf":"2026-10-03T14:36:16.937545Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"rentalType":"HOURLY","roomCode":"A108","roomId":"un_01M41331K1JYGT8VPVPE8QQQXX","status":"ACTIVE"}
+GET /v1/owner/stays/st_01M4133FN9XD9CPMF6X2M3M9HF/guest-id 
+  -> 200 {"back":null,"collectedAt":"2026-10-03T14:36:16.937545Z","deleteAfter":null,"front":null,"idNumberMasked":"***","indicators":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":true},"legalBasis":"STAY_DECLARATION"}
+GET /v1/owner/stays/st_01M4133FN9XD9CPMF6X2M3M9HF/guest-id 
   -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}
