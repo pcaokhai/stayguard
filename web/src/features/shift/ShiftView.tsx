@@ -192,11 +192,17 @@ export function ShiftView() {
                   <ul className="mt-1 flex flex-col gap-0.5 text-sm font-semibold">
                     {unpaid.map((i) => (
                       <li key={i.invoiceId}>
-                        {tf("shift.unpaidRow", {
-                          room: i.roomCode,
-                          bill: i.billCode,
-                          amount: formatVnd(i.balance),
-                        })}
+                        {i.balance === 0 && (i.refundDue ?? 0) > 0
+                          ? tf("shift.refundPendingRow", {
+                              room: i.roomCode,
+                              bill: i.billCode,
+                              amount: formatVnd(i.refundDue ?? 0),
+                            })
+                          : tf("shift.unpaidRow", {
+                              room: i.roomCode,
+                              bill: i.billCode,
+                              amount: formatVnd(i.balance),
+                            })}
                       </li>
                     ))}
                   </ul>

@@ -224,3 +224,64 @@ func TestUnpaidAlert_OpenRefund_FU(t *testing.T) {
 		t.Fatalf("closing with an open refund and no reason: %d %s", st, raw)
 	}
 }
+
+// Concurrent clicks: five parallel cash refunds on one invoice record exactly one refund, with one key or with five.
+func TestRefund_FiveParallelCalls_RecordedOnce_FU(t *testing.T) {
+	for _, sameKey := range []bool{true, false} {
+		r := newRefundRig(t)
+		shared := newKey()
+		codes := make(chan int, 5)
+		for i := 0; i < 5; i++ {
+			key := shared
+			if !sameKey {
+				key = newKey()
+			}
+			go func() {
+				st, _ := r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.desk, key, map[string]any{"method": "CASH"})
+				codes <- st
+			}()
+		}
+		created := 0
+		for i := 0; i < 5; i++ {
+			if st := <-codes; st == 201 {
+				created++
+			} else if st != 409 {
+				t.Fatalf("sameKey=%v: unexpected status %d", sameKey, st)
+			}
+		}
+		if created < 1 || (!sameKey && created != 1) {
+			t.Fatalf("sameKey=%v: %d calls created a payment", sameKey, created)
+		}
+		if n := r.e.count(`SELECT count(*) FROM app.payments WHERE tenant_id = $1 AND invoice_id = $2`, r.tenant, r.invoice); n != 1 {
+			t.Fatalf("sameKey=%v: %d payments", sameKey, n)
+		}
+		if n := r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND'`, r.tenant); n != 1 {
+			t.Fatalf("sameKey=%v: %d refund entries, want 1", sameKey, n)
+		}
+		st, raw := r.e.send("GET", "/v1/shifts/current", r.desk, "", nil)
+		if sh := parse(raw); st != 200 || num(sh["cashOut"]) != r.refund {
+			t.Fatalf("sameKey=%v: shift %d %s", sameKey, st, raw)
+		}
+	}
+}
+
+func TestRefund_OwnerFiveParallelCalls_OnePaymentNoShift_FU(t *testing.T) {
+	r := newRefundRig(t)
+	codes := make(chan int, 5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			st, _ := r.e.send("POST", "/v1/invoices/"+r.invoice+"/payments", r.own, newKey(), map[string]any{"method": "CASH"})
+			codes <- st
+		}()
+	}
+	created := 0
+	for i := 0; i < 5; i++ {
+		if <-codes == 201 {
+			created++
+		}
+	}
+	if created != 1 || r.e.count(`SELECT count(*) FROM app.payments WHERE tenant_id = $1 AND invoice_id = $2`, r.tenant, r.invoice) != 1 ||
+		r.e.count(`SELECT count(*) FROM app.cash_entries WHERE tenant_id = $1 AND kind = 'REFUND'`, r.tenant) != 0 {
+		t.Fatalf("owner: %d created; want one payment and no shift entry", created)
+	}
+}
