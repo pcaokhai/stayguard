@@ -130,3 +130,15 @@ WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND iv.created_at <= @bef
   AND NOT EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL')
   AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.stay_id = iv.stay_id AND a.kind IN ('PAYMENT_UNPAID', 'REFUND_PENDING'))
 ORDER BY iv.created_at, iv.id;
+
+-- name: ResolveMismatchesForInvoice :exec
+-- An invoice that is paid leaves nothing for needs-action: the old MISMATCH payment rows of the invoice expire.
+UPDATE app.payments SET status = 'EXPIRED'
+WHERE tenant_id = @tenant_id AND invoice_id = @invoice_id AND status = 'MISMATCH';
+
+-- name: ResolveMismatchEventsForInvoice :exec
+-- ... and their bank events (MISMATCH, tied to the invoice through the payment's transaction id) become SETTLED.
+UPDATE app.payment_events pe SET result = 'SETTLED', invoice_id = @invoice_id
+FROM app.payments p
+WHERE pe.tenant_id = @tenant_id AND pe.result = 'MISMATCH' AND p.tenant_id = pe.tenant_id AND p.invoice_id = @invoice_id
+  AND p.transaction_id = pe.external_id;

@@ -127,10 +127,20 @@ JOIN app.units u ON u.tenant_id = s.tenant_id AND u.id = s.unit_id
 WHERE iv.tenant_id = @tenant_id AND iv.id = @invoice_id AND s.check_out_at IS NOT NULL;
 
 -- name: ListReceiptPayments :many
-SELECT p.id, p.method, coalesce(p.received_amount, p.amount) AS amount, p.paid_at
+-- One line per cash payment and one per bank event that settled money on the invoice (each with its own amount and time), so a short
+-- transfer and its top-up are two lines that add up to the paid total. A transfer paid before bank events were tied to invoices has no
+-- such events: its payment is the line.
+SELECT p.id, p.method::text AS method, coalesce(p.received_amount, p.amount)::bigint AS amount, p.paid_at::timestamptz AS at
 FROM app.payments p
 WHERE p.tenant_id = @tenant_id AND p.invoice_id = @invoice_id AND p.status = 'PAID' AND p.paid_at IS NOT NULL
-ORDER BY p.paid_at, p.id;
+  AND (p.method = 'CASH' OR NOT EXISTS (SELECT 1 FROM app.payment_events pe
+        WHERE pe.tenant_id = p.tenant_id AND pe.invoice_id = p.invoice_id AND pe.result IN ('PARTIAL', 'SETTLED')))
+UNION ALL
+SELECT pe.id, 'TRANSFER', pe.amount::bigint, pe.received_at::timestamptz
+FROM app.payment_events pe
+JOIN app.invoices iv ON iv.tenant_id = pe.tenant_id AND iv.id = pe.invoice_id AND iv.status = 'PAID'
+WHERE pe.tenant_id = @tenant_id AND pe.invoice_id = @invoice_id AND pe.result IN ('PARTIAL', 'SETTLED')
+ORDER BY 4, 1;
 
 -- name: GetFrontDeskHistoryDays :one
 SELECT coalesce(min(front_desk_history_days), 7)::int AS days FROM app.properties WHERE tenant_id = @tenant_id;

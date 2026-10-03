@@ -501,6 +501,40 @@ func (q *Queries) ReleaseRoomToClean(ctx context.Context, arg ReleaseRoomToClean
 	return err
 }
 
+const resolveMismatchEventsForInvoice = `-- name: ResolveMismatchEventsForInvoice :exec
+UPDATE app.payment_events pe SET result = 'SETTLED', invoice_id = $1
+FROM app.payments p
+WHERE pe.tenant_id = $2 AND pe.result = 'MISMATCH' AND p.tenant_id = pe.tenant_id AND p.invoice_id = $1
+  AND p.transaction_id = pe.external_id
+`
+
+type ResolveMismatchEventsForInvoiceParams struct {
+	InvoiceID pgtype.Text
+	TenantID  pgtype.Text
+}
+
+// ... and their bank events (MISMATCH, tied to the invoice through the payment's transaction id) become SETTLED.
+func (q *Queries) ResolveMismatchEventsForInvoice(ctx context.Context, arg ResolveMismatchEventsForInvoiceParams) error {
+	_, err := q.db.Exec(ctx, resolveMismatchEventsForInvoice, arg.InvoiceID, arg.TenantID)
+	return err
+}
+
+const resolveMismatchesForInvoice = `-- name: ResolveMismatchesForInvoice :exec
+UPDATE app.payments SET status = 'EXPIRED'
+WHERE tenant_id = $1 AND invoice_id = $2 AND status = 'MISMATCH'
+`
+
+type ResolveMismatchesForInvoiceParams struct {
+	TenantID  string
+	InvoiceID string
+}
+
+// An invoice that is paid leaves nothing for needs-action: the old MISMATCH payment rows of the invoice expire.
+func (q *Queries) ResolveMismatchesForInvoice(ctx context.Context, arg ResolveMismatchesForInvoiceParams) error {
+	_, err := q.db.Exec(ctx, resolveMismatchesForInvoice, arg.TenantID, arg.InvoiceID)
+	return err
+}
+
 const setPaymentEventMatched = `-- name: SetPaymentEventMatched :exec
 UPDATE app.payment_events SET result = $1, invoice_id = $2
 WHERE tenant_id = $3 AND provider = $4 AND external_id = $5

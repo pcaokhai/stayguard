@@ -244,8 +244,16 @@ func (PaymentRepo) SettleInvoiceEvents(ctx context.Context, tx app.Tx, invoiceID
 	if err != nil {
 		return err
 	}
-	return wrap("settle invoice events", sqlcgen.New(t).SettleInvoiceEvents(ctx, sqlcgen.SettleInvoiceEventsParams{
-		TenantID: pgtype.Text{String: t.tenant, Valid: true}, InvoiceID: pgtype.Text{String: invoiceID, Valid: true}}))
+	q := sqlcgen.New(t)
+	tenant, inv := pgtype.Text{String: t.tenant, Valid: true}, pgtype.Text{String: invoiceID, Valid: true}
+	// Order matters: the mismatch events are found through the MISMATCH payments, which are expired right after.
+	if err := q.ResolveMismatchEventsForInvoice(ctx, sqlcgen.ResolveMismatchEventsForInvoiceParams{TenantID: tenant, InvoiceID: inv}); err != nil {
+		return wrap("resolve mismatch events", err)
+	}
+	if err := q.ResolveMismatchesForInvoice(ctx, sqlcgen.ResolveMismatchesForInvoiceParams{TenantID: t.tenant, InvoiceID: invoiceID}); err != nil {
+		return wrap("resolve mismatches", err)
+	}
+	return wrap("settle invoice events", q.SettleInvoiceEvents(ctx, sqlcgen.SettleInvoiceEventsParams{TenantID: tenant, InvoiceID: inv}))
 }
 
 func (PaymentRepo) SetTransferReceived(ctx context.Context, tx app.Tx, paymentID string, received int64) error {

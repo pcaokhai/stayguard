@@ -224,8 +224,9 @@ func TestStayOps_ReceiptStatesAndBankAlerts_SG801(t *testing.T) {
 	if err != nil || page.Items[0].State != "PAID" || page.Items[0].PaymentMethod != "CASH" {
 		t.Fatalf("paid history: %+v %v", page, err)
 	}
+	// The receipt lists the 40,000 bank event (one line per event) and the cash that paid the rest.
 	r, err := history.Receipt(ctx, boss, inv)
-	if err != nil || r.BillCode != "PH1002A101" || r.Total != 100_000 || r.Deposit != 50_000 || len(r.Lines) != 2 || len(r.Payments) != 1 || r.Payments[0].Amount != 50_000 || r.PropertyName != "p" {
+	if err != nil || r.BillCode != "PH1002A101" || r.Total != 100_000 || r.Deposit != 50_000 || len(r.Lines) != 2 || len(r.Payments) != 2 || r.Payments[0].Method != "TRANSFER" || r.Payments[0].Amount != 40_000 || r.Payments[1].Amount != 50_000 || r.PropertyName != "p" {
 		t.Fatalf("receipt: %+v %v", r, err)
 	}
 	if _, err := history.Receipt(ctx, boss, "nope"); !errors.Is(err, app.ErrNotFound) {

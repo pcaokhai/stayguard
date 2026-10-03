@@ -132,7 +132,7 @@ func (StayHistoryRepo) Receipt(ctx context.Context, tx app.Tx, invoiceID string)
 	rec := app.ReceiptRecord{BuildingID: r.BuildingID, PropertyName: r.PropertyName, BillCode: r.BillCode, RoomCode: r.RoomCode,
 		CheckInAt: r.CheckInAt.Time, CheckOutAt: r.CheckOutAt.Time, Quote: r.Quote, Extras: stayRec.Extras}
 	for _, p := range pays {
-		rec.Payments = append(rec.Payments, app.PaidPayment{ID: p.ID, Method: p.Method, Amount: p.Amount, At: p.PaidAt.Time})
+		rec.Payments = append(rec.Payments, app.PaidPayment{ID: p.ID, Method: p.Method, Amount: p.Amount, At: p.At.Time})
 	}
 	return rec, true, nil
 }
