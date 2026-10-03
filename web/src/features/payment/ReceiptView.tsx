@@ -36,6 +36,8 @@ export function ReceiptView() {
 
   return (
     <AppFrame tabs={false}>
+      {/* Only this page prints on an 80 mm roll (board BienLai); @page cannot be scoped by selector, so it exists only while this view is mounted. */}
+      <style>{"@page { size: 80mm 200mm; margin: 4mm; }"}</style>
       <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col print:max-w-none">
         <div className="print:hidden">
           <TopBar title={t("receipt.title")} subtitle={t("receipt.preview")} back="/rooms" />

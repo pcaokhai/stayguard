@@ -17,7 +17,8 @@ import { DemoPicker } from "../session/RolePicker";
 import { homeFor } from "./home";
 import { LockedView } from "./LockedView";
 import { LocaleSwitch } from "./LocaleSwitch";
-import { LockedError, rememberPin, useSignIn, WrongCredentialsError } from "./hooks";
+import { LockedError, rememberPin, useSignIn } from "./hooks";
+import { signInErrorText } from "./signInErrors";
 import { isSixDigits } from "./pin";
 import { PinInput } from "./PinInput";
 
@@ -156,7 +157,7 @@ export function SignInView() {
           </div>
           {signIn.isError && (
             <p role="alert" className="text-sm font-semibold text-warn">
-              {signIn.error instanceof WrongCredentialsError ? t("auth.wrong") : t("auth.failed")}
+              {signInErrorText(signIn.error)}
             </p>
           )}
           <Button type="submit" size="lg" loading={signIn.isPending}>

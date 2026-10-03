@@ -306,6 +306,8 @@
     "usernameRequired": "Nhập tên đăng nhập",
     "pinRequired": "Nhập đủ 6 số PIN",
     "wrong": "Mã nhà nghỉ, tên đăng nhập hoặc PIN chưa đúng.",
+    "rateLimited": "Thử quá nhiều lần. Đợi {n} giây rồi thử lại.",
+    "rateLimitedGeneric": "Thử quá nhiều lần. Đợi một lúc rồi thử lại.",
     "failed": "Không đăng nhập được. Kiểm tra mạng rồi thử lại.",
     "language": "Ngôn ngữ",
     "sessionEnded": "Phiên đăng nhập đã kết thúc. Hãy đăng nhập lại."

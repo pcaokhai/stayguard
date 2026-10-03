@@ -306,6 +306,8 @@
     "usernameRequired": "Enter your user name",
     "pinRequired": "Enter all 6 digits of the PIN",
     "wrong": "The guesthouse code, user name or PIN is not right.",
+    "rateLimited": "Too many attempts. Wait {n} seconds and try again.",
+    "rateLimitedGeneric": "Too many attempts. Wait a moment and try again.",
     "failed": "Could not sign in. Check your connection and try again.",
     "language": "Language",
     "sessionEnded": "Your session has ended. Sign in again."
