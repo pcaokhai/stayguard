@@ -91,8 +91,18 @@ export class Api {
     if (cached) return cached;
     const one = (readJson(cfg.pinsFile) as Record<string, string>)[user];
     const known = chosenPin(user);
-    const signIn = (pin: string) =>
-      this.post(null, "/v1/auth/sign-in", { guesthouseCode: cfg.guesthouse, username: user, pin });
+    // 20 sign-ins per minute per address: wait out a 429 instead of failing a case for it.
+    const signIn = async (pin: string): Promise<Res> => {
+      for (let i = 0; ; i++) {
+        const res = await this.post(null, "/v1/auth/sign-in", {
+          guesthouseCode: cfg.guesthouse,
+          username: user,
+          pin,
+        });
+        if (res.status !== 429 || i >= 2) return res;
+        await sleep(Number(res.headers["retry-after"] ?? 60) * 1000);
+      }
+    };
     let r = await signIn(known ?? one);
     if (r.status === 401 && !known) r = await signIn(NEW_PIN); // a hand run already chose it
     expect(r.status, `sign-in as ${user}`).toBe(200);
@@ -101,8 +111,9 @@ export class Api {
       const c = await this.put(t, "/v1/me/pin", { currentPin: one, newPin: NEW_PIN });
       expect(c.status, `first PIN of ${user}`).toBe(204);
       rememberPin(user, NEW_PIN);
-      r = await signIn(NEW_PIN);
-      expect(r.status).toBe(200);
+      // The session that changed the PIN stays valid (only other sessions end), which saves a second sign-in against the limit.
+      const me = await this.get(t, "/v1/me");
+      if (me.status !== 200) r = await signIn(NEW_PIN);
     }
     const who = {
       user,
