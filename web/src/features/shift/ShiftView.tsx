@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { newIdempotencyKey } from "../../lib/api";
 import { lp } from "../../lib/locale";
 import { formatVnd, parseVnd, vndNumber } from "../../lib/money";
-import { loadSession } from "../../lib/session";
+import { useMe } from "../session/useMe";
 import { t, tf } from "../../lib/t";
 import { formatClock } from "../../lib/time";
 import { useCloseShift, useCurrentShift } from "./hooks";
@@ -36,6 +36,7 @@ export function ShiftView() {
   const [reason, setReason] = useState("");
   const [floatLeft, setFloatLeft] = useState<string>();
   const s = shift.data;
+  const user = useMe().data?.user;
 
   if (shift.isError)
     return (
@@ -58,7 +59,6 @@ export function ShiftView() {
   const ready = !!s && (!needsReason || reason.trim().length >= 3);
   const step = (d: number, by: number) =>
     setQty((q) => ({ ...q, [d]: Math.max(0, (q[d] ?? 0) + by) }));
-  const user = loadSession()?.user;
 
   const submit = () =>
     s &&

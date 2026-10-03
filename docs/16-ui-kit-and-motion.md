@@ -146,8 +146,8 @@ The script sets the viewport, opens the route, waits for the network to settle a
 
 ## 8. Sessions, tabs and permissions
 
-- The session token lives in `sessionStorage`, which is **per browser tab**: a new tab (or a copied link opened in a new tab) starts signed out. That is intended (a shared front-desk computer forgets the person when the tab closes). It is not a bug to fix with `localStorage`.
-- A tab without a valid session gets a 401 from the API; the app then goes to `/sign-in?reason=expired&next=<page>`, shows "Your session has ended. Sign in again." and, after signing in, returns to `next` (same app and language only). Only a 401 does this.
+- A browser session is the HttpOnly cookie `sg_session` that the API sets at sign-in (SameSite=Strict). The app never sees or stores the token; `sessionStorage` only holds a non-secret hint (user and tenant) per tab for the demo role switch and mock mode. Every request is same-origin with credentials, and POST, PUT, PATCH and DELETE carry `X-Requested-With: stayguard` (otherwise the API answers 403 `CSRF_REJECTED`).
+- Because it is a cookie, a second tab or a link opened in a new tab in the same browser is already signed in. Closing the browser ends the session (no Max-Age); signing out revokes it on the server.
+- A request without a valid session gets a 401; the app then goes to `/sign-in?reason=expired&next=<page>`, shows "Your session has ended. Sign in again." and, after signing in, returns to `next` (this app and language only: absolute URLs, `//host`, backslashes and control characters are rejected). Only a 401 does this.
 - A signed-in person without the role for a page (for example a receptionist on any `/owner/...` URL, guarded by `OwnerGuard`, or a 403 from the API) sees the "no permission" screen in the same tab with a back button; the session is kept.
 - Covered by `e2e/smoke.then-awaiting.spec.ts` (run through `make smoke`).
-

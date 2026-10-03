@@ -1,11 +1,11 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { SlidingPill } from "@/components/motion";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { api } from "@/lib/api";
 import { getLocale, LOCALES, type Locale } from "@/lib/locale";
-import { loadSession } from "@/lib/session";
 import { t } from "@/lib/t";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +15,13 @@ const LONG: Record<Locale, string> = { vi: "Tiếng Việt", en: "English" };
 export function LocaleSwitch({ long = false, className }: { long?: boolean; className?: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const qc = useQueryClient();
   const current = getLocale();
   const go = (next: string) => {
     if (!next || next === current) return;
-    if (loadSession()) void api.PUT("/v1/me/locale", { body: { locale: next as Locale } });
+    // signed in = the account is already loaded (the sign-in page never loads it, so it makes no call)
+    if (qc.getQueryData(["me"]))
+      void api.PUT("/v1/me/locale", { body: { locale: next as Locale } });
     router.replace(`${pathname.replace(/^\/(vi|en)/, `/${next}`)}${window.location.search}`);
   };
   return (

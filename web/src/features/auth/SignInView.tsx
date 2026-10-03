@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { lp } from "@/lib/locale";
+import { safeNext } from "@/lib/nextPath";
 import { t } from "@/lib/t";
 import { DemoPicker } from "../session/RolePicker";
 import { homeFor } from "./home";
@@ -34,7 +35,7 @@ export function SignInView() {
   const expired = params.get("reason") === "expired";
   // Return to where the 401 interrupted, only inside this app and this language.
   const next = params.get("next");
-  const back = next && next.startsWith(`${lp("/")}/`) && !next.startsWith("//") ? next : null;
+  const back = safeNext(next, lp("/"));
   const signIn = useSignIn();
   const [shake, setShake] = useState(0);
   const [locked, setLocked] = useState<{ until: Date; account: string } | null>(null);

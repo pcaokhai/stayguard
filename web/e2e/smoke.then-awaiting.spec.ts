@@ -244,20 +244,15 @@ test("a receptionist on an owner-only page keeps the session; only a 401 goes to
     await page.goto(url);
     await expect(page.getByText("You do not have access here")).toBeVisible({ timeout: 15_000 });
     await expect(page).toHaveURL(new RegExp(url));
-    expect(
-      await page.evaluate(() => sessionStorage.getItem("stayguard.session")),
-      "the session is kept",
-    ).not.toBeNull();
+    // the session is kept: the cookie is still there and a protected page still loads
+    expect((await page.context().cookies()).some((c) => c.name === "sg_session")).toBe(true);
   }
   await page.getByRole("link", { name: "Back to room map" }).click();
   await expect(page).toHaveURL(/\/en\/rooms/);
   await expect(page.locator("li", { hasText: /A10/ }).first()).toBeVisible();
 
-  // a real 401 (bad token) goes to sign-in, says why and keeps the return URL
-  await page.evaluate(() => {
-    const s = JSON.parse(sessionStorage.getItem("stayguard.session")!);
-    sessionStorage.setItem("stayguard.session", JSON.stringify({ ...s, accessToken: "expired" }));
-  });
+  // a real 401 (the session cookie is gone) goes to sign-in, says why and keeps the return URL
+  await page.context().clearCookies();
   await page.goto("/en/owner/staff");
   await expect(page).toHaveURL(/\/en\/sign-in\?.*next=/);
   await expect(page.getByText("Your session has ended. Sign in again.")).toBeVisible();
@@ -267,7 +262,7 @@ test("a receptionist on an owner-only page keeps the session; only a 401 goes to
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/en\/owner\/staff/); // back where they were going
 
-  // a new tab has its own sessionStorage: it says the session ended instead of failing silently
+  // another browser (no cookie) says the session ended instead of failing silently
   const fresh = await (await browser.newContext()).newPage();
   await fresh.goto(env("E2E_BASE_URL") + "/en/rooms");
   await expect(fresh).toHaveURL(/\/en\/sign-in/);
@@ -342,4 +337,45 @@ test("a checked-out stay opened on /stay is a read-only summary; a reopened chec
   await gone(page.locator("body"));
   await page.setViewportSize({ width: 390, height: 844 }); // tiles are links on a phone
   await clean(page, /A101/);
+});
+
+test("browser sessions are an HttpOnly cookie: no token in storage, a second tab opens a page already signed in", async ({
+  page,
+}) => {
+  test.skip(!configured, "needs the stack and test guesthouse that `make smoke` creates");
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page);
+  const cookie = (await page.context().cookies()).find((c) => c.name === "sg_session");
+  expect(cookie, "the API set the session cookie").toBeDefined();
+  expect(cookie?.httpOnly).toBe(true);
+  expect(cookie?.sameSite).toBe("Strict");
+  // nothing secret in the page's storage (the cookie value, or an access token, would show up here)
+  const stored = await page.evaluate(
+    () => JSON.stringify({ ...sessionStorage }) + JSON.stringify({ ...localStorage }),
+  );
+  expect(stored).not.toContain(cookie!.value);
+  expect(stored.toLowerCase()).not.toContain("accesstoken");
+
+  // a clean room to open: A101 is vacant, so use the room id from the map and open /vi/clean directly in a second tab
+  const href = await page
+    .locator("li", { hasText: /A101/ })
+    .first()
+    .getByRole("link")
+    .getAttribute("href");
+  const room = new URL("http://x" + href!).searchParams.get("room");
+  const second = await page.context().newPage();
+  await second.goto(`/vi/clean?room=${room}`);
+  await expect(second).toHaveURL(/\/vi\/clean\?room=/); // not sent to sign-in
+  await expect(second.locator("body")).not.toContainText("Đăng nhập");
+  await expect(second.getByText("Dọn phòng").first()).toBeVisible();
+
+  // a write from the second tab works (the CSRF header goes with it): change the language
+  await second.goto("/en/account");
+  const put = second.waitForResponse((r) => r.url().endsWith("/v1/me/locale"));
+  await second.getByRole("radio", { name: "Tiếng Việt" }).click();
+  expect((await put).status(), "the cookie-authenticated write passes the CSRF check").toBeLessThan(
+    300,
+  );
+  await expect(second).toHaveURL(/\/vi\/account/);
 });

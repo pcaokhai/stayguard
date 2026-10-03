@@ -1,18 +1,21 @@
 import type { components } from "../api/generated/schema";
 
-export type Session = components["schemas"]["Session"];
+// Browser sessions are the HttpOnly cookie `sg_session` the API sets at sign-in: this app never sees or keeps the
+// token. What is stored per tab is only a non-secret hint (who, which tenant) for the demo role switch and mock mode.
+export type SessionHint = Pick<components["schemas"]["Session"], "tenantId" | "user">;
 
 const KEY = "stayguard.session";
 const hasStorage = () => typeof window !== "undefined";
 
-export function saveSession(s: Session): void {
-  if (hasStorage()) window.sessionStorage.setItem(KEY, JSON.stringify(s));
+export function saveSession(s: SessionHint & Record<string, unknown>): void {
+  if (hasStorage())
+    window.sessionStorage.setItem(KEY, JSON.stringify({ tenantId: s.tenantId, user: s.user }));
 }
 
-export function loadSession(): Session | null {
+export function loadSession(): SessionHint | null {
   if (!hasStorage()) return null;
   const raw = window.sessionStorage.getItem(KEY);
-  return raw ? (JSON.parse(raw) as Session) : null;
+  return raw ? (JSON.parse(raw) as SessionHint) : null;
 }
 
 export function clearSession(): void {

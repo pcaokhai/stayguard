@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { lp } from "@/lib/locale";
-import { loadSession } from "@/lib/session";
+import { useMe } from "../session/useMe";
 import { t, tf } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { homeFor } from "./home";
@@ -23,7 +23,7 @@ import { PinInput } from "./PinInput";
 export function SetPinView() {
   const router = useRouter();
   const change = useChangePin();
-  const session = loadSession();
+  const me = useMe().data;
   const [current] = useState(peekPin);
   const [typedCurrent, setTypedCurrent] = useState("");
   const [pin, setPin] = useState("");
@@ -46,7 +46,7 @@ export function SetPinView() {
         onSuccess: () => {
           forgetPin();
           toast.success(t("setPin.changed"));
-          router.replace(lp(session ? homeFor(session.user.role) : "/sign-in"));
+          router.replace(lp(me ? homeFor(me.user.role) : "/sign-in"));
         },
         onError: () => {
           setPin("");
@@ -68,7 +68,7 @@ export function SetPinView() {
       <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col">
         <TopBar
           title={t("setPin.title")}
-          subtitle={first && session ? tf("setPin.first", { name: session.user.name }) : undefined}
+          subtitle={first && me ? tf("setPin.first", { name: me.user.name }) : undefined}
           back={first ? undefined : "/account"}
         />
         <form onSubmit={submit} noValidate className="flex flex-1 flex-col gap-4 px-5 pb-8">
