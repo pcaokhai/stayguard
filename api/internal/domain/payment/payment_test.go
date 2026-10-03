@@ -118,15 +118,29 @@ func TestQRPayload_DecodedFields_DynamicAmountNoteAccount(t *testing.T) {
 	}
 }
 
-// Characterisation, no fix yet: the match is a plain substring of the normalised content. With only PH1003A101 pending, a transfer whose
-// content holds PH1003A1012 (the code of another bill, not pending) is matched to PH1003A101.
-func TestFindBillCode_LongerCodeNotPendingMatchesTheShorterPendingOne_Characterisation(t *testing.T) {
-	i, ok := FindBillCode("CK PH1003A1012 thanh toan", []string{"PH1003A101"})
-	if !ok || i != 0 {
-		t.Fatalf("today the content is matched to PH1003A101: %d %v", i, ok)
-	}
-	// With both pending, the longest match wins.
-	if i, ok = FindBillCode("CK PH1003A1012", []string{"PH1003A101", "PH1003A1012"}); !ok || i != 1 {
-		t.Fatalf("both pending: %d %v", i, ok)
+// A code is found only when the character right after it, in the transfer note as written, is not a digit: PH1003A1012 is another bill's
+// code, not PH1003A101 followed by a 2. A separator or a letter after the code is fine, and the longest pending code still wins.
+func TestFindBillCode_NextCharacterIsNotADigit(t *testing.T) {
+	pending := []string{"PH1003A101"}
+	for name, c := range map[string]struct {
+		content string
+		codes   []string
+		want    int
+		found   bool
+	}{
+		"another bill's code (a digit follows)": {"CK PH1003A1012 thanh toan", pending, -1, false},
+		"end of the note":                       {"CK PH1003A101", pending, 0, true},
+		"a full stop":                           {"CK PH1003A101.", pending, 0, true},
+		"a space then the amount":               {"CK PH1003A101 500000", pending, 0, true},
+		"lower case with separators in it":      {"ck ph1003-a101 tien phong", pending, 0, true},
+		"a letter follows":                      {"PH1003A101B", pending, 0, true},
+		"the second occurrence is the valid":    {"PH1003A1012 roi PH1003A101", pending, 0, true},
+		"both pending: the longest wins":        {"CK PH1003A1012", []string{"PH1003A101", "PH1003A1012"}, 1, true},
+		"both pending: the shorter alone":       {"CK PH1003A101 xong", []string{"PH1003A101", "PH1003A1012"}, 0, true},
+	} {
+		i, ok := FindBillCode(c.content, c.codes)
+		if ok != c.found || (ok && i != c.want) {
+			t.Errorf("%s: %d %v, want %d %v", name, i, ok, c.want, c.found)
+		}
 	}
 }

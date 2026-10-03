@@ -45,15 +45,44 @@ func Normalize(s string) string {
 	return b.String()
 }
 
-// FindBillCode returns the index of the code found inside the transfer content. When one code is a prefix
-// of another (PH0102A101 and PH0102A1012) the longest match wins.
+// FindBillCode returns the index of the code found inside the transfer content. Case and separators are ignored (banks add spaces,
+// dashes and dots), but a match counts only when the character right after the code in the note as written is not a digit: PH1003A1012
+// is another bill's code, not PH1003A101 followed by a 2. A separator, a letter or the end of the note after the code is fine. When
+// one pending code is a prefix of another (PH0102A101 and PH0102A1012) the longest match wins.
 func FindBillCode(content string, codes []string) (int, bool) {
-	text, best, bestLen := Normalize(content), -1, 0
+	text, rawAt := normalizeWithPositions(content)
+	raw := []rune(strings.ToUpper(content))
+	best, bestLen := -1, 0
 	for i, c := range codes {
 		n := Normalize(c)
-		if n != "" && len(n) > bestLen && strings.Contains(text, n) {
-			best, bestLen = i, len(n)
+		if n == "" || len(n) <= bestLen {
+			continue
+		}
+		for from := 0; ; {
+			k := strings.Index(text[from:], n)
+			if k < 0 {
+				break
+			}
+			end := from + k + len(n) - 1 // index in text of the code's last character
+			if next := rawAt[end] + 1; next >= len(raw) || raw[next] < '0' || raw[next] > '9' {
+				best, bestLen = i, len(n)
+				break
+			}
+			from += k + 1
 		}
 	}
 	return best, best >= 0
+}
+
+// normalizeWithPositions is Normalize that also says where each kept character sits in the upper-cased content (in runes).
+func normalizeWithPositions(s string) (string, []int) {
+	var b strings.Builder
+	var at []int
+	for i, r := range []rune(strings.ToUpper(s)) {
+		if r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
+			b.WriteRune(r)
+			at = append(at, i)
+		}
+	}
+	return b.String(), at
 }
