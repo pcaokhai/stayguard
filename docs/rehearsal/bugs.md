@@ -15,7 +15,7 @@ Status: **open**, or **fixed** with the commit that fixed it (re-checked by the 
 | 8 | CA-12 | The owner overview counted a float left in the drawer twice. | API-2 | fixed 8cbfbe1 |
 | 9 | UI-01 | Raw `LOCK_ROOM` and other raw codes on Cảnh báo; `{room}` and an empty actor in Nhật ký. | WEB-2 | fixed f0666c8, e174d33 |
 | 10 | (runner) | The production image did not build: web tests import `contracts/*.json`, which the Dockerfile left out. | WEB-2 | fixed 958f57f |
-| 11 | UI-01 | `/owner/transactions` scrolls sideways at 390 px (page width 422 > 390, owner and vi). | WEB-2 | open |
+| 11 | UI-01 | `/owner/transactions` scrolls sideways at 390 px (page width 422 > 390, owner and vi). | WEB-2 | fixed 8e75b85 |
 
 Not bugs, but worth knowing: the shared compose project `stayguard-rehearse` means two sessions running `make rehearse-test` at once break each other
 (the second `up --build` recreates the API under the first). The runner now takes a lock and refuses to start a second run.
