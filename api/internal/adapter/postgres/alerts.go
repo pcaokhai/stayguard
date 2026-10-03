@@ -36,3 +36,19 @@ func (AlertWriter) Raise(ctx context.Context, tx app.Tx, a app.AlertDraft) error
 	}
 	return writeFailure("insert alert", sqlcgen.New(t).InsertAlert(ctx, arg))
 }
+
+var _ app.AlertResolver = AlertWriter{}
+
+func (AlertWriter) Resolve(ctx context.Context, tx app.Tx, r app.AlertResolve) error {
+	t, err := pgTx(tx)
+	if err != nil {
+		return err
+	}
+	kinds := r.Kinds
+	if kinds == nil {
+		kinds = []string{}
+	}
+	_, err = sqlcgen.New(t).ResolveAlerts(ctx, sqlcgen.ResolveAlertsParams{TenantID: t.tenant, ResolvedAt: ts(r.At), Resolution: pgtype.Text{String: r.Resolution, Valid: true},
+		StayID: r.StayID, Kinds: kinds, EventID: r.EventID, EventAmount: r.EventAmount, EventNote: r.EventNote})
+	return writeFailure("resolve alerts", err)
+}

@@ -33,7 +33,7 @@ func (MonitorRepo) Alerts(ctx context.Context, tx app.Tx, f app.AlertFilter) ([]
 	if err != nil {
 		return nil, err
 	}
-	arg := sqlcgen.ListAlertsParams{TenantID: t.tenant, UnreadOnly: f.UnreadOnly, Kind: optText(f.Kind), RowLimit: int32(f.Limit)} // #nosec G115 -- page size constant
+	arg := sqlcgen.ListAlertsParams{TenantID: t.tenant, UnreadOnly: f.UnreadOnly, Kind: optText(f.Kind), RowLimit: int32(f.Limit), UnresolvedOnly: f.UnresolvedOnly} // #nosec G115 -- page size constant
 	arg.CursorAt, arg.CursorID = cursorArgs(f.CursorAt, f.CursorID)
 	rows, err := sqlcgen.New(t).ListAlerts(ctx, arg)
 	if err != nil {
@@ -46,7 +46,7 @@ func (MonitorRepo) Alerts(ctx context.Context, tx app.Tx, f app.AlertFilter) ([]
 			return nil, fmt.Errorf("decode details of alert %s: %w", r.ID, err)
 		}
 		out[i] = app.AlertRow{ID: r.ID, Kind: r.Kind, RoomCode: r.RoomCode, ShiftID: r.ShiftID, StayID: r.StayID,
-			ActorName: r.ActorName, Amount: intPtr(r.Amount), Details: details, CreatedAt: r.CreatedAt.Time.UTC()}
+			ActorName: r.ActorName, Amount: intPtr(r.Amount), Details: details, CreatedAt: r.CreatedAt.Time.UTC(), ResolvedAt: timePtr(r.ResolvedAt), Resolution: r.Resolution.String}
 	}
 	return out, nil
 }

@@ -198,21 +198,21 @@ func TestRefund_OwnerRecordsItOnNoShiftOnce_FU(t *testing.T) {
 	}
 }
 
-// Item 4: a stay checked out for 30 minutes with no payment and no recorded refund raises one PAYMENT_UNPAID alert; shift close lists it.
+// A stay checked out for 30 minutes with no recorded refund is listed at shift close (the alert itself: TestRefundPendingAlert_After30Minutes_FU).
 func TestUnpaidAlert_OpenRefund_FU(t *testing.T) {
 	r := newRefundRig(t)
 	rig := payRig{e: r.e, token: r.desk, tenant: r.tenant, invoice: r.invoice, code: r.code}
 	rig.runJobsAt(r.outAt.Add(29*time.Minute + 59*time.Second))
-	if n := len(rig.alerts("PAYMENT_UNPAID")); n != 0 {
+	if n := len(rig.alerts("REFUND_PENDING")); n != 0 {
 		t.Fatalf("an alert at 29:59: %d", n)
 	}
 	rig.runJobsAt(r.outAt.Add(30 * time.Minute))
-	got := rig.alerts("PAYMENT_UNPAID")
+	got := rig.alerts("REFUND_PENDING")
 	if len(got) != 1 || got[0] != r.refund {
 		t.Fatalf("one alert at 30:00 for the refund %d: %v", r.refund, got)
 	}
 	rig.runJobsAt(r.outAt.Add(5 * time.Hour))
-	if n := len(rig.alerts("PAYMENT_UNPAID")); n != 1 {
+	if n := len(rig.alerts("REFUND_PENDING")); n != 1 {
 		t.Fatalf("once per stay: %d", n)
 	}
 

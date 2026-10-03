@@ -99,6 +99,9 @@ func (p *Payments) link(ctx context.Context, tx Tx, c Caller, stored StoredEvent
 	if err != nil {
 		return TransactionRow{}, err
 	}
+	if err := p.resolveAlerts(ctx, tx, AlertResolve{EventID: stored.ID, EventNote: clip(stored.Event.Content), EventAmount: stored.Event.Amount, Resolution: ResolutionLinked}); err != nil {
+		return TransactionRow{}, err
+	}
 	after, err := json.Marshal(map[string]any{"eventId": stored.ID, "paymentId": res.PaymentID, "invoiceId": inv.ID, "amount": stored.Event.Amount})
 	if err != nil {
 		return TransactionRow{}, fmt.Errorf("encode audit: %w", err)

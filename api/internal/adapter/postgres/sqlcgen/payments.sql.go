@@ -324,14 +324,15 @@ func (q *Queries) ListStalePartials(ctx context.Context, arg ListStalePartialsPa
 
 const listStaleUnpaid = `-- name: ListStaleUnpaid :many
 SELECT iv.id AS invoice_id, iv.bill_code, iv.stay_id, un.code AS room_code,
-       coalesce((iv.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due,
-       coalesce((iv.quote->>'refundDue')::bigint, 0)::bigint AS refund_due
+       coalesce((rq.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due,
+       coalesce((rq.quote->>'refundDue')::bigint, 0)::bigint AS refund_due
 FROM app.invoices iv
 JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
 JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+CROSS JOIN LATERAL (SELECT app.reconciled_quote(iv.quote, iv.total, iv.status, s.deposit) AS quote) rq
 WHERE iv.tenant_id = $1 AND iv.status = 'OPEN' AND iv.created_at <= $2::timestamptz
   AND NOT EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL')
-  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.kind = 'PAYMENT_UNPAID' AND a.stay_id = iv.stay_id)
+  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.stay_id = iv.stay_id AND a.kind IN ('PAYMENT_UNPAID', 'REFUND_PENDING'))
 ORDER BY iv.created_at, iv.id
 `
 
@@ -349,8 +350,9 @@ type ListStaleUnpaidRow struct {
 	RefundDue  int64
 }
 
-// Open invoices (nothing paid, nothing refunded) checked out at or before @before, with no bank money on them and no
-// PAYMENT_UNPAID alert yet for the stay. A refund-only invoice has balance_due 0 and refund_due above it.
+// Open invoices (nothing paid, nothing refunded) checked out at or before @before, with no bank money on them and no alert for the stay
+// yet (PAYMENT_UNPAID or REFUND_PENDING, one per stay). The figures are the open invoice's quote read with the stay's real deposit.
+// balance_due above 0 is money to collect; balance_due 0 with refund_due above 0 is a deposit to give back.
 func (q *Queries) ListStaleUnpaid(ctx context.Context, arg ListStaleUnpaidParams) ([]ListStaleUnpaidRow, error) {
 	rows, err := q.db.Query(ctx, listStaleUnpaid, arg.TenantID, arg.Before)
 	if err != nil {

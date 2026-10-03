@@ -180,14 +180,14 @@ func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
 		return nil
 	}
 	now := storedTime(o.clock.Now())
-	alerts, err := o.monitor.Alerts(ctx, tx, AlertFilter{UnreadOnly: true, Limit: overviewAlertsLimit})
+	alerts, err := o.monitor.Alerts(ctx, tx, AlertFilter{UnreadOnly: true, UnresolvedOnly: true, Limit: overviewAlertsLimit})
 	if err != nil {
 		return fmt.Errorf("unread alerts: %w", err)
 	}
 	out.Alerts = alerts
 	for _, a := range alerts {
 		switch a.Kind {
-		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort, AlertOverpaid, AlertPaymentPartial, AlertPaymentUnpaid:
+		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort, AlertOverpaid, AlertPaymentPartial, AlertPaymentUnpaid, AlertRefundPending:
 			out.Attention = append(out.Attention, AttentionItem{Kind: a.Kind, Ref: a.ID, RoomCode: a.RoomCode, Amount: a.Amount})
 		}
 	}

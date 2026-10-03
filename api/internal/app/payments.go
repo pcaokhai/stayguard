@@ -63,7 +63,8 @@ type Payments struct {
 	ids   IDGenerator
 	clock Clock
 	// alerts is optional (nil raises nothing): PAYMENT_MISMATCH and UNMATCHED_TRANSFER for the owner (SG-801).
-	alerts AlertWriter
+	alerts   AlertWriter
+	resolver AlertResolver
 	// cash is optional (nil records nothing): cash taken and refunded goes on the drawer ledger (SG-503).
 	cash CashLedger
 	guard
@@ -73,7 +74,23 @@ type Payments struct {
 func (p *Payments) WithCash(l CashLedger) *Payments { p.cash = l; return p }
 
 // WithAlerts turns on the owner alerts for bank events that cannot settle an invoice.
-func (p *Payments) WithAlerts(a AlertWriter) *Payments { p.alerts = a; return p }
+func (p *Payments) WithAlerts(a AlertWriter) *Payments {
+	p.alerts = a
+	p.resolver, _ = a.(AlertResolver) // the same adapter also resolves what it raised
+	return p
+}
+
+// resolveAlerts closes the stay's money alerts once its invoice is settled; without a resolver it does nothing.
+func (p *Payments) resolveAlerts(ctx context.Context, tx Tx, r AlertResolve) error {
+	if p.resolver == nil {
+		return nil
+	}
+	r.At = storedTime(p.clock.Now())
+	if err := p.resolver.Resolve(ctx, tx, r); err != nil {
+		return fmt.Errorf("resolve alerts: %w", err)
+	}
+	return nil
+}
 
 func NewPayments(uow UnitOfWork, repo PaymentRepo, levels BuildingLevels, enc Encryptor, idem IdempotencyStore,
 	audit AuditWriter, ids IDGenerator, clock Clock) *Payments {
@@ -156,6 +173,13 @@ func (p *Payments) create(ctx context.Context, tx Tx, c Caller, inv PayInvoice, 
 		return PaymentView{}, err
 	}
 	if err := p.repo.SettleInvoiceEvents(ctx, tx, inv.ID); err != nil {
+		return PaymentView{}, err
+	}
+	resolution := ResolutionPaid
+	if due == 0 && q.RefundDue > 0 {
+		resolution = ResolutionRefunded
+	}
+	if err := p.resolveAlerts(ctx, tx, AlertResolve{StayID: inv.StayID, Kinds: moneyAlertKinds, Resolution: resolution}); err != nil {
 		return PaymentView{}, err
 	}
 	if err := p.auditPayment(ctx, tx, c.UserID, auditPaySettled, n.ID, payment.MethodCash, inv.ID, due); err != nil {
@@ -274,7 +298,8 @@ func (p *Payments) Settle(ctx context.Context, ev PaymentEvent) (SettleResult, e
 }
 
 func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleResult, error) {
-	fresh, err := p.repo.InsertEvent(ctx, tx, p.ids.New(eventIDPrefix), ev)
+	eventID := p.ids.New(eventIDPrefix)
+	fresh, err := p.repo.InsertEvent(ctx, tx, eventID, ev)
 	if err != nil {
 		return SettleResult{}, fmt.Errorf("insert payment event: %w", err)
 	}
@@ -291,7 +316,7 @@ func (p *Payments) settle(ctx context.Context, tx Tx, ev PaymentEvent) (SettleRe
 	}
 	ix, found := payment.FindBillCode(ev.Content, codes)
 	if !found {
-		a := AlertDraft{Kind: AlertUnmatchedTransfer, Amount: &ev.Amount, Details: map[string]string{"transferNote": clip(ev.Content)}}
+		a := AlertDraft{Kind: AlertUnmatchedTransfer, Amount: &ev.Amount, Details: map[string]string{"transferNote": clip(ev.Content), "eventId": eventID}}
 		if err := p.raise(ctx, tx, a); err != nil {
 			return SettleResult{}, err
 		}
@@ -343,6 +368,9 @@ func (p *Payments) settleMatched(ctx context.Context, tx Tx, ev PaymentEvent, t 
 		return SettleResult{}, fmt.Errorf("set event matched: %w", err)
 	}
 	if err := p.repo.SettleInvoiceEvents(ctx, tx, t.InvoiceID); err != nil {
+		return SettleResult{}, err
+	}
+	if err := p.resolveAlerts(ctx, tx, AlertResolve{StayID: t.StayID, Kinds: moneyAlertKinds, Resolution: ResolutionPaid}); err != nil {
 		return SettleResult{}, err
 	}
 	return SettleResult{Result: payment.ResultSettled, PaymentID: t.PaymentID}, nil
@@ -481,13 +509,17 @@ func (p *Payments) RaiseUnpaidAlerts(ctx context.Context, tenantID string, now t
 			return fmt.Errorf("stale unpaid: %w", err)
 		}
 		for _, u := range list {
-			owed := u.Balance // an open deposit refund is what the desk still owes the guest
-			details := map[string]string{"billCode": u.BillCode, "balance": strconv.FormatInt(u.Balance, 10)}
+			// Money to collect is PAYMENT_UNPAID; a deposit to give back is REFUND_PENDING and never PAYMENT_UNPAID. Nothing owed either
+			// way (the deposit equals the bill) raises nothing.
+			a := AlertDraft{Kind: AlertPaymentUnpaid, RoomCode: u.RoomCode, StayID: u.StayID, Amount: &u.Balance,
+				Details: map[string]string{"billCode": u.BillCode, "balance": strconv.FormatInt(u.Balance, 10)}}
 			if u.Balance == 0 {
-				owed = u.RefundDue
-				details["refundDue"] = strconv.FormatInt(u.RefundDue, 10)
+				if u.RefundDue == 0 {
+					continue
+				}
+				a = AlertDraft{Kind: AlertRefundPending, RoomCode: u.RoomCode, StayID: u.StayID, Amount: &u.RefundDue,
+					Details: map[string]string{"billCode": u.BillCode, "refundDue": strconv.FormatInt(u.RefundDue, 10)}}
 			}
-			a := AlertDraft{Kind: AlertPaymentUnpaid, RoomCode: u.RoomCode, StayID: u.StayID, Amount: &owed, Details: details}
 			if err := p.raise(ctx, tx, a); err != nil {
 				return err
 			}

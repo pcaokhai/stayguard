@@ -19,6 +19,30 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AlertResolution.
+const (
+	AlertResolutionLINKED      AlertResolution = "LINKED"
+	AlertResolutionLessThannil AlertResolution = "<nil>"
+	AlertResolutionPAID        AlertResolution = "PAID"
+	AlertResolutionREFUNDED    AlertResolution = "REFUNDED"
+)
+
+// Valid indicates whether the value is a known member of the AlertResolution enum.
+func (e AlertResolution) Valid() bool {
+	switch e {
+	case AlertResolutionLINKED:
+		return true
+	case AlertResolutionLessThannil:
+		return true
+	case AlertResolutionPAID:
+		return true
+	case AlertResolutionREFUNDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AlertKind.
 const (
 	AlertKindACCOUNTLOCKED       AlertKind = "ACCOUNT_LOCKED"
@@ -30,6 +54,7 @@ const (
 	AlertKindPAYMENTMISMATCH     AlertKind = "PAYMENT_MISMATCH"
 	AlertKindPAYMENTPARTIAL      AlertKind = "PAYMENT_PARTIAL"
 	AlertKindPAYMENTUNPAID       AlertKind = "PAYMENT_UNPAID"
+	AlertKindREFUNDPENDING       AlertKind = "REFUND_PENDING"
 	AlertKindSEPAYUPDATED        AlertKind = "SEPAY_UPDATED"
 	AlertKindSTAYTIMEEDITED      AlertKind = "STAY_TIME_EDITED"
 	AlertKindSTOCKTAKEDIFFERENCE AlertKind = "STOCKTAKE_DIFFERENCE"
@@ -57,6 +82,8 @@ func (e AlertKind) Valid() bool {
 	case AlertKindPAYMENTPARTIAL:
 		return true
 	case AlertKindPAYMENTUNPAID:
+		return true
+	case AlertKindREFUNDPENDING:
 		return true
 	case AlertKindSEPAYUPDATED:
 		return true
@@ -107,6 +134,7 @@ const (
 	AttentionItemKindPAYMENTMISMATCH   AttentionItemKind = "PAYMENT_MISMATCH"
 	AttentionItemKindPAYMENTPARTIAL    AttentionItemKind = "PAYMENT_PARTIAL"
 	AttentionItemKindPAYMENTUNPAID     AttentionItemKind = "PAYMENT_UNPAID"
+	AttentionItemKindREFUNDPENDING     AttentionItemKind = "REFUND_PENDING"
 	AttentionItemKindTICKETOPEN        AttentionItemKind = "TICKET_OPEN"
 	AttentionItemKindUNMATCHEDTRANSFER AttentionItemKind = "UNMATCHED_TRANSFER"
 )
@@ -129,6 +157,8 @@ func (e AttentionItemKind) Valid() bool {
 	case AttentionItemKindPAYMENTPARTIAL:
 		return true
 	case AttentionItemKindPAYMENTUNPAID:
+		return true
+	case AttentionItemKindREFUNDPENDING:
 		return true
 	case AttentionItemKindTICKETOPEN:
 		return true
@@ -1156,13 +1186,20 @@ type Alert struct {
 	CreatedAt time.Time `json:"createdAt"`
 
 	// Details Kind-specific values, for example oldTime and newTime
-	Details  *map[string]string `json:"details,omitempty"`
-	Id       string             `json:"id"`
-	Kind     AlertKind          `json:"kind"`
-	RoomCode *string            `json:"roomCode,omitempty"`
-	ShiftId  *string            `json:"shiftId,omitempty"`
-	StayId   *string            `json:"stayId,omitempty"`
+	Details    *map[string]string `json:"details,omitempty"`
+	Id         string             `json:"id"`
+	Kind       AlertKind          `json:"kind"`
+	Resolution *AlertResolution   `json:"resolution,omitempty"`
+
+	// ResolvedAt When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
+	ResolvedAt *time.Time `json:"resolvedAt,omitempty"`
+	RoomCode   *string    `json:"roomCode,omitempty"`
+	ShiftId    *string    `json:"shiftId,omitempty"`
+	StayId     *string    `json:"stayId,omitempty"`
 }
+
+// AlertResolution defines model for Alert.Resolution.
+type AlertResolution string
 
 // AlertKind defines model for AlertKind.
 type AlertKind string

@@ -43,3 +43,41 @@ func (q *Queries) InsertAlert(ctx context.Context, arg InsertAlertParams) error 
 	)
 	return err
 }
+
+const resolveAlerts = `-- name: ResolveAlerts :execrows
+UPDATE app.alerts SET resolved_at = $1, resolution = $2
+WHERE tenant_id = $3 AND resolved_at IS NULL
+  AND (($4::text <> '' AND stay_id = $4::text AND kind = ANY($5::text[]))
+       OR ($6::text <> '' AND kind = 'UNMATCHED_TRANSFER' AND (details->>'eventId' = $6::text
+            OR (details->>'eventId' IS NULL AND amount = $7::bigint AND details->>'transferNote' = $8::text))))
+`
+
+type ResolveAlertsParams struct {
+	ResolvedAt  pgtype.Timestamptz
+	Resolution  pgtype.Text
+	TenantID    string
+	StayID      string
+	Kinds       []string
+	EventID     string
+	EventAmount int64
+	EventNote   string
+}
+
+// Closes the open alerts of the given kinds for a stay, and the alert of a bank event (by event id; an alert raised before event ids
+// were kept is found by its amount and transfer note). History stays: only resolved_at and resolution are set.
+func (q *Queries) ResolveAlerts(ctx context.Context, arg ResolveAlertsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, resolveAlerts,
+		arg.ResolvedAt,
+		arg.Resolution,
+		arg.TenantID,
+		arg.StayID,
+		arg.Kinds,
+		arg.EventID,
+		arg.EventAmount,
+		arg.EventNote,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

@@ -9,18 +9,20 @@ import (
 )
 
 type AppAlert struct {
-	ID        string
-	TenantID  string
-	Kind      string
-	RoomCode  pgtype.Text
-	ShiftID   pgtype.Text
-	StayID    pgtype.Text
-	ActorID   pgtype.Text
-	Amount    pgtype.Int8
-	Details   []byte
-	CreatedAt pgtype.Timestamptz
-	ReadAt    pgtype.Timestamptz
-	ReadBy    pgtype.Text
+	ID         string
+	TenantID   string
+	Kind       string
+	RoomCode   pgtype.Text
+	ShiftID    pgtype.Text
+	StayID     pgtype.Text
+	ActorID    pgtype.Text
+	Amount     pgtype.Int8
+	Details    []byte
+	CreatedAt  pgtype.Timestamptz
+	ReadAt     pgtype.Timestamptz
+	ReadBy     pgtype.Text
+	ResolvedAt pgtype.Timestamptz
+	Resolution pgtype.Text
 }
 
 type AppAuditLog struct {

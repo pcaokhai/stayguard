@@ -1,10 +1,11 @@
 -- name: ListAlerts :many
 SELECT a.id, a.kind, coalesce(a.room_code, '') AS room_code, coalesce(a.shift_id, '') AS shift_id, coalesce(a.stay_id, '') AS stay_id,
-       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at
+       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution
 FROM app.alerts a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
 WHERE a.tenant_id = @tenant_id
   AND (NOT @unread_only::boolean OR a.read_at IS NULL)
+  AND (NOT @unresolved_only::boolean OR a.resolved_at IS NULL)
   AND (sqlc.narg(kind)::text IS NULL OR a.kind = sqlc.narg(kind)::text)
   AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (a.created_at, a.id) < (sqlc.narg(cursor_at)::timestamptz, sqlc.narg(cursor_id)::text))
 ORDER BY a.created_at DESC, a.id DESC

@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.5.0
+ * OpenAPI spec version: 1.6.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -152,6 +152,7 @@ export const AlertKind = {
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
   PAYMENT_UNPAID: 'PAYMENT_UNPAID',
+  REFUND_PENDING: 'REFUND_PENDING',
   SEPAY_UPDATED: 'SEPAY_UPDATED',
   STAY_TIME_EDITED: 'STAY_TIME_EDITED',
   STOCKTAKE_DIFFERENCE: 'STOCKTAKE_DIFFERENCE',
@@ -517,6 +518,18 @@ export interface HousekeepingTask {
  */
 export type AlertDetails = {[key: string]: string};
 
+/**
+ * @nullable
+ */
+export type AlertResolution = typeof AlertResolution[keyof typeof AlertResolution] | null;
+
+
+export const AlertResolution = {
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED',
+  LINKED: 'LINKED',
+} as const;
+
 export interface Alert {
   id: string;
   kind: AlertKind;
@@ -532,6 +545,13 @@ export interface Alert {
   amount?: Vnd | null;
   /** Kind-specific values, for example oldTime and newTime */
   details?: AlertDetails;
+  /**
+     * When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
+     * @nullable
+     */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolution?: AlertResolution;
 }
 
 export interface PaymentSummary {
@@ -577,6 +597,7 @@ export const AttentionItemKind = {
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
   PAYMENT_UNPAID: 'PAYMENT_UNPAID',
+  REFUND_PENDING: 'REFUND_PENDING',
   UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
   CASH_SHORT: 'CASH_SHORT',
   LEAVE_PENDING: 'LEAVE_PENDING',

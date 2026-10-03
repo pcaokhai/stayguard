@@ -11,14 +11,18 @@ type AlertRow struct {
 	Amount                                         *int64
 	Details                                        map[string]string
 	CreatedAt                                      time.Time
+	ResolvedAt                                     *time.Time
+	Resolution                                     string
 }
 
 type AlertFilter struct {
 	UnreadOnly bool
-	Kind       string
-	CursorAt   *time.Time
-	CursorID   string
-	Limit      int
+	// UnresolvedOnly leaves out alerts that stopped needing the owner (the invoice was paid, the transfer linked).
+	UnresolvedOnly bool
+	Kind           string
+	CursorAt       *time.Time
+	CursorID       string
+	Limit          int
 }
 
 // TransactionRow is one money event: a paid payment, a transfer with a wrong amount, or a bank event nobody matched.

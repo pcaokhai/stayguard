@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.5.0
+  version: 1.6.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -3547,6 +3547,7 @@ components:
       - PAYMENT_MISMATCH
       - PAYMENT_PARTIAL
       - PAYMENT_UNPAID
+      - REFUND_PENDING
       - SEPAY_UPDATED
       - STAY_TIME_EDITED
       - STOCKTAKE_DIFFERENCE
@@ -4234,6 +4235,21 @@ components:
           additionalProperties:
             type: string
           description: Kind-specific values, for example oldTime and newTime
+        resolvedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
+        resolution:
+          type:
+          - string
+          - 'null'
+          enum:
+          - PAID
+          - REFUNDED
+          - LINKED
+          - null
     PaymentSummary:
       type: object
       required:
@@ -5953,6 +5969,7 @@ components:
           - PAYMENT_MISMATCH
           - PAYMENT_PARTIAL
           - PAYMENT_UNPAID
+          - REFUND_PENDING
           - UNMATCHED_TRANSFER
           - CASH_SHORT
           - LEAVE_PENDING

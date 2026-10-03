@@ -13,42 +13,47 @@ import (
 
 const listAlerts = `-- name: ListAlerts :many
 SELECT a.id, a.kind, coalesce(a.room_code, '') AS room_code, coalesce(a.shift_id, '') AS shift_id, coalesce(a.stay_id, '') AS stay_id,
-       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at
+       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution
 FROM app.alerts a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
 WHERE a.tenant_id = $1
   AND (NOT $2::boolean OR a.read_at IS NULL)
-  AND ($3::text IS NULL OR a.kind = $3::text)
-  AND ($4::timestamptz IS NULL OR (a.created_at, a.id) < ($4::timestamptz, $5::text))
+  AND (NOT $3::boolean OR a.resolved_at IS NULL)
+  AND ($4::text IS NULL OR a.kind = $4::text)
+  AND ($5::timestamptz IS NULL OR (a.created_at, a.id) < ($5::timestamptz, $6::text))
 ORDER BY a.created_at DESC, a.id DESC
-LIMIT $6
+LIMIT $7
 `
 
 type ListAlertsParams struct {
-	TenantID   string
-	UnreadOnly bool
-	Kind       pgtype.Text
-	CursorAt   pgtype.Timestamptz
-	CursorID   pgtype.Text
-	RowLimit   int32
+	TenantID       string
+	UnreadOnly     bool
+	UnresolvedOnly bool
+	Kind           pgtype.Text
+	CursorAt       pgtype.Timestamptz
+	CursorID       pgtype.Text
+	RowLimit       int32
 }
 
 type ListAlertsRow struct {
-	ID        string
-	Kind      string
-	RoomCode  string
-	ShiftID   string
-	StayID    string
-	ActorName string
-	Amount    pgtype.Int8
-	Details   []byte
-	CreatedAt pgtype.Timestamptz
+	ID         string
+	Kind       string
+	RoomCode   string
+	ShiftID    string
+	StayID     string
+	ActorName  string
+	Amount     pgtype.Int8
+	Details    []byte
+	CreatedAt  pgtype.Timestamptz
+	ResolvedAt pgtype.Timestamptz
+	Resolution pgtype.Text
 }
 
 func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]ListAlertsRow, error) {
 	rows, err := q.db.Query(ctx, listAlerts,
 		arg.TenantID,
 		arg.UnreadOnly,
+		arg.UnresolvedOnly,
 		arg.Kind,
 		arg.CursorAt,
 		arg.CursorID,
@@ -71,6 +76,8 @@ func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]ListA
 			&i.Amount,
 			&i.Details,
 			&i.CreatedAt,
+			&i.ResolvedAt,
+			&i.Resolution,
 		); err != nil {
 			return nil, err
 		}

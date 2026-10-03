@@ -29,8 +29,13 @@ func nilIfEmpty(s string) *string {
 
 func toAlert(a app.AlertRow) gen.Alert {
 	d := a.Details
-	return gen.Alert{Id: a.ID, Kind: gen.AlertKind(a.Kind), CreatedAt: a.CreatedAt, RoomCode: nilIfEmpty(a.RoomCode),
-		ShiftId: nilIfEmpty(a.ShiftID), StayId: nilIfEmpty(a.StayID), ActorName: nilIfEmpty(a.ActorName), Amount: a.Amount, Details: &d}
+	out := gen.Alert{Id: a.ID, Kind: gen.AlertKind(a.Kind), CreatedAt: a.CreatedAt, RoomCode: nilIfEmpty(a.RoomCode),
+		ShiftId: nilIfEmpty(a.ShiftID), StayId: nilIfEmpty(a.StayID), ActorName: nilIfEmpty(a.ActorName), Amount: a.Amount, Details: &d, ResolvedAt: a.ResolvedAt}
+	if a.Resolution != "" {
+		r := gen.AlertResolution(a.Resolution)
+		out.Resolution = &r
+	}
+	return out
 }
 
 func (s Server) ListAlerts(ctx context.Context, req gen.ListAlertsRequestObject) (gen.ListAlertsResponseObject, error) {
