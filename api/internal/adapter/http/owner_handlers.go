@@ -58,7 +58,7 @@ func toOverview(v app.OwnerOverview) (gen.OwnerOverview, error) {
 	}
 	raw, err := json.Marshal(map[string]any{
 		"date": v.Date, "revenueTotal": v.RevenueTotal, "transfersReceived": v.TransfersReceived, "cashExpected": v.CashTotal,
-		"byBuilding": buildings, "alerts": []any{}, "latestPayments": payments,
+		"byBuilding": buildings, "alerts": []any{}, "unreadAlerts": v.UnreadAlerts, "latestPayments": payments,
 		"occupancy": map[string]int{"occupiedRooms": v.OccupiedRooms, "totalRooms": v.TotalRooms, "overdueRooms": v.OverdueRooms},
 	})
 	var out gen.OwnerOverview

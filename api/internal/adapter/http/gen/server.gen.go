@@ -1249,10 +1249,19 @@ type Alert struct {
 	CreatedAt time.Time `json:"createdAt"`
 
 	// Details Kind-specific values, for example oldTime and newTime
-	Details    *map[string]string `json:"details,omitempty"`
-	Id         string             `json:"id"`
-	Kind       AlertKind          `json:"kind"`
-	Resolution *AlertResolution   `json:"resolution,omitempty"`
+	Details *map[string]string `json:"details,omitempty"`
+	Id      string             `json:"id"`
+	Kind    AlertKind          `json:"kind"`
+
+	// Read True once someone marked the alert read (markAlertRead).
+	Read bool `json:"read"`
+
+	// ReadAt When it was first marked read; kept when it is read again.
+	ReadAt *time.Time `json:"readAt,omitempty"`
+
+	// ReadBy Name of whoever read it first.
+	ReadBy     *string          `json:"readBy,omitempty"`
+	Resolution *AlertResolution `json:"resolution,omitempty"`
 
 	// ResolvedAt When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
 	ResolvedAt *time.Time `json:"resolvedAt,omitempty"`
@@ -1934,6 +1943,9 @@ type OwnerOverview struct {
 
 	// TransfersReceived Whole Vietnamese dong
 	TransfersReceived Vnd `json:"transfersReceived"`
+
+	// UnreadAlerts Alerts nobody read and that are not resolved (the badge); alerts lists at most the newest of them.
+	UnreadAlerts int `json:"unreadAlerts"`
 }
 
 // OwnerPin Re-entered owner PIN for sensitive changes (bank accounts, removing staff).

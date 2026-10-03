@@ -71,6 +71,7 @@ type OwnerOverview struct {
 	LatestPayments                             []PaymentSummary
 	Buildings                                  []BuildingStatus
 	Alerts                                     []AlertRow
+	UnreadAlerts                               int
 	Attention                                  []AttentionItem
 }
 
@@ -190,6 +191,9 @@ func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
 		return fmt.Errorf("unread alerts: %w", err)
 	}
 	out.Alerts = alerts
+	if out.UnreadAlerts, err = o.monitor.UnreadAlerts(ctx, tx); err != nil {
+		return fmt.Errorf("unread alert count: %w", err)
+	}
 	for _, a := range alerts {
 		switch a.Kind {
 		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort, AlertOverpaid, AlertPaymentPartial, AlertPaymentUnpaid, AlertRefundPending:

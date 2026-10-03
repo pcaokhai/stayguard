@@ -31,7 +31,7 @@ func nilIfEmpty(s string) *string {
 func toAlert(a app.AlertRow) gen.Alert {
 	d := a.Details
 	out := gen.Alert{Id: a.ID, Kind: gen.AlertKind(a.Kind), CreatedAt: a.CreatedAt, RoomCode: nilIfEmpty(a.RoomCode),
-		ShiftId: nilIfEmpty(a.ShiftID), StayId: nilIfEmpty(a.StayID), ActorName: nilIfEmpty(a.ActorName), Amount: a.Amount, Details: &d, ResolvedAt: a.ResolvedAt}
+		ShiftId: nilIfEmpty(a.ShiftID), StayId: nilIfEmpty(a.StayID), ActorName: nilIfEmpty(a.ActorName), Amount: a.Amount, Details: &d, ResolvedAt: a.ResolvedAt, Read: a.ReadAt != nil, ReadAt: a.ReadAt, ReadBy: nilIfEmpty(a.ReadBy)}
 	if a.Resolution != "" {
 		r := gen.AlertResolution(a.Resolution)
 		out.Resolution = &r

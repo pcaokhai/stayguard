@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.10.0
+ * OpenAPI spec version: 1.11.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -551,6 +551,18 @@ export interface Alert {
   amount?: Vnd | null;
   /** Kind-specific values, for example oldTime and newTime */
   details?: AlertDetails;
+  /** True once someone marked the alert read (markAlertRead). */
+  read: boolean;
+  /**
+     * When it was first marked read; kept when it is read again.
+     * @nullable
+     */
+  readAt?: string | null;
+  /**
+     * Name of whoever read it first.
+     * @nullable
+     */
+  readBy?: string | null;
   /**
      * When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
      * @nullable
@@ -621,6 +633,8 @@ export interface AttentionItem {
 }
 
 export interface OwnerOverview {
+  /** Alerts nobody read and that are not resolved (the badge); alerts lists at most the newest of them. */
+  unreadAlerts: number;
   date: string;
   revenueTotal: Vnd;
   transfersReceived: Vnd;

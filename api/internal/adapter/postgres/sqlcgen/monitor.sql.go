@@ -11,11 +11,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countUnreadAlerts = `-- name: CountUnreadAlerts :one
+SELECT count(*)::bigint FROM app.alerts WHERE tenant_id = $1 AND read_at IS NULL AND resolved_at IS NULL
+`
+
+// Alerts nobody read and that still need the owner (not resolved): the overview's badge. Not limited like the overview list.
+func (q *Queries) CountUnreadAlerts(ctx context.Context, tenantID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countUnreadAlerts, tenantID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listAlerts = `-- name: ListAlerts :many
 SELECT a.id, a.kind, coalesce(a.room_code, '') AS room_code, coalesce(a.shift_id, '') AS shift_id, coalesce(a.stay_id, '') AS stay_id,
-       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution
+       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution,
+       a.read_at, coalesce(ru.name, '') AS read_by_name
 FROM app.alerts a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
+LEFT JOIN app.users ru ON ru.tenant_id = a.tenant_id AND ru.id = a.read_by
 WHERE a.tenant_id = $1
   AND (NOT $2::boolean OR a.read_at IS NULL)
   AND (NOT $3::boolean OR a.resolved_at IS NULL)
@@ -47,6 +61,8 @@ type ListAlertsRow struct {
 	CreatedAt  pgtype.Timestamptz
 	ResolvedAt pgtype.Timestamptz
 	Resolution pgtype.Text
+	ReadAt     pgtype.Timestamptz
+	ReadByName string
 }
 
 func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]ListAlertsRow, error) {
@@ -78,6 +94,8 @@ func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]ListA
 			&i.CreatedAt,
 			&i.ResolvedAt,
 			&i.Resolution,
+			&i.ReadAt,
+			&i.ReadByName,
 		); err != nil {
 			return nil, err
 		}

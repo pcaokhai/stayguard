@@ -1,8 +1,10 @@
 -- name: ListAlerts :many
 SELECT a.id, a.kind, coalesce(a.room_code, '') AS room_code, coalesce(a.shift_id, '') AS shift_id, coalesce(a.stay_id, '') AS stay_id,
-       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution
+       coalesce(u.name, '') AS actor_name, a.amount, a.details, a.created_at, a.resolved_at, a.resolution,
+       a.read_at, coalesce(ru.name, '') AS read_by_name
 FROM app.alerts a
 LEFT JOIN app.users u ON u.tenant_id = a.tenant_id AND u.id = a.actor_id
+LEFT JOIN app.users ru ON ru.tenant_id = a.tenant_id AND ru.id = a.read_by
 WHERE a.tenant_id = @tenant_id
   AND (NOT @unread_only::boolean OR a.read_at IS NULL)
   AND (NOT @unresolved_only::boolean OR a.resolved_at IS NULL)
@@ -84,3 +86,7 @@ WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND s.check_out_at IS NOT
   AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
 ORDER BY s.check_out_at DESC, iv.id DESC
 LIMIT 500;
+
+-- name: CountUnreadAlerts :one
+-- Alerts nobody read and that still need the owner (not resolved): the overview's badge. Not limited like the overview list.
+SELECT count(*)::bigint FROM app.alerts WHERE tenant_id = @tenant_id AND read_at IS NULL AND resolved_at IS NULL;

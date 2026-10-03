@@ -2019,6 +2019,15 @@ export interface components {
             details?: {
                 [key: string]: string;
             };
+            /** @description True once someone marked the alert read (markAlertRead). */
+            read: boolean;
+            /**
+             * Format: date-time
+             * @description When it was first marked read; kept when it is read again.
+             */
+            readAt?: string | null;
+            /** @description Name of whoever read it first. */
+            readBy?: string | null;
             /**
              * Format: date-time
              * @description When the alert stopped needing the owner (the invoice was paid, the transfer linked, the refund recorded). Alerts keep their history; the owner overview lists only unresolved ones.
@@ -2036,6 +2045,8 @@ export interface components {
             at: string;
         };
         OwnerOverview: {
+            /** @description Alerts nobody read and that are not resolved (the badge); alerts lists at most the newest of them. */
+            unreadAlerts: number;
             /** Format: date */
             date: string;
             revenueTotal: components["schemas"]["Vnd"];

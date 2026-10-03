@@ -13,6 +13,8 @@ type AlertRow struct {
 	CreatedAt                                      time.Time
 	ResolvedAt                                     *time.Time
 	Resolution                                     string
+	ReadAt                                         *time.Time // nil while unread
+	ReadBy                                         string     // name of the first reader
 }
 
 type AlertFilter struct {
@@ -77,6 +79,8 @@ type LongToClean struct {
 type MonitorRepo interface {
 	Timezone(ctx context.Context, tx Tx) (string, error)
 	Alerts(ctx context.Context, tx Tx, f AlertFilter) ([]AlertRow, error)
+	// UnreadAlerts counts the alerts nobody read and that are not resolved.
+	UnreadAlerts(ctx context.Context, tx Tx) (int, error)
 	// MarkAlertRead reports false when the alert does not exist.
 	MarkAlertRead(ctx context.Context, tx Tx, id, userID string, at time.Time) (bool, error)
 	Transactions(ctx context.Context, tx Tx, f TransactionFilter) ([]TransactionRow, error)

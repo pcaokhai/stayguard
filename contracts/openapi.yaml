@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.10.0
+  version: 1.11.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -4250,6 +4250,7 @@ components:
       - id
       - kind
       - createdAt
+      - read
       properties:
         id:
           type: string
@@ -4283,6 +4284,20 @@ components:
           additionalProperties:
             type: string
           description: Kind-specific values, for example oldTime and newTime
+        read:
+          type: boolean
+          description: True once someone marked the alert read (markAlertRead).
+        readAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When it was first marked read; kept when it is read again.
+        readBy:
+          type:
+          - string
+          - 'null'
+          description: Name of whoever read it first.
         resolvedAt:
           type:
           - string
@@ -4329,8 +4344,12 @@ components:
       - byBuilding
       - occupancy
       - alerts
+      - unreadAlerts
       - latestPayments
       properties:
+        unreadAlerts:
+          type: integer
+          description: Alerts nobody read and that are not resolved (the badge); alerts lists at most the newest of them.
         date:
           type: string
           format: date

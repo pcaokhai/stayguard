@@ -46,7 +46,7 @@ func (MonitorRepo) Alerts(ctx context.Context, tx app.Tx, f app.AlertFilter) ([]
 			return nil, fmt.Errorf("decode details of alert %s: %w", r.ID, err)
 		}
 		out[i] = app.AlertRow{ID: r.ID, Kind: r.Kind, RoomCode: r.RoomCode, ShiftID: r.ShiftID, StayID: r.StayID,
-			ActorName: r.ActorName, Amount: intPtr(r.Amount), Details: details, CreatedAt: r.CreatedAt.Time.UTC(), ResolvedAt: timePtr(r.ResolvedAt), Resolution: r.Resolution.String}
+			ActorName: r.ActorName, Amount: intPtr(r.Amount), Details: details, CreatedAt: r.CreatedAt.Time.UTC(), ResolvedAt: timePtr(r.ResolvedAt), Resolution: r.Resolution.String, ReadAt: timePtr(r.ReadAt), ReadBy: r.ReadByName}
 	}
 	return out, nil
 }
@@ -167,4 +167,13 @@ func (MonitorRepo) UnpaidInvoices(ctx context.Context, tx app.Tx) ([]app.Invoice
 			CheckedOutAt: r.CheckOutAt.Time.UTC(), Total: r.Total, Paid: paid, Balance: max(r.Total-paid, 0)}
 	}
 	return out, nil
+}
+
+func (MonitorRepo) UnreadAlerts(ctx context.Context, tx app.Tx) (int, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := sqlcgen.New(t).CountUnreadAlerts(ctx, t.tenant)
+	return int(n), wrap("count unread alerts", err)
 }
