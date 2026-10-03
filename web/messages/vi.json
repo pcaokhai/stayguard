@@ -491,6 +491,7 @@
       "INSTALLER": "Cài đặt hệ thống",
       "GUEST_ID": "Giấy tờ khách"
     },
+    "system": "Hệ thống",
     "act": {
       "stay_check_in": "Nhận phòng {room}",
       "stay_checkin": "Nhận phòng {room}",

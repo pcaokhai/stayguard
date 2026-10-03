@@ -491,6 +491,7 @@
       "INSTALLER": "System setup",
       "GUEST_ID": "Guest ID"
     },
+    "system": "System",
     "act": {
       "stay_check_in": "Checked in {room}",
       "stay_checkin": "Checked in {room}",

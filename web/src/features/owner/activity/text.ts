@@ -44,5 +44,18 @@ export function actionText(e: AuditEntry): string {
     const money = MONEY.has(k) || (e.action === "rate.updated" && (k === "from" || k === "to"));
     vars[k] = money ? formatVnd(Number(v)) : isIso(v) ? clockOf(v) : v;
   }
-  return tf(key as MessageKey, vars);
+  return dropUnresolved(tf(key as MessageKey, vars));
 }
+
+// A placeholder with no detail is removed together with the separator before it ("Trả phòng {room}" → "Trả phòng").
+const dropUnresolved = (s: string) =>
+  s
+    .replace(/\s*[:·→\-–,]?\s*\{\w+\}/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+export const actorOf = (e: AuditEntry) => e.actorName || t("activity.system");
+
+const cell = (v: string) => `"${v.replace(/"/g, '""')}"`;
+export const csvLine = (e: AuditEntry) =>
+  [e.at, actorOf(e), e.category, actionText(e)].map(cell).join(",");

@@ -12,7 +12,7 @@ import {
 import { t, tf, type MessageKey } from "@/lib/t";
 import { cn } from "@/lib/utils";
 import { clockOf, formatDayMonth, localDay } from "../format";
-import { actionText, CATEGORY_TONE, type AuditEntry } from "./text";
+import { actionText, actorOf, CATEGORY_TONE, type AuditEntry } from "./text";
 
 function CategoryPill({ e }: { e: AuditEntry }) {
   return (
@@ -52,7 +52,7 @@ export function Rows({ entries, pageRows }: { entries: AuditEntry[]; pageRows: A
                   <div className="flex flex-col gap-1.5">
                     <p className="text-[15px] leading-snug">{actionText(e)}</p>
                     <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                      {e.actorName}
+                      {actorOf(e)}
                       <CategoryPill e={e} />
                     </p>
                   </div>
@@ -81,7 +81,7 @@ export function Rows({ entries, pageRows }: { entries: AuditEntry[]; pageRows: A
               <TableRow key={e.id} className="transition-colors duration-100">
                 <TableCell className="py-3 pl-5 text-ink-2">{formatDayMonth(day(e))}</TableCell>
                 <TableCell className="font-bold">{clockOf(e.at)}</TableCell>
-                <TableCell>{e.actorName}</TableCell>
+                <TableCell>{actorOf(e)}</TableCell>
                 <TableCell>
                   <CategoryPill e={e} />
                 </TableCell>
