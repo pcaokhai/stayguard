@@ -117,3 +117,16 @@ func TestQRPayload_DecodedFields_DynamicAmountNoteAccount(t *testing.T) {
 		t.Error("a different amount must give a different QR")
 	}
 }
+
+// Characterisation, no fix yet: the match is a plain substring of the normalised content. With only PH1003A101 pending, a transfer whose
+// content holds PH1003A1012 (the code of another bill, not pending) is matched to PH1003A101.
+func TestFindBillCode_LongerCodeNotPendingMatchesTheShorterPendingOne_Characterisation(t *testing.T) {
+	i, ok := FindBillCode("CK PH1003A1012 thanh toan", []string{"PH1003A101"})
+	if !ok || i != 0 {
+		t.Fatalf("today the content is matched to PH1003A101: %d %v", i, ok)
+	}
+	// With both pending, the longest match wins.
+	if i, ok = FindBillCode("CK PH1003A1012", []string{"PH1003A101", "PH1003A1012"}); !ok || i != 1 {
+		t.Fatalf("both pending: %d %v", i, ok)
+	}
+}

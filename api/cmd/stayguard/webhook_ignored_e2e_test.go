@@ -98,3 +98,14 @@ func (r payRig) ownerCash(owner string) int64 {
 	}
 	return num(parse(raw)["cashExpected"])
 }
+
+// Characterisation, no fix yet (checklist item): the bill of the room is pending; a transfer whose content holds the bill code plus one
+// more character (the code of another bill that is not pending) is matched to the pending bill and settles it.
+func TestSettle_ContentWithALongerCodeLandsOnThePendingBill_Characterisation(t *testing.T) {
+	r := deskRig(t)
+	res, err := r.handler().Settle(context.Background(), r.event("bank-char1", r.balance, "CK "+r.code+"2 thanh toan"))
+	t.Logf("pending %s, content holds %s2: %+v %v, invoice %s", r.code, r.code, res, err, r.status("invoices", r.invoice))
+	if err != nil || res.Result != "SETTLED" || r.status("invoices", r.invoice) != "PAID" {
+		t.Fatalf("today the money lands on the pending bill: %+v %v", res, err)
+	}
+}
