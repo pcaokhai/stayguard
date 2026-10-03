@@ -63,6 +63,7 @@ func TestPendingPayment_RemainingTable_FU(t *testing.T) {
 			balance := max(tc.total-tc.deposit, 0)
 			r.e.exec(`UPDATE app.invoices SET total = $3, quote = quote || jsonb_build_object('total', $3::bigint, 'balanceDue', $4::bigint, 'depositPaid', $5::bigint, 'refundDue', $6::bigint)
 				WHERE tenant_id = $1 AND id = $2`, r.tenant, r.invoice, tc.total, balance, tc.deposit, tc.refund)
+			r.e.exec(`UPDATE app.stays SET deposit = $2 WHERE id = $1`, r.stayID(), tc.deposit) // the deposit is the stay's own fact
 			if tc.legacyQuote {
 				r.e.exec(`UPDATE app.invoices SET quote = quote - 'depositPaid' - 'refundDue' WHERE tenant_id = $1 AND id = $2`, r.tenant, r.invoice)
 			}
