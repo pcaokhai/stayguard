@@ -1,0 +1,223 @@
+{
+  "guesthouseCode": "demo",
+  "name": "Riverside Guesthouse (demo)",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "defaultLocale": "vi",
+  "property": {
+    "name": "Riverside Guesthouse (demo)",
+    "address": "1 Demo Street",
+    "phone": "0900000000"
+  },
+  "bankAccount": {
+    "bankBin": "970436",
+    "accountNo": "1017588888",
+    "accountName": "RIVERSIDE GUESTHOUSE"
+  },
+  "buildings": [
+    {
+      "code": "A",
+      "name": "Building A",
+      "floors": 3,
+      "roomsPerFloor": 6,
+      "floorTypes": [
+        "STANDARD",
+        "STANDARD",
+        "VIP"
+      ]
+    },
+    {
+      "code": "B",
+      "name": "Building B",
+      "floors": 3,
+      "roomsPerFloor": [
+        6,
+        6,
+        5
+      ],
+      "floorTypes": [
+        "STANDARD",
+        "STANDARD",
+        "VIP"
+      ]
+    }
+  ],
+  "unitTypes": [
+    {
+      "code": "STANDARD",
+      "name": {
+        "vi": "Phòng thường",
+        "en": "Standard"
+      },
+      "ratePlan": {
+        "version": 1,
+        "currency": "VND",
+        "graceMinutes": 15,
+        "hourly": {
+          "firstHour": 80000,
+          "extraHour": 20000
+        },
+        "overnight": {
+          "price": 200000,
+          "windowStart": "21:00",
+          "windowEnd": "12:00"
+        },
+        "daily": {
+          "price": 300000,
+          "windowStart": "14:00",
+          "windowEnd": "12:00"
+        }
+      }
+    },
+    {
+      "code": "VIP",
+      "name": {
+        "vi": "VIP",
+        "en": "VIP"
+      },
+      "ratePlan": {
+        "version": 1,
+        "currency": "VND",
+        "graceMinutes": 15,
+        "hourly": {
+          "firstHour": 120000,
+          "extraHour": 30000
+        },
+        "overnight": {
+          "price": 300000,
+          "windowStart": "21:00",
+          "windowEnd": "12:00"
+        },
+        "daily": {
+          "price": 450000,
+          "windowStart": "14:00",
+          "windowEnd": "12:00"
+        }
+      }
+    }
+  ],
+  "services": [
+    {
+      "code": "WATER",
+      "name": {
+        "vi": "Nước suối",
+        "en": "Still water"
+      },
+      "price": 10000,
+      "stock": 46
+    },
+    {
+      "code": "SODA",
+      "name": {
+        "vi": "Nước ngọt",
+        "en": "Soft drink"
+      },
+      "price": 15000,
+      "stock": 30
+    },
+    {
+      "code": "BEER",
+      "name": {
+        "vi": "Bia lon",
+        "en": "Canned beer"
+      },
+      "price": 20000,
+      "stock": 24
+    },
+    {
+      "code": "NOODLE",
+      "name": {
+        "vi": "Mì ly",
+        "en": "Cup noodles"
+      },
+      "price": 15000,
+      "stock": 18
+    },
+    {
+      "code": "TOWEL",
+      "name": {
+        "vi": "Khăn tắm thêm",
+        "en": "Extra bath towel"
+      },
+      "price": 10000,
+      "stock": 12
+    }
+  ],
+  "owner": {
+    "name": "Demo Owner",
+    "username": "owner"
+  },
+  "staff": [
+    {
+      "name": "Demo Mina",
+      "username": "mina",
+      "position": "MANAGER",
+      "appAccess": "MANAGER",
+      "contract": {
+        "payType": "MONTHLY",
+        "rate": 9000000,
+        "fixedAllowance": 0,
+        "standardShifts": 26,
+        "startDate": "2026-01-01",
+        "annualLeaveDays": 12
+      },
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "EDIT"
+      }
+    },
+    {
+      "name": "Demo Linh",
+      "username": "linh",
+      "position": "FRONT_DESK",
+      "appAccess": "RECEPTIONIST",
+      "contract": {
+        "payType": "MONTHLY",
+        "rate": 6500000,
+        "fixedAllowance": 0,
+        "standardShifts": 26,
+        "startDate": "2026-01-01",
+        "annualLeaveDays": 12
+      },
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "VIEW"
+      }
+    },
+    {
+      "name": "Demo Viv",
+      "username": "viv",
+      "position": "FRONT_DESK",
+      "appAccess": "RECEPTIONIST",
+      "contract": {
+        "payType": "MONTHLY",
+        "rate": 6500000,
+        "fixedAllowance": 0,
+        "standardShifts": 26,
+        "startDate": "2026-01-01",
+        "annualLeaveDays": 12
+      },
+      "buildingAccess": {
+        "A": "VIEW",
+        "B": "EDIT"
+      }
+    },
+    {
+      "name": "Demo Hoa",
+      "username": "hoa",
+      "position": "HOUSEKEEPING",
+      "appAccess": "HOUSEKEEPING",
+      "contract": {
+        "payType": "MONTHLY",
+        "rate": 5500000,
+        "fixedAllowance": 0,
+        "standardShifts": 26,
+        "startDate": "2026-01-01",
+        "annualLeaveDays": 12
+      },
+      "buildingAccess": {
+        "A": "EDIT",
+        "B": "EDIT"
+      }
+    }
+  ]
+}
