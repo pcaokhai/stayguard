@@ -68,18 +68,18 @@ export function PayView() {
           subtitle={p?.qr ? `${t("pay.slip")} ${p.qr.transferNote}` : undefined}
           back="/rooms"
         />
-        {!p ? (
-          <Skeleton className="mx-5 h-96" />
-        ) : p.status === "EXPIRED" ? (
-          <Expired p={p} />
-        ) : p.status === "MISMATCH" ? (
-          <Mismatch p={p} />
-        ) : (
-          <Waiting p={p} paid={paid} />
-        )}
+        {!p ? <Skeleton className="mx-5 h-96" /> : <PaymentState p={p} paid={paid} />}
       </FlowSplit>
     </AppFrame>
   );
+}
+
+// One screen per payment state. A pending transfer that came back without a QR is treated as expired: never a blank screen.
+export function PaymentState({ p, paid }: { p: Payment; paid: boolean }) {
+  if (p.status === "EXPIRED" || (p.status === "PENDING" && !p.qr && p.method === "TRANSFER"))
+    return <Expired p={p} />;
+  if (p.status === "MISMATCH") return <Mismatch p={p} />;
+  return <Waiting p={p} paid={paid} />;
 }
 
 function Waiting({ p, paid }: { p: Payment; paid: boolean }) {
@@ -217,18 +217,26 @@ function Headline({
 
 function Expired({ p }: { p: Payment }) {
   const { start, create } = useNewPayment(p.invoiceId);
+  const received = p.receivedAmount ?? 0;
   return (
     <div className="flex flex-1 flex-col gap-4 px-5 pb-8 lg:pb-0">
       <Headline
         icon={TimerOff}
         tone="bg-warn-bg text-warn-ink"
         title={t("pay.expiredTitle")}
-        body={t("pay.expiredBody")}
+        body={
+          received > 0
+            ? tf("pay.expiredBodyPartial", { amount: formatVnd(received) })
+            : t("pay.expiredBody")
+        }
       />
+      {/* An expired payment carries no remaining amount: with bank money already in, show only what arrived; the new QR asks for the rest. */}
       <Card className="gap-2 p-4 shadow-none">
         <p className={row}>
-          <span className="text-muted-foreground">{t("pay.due")}</span>
-          <b>{formatVnd(p.amount)}</b>
+          <span className="text-muted-foreground">
+            {received > 0 ? t("pay.receivedSoFar") : t("pay.due")}
+          </span>
+          <b>{formatVnd(received > 0 ? received : p.amount)}</b>
         </p>
       </Card>
       <div className="mt-auto flex flex-col gap-2.5">

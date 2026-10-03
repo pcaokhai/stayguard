@@ -51,11 +51,12 @@ secret="$(openssl rand -hex 24)"
 python3 scripts/smoke/set-secret.py "$secret" "${COMPOSE[@]}" run --rm api sepay set-secret --tenant "$code" >/dev/null
 
 export E2E_BASE_URL="$BASE" SMOKE_HOOK_PATH="$hook" SMOKE_SEPAY_SECRET="$secret" SMOKE_ACCOUNT_NO=1017588888 \
-	SMOKE_OWNER_PIN="$owner_pin" SMOKE_RECEPTIONIST_PIN="$linh_pin" SMOKE_MANAGER_PIN="$mina_pin" SMOKE_VIEWER_PIN="$viv_pin" SMOKE_GUESTHOUSE="$code"
+	SMOKE_OWNER_PIN="$owner_pin" SMOKE_RECEPTIONIST_PIN="$linh_pin" SMOKE_MANAGER_PIN="$mina_pin" SMOKE_VIEWER_PIN="$viv_pin" SMOKE_GUESTHOUSE="$code" \
+	SMOKE_COMPOSE_PROJECT="${SMOKE_PROJECT:-stayguard-smoke}"
 if [ "${KEEP:-0}" = 1 ]; then # for writing the test: source this file to run playwright by hand against the kept stack
 	env | grep '^\(E2E_BASE_URL\|SMOKE_\)' | sed 's/^/export /' > /tmp/stayguard-smoke.env
 fi
 
 echo "== running the money path"
 cd web
-npx playwright test e2e/smoke.spec.ts e2e/smoke.then-partial.spec.ts e2e/smoke.then-awaiting.spec.ts e2e/smoke.then-clean.spec.ts --workers=1 --reporter=list
+npx playwright test e2e/smoke.spec.ts e2e/smoke.then-partial.spec.ts e2e/smoke.then-awaiting.spec.ts e2e/smoke.then-clean.spec.ts e2e/smoke.then-expiry.spec.ts --workers=1 --reporter=list

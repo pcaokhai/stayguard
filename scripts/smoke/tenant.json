@@ -5,7 +5,7 @@
   "defaultLocale": "en",
   "property": { "name": "Smoke Test Guesthouse", "address": "1 Test Street", "phone": "0900000000" },
   "bankAccount": { "bankBin": "970436", "accountNo": "1017588888", "accountName": "SMOKE TEST GUESTHOUSE" },
-  "buildings": [{ "code": "A", "name": "Building A", "floors": 1, "roomsPerFloor": 3 }],
+  "buildings": [{ "code": "A", "name": "Building A", "floors": 1, "roomsPerFloor": 5 }],
   "unitTypes": [
     {
       "code": "STANDARD",

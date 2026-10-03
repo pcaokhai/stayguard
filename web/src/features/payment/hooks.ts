@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 
-// Poll every 3 s until the status leaves PENDING (docs/14 §5).
+// Poll every 3 s while PENDING (docs/14 §5) and also while EXPIRED: the expiry is derived on read and the stored payment
+// stays pending, so a late transfer to the old bill code still settles it and the screen must turn Paid by itself.
+export const payRefetchInterval = (status: string | undefined) =>
+  status === "PENDING" || status === "EXPIRED" ? 3000 : false;
+
 export function usePayment(paymentId: string | null) {
   return useQuery({
     queryKey: ["payment", paymentId],
     enabled: !!paymentId,
-    refetchInterval: (q) => (q.state.data?.status === "PENDING" ? 3000 : false),
+    refetchInterval: (q) => payRefetchInterval(q.state.data?.status),
     queryFn: async () => {
       const { data, error } = await api.GET("/v1/payments/{paymentId}", {
         params: { path: { paymentId: paymentId! } },
