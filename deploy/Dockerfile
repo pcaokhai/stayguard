@@ -6,6 +6,8 @@ WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# The web type-check reaches the shared contract files by relative path (../../../../../contracts from web/src/...).
+COPY contracts/ /contracts/
 RUN npm run build
 
 FROM golang:1.27.1-alpine AS api

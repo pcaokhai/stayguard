@@ -135,6 +135,14 @@ jobs:
         continue-on-error: true
         run: scripts/pr-size.sh origin/${{ github.base_ref }}
 
+  # The production image must build: the web stage type-checks files that import ../contracts, so a missing COPY breaks it only here.
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the production image (demo mode off)
+        run: docker build -f deploy/Dockerfile --build-arg NEXT_PUBLIC_DEMO_MODE=0 -t stayguard:ci .
+
   # Runs the pinned gitleaks binary directly, not gitleaks-action (plan Ruling 3: no licence key).
   secrets:
     runs-on: ubuntu-latest
