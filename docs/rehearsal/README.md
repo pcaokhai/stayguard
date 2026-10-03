@@ -14,7 +14,7 @@ RH_ENV_OUT=/tmp/rh.env make rehearse-test   # only prepare the guesthouse; `. /t
 
 Each run starts or reuses the stack, stops the `jobs` service (so the alerts the specs count are raised only by the specs; it is
 started again at the end), imports a guesthouse `rh<hex>` with the installer commands (owner, manager, receptionists r1 to r12, a housekeeper, 120 rooms), sets the
-SePay secret with `sepay set-secret`, and runs the specs. Every spec file has the id first in the test title.
+SePay secret with `sepay set-secret`, and runs the specs. Files run in name order (data-creating, then `ui-lint`, then the `z*` files that restart the API and use up the sign-in limit). Every spec file has the id first in the test title.
 
 ## Output
 
@@ -24,19 +24,22 @@ SePay secret with `sepay set-secret`, and runs the specs. Every spec file has th
 
 ## Case ids
 
-The ids follow the order of the checklist brief. They are provisional until the real `checklist.xlsx` is committed here: rename a
-case by changing the id at the start of its test title, and `scripts/rehearsal-sync.py` matches on that id.
+The ids are the ones in `checklist.xlsx` (Mã). The title of each test starts with the id, and `scripts/rehearsal-sync.py` matches on it.
+Automated: TT-01 to TT-14, TT-17, TT-20, TT-23 to TT-27 (money); CA-01 to CA-07, CA-10 (shift); DP-01, DP-02, DP-04 to DP-06, DP-09
+(rooms); DN-01 to DN-07, DN-09, DN-12, DN-13 (roles); GT-02, GT-03, GT-05 (via DN-12), GT-06, GT-08 (guest ID); TD-02, TD-06;
+BM-01 to BM-04; VH-05, VH-06; CD-10.
 
-| Prefix | Area | File |
+Proposed new rows (not in the sheet yet):
+
+| Id | Case | File |
 | --- | --- | --- |
-| TT-01 to TT-15 | Money: exact, unmatched, link (exact, different amount, twice, receptionist), short then remainder QR, overpaid, outgoing, duplicate, cash refund on the shift, resume payment, reopened checkout deposit, finished stay read-only, bank time and negative refund lines | `money.spec.ts` |
-| SH-01 to SH-08 | Shift: opening float, payout note, close exact / short / with unpaid invoices, owner refund "by owner", one expected-cash figure | `shift.spec.ts` |
-| RM-01 to RM-05 | Rooms: cleaning by receptionist and owner, to-clean actions, damage lock, maintenance cost to expense | `rooms.spec.ts` |
-| RL-01 to RL-09 | Roles: no-permission screen, manager limits, lockout, session revocation (PIN change, lock, remove), second tab, CSRF, rate limit | `roles.spec.ts` |
-| GI-01 to GI-03 | Guest ID: indicators only, masked number and audited reveal, no number in logs | `guestid.spec.ts` |
-| AL-01 to AL-05 | Alerts resolve when fixed; "Cần xử lý" counts only open items | `alerts.spec.ts` |
-| TM-01 to TM-06 | Time-based rules without waiting, late webhook, the backdate guard | `time.spec.ts` |
-| OP-01 to OP-03 | Restart keeps sign-in, `/readyz`, no secrets in logs | `ops.spec.ts` |
+| UI-01 | UI lint: every screen of every role, vi/en, 390/1280: placeholders, raw i18n keys, undefined/NaN, raw action codes, empty actor, console errors, 4xx/5xx, horizontal scroll | `ui-lint.spec.ts` |
+| CA-12 | A float left in the drawer is not counted twice by the owner overview | `shift.spec.ts` |
+| DN-15 | A cookie-authenticated write without `X-Requested-With` is rejected (CSRF) | `z2-roles.spec.ts` |
+| DN-16 | Hitting the sign-in rate limit is not shown as a locked account | `z2-roles.spec.ts` |
+| TD-09 | "Cần xử lý" on Transactions counts only transfers still waiting | `alerts.spec.ts` |
+| BM-06 | SePay's real retry behaviour (manual) | `z3-time.spec.ts` |
+| VH-08 | The backdate helper refuses to run outside the rehearsal stack | `z3-time.spec.ts` |
 
 ## Time-based cases (never wait)
 
@@ -59,9 +62,10 @@ is 300 s by default, so it is refused with 401 and nothing is paid; the same tra
 
 ## Sync to the spreadsheet
 
-`scripts/rehearsal-sync.py` reads the newest `results-*.csv` and fills the Status, Date and Notes columns of `docs/rehearsal/checklist.xlsx`
-for rows whose ID matches (the sheet needs a header row with ID, Status, Date and Notes). It never changes a row that has a cell reading
-"manual", never overwrites a formula, and edits the sheet XML in place so styles and validation stay. `scripts/rehearsal-sync.py --selftest` checks it.
+`scripts/rehearsal-sync.py` reads the newest `results-*.csv` and, for rows whose Mã matches, keeps one line "QA tự động <date>: <pass|fail> …,
+chưa thử tay; bằng chứng <path>" in Ghi chú, bằng chứng (the tester's own text stays). A failure also sets Trạng thái to Lỗi and Ngày thử; a pass
+never writes Đạt (only a person who saw it does), and a skip writes nothing. Rows with a cell reading "manual" or "[thủ công]" in the notes are left alone,
+formulas are never overwritten, and the sheet XML is edited in place so styles and validation stay. `--selftest` checks it.
 
 ## Visual sweep
 

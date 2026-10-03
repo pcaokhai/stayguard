@@ -17,4 +17,5 @@ export default defineConfig({
     screenshot: "on",
     viewport: { width: 390, height: 844 },
   },
+  // Files run in name order: data-creating cases, then ui-lint, then the z* files that restart or stop the API, lock accounts and use up the rate limit.
 });

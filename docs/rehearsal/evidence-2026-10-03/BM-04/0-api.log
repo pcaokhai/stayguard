@@ -1,0 +1,19 @@
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":28,"overdue":0,"toClean":19,"vacant":72},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M40FGJ6YRY460ZJW1SJ9NB0R/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A101","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YG513KPAMSHSQEKNT","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A102","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YACXXG9E471BH7BJS","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A103","floor
+POST /v1/rooms/un_01M40FGJ6Y6B087XG003YEYHAY/stays {"rentalType":"HOURLY","guestName":"Rehearsal Guest","guestPhone":"0912345678","deposit":10000}
+  -> 201 {"checkInAt":"2026-10-03T09:00:34.713344Z","deposit":10000,"extras":[],"guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","guestPhone":"0912345678","id":"st_01M40FWSGSDEJWHVTX4XGW8VXZ","pricingVersion":1,"quote":{"asOf":"2026-10-03T09:00:34.713344Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"rentalType":"HOURLY","roomCode":"A209","roomId":"un_01M40FGJ6Y6B087XG003YEYHAY","status":"ACTIVE"
+POST /v1/stays/st_01M40FWSGSDEJWHVTX4XGW8VXZ/checkout 
+  -> 201 {"billCode":"PH1003A209","createdAt":"2026-10-03T09:00:34.718489Z","id":"iv_01M40FWSGYY60837JB7Z7F72FM","quote":{"asOf":"2026-10-03T09:00:34.718489Z","balanceDue":70000,"capped":false,"depositPaid":10000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"roomCode":"A209","status":"OPEN","stayId":"st_01M40FWSGSDEJWHVTX4XGW8VXZ"}
+POST /v1/invoices/iv_01M40FWSGYY60837JB7Z7F72FM/payments {"method":"TRANSFER"}
+  -> 201 {"amount":70000,"id":"pm_01M40FWSH3K9H1B1MC72WCXVSD","invoiceId":"iv_01M40FWSGYY60837JB7Z7F72FM","method":"TRANSFER","qr":{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","amount":70000,"payload":"00020101021238540010A00000072701240006970436011010175888880208QRIBFTTA53037045405700005802VN62140810PH1003A2096304766C","transferNote":"PH1003A209"},"remaining":70000,"status":"PENDING"}
+WEBHOOK in 70000 "PH1003A209" id=1791018037192434 age=360s
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"WEBHOOK_REJECTED"}
+
+GET /v1/payments/pm_01M40FWSH3K9H1B1MC72WCXVSD 
+  -> 200 {"amount":70000,"id":"pm_01M40FWSH3K9H1B1MC72WCXVSD","invoiceId":"iv_01M40FWSGYY60837JB7Z7F72FM","method":"TRANSFER","qr":{"accountName":"REHEARSAL TEST","accountNoMasked":"******8888","amount":70000,"payload":"00020101021238540010A00000072701240006970436011010175888880208QRIBFTTA53037045405700005802VN62140810PH1003A2096304766C","transferNote":"PH1003A209"},"remaining":70000,"status":"PENDING"}
+WEBHOOK in 70000 "PH1003A209" id=1791018037192434 age=240s
+  -> 200 {"success": true}
+GET /v1/payments/pm_01M40FWSH3K9H1B1MC72WCXVSD 
+  -> 200 {"amount":70000,"id":"pm_01M40FWSH3K9H1B1MC72WCXVSD","invoiceId":"iv_01M40FWSGYY60837JB7Z7F72FM","method":"TRANSFER","paidAt":"2026-10-03T09:00:37.294408Z","receivedAmount":70000,"remaining":0,"status":"PAID","transactionId":"1791018037192434"}

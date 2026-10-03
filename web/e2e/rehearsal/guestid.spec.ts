@@ -4,7 +4,7 @@ import { expect, stack, test, uiLogin } from "./helpers";
 // A number made for this run, so a search of the logs cannot match anything else.
 const ID_NUMBER = `079${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
 
-test("GI-01 front desk and housekeeping see indicators only, never the number or the photo", async ({
+test("GT-02 front desk and housekeeping see indicators only, never the number or the photo", async ({
   api,
   page,
 }) => {
@@ -39,7 +39,7 @@ test("GI-01 front desk and housekeeping see indicators only, never the number or
   await expect(page.locator("body")).not.toContainText(ID_NUMBER);
 });
 
-test("GI-02 the owner sees a masked number, and a reveal is written to the activity log without the number", async ({
+test("GT-03 the owner sees a masked number, and a reveal is written to the activity log without the number", async ({
   api,
 }) => {
   const w = await api.as("r1");
@@ -73,7 +73,7 @@ test("GI-02 the owner sees a masked number, and a reveal is written to the activ
   expect(photo.headers()["cache-control"]).toContain("no-store");
 });
 
-test("GI-03 no ID number appears in the container logs", async ({ api }) => {
+test("GT-08 no ID number appears in the container logs", async ({ api }) => {
   const w = await api.as("r1");
   const owner = await api.as("owner");
   const stay = await api.checkIn(w, { idNumber: ID_NUMBER });

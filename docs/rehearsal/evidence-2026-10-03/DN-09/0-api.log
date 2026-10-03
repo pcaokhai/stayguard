@@ -1,0 +1,68 @@
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":24,"overdue":0,"toClean":19,"vacant":76},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M40FGJ6YRY460ZJW1SJ9NB0R/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A101","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YG513KPAMSHSQEKNT","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A102","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YACXXG9E471BH7BJS","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A103","floor
+POST /v1/owner/staff {"name":"Rehearsal rl04user","username":"rl04user","position":"FRONT_DESK","appAccess":"RECEPTIONIST","contract":{"payType":"MONTHLY","rate":6000000,"fixedAllowance":0,"standardShifts":26,"startDate":"2026-01-01","annualLeaveDays":12},"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}]}
+  -> 201 {"oneTimePin":{"expiresAt":"2026-10-04T08:58:20.740684Z","pin":"***"},"staff":{"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FRPP5VF3PANV01CZ2T41X","name":"Rehearsal rl04user","position":"FRONT_DESK","status":"ACTIVE","username":"rl04user"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl04user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:20.749677Z","mustChangePin":true,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl04user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:21.299224Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl04user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:21.481794Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FRPP5VF3PANV01CZ2T41X","locale":"vi","name":"Rehearsal rl04user","role":"RECEPTIONIST"}}
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+GET /v1/buildings/bd_01M40FGJ6YRY460ZJW1SJ9NB0R/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A101","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YG513KPAMSHSQEKNT","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A102","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YACXXG9E471BH7BJS","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A103","floor
+POST /v1/owner/staff {"name":"Rehearsal rl05user","username":"rl05user","position":"FRONT_DESK","appAccess":"RECEPTIONIST","contract":{"payType":"MONTHLY","rate":6000000,"fixedAllowance":0,"standardShifts":26,"startDate":"2026-01-01","annualLeaveDays":12},"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}]}
+  -> 201 {"oneTimePin":{"expiresAt":"2026-10-04T08:58:22.264983Z","pin":"***"},"staff":{"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FRR5SR1N35RW9PDJGYC0Z","name":"Rehearsal rl05user","position":"FRONT_DESK","status":"ACTIVE","username":"rl05user"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl05user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:59:16.103532Z","mustChangePin":true,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRR5SR1N35RW9PDJGYC0Z","locale":"vi","name":"Rehearsal rl05user","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl05user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:59:17.372239Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRR5SR1N35RW9PDJGYC0Z","locale":"vi","name":"Rehearsal rl05user","role":"RECEPTIONIST"}}
+POST /v1/owner/staff/us_01M40FRR5SR1N35RW9PDJGYC0Z/lock 
+  -> 200 {"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FRR5SR1N35RW9PDJGYC0Z","name":"Rehearsal rl05user","position":"FRONT_DESK","status":"LOCKED","username":"rl05user"}
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl05user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}
+GET /v1/buildings/bd_01M40FGJ6YRY460ZJW1SJ9NB0R/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A101","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YG513KPAMSHSQEKNT","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A102","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YACXXG9E471BH7BJS","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A103","floor
+POST /v1/owner/staff {"name":"Rehearsal rl06user","username":"rl06user","position":"FRONT_DESK","appAccess":"RECEPTIONIST","contract":{"payType":"MONTHLY","rate":6000000,"fixedAllowance":0,"standardShifts":26,"startDate":"2026-01-01","annualLeaveDays":12},"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}]}
+  -> 201 {"oneTimePin":{"expiresAt":"2026-10-04T08:59:18.947491Z","pin":"***"},"staff":{"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FTFH3GPVDZ7XE2YYTFX8G","name":"Rehearsal rl06user","position":"FRONT_DESK","status":"ACTIVE","username":"rl06user"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl06user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:59:18.952191Z","mustChangePin":true,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FTFH3GPVDZ7XE2YYTFX8G","locale":"vi","name":"Rehearsal rl06user","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl06user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:59:19.494995Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FTFH3GPVDZ7XE2YYTFX8G","locale":"vi","name":"Rehearsal rl06user","role":"RECEPTIONIST"}}
+POST /v1/owner/staff/us_01M40FTFH3GPVDZ7XE2YYTFX8G/remove {"ownerPin":"***"}
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"OWNER_PIN_INVALID"}
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FTFH3GPVDZ7XE2YYTFX8G","locale":"vi","name":"Rehearsal rl06user","role":"RECEPTIONIST"}}
+POST /v1/owner/staff/us_01M40FTFH3GPVDZ7XE2YYTFX8G/remove {"ownerPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+GET /v1/me 
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"UNAUTHENTICATED"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl06user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}

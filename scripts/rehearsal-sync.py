@@ -3,17 +3,19 @@
 It never touches a row marked manual (any cell reading "manual"), never overwrites a formula, and edits the sheet XML in place, so
 styles, formulas, validation and everything else in the workbook stay as Khai saved them. No third-party packages.
 
-usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.xlsx] [--date YYYY-MM-DD] [--map pass=Pass,fail=Fail,skip=Skip]
+usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.xlsx] [--date YYYY-MM-DD] [--map pass=,fail=Lỗi,skip=]
        scripts/rehearsal-sync.py --selftest
 Without a CSV it uses the newest docs/rehearsal/results-*.csv. The sheet needs a header row with ID, Status, Date and Notes cells."""
-import argparse, csv, glob, os, re, shutil, sys, tempfile, zipfile
+import argparse, csv, datetime, glob, os, re, shutil, sys, tempfile, zipfile
 from xml.sax.saxutils import escape, unescape
 
 CELL = re.compile(r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)', re.S)
 ROW = re.compile(r'(<row r="(\d+)"[^>]*?)(?:/>|>(.*?)</row>)', re.S)
-HEADERS = {"id": {"id", "ma", "mã"}, "status": {"status", "trang thai", "trạng thái"}, "date": {"date", "ngay", "ngày"},
-           "notes": {"notes", "note", "ghi chu", "ghi chú"}}
+HEADERS = {"id": {"id", "ma", "mã"}, "status": {"status", "trang thai", "trạng thái"}, "date": {"date", "ngay thu", "ngày thử"},
+           "notes": {"notes", "note", "ghi chu", "ghi chú", "ghi chú, bằng chứng"}}
+AUTO = "QA tự động"  # prefix of the one line this script keeps in the notes cell
 MANUAL = {"manual", "thu cong", "thủ công"}
+MANUAL_NOTE = re.compile(r"\[(manual|thủ công)\]", re.I)
 
 
 def col_index(letters):
@@ -56,10 +58,12 @@ def sheet_files(z):
 
 
 def inline_cell(ref, style, text):
+    if isinstance(text, (int, float)):
+        return f'<c r="{ref}"{style}><v>{text}</v></c>'
     return f'<c r="{ref}"{style} t="inlineStr"><is><t xml:space="preserve">{escape(text)}</t></is></c>'
 
 
-def set_cell(row_xml, letters, rownum, text):
+def set_cell(row_xml, letters, rownum, text, default_style=""):
     """Returns (new row xml, written?). A formula cell is left alone."""
     ref = f"{letters}{rownum}"
     for m in CELL.finditer(row_xml):
@@ -69,7 +73,7 @@ def set_cell(row_xml, letters, rownum, text):
             style = re.search(r'\bs="\d+"', m.group(3))
             new = inline_cell(ref, (" " + style.group(0)) if style else "", text)
             return row_xml[: m.start()] + new + row_xml[m.end():], True
-    new = inline_cell(ref, "", text)
+    new = inline_cell(ref, default_style, text)
     for m in CELL.finditer(row_xml):  # keep columns in order
         if col_index(m.group(1)) > col_index(letters):
             return row_xml[: m.start()] + new + row_xml[m.start():], True
@@ -96,6 +100,14 @@ def sync(xlsx, results, date, status_map):
         if not cols:
             continue
 
+        styles = {}  # style of the first filled cell per column, for cells the sheet has not got yet
+        for m in CELL.finditer(xml):
+            st = re.search(r'\bs="\d+"', m.group(3))
+            if st and m.group(4) and m.group(1) not in styles and int(m.group(2)) > header_row:
+                styles[m.group(1)] = " " + st.group(0)
+        shown = f"{date[8:10]}/{date[5:7]}/{date[:4]}" if len(date) == 10 else date
+        serial = (datetime.date.fromisoformat(date) - datetime.date(1899, 12, 30)).days if len(date) == 10 else date
+
         def edit(rm):
             head, rownum, body = rm.group(1), int(rm.group(2)), rm.group(3)
             if rownum <= header_row or body is None:
@@ -105,14 +117,22 @@ def sync(xlsx, results, date, status_map):
             rid = cells.get(cols["id"], "")
             if rid not in results:
                 return rm.group(0)
-            if any(t.lower() in MANUAL for t in cells.values()):
+            note_now = cells.get(cols.get("notes", ""), "")
+            if any(t.lower() in MANUAL for t in cells.values()) or MANUAL_NOTE.search(note_now):
                 report.append(f"{name}!{rid}: manual row, left alone")
                 return rm.group(0)
             r, wrote = results[rid], []
-            values = {"status": status_map[r["status"]], "date": date, "notes": r["notes"] or r["evidence"]}
+            status = status_map.get(r["status"], "")
+            detail = (r["notes"] or "").strip()
+            line = f"{AUTO} {shown}: {r['status']}" + (f" ({detail})" if detail else "") + f", chưa thử tay; bằng chứng {r['evidence']}"
+            kept = [ln for ln in note_now.split("\n") if ln and not ln.startswith(AUTO)]
+            values = {"notes": "\n".join(kept + [line])}
+            if status:  # a pass never writes Đạt: only a person who saw it does
+                values["status"] = status
+                values["date"] = serial
             for key, letters in cols.items():
                 if key in values:
-                    row, ok = set_cell(row, letters, rownum, values[key])
+                    row, ok = set_cell(row, letters, rownum, values[key], styles.get(letters, ""))
                     wrote.append(key if ok else f"{key} (formula, kept)")
             report.append(f"{name}!{rid}: {r['status']} -> " + ", ".join(wrote))
             return row
@@ -141,28 +161,34 @@ def read_results(path):
 def selftest():
     d = tempfile.mkdtemp()
     x = os.path.join(d, "c.xlsx")
+    row = lambda r, cells: f'<row r="{r}">' + "".join(cells) + "</row>"
+    t = lambda ref, text: f'<c r="{ref}" t="inlineStr"><is><t>{text}</t></is></c>'
     sheet = (
         '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
-        '<row r="1"><c r="A1" t="inlineStr"><is><t>ID</t></is></c><c r="B1" t="inlineStr"><is><t>Title</t></is></c><c r="C1" t="inlineStr"><is><t>Status</t></is></c>'
-        '<c r="D1" t="inlineStr"><is><t>Date</t></is></c><c r="E1" t="inlineStr"><is><t>Notes</t></is></c></row>'
-        '<row r="2"><c r="A2" t="inlineStr"><is><t>TT-01</t></is></c><c r="C2" s="3"/></row>'
-        '<row r="3"><c r="A3" t="inlineStr"><is><t>TT-05</t></is></c><c r="B3" t="inlineStr"><is><t>manual</t></is></c><c r="C3" t="inlineStr"><is><t>keep</t></is></c></row>'
-        '<row r="4"><c r="A4" t="inlineStr"><is><t>TT-02</t></is></c><c r="C4"><f>1+1</f><v>2</v></c><c r="E4" t="inlineStr"><is><t>old</t></is></c></row>'
-        '<row r="5"><c r="A5" t="inlineStr"><is><t>ZZ-99</t></is></c></row></sheetData></worksheet>'
+        + row(1, [t("A1", "Mã"), t("B1", "Test case"), t("C1", "Trạng thái"), t("D1", "Ngày thử"), t("E1", "Ghi chú, bằng chứng")])
+        + row(2, [t("A2", "TT-01"), '<c r="C2" s="3" t="inlineStr"><is><t>Đạt</t></is></c>', '<c r="D2" s="7"><v>46298</v></c>'])
+        + row(3, [t("A3", "TT-02"), t("C3", "Chưa làm"), t("E3", "ghi tay\nQA tự động 01/01/2026: fail (cũ)")])
+        + row(4, [t("A4", "TT-03"), t("B4", "manual"), t("C4", "giữ")])
+        + row(5, [t("A5", "TT-04"), '<c r="C5"><f>1+1</f><v>2</v></c>'])
+        + row(6, [t("A6", "TT-05"), t("C6", "Chưa làm")])
+        + "</sheetData></worksheet>"
     )
     with zipfile.ZipFile(x, "w") as z:
         z.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
         z.writestr("xl/workbook.xml", '<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Checklist" sheetId="1" r:id="rId1"/></sheets></workbook>')
         z.writestr("xl/_rels/workbook.xml.rels", '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>')
         z.writestr("xl/worksheets/sheet1.xml", sheet)
-    res = {k: {"id": k, "status": s, "notes": n, "evidence": "ev/" + k} for k, s, n in [("TT-01", "pass", ""), ("TT-02", "fail", "boom"), ("TT-05", "pass", "")]}
-    sync(x, res, "2026-10-03", {"pass": "Pass", "fail": "Fail", "skip": "Skip"})
+    res = {k: {"id": k, "status": st, "notes": n, "evidence": "ev/" + k} for k, st, n in
+           [("TT-01", "pass", ""), ("TT-02", "fail", "boom"), ("TT-03", "fail", ""), ("TT-04", "fail", "x"), ("TT-05", "pass", "")]}
+    sync(x, res, "2026-10-03", {"pass": "", "fail": "Lỗi", "skip": ""})
     out = zipfile.ZipFile(x).read("xl/worksheets/sheet1.xml").decode()
-    assert '<c r="C2" s="3" t="inlineStr"><is><t xml:space="preserve">Pass</t></is></c>' in out, out  # style kept, status written
-    assert '<c r="D2" t="inlineStr"><is><t xml:space="preserve">2026-10-03</t></is></c>' in out, out  # missing cell inserted in order
-    assert "<f>1+1</f>" in out and ">Fail<" not in out.split("<row r=\"4\"")[1].split("</c>")[0], out  # the formula stays; the others are written
-    assert ">boom<" in out and ">old<" not in out, out  # notes replaced
-    assert ">keep<" in out and out.count("Pass") == 1, out  # the manual row untouched
+    r = lambda n: out.split(f'<row r="{n}">')[1].split("</row>")[0]
+    assert "Đạt" in r(2) and "<v>46298</v>" in r(2) and "QA tự động 03/10/2026: pass" in r(2), r(2)  # a pass never touches Đạt or the date
+    assert ">Lỗi<" in r(3) and "ghi tay" in r(3) and "(cũ)" not in r(3) and "boom" in r(3), r(3)  # tester's note kept, old auto line replaced
+    assert f"<v>{(datetime.date(2026, 10, 3) - datetime.date(1899, 12, 30)).days}</v>" in r(3), r(3)
+    assert "QA tự động" not in r(4) and ">giữ<" in r(4), r(4)  # the manual row
+    assert "<f>1+1</f>" in r(5) and "Lỗi" not in r(5), r(5)  # formula kept
+    assert ">Chưa làm<" in r(6) and "pass" in r(6), r(6)  # status untouched on a pass
     shutil.rmtree(d)
     print("selftest ok")
 
@@ -175,7 +201,7 @@ if __name__ == "__main__":
     ap.add_argument("csv", nargs="?")
     ap.add_argument("--xlsx", default="docs/rehearsal/checklist.xlsx")
     ap.add_argument("--date")
-    ap.add_argument("--map", default="pass=Pass,fail=Fail,skip=Skip")
+    ap.add_argument("--map", default="pass=,fail=Lỗi,skip=")
     a = ap.parse_args()
     path = a.csv or max(glob.glob("docs/rehearsal/results-*.csv"), default=None)
     if not path or not os.path.exists(a.xlsx):

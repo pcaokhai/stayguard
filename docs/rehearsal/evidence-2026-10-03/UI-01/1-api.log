@@ -1,0 +1,16 @@
+GET /v1/stays?date=2026-10-03 
+  -> 200 {"items":[{"checkInAt":"2026-10-03T08:54:21.666856Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD72J04BAHERZNKWM4KR","rentalType":"HOURLY","roomCode":"A203","state":"IN_STAY","status":"ACTIVE"},{"checkInAt":"2026-10-03T08:54:21.608208Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD58887Q41JR4EXY938Y","rentalType":"HOURLY","roomCode":"A202","state":"IN_STAY","status":"ACTIVE"},{"
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"mina","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:56:24.046654Z","mustChangePin":true,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FGJM783TGF3D47CD7EGMS","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FGJM783TGF3D47CD7EGMS","locale":"vi","name":"Smoke Mina","role":"MANAGER"}}
+GET /v1/stays?date=2026-10-03 
+  -> 200 {"items":[{"checkInAt":"2026-10-03T08:54:21.666856Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD72J04BAHERZNKWM4KR","rentalType":"HOURLY","roomCode":"A203","state":"IN_STAY","status":"ACTIVE"},{"checkInAt":"2026-10-03T08:54:21.608208Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD58887Q41JR4EXY938Y","rentalType":"HOURLY","roomCode":"A202","state":"IN_STAY","status":"ACTIVE"},{"
+GET /v1/stays?date=2026-10-03 
+  -> 200 {"items":[{"checkInAt":"2026-10-03T08:54:21.666856Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD72J04BAHERZNKWM4KR","rentalType":"HOURLY","roomCode":"A203","state":"IN_STAY","status":"ACTIVE"},{"checkInAt":"2026-10-03T08:54:21.608208Z","frontDeskName":"Rehearsal R11","guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","id":"st_01M40FHD58887Q41JR4EXY938Y","rentalType":"HOURLY","roomCode":"A202","state":"IN_STAY","status":"ACTIVE"},{"
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"hk","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:57:50.448693Z","mustChangePin":false,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FGN7H609EB2E81DK32TYB","locale":"vi","name":"Rehearsal Housekeeper","role":"HOUSEKEEPING"}}
+GET /v1/stays?date=2026-10-03 
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}

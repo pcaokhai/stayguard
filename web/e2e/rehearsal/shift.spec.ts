@@ -18,7 +18,7 @@ const openShift = async (api: Api, w: Who, deposit = 50_000) => {
   return { stay, shift: (await api.shift(w)).body };
 };
 
-test("SH-01 the cash left in the drawer is the opening float of the next shift", async ({
+test("CA-01 the cash left in the drawer is the opening float of the next shift", async ({
   api,
 }) => {
   const w = await api.as("r4");
@@ -33,7 +33,7 @@ test("SH-01 the cash left in the drawer is the opening float of the next shift",
   expect(next.expectedCash, "float plus the new deposit").toBe(30_000);
 });
 
-test("SH-02 a cash payout needs a note and leaves the drawer", async ({ api }) => {
+test("CA-02 a cash payout needs a note and leaves the drawer", async ({ api }) => {
   const w = await api.as("r5");
   const { shift } = await openShift(api, w);
   const noNote = await api.post(w, "/v1/shifts/current/payouts", {
@@ -51,7 +51,7 @@ test("SH-02 a cash payout needs a note and leaves the drawer", async ({ api }) =
   expect(after.movements.some((m: any) => m.kind === "PAYOUT")).toBe(true);
 });
 
-test("SH-03 closing with the exact cash needs no reason", async ({ api }) => {
+test("CA-03 closing with the exact cash needs no reason", async ({ api }) => {
   const w = await api.as("r6");
   const owner = await api.as("owner");
   const { shift } = await openShift(api, w);
@@ -63,7 +63,24 @@ test("SH-03 closing with the exact cash needs no reason", async ({ api }) => {
   expect(review.countedCash).toBe(shift.expectedCash);
 });
 
-test("SH-04 closing short needs a reason and tells the owner", async ({ api }) => {
+test("CA-06 a closed shift is locked; more cash opens a new one", async ({ api }) => {
+  const w = await api.as("r12");
+  const { shift } = await openShift(api, w);
+  expect((await close(api, w, shift.expectedCash)).status).toBeLessThan(300);
+  expect((await api.shift(w)).status, "nothing open to edit").toBe(404);
+  expect(
+    (await api.post(w, "/v1/shifts/current/payouts", { amount: 10_000, description: "late" }))
+      .status,
+  ).toBeGreaterThanOrEqual(400);
+  expect((await close(api, w, shift.expectedCash)).status, "closed twice").toBeGreaterThanOrEqual(
+    400,
+  );
+  await api.checkIn(w, { deposit: 10_000 });
+  const next = (await api.shift(w)).body;
+  expect(next.id, "a new shift").not.toBe(shift.id);
+});
+
+test("CA-04 closing short needs a reason and tells the owner", async ({ api }) => {
   const w = await api.as("r7");
   const owner = await api.as("owner");
   const { shift } = await openShift(api, w);
@@ -81,7 +98,7 @@ test("SH-04 closing short needs a reason and tells the owner", async ({ api }) =
   ).toBe(true);
 });
 
-test("SH-05 closing with an invoice that is not fully paid needs a reason", async ({ api }) => {
+test("CA-05 closing with an invoice that is not fully paid needs a reason", async ({ api }) => {
   const w = await api.as("r8");
   const { stay, shift } = await openShift(api, w);
   await api.checkout(w, stay.id); // checked out, nothing paid yet
@@ -94,7 +111,7 @@ test("SH-05 closing with an invoice that is not fully paid needs a reason", asyn
   void shift;
 });
 
-test("SH-06 cash the owner moves on an open shift lands on it, marked by owner", async ({
+test("CA-07 cash the owner moves on an open shift lands on it, marked by owner", async ({
   api,
 }) => {
   const w = await api.as("r9");
@@ -112,7 +129,7 @@ test("SH-06 cash the owner moves on an open shift lands on it, marked by owner",
   expect(after.expectedCash).toBe(before.expectedCash - invoice.quote.refundDue);
 });
 
-test("SH-07 the shift screen and the owner overview show the same expected cash", async ({
+test("CA-10 the shift screen and the owner overview show the same expected cash", async ({
   api,
   page,
 }, testInfo) => {
@@ -150,7 +167,7 @@ test("SH-07 the shift screen and the owner overview show the same expected cash"
   await ownerPage.close();
 });
 
-test("SH-08 a float left in the drawer is not counted twice by the owner overview", async ({
+test("CA-12 a float left in the drawer is not counted twice by the owner overview", async ({
   api,
 }) => {
   const w = await api.as("r11");

@@ -1,0 +1,22 @@
+POST /v1/owner/buildings {"code":"Z","name":"Building Z","floors":1,"roomsPerFloor":2,"unitTypeCode":"STANDARD"}
+  -> 201 {"code":"Z","counts":{"maintenance":0,"occupied":0,"overdue":0,"toClean":0,"vacant":2},"floors":[{"id":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","name":"1","order":1}],"id":"bd_01M40FTHWWJ74M528NG2D7TY0H","level":"EDIT","name":"Building Z"}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":25,"overdue":0,"toClean":19,"vacant":75},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"},{"code":"Z","counts":{"maintenance":0,"occupied":0,"overdue":0,"toClean":0,"vacant":2},"floors":[{"id":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","name":"1","order":1}],"id":"bd_01M40FTHWWJ74M528NG2D7TY0H","level":"EDIT","name":"Building Z"}]}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":25,"overdue":0,"toClean":19,"vacant":75},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M40FTHWWJ74M528NG2D7TY0H/rooms 
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"BUILDING_FORBIDDEN"}
+PUT /v1/owner/staff/us_01M40FGJM783TGF3D47CD7EGMS/building-permissions/bd_01M40FTHWWJ74M528NG2D7TY0H {"level":"VIEW"}
+  -> 200 {"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","level":"VIEW"}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":25,"overdue":0,"toClean":19,"vacant":75},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"},{"code":"Z","counts":{"maintenance":0,"occupied":0,"overdue":0,"toClean":0,"vacant":2},"floors":[{"id":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","name":"1","order":1}],"id":"bd_01M40FTHWWJ74M528NG2D7TY0H","level":"VIEW","name":"Building Z"}]}
+GET /v1/buildings/bd_01M40FTHWWJ74M528NG2D7TY0H/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","code":"Z101","floor":1,"floorId":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","floorName":"1","id":"un_01M40FTHWW5FN8W1XNPPYE3AQ4","status":"VACANT","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","code":"Z102","floor":1,"floorId":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","floorName":"1","id":"un_01M40FTHWX23N5CQCHVFHFBHP6","status":"VACANT","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}}]}
+GET /v1/buildings/bd_01M40FTHWWJ74M528NG2D7TY0H/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","code":"Z101","floor":1,"floorId":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","floorName":"1","id":"un_01M40FTHWW5FN8W1XNPPYE3AQ4","status":"VACANT","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","code":"Z102","floor":1,"floorId":"fl_01M40FTHWWKGD4GB88MY2ZMPR9","floorName":"1","id":"un_01M40FTHWX23N5CQCHVFHFBHP6","status":"VACANT","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}}]}
+POST /v1/rooms/un_01M40FTHWW5FN8W1XNPPYE3AQ4/stays {"rentalType":"HOURLY","guestName":"X","guestPhone":"0912345678","deposit":0}
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"BUILDING_FORBIDDEN"}
+PUT /v1/owner/staff/us_01M40FGJM783TGF3D47CD7EGMS/building-permissions/bd_01M40FTHWWJ74M528NG2D7TY0H {"level":"NONE"}
+  -> 200 {"buildingId":"bd_01M40FTHWWJ74M528NG2D7TY0H","level":"NONE"}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":25,"overdue":0,"toClean":19,"vacant":75},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"}]}

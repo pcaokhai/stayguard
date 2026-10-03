@@ -1,0 +1,234 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: money.spec.ts >> TT-08 the top-up of the remainder pays the bill, with both transfers on the receipt
+- Location: e2e/rehearsal/money.spec.ts:134:5
+
+# Error details
+
+```
+Error: both transfers, in two lines
+
+expect(received).toEqual(expected) // deep equality
+
+- Expected  - 2
++ Received  + 1
+
+  Array [
+-   35000,
+-   35000,
++   70000,
+  ]
+```
+
+# Test source
+
+```ts
+  49  |   });
+  50  |   expect(link.status, "link").toBe(200);
+  51  |   await api.untilPayment(r, q.payment.id, "PAID");
+  52  |   expect((await api.getStay(r, q.stay.id)).paymentState).toBe("PAID");
+  53  |   expect(JSON.stringify(await api.audit(owner)), "the link is in the activity log").toMatch(
+  54  |     /link/i,
+  55  |   );
+  56  | });
+  57  | 
+  58  | test("TT-04 linking money of a different amount is refused", async ({ api }) => {
+  59  |   const r = await api.as("r1");
+  60  |   const owner = await api.as("owner");
+  61  |   const q = await api.toQr(r);
+  62  |   await api.pay("", q.amount - 1_000, { content: "short and no code" });
+  63  |   const tx = (await api.transactions(owner)).find(
+  64  |     (t) => t.amount === q.amount - 1_000 && t.reconciliation === "UNMATCHED",
+  65  |   );
+  66  |   expect(tx?.paymentEventId).toBeTruthy();
+  67  |   const link = await api.post(owner, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  68  |     invoiceId: q.invoice.id,
+  69  |   });
+  70  |   expect(link.status, "a different amount must not be linked").toBe(409);
+  71  |   expect(link.body.code).toBe("LINK_AMOUNT_MISMATCH");
+  72  |   expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  73  | });
+  74  | 
+  75  | test("TT-06 a transfer that is already linked cannot be linked again", async ({ api }) => {
+  76  |   const r = await api.as("r1");
+  77  |   const owner = await api.as("owner");
+  78  |   const a = await api.toQr(r);
+  79  |   const b = await api.toQr(r);
+  80  |   const amount = a.amount;
+  81  |   expect(b.amount, "both bills are the same").toBe(amount);
+  82  |   await api.pay("", amount, { content: "once only" });
+  83  |   const tx = (await api.transactions(owner)).find(
+  84  |     (t) => t.amount === amount && t.reconciliation === "UNMATCHED" && !t.billCode,
+  85  |   );
+  86  |   expect(tx?.paymentEventId).toBeTruthy();
+  87  |   expect(
+  88  |     (
+  89  |       await api.post(owner, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  90  |         invoiceId: a.invoice.id,
+  91  |       })
+  92  |     ).status,
+  93  |   ).toBe(200);
+  94  |   const again = await api.post(owner, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  95  |     invoiceId: b.invoice.id,
+  96  |   });
+  97  |   expect(again.status, "second link refused").toBe(409);
+  98  |   expect((await api.payment(r, b.payment.id)).status).toBe("PENDING");
+  99  | });
+  100 | 
+  101 | test("TT-05 a receptionist cannot link a transfer", async ({ api }) => {
+  102 |   const r = await api.as("r1");
+  103 |   const owner = await api.as("owner");
+  104 |   const q = await api.toQr(r);
+  105 |   await api.pay("", q.amount, { content: "front desk tries" });
+  106 |   const tx = (await api.transactions(owner)).find(
+  107 |     (t) => t.amount === q.amount && t.reconciliation === "UNMATCHED" && !t.billCode,
+  108 |   );
+  109 |   expect(tx?.paymentEventId).toBeTruthy();
+  110 |   const link = await api.post(r, `/v1/owner/payment-events/${tx.paymentEventId}/link`, {
+  111 |     invoiceId: q.invoice.id,
+  112 |   });
+  113 |   expect(link.status).toBe(403);
+  114 |   expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  115 | });
+  116 | 
+  117 | test("TT-07 short transfer, then a QR for the remainder with the same bill code", async ({
+  118 |   api,
+  119 | }) => {
+  120 |   const r = await api.as("r1");
+  121 |   const q = await api.toQr(r);
+  122 |   const first = Math.floor(q.amount / 2);
+  123 |   await api.pay(q.note, first);
+  124 |   let p = await api.payment(r, q.payment.id);
+  125 |   expect(p.status, "short money does not pay the bill").toBe("PENDING");
+  126 |   expect(p.receivedAmount).toBe(first);
+  127 |   expect(p.remaining).toBe(q.amount - first);
+  128 |   const again = await api.post(r, `/v1/invoices/${q.invoice.id}/payments`, { method: "TRANSFER" });
+  129 |   expect(again.status, "remainder QR").toBeLessThan(300);
+  130 |   expect(again.body.qr.transferNote, "the same bill code").toBe(q.note);
+  131 |   expect(again.body.qr.amount, "for the remainder only").toBe(q.amount - first);
+  132 | });
+  133 | 
+  134 | test("TT-08 the top-up of the remainder pays the bill, with both transfers on the receipt", async ({
+  135 |   api,
+  136 | }) => {
+  137 |   const r = await api.as("r1");
+  138 |   const owner = await api.as("owner");
+  139 |   const q = await api.toQr(r);
+  140 |   const first = Math.floor(q.amount / 2);
+  141 |   await api.pay(q.note, first);
+  142 |   const again = await api.post(r, `/v1/invoices/${q.invoice.id}/payments`, { method: "TRANSFER" });
+  143 |   await api.pay(q.note, q.amount - first);
+  144 |   await api.untilPayment(r, again.body.id, "PAID");
+  145 |   expect((await api.getStay(r, q.stay.id)).paymentState).toBe("PAID");
+  146 |   const receipt = await api.get(r, `/v1/invoices/${q.invoice.id}/receipt`);
+  147 |   expect(receipt.status).toBe(200);
+  148 |   const transfers = (receipt.body.payments as any[]).filter((p) => p.method === "TRANSFER");
+> 149 |   expect(transfers.map((p) => p.amount).sort(), "both transfers, in two lines").toEqual(
+      |                                                                                 ^ Error: both transfers, in two lines
+  150 |     [first, q.amount - first].sort(),
+  151 |   );
+  152 |   // Once the bill is paid nothing about it should still ask the owner for action.
+  153 |   const left = (await api.transactions(owner, "?filter=NEEDS_ACTION")).filter(
+  154 |     (t) => t.billCode === q.note,
+  155 |   );
+  156 |   expect
+  157 |     .soft(left, "a paid bill leaves no 'needs action' row (the short transfer stays MISMATCH)")
+  158 |     .toHaveLength(0);
+  159 | });
+  160 | 
+  161 | test("TT-14 cash payment: paid, on the owner's transactions as cash, and in the shift", async ({
+  162 |   api,
+  163 | }) => {
+  164 |   const r = await api.as("r3");
+  165 |   const owner = await api.as("owner");
+  166 |   const stay = await api.checkIn(r, { deposit: 10_000 });
+  167 |   const invoice = await api.checkout(r, stay.id);
+  168 |   const before = (await api.shift(r)).body.expectedCash;
+  169 |   const pay = await api.post(r, `/v1/invoices/${invoice.id}/payments`, { method: "CASH" });
+  170 |   expect(pay.status).toBe(201);
+  171 |   expect(pay.body.status).toBe("PAID");
+  172 |   expect((await api.shift(r)).body.expectedCash, "the balance joins the drawer").toBe(
+  173 |     before + invoice.quote.balanceDue,
+  174 |   );
+  175 |   const row = (await api.transactions(owner)).find(
+  176 |     (t) => t.billCode === invoice.billCode && t.method === "CASH" && t.amount > 0,
+  177 |   );
+  178 |   expect(row?.reconciliation).toBe("CASH");
+  179 | });
+  180 | 
+  181 | test("BM-01 a webhook without a valid signature is refused and pays nothing", async ({ api }) => {
+  182 |   const r = await api.as("r3");
+  183 |   const q = await api.toQr(r);
+  184 |   const wrongSecret = await api.deliver({
+  185 |     note: q.note,
+  186 |     amount: q.amount,
+  187 |     secret: "not-the-secret",
+  188 |   });
+  189 |   expect(wrongSecret.status).toBe(401);
+  190 |   const body = JSON.stringify({
+  191 |     id: 1,
+  192 |     transferType: "in",
+  193 |     transferAmount: q.amount,
+  194 |     accountNumber: cfg.account,
+  195 |     content: q.note,
+  196 |   });
+  197 |   const unsigned = await api.request.post(cfg.base + cfg.hook, {
+  198 |     data: body,
+  199 |     headers: { "content-type": "application/json" },
+  200 |     failOnStatusCode: false,
+  201 |   });
+  202 |   expect(unsigned.status(), "no signature at all").toBe(401);
+  203 |   expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  204 | });
+  205 | 
+  206 | test("BM-02 a wrong hook id is refused", async ({ api }) => {
+  207 |   const res = await api.request.post(`${cfg.base}/v1/webhooks/bank/not-a-real-hook`, {
+  208 |     data: "{}",
+  209 |     headers: { "content-type": "application/json" },
+  210 |     failOnStatusCode: false,
+  211 |   });
+  212 |   expect(res.status()).toBe(404);
+  213 | });
+  214 | 
+  215 | test("TT-10 overpaid transfer pays the bill and alerts the owner", async ({ api }) => {
+  216 |   const r = await api.as("r1");
+  217 |   const owner = await api.as("owner");
+  218 |   const q = await api.toQr(r);
+  219 |   await api.pay(q.note, q.amount + 5_000);
+  220 |   await api.untilPayment(r, q.payment.id, "PAID");
+  221 |   const alert = (await api.alerts(owner)).find(
+  222 |     (a) => a.kind === "OVERPAID" && a.details?.billCode === q.note,
+  223 |   );
+  224 |   expect(alert, "OVERPAID alert for this bill").toBeTruthy();
+  225 | });
+  226 | 
+  227 | test("TT-11 an outgoing transfer is ignored", async ({ api }) => {
+  228 |   const r = await api.as("r1");
+  229 |   const q = await api.toQr(r);
+  230 |   const out = await api.deliver({ note: q.note, amount: q.amount, type: "out" });
+  231 |   expect(out.status).toBe(200);
+  232 |   expect((await api.payment(r, q.payment.id)).status, "money going out pays nothing").toBe(
+  233 |     "PENDING",
+  234 |   );
+  235 |   expect((await api.getStay(r, q.stay.id)).paymentState).toBe("AWAITING_PAYMENT");
+  236 |   // Money that left the account must not turn into money the owner can link to a bill.
+  237 |   const owner = await api.as("owner");
+  238 |   const row = (await api.transactions(owner)).find(
+  239 |     (t) => t.transferNote?.includes(q.note) && t.paymentEventId,
+  240 |   );
+  241 |   if (row) {
+  242 |     const link = await api.post(owner, `/v1/owner/payment-events/${row.paymentEventId}/link`, {
+  243 |       invoiceId: q.invoice.id,
+  244 |     });
+  245 |     expect(link.status, "an outgoing transfer cannot be linked to a bill").toBeGreaterThanOrEqual(
+  246 |       400,
+  247 |     );
+  248 |     expect((await api.payment(r, q.payment.id)).status).toBe("PENDING");
+  249 |   }
+```

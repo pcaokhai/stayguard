@@ -1,0 +1,9 @@
+activity/alerts list: 8
+[activity/alerts list] /owner/alerts · owner · vi · 390 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · owner · en · 390 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · owner · vi · 1280 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · owner · en · 1280 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · manager · vi · 390 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · manager · en · 390 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · manager · vi · 1280 — raw action code "LOCK_ROOM" visible in a row
+[activity/alerts list] /owner/alerts · manager · en · 1280 — raw action code "LOCK_ROOM" visible in a row

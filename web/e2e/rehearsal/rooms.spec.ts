@@ -1,7 +1,7 @@
 import { expect, test, uiLogin } from "./helpers";
 
 // Cleaning, damage and maintenance (docs/15 rules 6 to 8).
-test("RM-01 a receptionist marks a room clean and it is vacant again", async ({ api }) => {
+test("DP-01 a receptionist marks a room clean and it is vacant again", async ({ api }) => {
   const w = await api.as("linh");
   const { room } = await api.toClean(w);
   const task = await api.cleanTask(w, room.id);
@@ -11,7 +11,7 @@ test("RM-01 a receptionist marks a room clean and it is vacant again", async ({ 
   expect((await api.room(w, room.code)).status).toBe("VACANT");
 });
 
-test("RM-02 the owner marks a room clean and it is vacant again", async ({ api }) => {
+test("DP-02 the owner marks a room clean and it is vacant again", async ({ api }) => {
   const w = await api.as("linh");
   const owner = await api.as("owner");
   const { room } = await api.toClean(w);
@@ -22,7 +22,7 @@ test("RM-02 the owner marks a room clean and it is vacant again", async ({ api }
   expect((await api.room(owner, room.code)).status).toBe("VACANT");
 });
 
-test("RM-03 the to-clean screens offer clean, set maintenance and report damage", async ({
+test("DP-09 the to-clean screens offer clean, set maintenance and report damage", async ({
   api,
   page,
 }, testInfo) => {
@@ -63,7 +63,7 @@ test("RM-03 the to-clean screens offer clean, set maintenance and report damage"
   await ownerPage.close();
 });
 
-test("RM-04 a damage report that locks the room makes it maintenance, with a ticket and an alert", async ({
+test("DP-04 a damage report that locks the room makes it maintenance, with a ticket and an alert", async ({
   api,
 }) => {
   const w = await api.as("linh");
@@ -81,7 +81,10 @@ test("RM-04 a damage report that locks the room makes it maintenance, with a tic
   expect(
     (await api.alerts(owner)).some((a) => a.kind === "DAMAGE_REPORTED" && a.roomCode === room.code),
   ).toBe(true);
-  // A room with a guest cannot be locked.
+});
+
+test("DP-05 locking a room that has a guest is refused", async ({ api }) => {
+  const w = await api.as("linh");
   const busy = await api.checkIn(w);
   const locked = await api.post(w, `/v1/rooms/${busy.roomId}/damage-reports`, {
     category: "TV",
@@ -91,7 +94,7 @@ test("RM-04 a damage report that locks the room makes it maintenance, with a tic
   expect(locked.status, "not while a guest is in the room").toBe(409);
 });
 
-test("RM-05 a done ticket with a cost becomes a maintenance expense and reopens the room", async ({
+test("DP-06 a done ticket with a cost becomes a maintenance expense and reopens the room", async ({
   api,
 }) => {
   const w = await api.as("linh");

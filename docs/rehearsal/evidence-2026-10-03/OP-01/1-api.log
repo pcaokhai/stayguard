@@ -1,4 +1,0 @@
-GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M405JF5BYGDW7RGK4KB35SWW","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M405JF5BQ3D2VK6SFMNGZGK9","name":"Rehearsal Test rhaec4ce","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M405JF5X3BJHRMJDGM4EE1PQ","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
-GET /v1/me 
-  -> 200 {"buildingAccess":[{"buildingId":"bd_01M405JF5BYGDW7RGK4KB35SWW","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M405JF5BQ3D2VK6SFMNGZGK9","name":"Rehearsal Test rhaec4ce","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M405JF5X3BJHRMJDGM4EE1PQ","locale":"vi","name":"Smoke Owner","role":"OWNER"}}

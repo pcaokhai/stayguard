@@ -1,0 +1,6 @@
+Error: 8 problems — activity/alerts list: 8
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: 0
+Received: 8

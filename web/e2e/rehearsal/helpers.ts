@@ -77,15 +77,20 @@ export class Api {
     const headers: Record<string, string> = { ...(o.headers ?? {}) };
     if (who) headers.authorization = `Bearer ${who.token}`;
     if (method !== "GET" && method !== "HEAD") headers["idempotency-key"] = o.key ?? randomUUID();
-    const res = await this.request.fetch(cfg.base + path, {
-      method,
-      headers:
-        body === undefined && o.raw === undefined
-          ? headers
-          : { "content-type": "application/json", ...headers },
-      data: o.raw ?? (body === undefined ? undefined : JSON.stringify(body)),
-      failOnStatusCode: false,
-    });
+    // A pooled connection may have been closed by the server while a throttle slept: one retry on a dropped socket.
+    const send = () =>
+      this.request.fetch(cfg.base + path, {
+        method,
+        headers:
+          body === undefined && o.raw === undefined
+            ? headers
+            : { "content-type": "application/json", ...headers },
+        data: o.raw ?? (body === undefined ? undefined : JSON.stringify(body)),
+        failOnStatusCode: false,
+      });
+    const res = await send().catch((e: Error) =>
+      /hang up|ECONNRESET/.test(e.message) ? send() : Promise.reject(e),
+    );
     const text = await res.text();
     let parsed: any = text;
     try {

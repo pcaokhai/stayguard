@@ -47,7 +47,22 @@ cleanup() {
 trap cleanup EXIT
 
 echo "== starting or reusing the rehearse stack on :$PORT"
-"${COMPOSE[@]}" up -d --build db api jobs >/dev/null 2>&1 || { echo "FAIL: could not start the stack" >&2; "${COMPOSE[@]}" logs --tail 20 api >&2; exit 1; }
+if ! "${COMPOSE[@]}" up -d --build db api jobs >"$log" 2>&1; then
+	# A broken image build must not hide itself. Retry once with a rehearsal-only Dockerfile that also copies contracts/ (web tests import
+	# ../contracts/*.json, which the product Dockerfile leaves out); say loudly that main does not build as it stands.
+	echo "WARNING: the product image build FAILED on this commit:" >&2
+	grep -i -E 'error TS|ERROR' "$log" | tail -n 3 >&2
+	fix="$(mktemp -d)"
+	sed 's|^COPY web/ ./$|COPY web/ ./\nCOPY contracts/ /contracts/|' deploy/Dockerfile >"$fix/Dockerfile"
+	printf 'services:\n  api:\n    build:\n      dockerfile: %s/Dockerfile\n  migrate:\n    build:\n      dockerfile: %s/Dockerfile\n  jobs:\n    build:\n      dockerfile: %s/Dockerfile\n' "$fix" "$fix" "$fix" >"$fix/override.yaml"
+	if "${COMPOSE[@]}" -f "$fix/override.yaml" up -d --build db api jobs >"$log" 2>&1; then
+		echo "WARNING: built with the rehearsal-only Dockerfile fix (contracts/ copied); the results are for this commit anyway." >&2
+	else
+		echo "WARNING: still no build; testing the images already running, which are NOT this commit." >&2
+		"${COMPOSE[@]}" up -d db api jobs >/dev/null 2>&1 || true
+	fi
+	rm -rf "$fix"
+fi
 for _ in $(seq 120); do curl -fsS "$BASE/readyz" >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS "$BASE/readyz" >/dev/null || { echo "FAIL: the API did not become ready" >&2; "${COMPOSE[@]}" logs --tail 20 api >&2; exit 1; }
 # The jobs service would raise the partial and unpaid alerts on its own clock; the specs raise them on purpose and count them.

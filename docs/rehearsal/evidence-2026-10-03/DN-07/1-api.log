@@ -1,0 +1,4 @@
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","name":"Rehearsal Test rh75ec72","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M40FGJDX8HANVYCKWHDQRH32","locale":"vi","name":"Smoke Linh","role":"RECEPTIONIST"}}
+GET /v1/owner/overview 
+  -> 403 {"type":"about:blank","title":"Forbidden","status":403,"code":"ROLE_FORBIDDEN"}

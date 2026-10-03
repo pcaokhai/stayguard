@@ -1,6 +1,0 @@
-Error: the reveal is filed under GUEST_ID
-
-expect(received).toBe(expected) // Object.is equality
-
-Expected: "GUEST_ID"
-Received: "RATES_SETTINGS"

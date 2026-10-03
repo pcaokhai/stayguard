@@ -1,0 +1,24 @@
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":1,"occupied":24,"overdue":0,"toClean":19,"vacant":76},"floors":[{"id":"fl_01M40FGJ6YYRACXM91XC5A25TD","name":"1","order":1},{"id":"fl_01M40FGJ6YNWJHAAAXN0J0AQRS","name":"2","order":2},{"id":"fl_01M40FGJ6YQRGPZY0V2D0PWRBZ","name":"3","order":3}],"id":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M40FGJ6YRY460ZJW1SJ9NB0R/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A101","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YG513KPAMSHSQEKNT","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A102","floor":1,"floorId":"fl_01M40FGJ6YYRACXM91XC5A25TD","floorName":"1","id":"un_01M40FGJ6YACXXG9E471BH7BJS","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","code":"A103","floor
+POST /v1/owner/staff {"name":"Rehearsal rl03user","username":"rl03user","position":"FRONT_DESK","appAccess":"RECEPTIONIST","contract":{"payType":"MONTHLY","rate":6000000,"fixedAllowance":0,"standardShifts":26,"startDate":"2026-01-01","annualLeaveDays":12},"buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}]}
+  -> 201 {"oneTimePin":{"expiresAt":"2026-10-04T08:58:19.419833Z","pin":"***"},"staff":{"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FRNCWGTKG3T2WZ3T5SZ5Y","name":"Rehearsal rl03user","position":"FRONT_DESK","status":"ACTIVE","username":"rl03user"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"PIN_INVALID"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"ACCOUNT_LOCKED","lockedUntil":"2026-10-03T09:13:20.163499Z"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 401 {"type":"about:blank","title":"Unauthorized","status":401,"code":"ACCOUNT_LOCKED","lockedUntil":"2026-10-03T09:13:20.163499Z"}
+GET /v1/owner/alerts 
+  -> 200 {"items":[{"actorName":"Rehearsal rl03user","createdAt":"2026-10-03T08:58:20.163416Z","details":{"lockedUntil":"2026-10-03T09:13:20Z"},"id":"al_01M40FRP9MJYCNTQ6FTM0ZAPYT","kind":"ACCOUNT_LOCKED"},{"amount":70000,"createdAt":"2026-10-03T08:58:18.80839Z","details":{"eventId":"pe_01M40FRMSRW48F47WT0345MVXM","transferNote":"manager tries to link"},"id":"al_01M40FRMSWGJMBYWR030Z0Q86R","kind":"UNMATCHED_TRANSFER"},{"actorName":"Rehearsal R7","amount":10000,"createdAt":"2026-10-03T08:54:18.587775Z","details":{"counted":"40000","expected":"50000"},"id":"al_01M40FHA6W6EAMJMHWZRJFAWSS","kind":"CASH_SHO
+POST /v1/owner/staff/us_01M40FRNCWGTKG3T2WZ3T5SZ5Y/unlock 
+  -> 200 {"appAccess":"RECEPTIONIST","buildingAccess":[{"buildingId":"bd_01M40FGJ6YRY460ZJW1SJ9NB0R","level":"EDIT"}],"contract":{"annualLeaveDays":12,"fixedAllowance":0,"payType":"MONTHLY","rate":6000000,"standardShifts":26,"startDate":"2026-01-01"},"id":"us_01M40FRNCWGTKG3T2WZ3T5SZ5Y","name":"Rehearsal rl03user","position":"FRONT_DESK","status":"ACTIVE","username":"rl03user"}
+POST /v1/auth/sign-in {"guesthouseCode":"rh75ec72","username":"rl03user","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-03T20:58:20.361989Z","mustChangePin":true,"tenantId":"tn_01M40FGJ6YGT46D3V7HS4W6WMQ","user":{"id":"us_01M40FRNCWGTKG3T2WZ3T5SZ5Y","locale":"vi","name":"Rehearsal rl03user","role":"RECEPTIONIST"}}
