@@ -109,7 +109,7 @@ func (s *Setup) RemoveService(ctx context.Context, c Caller, key, code string) (
 			if err != nil {
 				return "", err
 			}
-			return result, s.record(ctx, tx, c, "SERVICE_REMOVED", "service", item.ID, map[string]any{"result": result})
+			return result, s.record(ctx, tx, c, auditServiceRemoved, "service", item.ID, map[string]any{"result": result})
 		})
 		return err
 	})
@@ -240,7 +240,7 @@ func (s *Setup) stocktake(ctx context.Context, tx Tx, c Caller, lines []Stocktak
 			return res, err
 		}
 	}
-	return res, s.record(ctx, tx, c, "STOCKTAKE_CREATED", "stocktake", res.ID, map[string]any{"differences": len(items)})
+	return res, s.record(ctx, tx, c, auditStocktakeCreated, "stocktake", res.ID, map[string]any{"differences": len(items)})
 }
 
 func abs64(v int64) int64 {

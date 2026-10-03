@@ -181,7 +181,7 @@ func (s *Setup) createBuilding(ctx context.Context, tx Tx, c Caller, in Building
 			}
 		}
 	}
-	if err = s.record(ctx, tx, c, "BUILDING_CREATED", "building", id, map[string]any{"floors": in.Floors, "rooms": len(codes)}); err != nil {
+	if err = s.record(ctx, tx, c, auditBuildingCreated, "building", id, map[string]any{"floors": in.Floors, "rooms": len(codes)}); err != nil {
 		return BuildingView{}, err
 	}
 	return s.buildingView(ctx, tx, BuildingRow{ID: id, Code: in.Code, Name: in.Name})
@@ -230,7 +230,7 @@ func (s *Setup) UpdateBuilding(ctx context.Context, c Caller, id string, name *s
 				return err
 			}
 			b.Name = *name
-			if err = s.record(ctx, tx, c, "BUILDING_RENAMED", "building", id, nil); err != nil {
+			if err = s.record(ctx, tx, c, auditBuildingRenamed, "building", id, nil); err != nil {
 				return err
 			}
 		}
@@ -301,7 +301,7 @@ func (s *Setup) createFloor(ctx context.Context, tx Tx, c Caller, buildingID str
 			return nil, err
 		}
 	}
-	if err = s.record(ctx, tx, c, "FLOOR_CREATED", "floor", fid, map[string]any{"level": level, "rooms": len(out)}); err != nil {
+	if err = s.record(ctx, tx, c, auditFloorCreated, "floor", fid, map[string]any{"level": level, "rooms": len(out)}); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -344,7 +344,7 @@ func (s *Setup) CreateRooms(ctx context.Context, c Caller, key string, in RoomsI
 			if err != nil {
 				return nil, err
 			}
-			return views, s.record(ctx, tx, c, "ROOMS_CREATED", "building", in.BuildingID, map[string]any{"count": len(views)})
+			return views, s.record(ctx, tx, c, auditRoomsCreated, "building", in.BuildingID, map[string]any{"count": len(views)})
 		})
 		return err
 	})
@@ -505,7 +505,7 @@ func (s *Setup) UpdateRoom(ctx context.Context, c Caller, roomID string, in Room
 		if err = s.repo.UpdateRoom(ctx, tx, upd); err != nil {
 			return err
 		}
-		if err = s.record(ctx, tx, c, "ROOM_UPDATED", "room", roomID, map[string]any{"status": upd.Status, "retired": upd.Retired}); err != nil {
+		if err = s.record(ctx, tx, c, auditRoomUpdated, "room", roomID, map[string]any{"status": upd.Status, "retired": upd.Retired}); err != nil {
 			return err
 		}
 		out, err = s.roomView(ctx, tx, roomID)
@@ -684,7 +684,7 @@ func (s *Setup) UpdateRatePlan(ctx context.Context, c Caller, code string, in Ra
 		if err = s.repo.UpdateRatePlan(ctx, tx, u.ID, plan.Snapshot(), u.Version+1, now); err != nil {
 			return err
 		}
-		if err = s.record(ctx, tx, c, "RATE_PLAN_UPDATED", "unit_type", u.ID, map[string]any{"code": code, "version": u.Version + 1}); err != nil {
+		if err = s.record(ctx, tx, c, auditRatePlanUpdated, "unit_type", u.ID, map[string]any{"code": code, "version": u.Version + 1}); err != nil {
 			return err
 		}
 		out = UnitTypeRates{Code: u.Code, Name: u.Name, RatePlan: plan, UpdatedAt: now}
@@ -810,7 +810,7 @@ func (s *Setup) createService(ctx context.Context, tx Tx, c Caller, in ServiceIn
 			return ServiceItem{}, err
 		}
 	}
-	return item, s.record(ctx, tx, c, "SERVICE_CREATED", "service", item.ID, map[string]any{"code": code, "openingQuantity": in.OpeningQuantity})
+	return item, s.record(ctx, tx, c, auditServiceCreated, "service", item.ID, map[string]any{"code": code, "openingQuantity": in.OpeningQuantity})
 }
 
 func (s *Setup) freeServiceCode(ctx context.Context, tx Tx, base string) (string, error) {
@@ -864,7 +864,7 @@ func (s *Setup) UpdateService(ctx context.Context, c Caller, code string, p Serv
 			next.OnSale = *p.OnSale
 		}
 		out = next
-		return s.record(ctx, tx, c, "SERVICE_UPDATED", "service", cur.ID, nil)
+		return s.record(ctx, tx, c, auditServiceUpdated, "service", cur.ID, nil)
 	})
 	return out, err
 }
@@ -912,7 +912,7 @@ func (s *Setup) restock(ctx context.Context, tx Tx, c Caller, code string, quant
 	if err = s.postStockCost(ctx, tx, c, m, item.Code, quantity*unitCost); err != nil {
 		return ServiceItem{}, err
 	}
-	return item, s.record(ctx, tx, c, "STOCK_IN", "service", item.ID, map[string]any{"quantity": quantity})
+	return item, s.record(ctx, tx, c, auditStockIn, "service", item.ID, map[string]any{"quantity": quantity})
 }
 
 // postStockCost posts what a restock cost as a COST_OF_GOODS expense of the month it was bought in. The movement is the

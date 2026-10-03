@@ -4,19 +4,18 @@ import "strings"
 
 // auditCategories maps the action codes written to audit_logs to the activity-log categories of the contract.
 // The prefixes do not overlap, so the category of an action and the filter for a category agree.
-// A new audit action needs a prefix here; until then it shows under RATES_SETTINGS and no category filter finds it.
+// A new audit action needs a prefix here (TestAuditCategories_* fail otherwise); without one it shows under RATES_SETTINGS and no category filter finds it.
 var auditCategories = []struct{ prefix, category string }{
-	{"payment.", "MONEY"}, {"expense.", "MONEY"}, {"payroll.", "MONEY"}, {"invoice.", "MONEY"}, {"stay.checked_out", "MONEY"}, {"stay.extras_added", "MONEY"},
+	{"payment.", "MONEY"}, {"expense.", "MONEY"}, {"payroll.", "MONEY"}, {"stay.checked_out", "MONEY"}, {"stay.extras_added", "MONEY"},
 	{"stay.check_in", "STAY_TIME"}, {"stay.moved", "STAY_TIME"},
 	{"shift.", "SHIFT"},
-	{"stock.", "STOCK"}, {"service.", "STOCK"},
-	{"room.cleaned", "MAINTENANCE"}, {"ticket.", "MAINTENANCE"}, {"damage.", "MAINTENANCE"},
-	{"staff.", "ACCESS_STAFF"}, {"user.", "ACCESS_STAFF"}, {"pin.", "ACCESS_STAFF"}, {"auth.", "ACCESS_STAFF"},
-	{"permission.", "ACCESS_STAFF"}, {"roster.", "ACCESS_STAFF"}, {"leave.", "ACCESS_STAFF"}, {"ACCOUNT_LOCKED", "ACCESS_STAFF"},
-	{"rate.", "RATES_SETTINGS"}, {"settings.", "RATES_SETTINGS"}, {"property.", "RATES_SETTINGS"}, {"building.", "RATES_SETTINGS"},
-	{"floor.", "RATES_SETTINGS"}, {"room.created", "RATES_SETTINGS"}, {"room.updated", "RATES_SETTINGS"},
-	{"sepay.", "INSTALLER"}, {"bank.", "INSTALLER"}, {"tenant.", "INSTALLER"},
-	{"guest_id.", "GUEST_ID"},
+	{"SERVICE_", "STOCK"}, {"STOCK_", "STOCK"}, {"STOCKTAKE_", "STOCK"},
+	{"room.cleaned", "MAINTENANCE"}, {"ticket.", "MAINTENANCE"},
+	{"STAFF_", "ACCESS_STAFF"}, {"BUILDING_PERMISSION_SET", "ACCESS_STAFF"}, {"ACCOUNT_LOCKED", "ACCESS_STAFF"}, {"roster.", "ACCESS_STAFF"}, {"leave.", "ACCESS_STAFF"},
+	{"BUILDING_CREATED", "RATES_SETTINGS"}, {"BUILDING_RENAMED", "RATES_SETTINGS"}, {"FLOOR_", "RATES_SETTINGS"}, {"ROOMS_CREATED", "RATES_SETTINGS"},
+	{"ROOM_UPDATED", "RATES_SETTINGS"}, {"RATE_PLAN_", "RATES_SETTINGS"}, {"PROPERTY_", "RATES_SETTINGS"},
+	{"INSTALLER_", "INSTALLER"}, {"BANK_ACCOUNT_", "INSTALLER"},
+	{"GUEST_ID_", "GUEST_ID"},
 }
 
 const defaultAuditCategory = "RATES_SETTINGS"

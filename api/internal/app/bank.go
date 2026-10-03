@@ -88,7 +88,7 @@ func (b *Bank) UpdateProperty(ctx context.Context, c Caller, p PropertyPatch) (P
 		if v, _, err = b.repo.Property(ctx, tx); err != nil {
 			return err
 		}
-		return b.record(ctx, tx, c, "PROPERTY_UPDATED", "property", cur.ID, nil)
+		return b.record(ctx, tx, c, auditPropertyUpdated, "property", cur.ID, nil)
 	})
 	return v, err
 }
@@ -203,7 +203,7 @@ func (b *Bank) insert(ctx context.Context, tx Tx, c Caller, in BankAccountInput,
 	if err = b.repo.InsertAccount(ctx, tx, a); err != nil {
 		return BankAccountView{}, err
 	}
-	if err = b.record(ctx, tx, c, "BANK_ACCOUNT_ADDED", "bank_account", id, nil); err != nil {
+	if err = b.record(ctx, tx, c, auditBankAccountAdded, "bank_account", id, nil); err != nil {
 		return BankAccountView{}, err
 	}
 	return BankAccountView{ID: id, BankBin: a.BankBin, BankName: a.BankName, AccountNoMasked: a.Masked, AccountName: a.Name, SepayStatus: statusPending}, nil
@@ -211,7 +211,7 @@ func (b *Bank) insert(ctx context.Context, tx Tx, c Caller, in BankAccountInput,
 
 // MakeDefault makes a connected account the QR default after the owner re-enters their PIN.
 func (b *Bank) MakeDefault(ctx context.Context, c Caller, id, ownerPin string) (BankAccountView, error) {
-	return b.change(ctx, c, "makeDefaultBankAccount", id, ownerPin, "BANK_ACCOUNT_DEFAULT", func(ctx context.Context, tx Tx, row BankAccountRow) error {
+	return b.change(ctx, c, "makeDefaultBankAccount", id, ownerPin, auditBankAccountDefault, func(ctx context.Context, tx Tx, row BankAccountRow) error {
 		if row.SepayStatus != statusConnected {
 			return ErrConflict // rule 19: only after the installer connects SePay
 		}
@@ -224,7 +224,7 @@ func (b *Bank) MakeDefault(ctx context.Context, c Caller, id, ownerPin string) (
 
 // RemoveAccount deletes a non-default account after the owner re-enters their PIN.
 func (b *Bank) RemoveAccount(ctx context.Context, c Caller, id, ownerPin string) error {
-	_, err := b.change(ctx, c, "removeBankAccount", id, ownerPin, "BANK_ACCOUNT_REMOVED", func(ctx context.Context, tx Tx, row BankAccountRow) error {
+	_, err := b.change(ctx, c, "removeBankAccount", id, ownerPin, auditBankAccountRemoved, func(ctx context.Context, tx Tx, row BankAccountRow) error {
 		if row.IsDefault {
 			return ErrConflict // the default cannot be removed
 		}

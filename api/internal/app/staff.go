@@ -267,7 +267,7 @@ func (s *Staff) insert(ctx context.Context, tx Tx, c Caller, in StaffInput, hash
 			return StaffView{}, err
 		}
 	}
-	if err = s.record(ctx, tx, c, "STAFF_CREATED", id, nil, map[string]any{"position": in.Position, "appAccess": in.AppAccess}); err != nil {
+	if err = s.record(ctx, tx, c, auditStaffCreated, id, nil, map[string]any{"position": in.Position, "appAccess": in.AppAccess}); err != nil {
 		return StaffView{}, err
 	}
 	return s.view(ctx, tx, id)
@@ -357,7 +357,7 @@ func (s *Staff) UpdateStaff(ctx context.Context, c Caller, userID string, in Sta
 		if out, err = s.view(ctx, tx, userID); err != nil {
 			return err
 		}
-		return s.record(ctx, tx, c, "STAFF_UPDATED", userID,
+		return s.record(ctx, tx, c, auditStaffUpdated, userID,
 			map[string]any{"position": cur.Position, "appAccess": cur.AppAccess},
 			map[string]any{"position": out.Position, "appAccess": out.AppAccess})
 	})
@@ -451,7 +451,7 @@ func (s *Staff) ResetPin(ctx context.Context, c Caller, userID string) (OneTimeP
 		if err = s.repo.DeleteUserSessions(ctx, tx, userID); err != nil {
 			return err
 		}
-		return s.record(ctx, tx, c, "STAFF_PIN_RESET", userID, nil, nil)
+		return s.record(ctx, tx, c, auditStaffPinReset, userID, nil, nil)
 	})
 	if err != nil {
 		return OneTimePin{}, err
@@ -460,11 +460,11 @@ func (s *Staff) ResetPin(ctx context.Context, c Caller, userID string) (OneTimeP
 }
 
 func (s *Staff) LockStaff(ctx context.Context, c Caller, userID string) (StaffView, error) {
-	return s.setLock(ctx, c, "lockStaff", userID, statusLocked, "STAFF_LOCKED")
+	return s.setLock(ctx, c, "lockStaff", userID, statusLocked, auditStaffLocked)
 }
 
 func (s *Staff) UnlockStaff(ctx context.Context, c Caller, userID string) (StaffView, error) {
-	return s.setLock(ctx, c, "unlockStaff", userID, statusActive, "STAFF_UNLOCKED")
+	return s.setLock(ctx, c, "unlockStaff", userID, statusActive, auditStaffUnlocked)
 }
 
 // setLock changes the status; locking ends the sessions, unlocking also clears a wrong-PIN lock.
@@ -534,7 +534,7 @@ func (s *Staff) RemoveStaff(ctx context.Context, c Caller, userID, ownerPin stri
 		if err = s.repo.DeleteUserSessions(ctx, tx, userID); err != nil {
 			return err
 		}
-		return s.record(ctx, tx, c, "STAFF_REMOVED", userID, nil, nil)
+		return s.record(ctx, tx, c, auditStaffRemoved, userID, nil, nil)
 	})
 	return errOr(err, outcome)
 }
@@ -605,6 +605,6 @@ func (s *Staff) SetBuildingPermission(ctx context.Context, c Caller, userID, bui
 }
 
 func (s *Staff) recordPermission(ctx context.Context, tx Tx, c Caller, userID, buildingID string, old, level access.Level) error {
-	return s.record(ctx, tx, c, "BUILDING_PERMISSION_SET", userID,
+	return s.record(ctx, tx, c, auditBuildingPermission, userID,
 		map[string]any{"buildingId": buildingID, "level": old.String()}, map[string]any{"buildingId": buildingID, "level": level.String()})
 }
