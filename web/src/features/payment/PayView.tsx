@@ -51,7 +51,9 @@ export function PayView() {
     return () => clearTimeout(timer);
   }, [paid, id, roomId, router]);
 
-  if (payment.isError)
+  // Offline, TanStack pauses the 3 s poll and keeps the last data instead of failing: show the offline state with Retry.
+  // Coming back resumes the same GET; nothing here writes, so no second payment is possible.
+  if (payment.isError || payment.fetchStatus === "paused")
     return (
       <AppFrame tabs={false}>
         <QueryError onRetry={() => void payment.refetch()} />
