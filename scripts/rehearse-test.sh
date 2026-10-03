@@ -39,6 +39,7 @@ log="$(mktemp)"; tenant_file="$(mktemp)"; pins_file="$(mktemp)"
 cleanup() {
 	status=$?
 	rm -f "$log" "$tenant_file"
+	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file.set"
 	[ -n "${RH_ENV_OUT:-}" ] || rm -f "$pins_file"
 	if [ "${RH_KEEP_JOBS:-0}" != 1 ]; then "${COMPOSE[@]}" up -d jobs >/dev/null 2>&1 || true; fi
 	exit "$status"

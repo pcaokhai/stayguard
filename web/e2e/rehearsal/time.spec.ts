@@ -1,4 +1,5 @@
-import { expect, raiseAlerts, stack, test, backdate } from "./helpers";
+import { execFileSync } from "node:child_process";
+import { backdate, cfg, expect, raiseAlerts, stack, test } from "./helpers";
 
 // Time-based rules without waiting: the helper backdates one invoice in the rehearsal database and `stayguard jobs run` is run once.
 // Rule: PAYMENT_PARTIAL after 15 minutes, PAYMENT_UNPAID or REFUND_PENDING 30 minutes after check-out, once each (docs/15).
@@ -104,4 +105,27 @@ test("TM-05 SePay's own retry schedule after a missed delivery", async () => {
     "manual: SePay real retry behaviour (retry schedule and whether it re-signs each attempt) needs a SePay test transfer",
   );
   void backdate;
+});
+
+test("TM-06 the backdate helper refuses to run anywhere but the rehearsal stack", async () => {
+  const run = (env: Record<string, string>) => {
+    try {
+      execFileSync("scripts/rehearsal-backdate.sh", ["unpaid", "PH1003A101", "5"], {
+        cwd: cfg.root,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, ...env },
+      });
+      return { status: 0, stderr: "" };
+    } catch (e) {
+      const x = e as { status: number; stderr: string };
+      return { status: x.status, stderr: x.stderr };
+    }
+  };
+  const notRehearsal = run({ RH_TENANT: "smoke" });
+  expect(notRehearsal.status).toBe(1);
+  expect(notRehearsal.stderr).toContain("REFUSED");
+  const otherProject = run({ RH_TENANT: cfg.guesthouse, COMPOSE_PROJECT_NAME: "stayguard" });
+  expect(otherProject.status).toBe(1);
+  expect(otherProject.stderr).toContain("REFUSED");
 });
