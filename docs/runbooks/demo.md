@@ -32,7 +32,7 @@ Guesthouse code `demo`. The PINs are for the demo only (the import's one-time PI
 
 What it creates, for the day it runs:
 
-- 2 buildings, 35 rooms (A: 3 floors of 6, B: 6 + 6 + 5; the top floor is VIP), two room types with rates, 6 extras with stock.
+- 2 buildings, 35 rooms (A: 3 floors of 6, B: 6 + 6 + 5; the top floor is VIP), two room types with rates, 5 extras with stock.
 - Rooms in use: hourly, overnight and daily stays in both buildings; `A201` overdue (its check-in time was edited, which alerts the owner).
 - Bills: one paid by cash (room waits to be cleaned), one paid by a signed SePay transfer and cleaned by housekeeping, one with the QR shown and nothing paid yet, one short transfer (the remainder is open), one overpaid transfer, one transfer with no bill code (unmatched), a cash refund of an over-large deposit.
 - A damage report that locks `A205` with a repair ticket in repair, expenses of the month (rent recurring, electricity, water, supplies), a roster for the week, a pending leave request, and one closed shift with a small cash shortage.
