@@ -99,6 +99,7 @@ func toRoom(v app.RoomView) gen.Room {
 		r.ActiveStay = &gen.StaySummary{
 			Id: s.ID, RentalType: gen.RentalType(s.RentalType), GuestName: s.GuestName,
 			CheckInAt: s.CheckInAt, ElapsedMinutes: s.ElapsedMinutes, RunningTotal: s.RunningTotal,
+			PendingPayment: toPendingPayment(s.PendingPayment),
 		}
 	}
 	return r

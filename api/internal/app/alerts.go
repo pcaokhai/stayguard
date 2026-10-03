@@ -12,6 +12,7 @@ const (
 	AlertPaymentMismatch     = "PAYMENT_MISMATCH"
 	AlertOverpaid            = "OVERPAID"
 	AlertPaymentPartial      = "PAYMENT_PARTIAL"
+	AlertPaymentUnpaid       = "PAYMENT_UNPAID"
 	AlertSepayUpdated        = "SEPAY_UPDATED"
 	AlertStayTimeEdited      = "STAY_TIME_EDITED"
 	AlertStocktakeDifference = "STOCKTAKE_DIFFERENCE"

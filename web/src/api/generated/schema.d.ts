@@ -1713,7 +1713,7 @@ export interface components {
         /** @enum {string} */
         PaymentStatus: "PENDING" | "PAID" | "EXPIRED" | "MISMATCH";
         /** @enum {string} */
-        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
+        AlertKind: "ACCOUNT_LOCKED" | "CASH_OVER" | "CASH_SHORT" | "DAMAGE_REPORTED" | "LEAVE_REQUESTED" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "PAYMENT_UNPAID" | "SEPAY_UPDATED" | "STAY_TIME_EDITED" | "STOCKTAKE_DIFFERENCE" | "UNMATCHED_TRANSFER" | "UNUSED_ROOM_REPORT";
         CreateDemoSessionRequest: {
             role: components["schemas"]["Role"];
             locale: components["schemas"]["Locale"];
@@ -1776,6 +1776,18 @@ export interface components {
             guestName: string;
             elapsedMinutes: number;
             runningTotal: components["schemas"]["Vnd"];
+            /** @description Set once the stay is checked out and its invoice is not paid (the room stays OCCUPIED until it is). runningTotal is then the invoice total and elapsedMinutes stops at check-out. */
+            pendingPayment?: components["schemas"]["PendingPayment"] | null;
+        };
+        /** @description Money state of a checked-out stay's open invoice. */
+        PendingPayment: {
+            /** @description The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created. */
+            paymentId: string | null;
+            total: components["schemas"]["Vnd"];
+            /** @description Deposit plus bank money received that did not yet settle the invoice. */
+            received: components["schemas"]["Vnd"];
+            /** @description What is still to be paid; 0 when only a deposit refund is open. */
+            remaining: components["schemas"]["Vnd"];
         };
         Room: {
             id: string;
@@ -1860,6 +1872,8 @@ export interface components {
             quote: components["schemas"]["Quote"];
             /** @description Rate plan version snapshotted at check-in */
             pricingVersion: number;
+            /** @description Set while the stay is checked out and its invoice is not paid. */
+            pendingPayment?: components["schemas"]["PendingPayment"] | null;
             guestId?: components["schemas"]["GuestIdIndicators"];
         };
         AddExtrasRequest: {
@@ -2603,7 +2617,7 @@ export interface components {
         };
         AttentionItem: {
             /** @enum {string} */
-            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
+            kind: "OVERDUE_ROOM" | "LONG_TO_CLEAN" | "OVERPAID" | "PAYMENT_MISMATCH" | "PAYMENT_PARTIAL" | "PAYMENT_UNPAID" | "UNMATCHED_TRANSFER" | "CASH_SHORT" | "LEAVE_PENDING" | "TICKET_OPEN";
             ref: string;
             roomCode?: string | null;
             minutes?: number | null;

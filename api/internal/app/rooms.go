@@ -23,6 +23,8 @@ type StayView struct {
 	GuestName      string
 	ElapsedMinutes int
 	RunningTotal   int64
+	// PendingPayment is set once the stay is checked out and its invoice is not paid; RunningTotal is then the invoice total.
+	PendingPayment *PendingPayment
 }
 
 type RoomView struct {
@@ -230,7 +232,11 @@ func (s *Rooms) views(ctx context.Context, rows []RoomRow, filter *room.Status, 
 		}
 		v := RoomView{ID: r.ID, Code: r.Code, BuildingID: r.BuildingID, Floor: r.Floor, FloorID: r.FloorID, FloorName: r.FloorName,
 			UnitTypeCode: r.UnitTypeCode, UnitTypeName: r.UnitTypeName, Status: st, Note: r.Note}
-		if timing != nil {
+		if r.Stay != nil && r.Stay.Pending != nil {
+			if v.ActiveStay, err = pendingStayView(r.Stay); err != nil {
+				return nil, err
+			}
+		} else if timing != nil {
 			if v.ActiveStay, err = s.stayView(ctx, r.Stay, *timing, now, loc); err != nil {
 				return nil, err
 			}
@@ -249,6 +255,20 @@ func (s *Rooms) stayView(ctx context.Context, st *StayRow, t room.StayTiming, no
 		ElapsedMinutes: room.ElapsedMinutes(st.CheckInAt, now), RunningTotal: total}, nil
 }
 
+// pendingStayView is the summary of a checked-out stay with an unpaid invoice: elapsed time stops at check-out.
+func pendingStayView(st *StayRow) (*StayView, error) {
+	rt, err := room.ParseRentalType(st.RentalType)
+	if err != nil {
+		return nil, err
+	}
+	end := st.CheckInAt
+	if st.CheckOutAt != nil {
+		end = *st.CheckOutAt
+	}
+	return &StayView{ID: st.ID, RentalType: rt, CheckInAt: st.CheckInAt, GuestName: st.GuestName,
+		ElapsedMinutes: room.ElapsedMinutes(st.CheckInAt, end), RunningTotal: st.Pending.Total, PendingPayment: st.Pending}, nil
+}
+
 // deriveRoom fails closed on an unreadable stored status, rental type or snapshot.
 func deriveRoom(r RoomRow, now time.Time, loc *time.Location) (room.Status, *room.StayTiming, error) {
 	stored, err := room.ParseStored(r.StoredStatus)
@@ -256,7 +276,7 @@ func deriveRoom(r RoomRow, now time.Time, loc *time.Location) (room.Status, *roo
 		return "", nil, err
 	}
 	var timing *room.StayTiming
-	if r.Stay != nil && stored == room.StatusOccupied { // a stay on any other status is stale
+	if r.Stay != nil && r.Stay.Pending == nil && stored == room.StatusOccupied { // a stay on any other status is stale; a checked-out one is not timed
 		rt, err := room.ParseRentalType(r.Stay.RentalType)
 		if err != nil {
 			return "", nil, err

@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.2.0
+ * OpenAPI spec version: 1.3.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -151,6 +151,7 @@ export const AlertKind = {
   OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
+  PAYMENT_UNPAID: 'PAYMENT_UNPAID',
   SEPAY_UPDATED: 'SEPAY_UPDATED',
   STAY_TIME_EDITED: 'STAY_TIME_EDITED',
   STOCKTAKE_DIFFERENCE: 'STOCKTAKE_DIFFERENCE',
@@ -221,6 +222,22 @@ export interface Building {
   counts: StatusCounts;
 }
 
+/**
+ * Money state of a checked-out stay's open invoice.
+ */
+export interface PendingPayment {
+  /**
+     * The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created.
+     * @nullable
+     */
+  paymentId: string | null;
+  total: Vnd;
+  /** Deposit plus bank money received that did not yet settle the invoice. */
+  received: Vnd;
+  /** What is still to be paid; 0 when only a deposit refund is open. */
+  remaining: Vnd;
+}
+
 export interface StaySummary {
   id: string;
   rentalType: RentalType;
@@ -228,6 +245,8 @@ export interface StaySummary {
   guestName: string;
   elapsedMinutes: number;
   runningTotal: Vnd;
+  /** Set once the stay is checked out and its invoice is not paid (the room stays OCCUPIED until it is). runningTotal is then the invoice total and elapsedMinutes stops at check-out. */
+  pendingPayment?: PendingPayment | null;
 }
 
 export type RoomUnitType = {
@@ -344,6 +363,8 @@ export interface Stay {
   quote: Quote;
   /** Rate plan version snapshotted at check-in */
   pricingVersion: number;
+  /** Set while the stay is checked out and its invoice is not paid. */
+  pendingPayment?: PendingPayment | null;
   guestId?: GuestIdIndicators;
 }
 
@@ -527,6 +548,7 @@ export const AttentionItemKind = {
   OVERPAID: 'OVERPAID',
   PAYMENT_MISMATCH: 'PAYMENT_MISMATCH',
   PAYMENT_PARTIAL: 'PAYMENT_PARTIAL',
+  PAYMENT_UNPAID: 'PAYMENT_UNPAID',
   UNMATCHED_TRANSFER: 'UNMATCHED_TRANSFER',
   CASH_SHORT: 'CASH_SHORT',
   LEAVE_PENDING: 'LEAVE_PENDING',

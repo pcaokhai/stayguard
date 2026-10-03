@@ -230,3 +230,7 @@ func mustLoc(t *testing.T) *time.Location {
 	}
 	return loc
 }
+
+func (r *fakeStayRepo) PendingPayment(context.Context, Tx, string) (*PendingPayment, error) {
+	return nil, nil
+}

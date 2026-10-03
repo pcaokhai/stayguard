@@ -114,3 +114,16 @@ WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN'
 GROUP BY iv.id, iv.bill_code, iv.stay_id, un.code, iv.quote
 HAVING min(pe.received_at) <= @before::timestamptz
 ORDER BY min(pe.received_at), iv.id;
+
+-- name: ListStaleUnpaid :many
+-- Open invoices with something to pay, checked out at or before @before, with no bank money on them and no PAYMENT_UNPAID alert yet.
+SELECT iv.id AS invoice_id, iv.bill_code, iv.stay_id, un.code AS room_code,
+       coalesce((iv.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due
+FROM app.invoices iv
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = @tenant_id AND iv.status = 'OPEN' AND iv.created_at <= @before::timestamptz
+  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
+  AND NOT EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL')
+  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.kind = 'PAYMENT_UNPAID' AND a.details->>'billCode' = iv.bill_code)
+ORDER BY iv.created_at, iv.id;

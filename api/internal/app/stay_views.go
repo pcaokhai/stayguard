@@ -30,6 +30,8 @@ type StayDetail struct {
 	Extras         []ExtraView       `json:"extras"`
 	Quote          QuoteView         `json:"quote"`
 	PricingVersion int               `json:"pricingVersion"`
+	// PendingPayment is set while the stay is checked out and its invoice is not paid.
+	PendingPayment *PendingPayment `json:"pendingPayment"`
 }
 
 type ExtraView struct {

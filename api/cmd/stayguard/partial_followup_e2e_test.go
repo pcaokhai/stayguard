@@ -33,7 +33,7 @@ func deskRig(t *testing.T) payRig {
 	if st != 201 {
 		t.Fatalf("check-out: %d %s", st, raw)
 	}
-	r := payRig{e: e, token: desk, tenant: tenant}
+	r := payRig{e: e, token: desk, tenant: tenant, room: "A102"}
 	r.invoice, _ = inv["id"].(string)
 	r.code, _ = inv["billCode"].(string)
 	r.balance = num(inv["quote"].(map[string]any)["balanceDue"])

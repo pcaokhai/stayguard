@@ -20,7 +20,19 @@ func toStay(d app.StayDetail) gen.Stay {
 		Status: gen.StayStatus(d.Status), CheckInAt: d.CheckInAt, CheckOutAt: d.CheckOutAt,
 		GuestName: d.GuestName, GuestPhone: d.GuestPhone, GuestId: &gen.GuestIdIndicators{HasIdNumber: d.GuestID.HasIDNumber, HasFrontPhoto: d.GuestID.HasFrontPhoto, HasBackPhoto: d.GuestID.HasBackPhoto},
 		Deposit: d.Deposit, Extras: extras, Quote: toQuote(d.Quote), PricingVersion: d.PricingVersion,
+		PendingPayment: toPendingPayment(d.PendingPayment),
 	}
+}
+
+func toPendingPayment(p *app.PendingPayment) *gen.PendingPayment {
+	if p == nil {
+		return nil
+	}
+	out := &gen.PendingPayment{Total: p.Total, Received: p.Received, Remaining: p.Remaining}
+	if p.PaymentID != "" {
+		out.PaymentId = &p.PaymentID
+	}
+	return out
 }
 
 func toQuote(q app.QuoteView) gen.Quote {

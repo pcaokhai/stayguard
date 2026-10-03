@@ -26,6 +26,8 @@ export function alertDetails(a: Alert): string {
         left: amount(a.amount),
         bill: d.billCode ?? "",
       });
+    case "PAYMENT_UNPAID":
+      return tf("alerts.text.PAYMENT_UNPAID", { left: amount(a.amount), bill: d.billCode ?? "" });
     case "OVERPAID":
       return tf("alerts.text.OVERPAID", { got: amount(a.amount), bill: d.billCode ?? "" });
     case "UNMATCHED_TRANSFER":
@@ -60,7 +62,8 @@ export function alertHref(a: Alert): string {
     a.kind === "PAYMENT_MISMATCH" ||
     a.kind === "UNMATCHED_TRANSFER" ||
     a.kind === "OVERPAID" ||
-    a.kind === "PAYMENT_PARTIAL"
+    a.kind === "PAYMENT_PARTIAL" ||
+    a.kind === "PAYMENT_UNPAID"
   )
     return "/owner/transactions";
   if (a.roomCode) return `/owner/rooms?room=${encodeURIComponent(a.roomCode)}`;
@@ -71,6 +74,7 @@ export const FILTERS = {
   money: [
     "PAYMENT_MISMATCH",
     "PAYMENT_PARTIAL",
+    "PAYMENT_UNPAID",
     "OVERPAID",
     "UNMATCHED_TRANSFER",
     "CASH_SHORT",

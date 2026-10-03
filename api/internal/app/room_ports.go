@@ -38,6 +38,22 @@ type StayRow struct {
 	ID, RentalType, GuestName string
 	CheckInAt                 time.Time
 	RatePlanSnapshot          []byte
+	// CheckOutAt and Pending are set for a checked-out stay whose invoice is still open (the room stays OCCUPIED until it is paid).
+	CheckOutAt *time.Time
+	Pending    *PendingPayment
+}
+
+// PendingPayment is the money state of a checked-out stay's open invoice. PaymentID is the pending transfer, empty when no QR was
+// asked for yet. Received is the deposit plus bank money that did not settle the invoice; Remaining is what is left to pay.
+type PendingPayment struct {
+	PaymentID                  string
+	Total, Received, Remaining int64
+}
+
+// NewPendingPayment derives the amounts from the invoice total, the deposit and the partial bank money.
+func NewPendingPayment(paymentID string, total, deposit, partial int64) *PendingPayment {
+	received := deposit + partial
+	return &PendingPayment{PaymentID: paymentID, Total: total, Received: received, Remaining: max(total-received, 0)}
 }
 
 type RoomRow struct {

@@ -322,6 +322,59 @@ func (q *Queries) ListStalePartials(ctx context.Context, arg ListStalePartialsPa
 	return items, nil
 }
 
+const listStaleUnpaid = `-- name: ListStaleUnpaid :many
+SELECT iv.id AS invoice_id, iv.bill_code, iv.stay_id, un.code AS room_code,
+       coalesce((iv.quote->>'balanceDue')::bigint, 0)::bigint AS balance_due
+FROM app.invoices iv
+JOIN app.stays s ON s.tenant_id = iv.tenant_id AND s.id = iv.stay_id
+JOIN app.units un ON un.tenant_id = s.tenant_id AND un.id = s.unit_id
+WHERE iv.tenant_id = $1 AND iv.status = 'OPEN' AND iv.created_at <= $2::timestamptz
+  AND coalesce((iv.quote->>'balanceDue')::bigint, 0) > 0
+  AND NOT EXISTS (SELECT 1 FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL')
+  AND NOT EXISTS (SELECT 1 FROM app.alerts a WHERE a.tenant_id = iv.tenant_id AND a.kind = 'PAYMENT_UNPAID' AND a.details->>'billCode' = iv.bill_code)
+ORDER BY iv.created_at, iv.id
+`
+
+type ListStaleUnpaidParams struct {
+	TenantID string
+	Before   pgtype.Timestamptz
+}
+
+type ListStaleUnpaidRow struct {
+	InvoiceID  string
+	BillCode   string
+	StayID     string
+	RoomCode   string
+	BalanceDue int64
+}
+
+// Open invoices with something to pay, checked out at or before @before, with no bank money on them and no PAYMENT_UNPAID alert yet.
+func (q *Queries) ListStaleUnpaid(ctx context.Context, arg ListStaleUnpaidParams) ([]ListStaleUnpaidRow, error) {
+	rows, err := q.db.Query(ctx, listStaleUnpaid, arg.TenantID, arg.Before)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStaleUnpaidRow
+	for rows.Next() {
+		var i ListStaleUnpaidRow
+		if err := rows.Scan(
+			&i.InvoiceID,
+			&i.BillCode,
+			&i.StayID,
+			&i.RoomCode,
+			&i.BalanceDue,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockInvoiceForPayment = `-- name: LockInvoiceForPayment :one
 
 SELECT i.id, i.status, i.bill_code, i.stay_id, i.quote, u.building_id

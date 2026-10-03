@@ -1,0 +1,6 @@
+-- +goose Up
+-- PAYMENT_UNPAID: an invoice has had no bank or cash money 30 minutes after check-out.
+ALTER TABLE app.alerts DROP CONSTRAINT alerts_kind_check;
+ALTER TABLE app.alerts ADD CONSTRAINT alerts_kind_check CHECK (kind IN ('ACCOUNT_LOCKED', 'CASH_OVER', 'CASH_SHORT', 'DAMAGE_REPORTED',
+    'LEAVE_REQUESTED', 'OVERPAID', 'PAYMENT_MISMATCH', 'PAYMENT_PARTIAL', 'PAYMENT_UNPAID', 'SEPAY_UPDATED', 'STAY_TIME_EDITED',
+    'STOCKTAKE_DIFFERENCE', 'UNMATCHED_TRANSFER', 'UNUSED_ROOM_REPORT'));

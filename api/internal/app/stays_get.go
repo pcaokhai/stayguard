@@ -26,8 +26,15 @@ func (s *Stays) GetStay(ctx context.Context, c Caller, stayID string) (StayDetai
 		if err := s.checkBuilding(ctx, op, c, rec.BuildingID); err != nil {
 			return err
 		}
-		out, err = s.detail(ctx, tx, c, rec)
-		return err
+		if out, err = s.detail(ctx, tx, c, rec); err != nil {
+			return err
+		}
+		if rec.Status == string(stay.StatusCheckedOut) {
+			if out.PendingPayment, err = s.repo.PendingPayment(ctx, tx, rec.ID); err != nil {
+				return fmt.Errorf("pending payment: %w", err)
+			}
+		}
+		return nil
 	})
 	return out, err
 }

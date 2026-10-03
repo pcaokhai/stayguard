@@ -84,11 +84,18 @@ SELECT u.id, u.code, u.building_id, f.id AS floor_id, f.name AS floor_name, f.le
        ut.code AS unit_type_code, ut.name AS unit_type_name, u.status,
        coalesce(jsonb_typeof(u.attributes->'note') = 'string', false)::boolean AS has_note, coalesce(u.attributes->>'note', '')::text AS note,
        s.id AS stay_id, s.rental_type AS stay_rental_type, s.guest_name AS stay_guest_name,
-       s.check_in_at AS stay_check_in_at, s.rate_plan_snapshot AS stay_rate_plan_snapshot
+       s.check_in_at AS stay_check_in_at, s.rate_plan_snapshot AS stay_rate_plan_snapshot, s.check_out_at AS stay_check_out_at,
+       iv.id AS inv_id, coalesce(iv.total, 0)::bigint AS inv_total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), coalesce(iv.total, 0))::bigint AS inv_deposit,
+       coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS inv_received,
+       coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
+                 ORDER BY p.created_at DESC LIMIT 1), '')::text AS inv_payment_id
 FROM app.units u
 JOIN app.floors f ON f.tenant_id = u.tenant_id AND f.id = u.floor_id
 JOIN app.unit_types ut ON ut.tenant_id = u.tenant_id AND ut.id = u.unit_type_id
-LEFT JOIN app.stays s ON s.tenant_id = u.tenant_id AND s.unit_id = u.id AND s.status = 'ACTIVE'
+LEFT JOIN app.stays s ON s.tenant_id = u.tenant_id AND s.unit_id = u.id
+     AND (s.status = 'ACTIVE' OR (s.status = 'CHECKED_OUT' AND EXISTS (SELECT 1 FROM app.invoices x WHERE x.tenant_id = s.tenant_id AND x.stay_id = s.id AND x.status = 'OPEN')))
+LEFT JOIN app.invoices iv ON iv.tenant_id = s.tenant_id AND iv.stay_id = s.id AND iv.status = 'OPEN'
 WHERE u.tenant_id = $1 AND NOT u.retired
   AND ($2::text = '' OR u.building_id = $2::text)
   AND ($3::text = '' OR u.id = $3::text)
@@ -118,9 +125,16 @@ type ListRoomsRow struct {
 	StayGuestName        pgtype.Text
 	StayCheckInAt        pgtype.Timestamptz
 	StayRatePlanSnapshot []byte
+	StayCheckOutAt       pgtype.Timestamptz
+	InvID                pgtype.Text
+	InvTotal             int64
+	InvDeposit           int64
+	InvReceived          int64
+	InvPaymentID         string
 }
 
-// One statement for the whole map; an empty filter argument means no filter.
+// One statement for the whole map; an empty filter argument means no filter. A checked-out stay whose invoice is still open
+// (the room stays OCCUPIED until it is paid) comes with that invoice's money so far.
 func (q *Queries) ListRooms(ctx context.Context, arg ListRoomsParams) ([]ListRoomsRow, error) {
 	rows, err := q.db.Query(ctx, listRooms, arg.TenantID, arg.BuildingID, arg.UnitID)
 	if err != nil {
@@ -147,6 +161,12 @@ func (q *Queries) ListRooms(ctx context.Context, arg ListRoomsParams) ([]ListRoo
 			&i.StayGuestName,
 			&i.StayCheckInAt,
 			&i.StayRatePlanSnapshot,
+			&i.StayCheckOutAt,
+			&i.InvID,
+			&i.InvTotal,
+			&i.InvDeposit,
+			&i.InvReceived,
+			&i.InvPaymentID,
 		); err != nil {
 			return nil, err
 		}

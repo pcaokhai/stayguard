@@ -33,3 +33,13 @@ VALUES (@id, @tenant_id, @stay_id, @bill_code, @quote, @total, 'OPEN', @created_
 
 -- name: BillCodeTaken :one
 SELECT EXISTS (SELECT 1 FROM app.invoices WHERE tenant_id = @tenant_id AND bill_code = @bill_code);
+
+-- name: GetStayPendingPayment :one
+-- The open invoice of a stay with the money so far: paid is the deposit plus bank money that did not settle it yet.
+SELECT iv.id AS invoice_id, iv.total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS received,
+       coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
+                 ORDER BY p.created_at DESC LIMIT 1), '')::text AS payment_id
+FROM app.invoices iv
+WHERE iv.tenant_id = @tenant_id AND iv.stay_id = @stay_id AND iv.status = 'OPEN';

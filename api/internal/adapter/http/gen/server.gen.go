@@ -29,6 +29,7 @@ const (
 	AlertKindOVERPAID            AlertKind = "OVERPAID"
 	AlertKindPAYMENTMISMATCH     AlertKind = "PAYMENT_MISMATCH"
 	AlertKindPAYMENTPARTIAL      AlertKind = "PAYMENT_PARTIAL"
+	AlertKindPAYMENTUNPAID       AlertKind = "PAYMENT_UNPAID"
 	AlertKindSEPAYUPDATED        AlertKind = "SEPAY_UPDATED"
 	AlertKindSTAYTIMEEDITED      AlertKind = "STAY_TIME_EDITED"
 	AlertKindSTOCKTAKEDIFFERENCE AlertKind = "STOCKTAKE_DIFFERENCE"
@@ -54,6 +55,8 @@ func (e AlertKind) Valid() bool {
 	case AlertKindPAYMENTMISMATCH:
 		return true
 	case AlertKindPAYMENTPARTIAL:
+		return true
+	case AlertKindPAYMENTUNPAID:
 		return true
 	case AlertKindSEPAYUPDATED:
 		return true
@@ -103,6 +106,7 @@ const (
 	AttentionItemKindOVERPAID          AttentionItemKind = "OVERPAID"
 	AttentionItemKindPAYMENTMISMATCH   AttentionItemKind = "PAYMENT_MISMATCH"
 	AttentionItemKindPAYMENTPARTIAL    AttentionItemKind = "PAYMENT_PARTIAL"
+	AttentionItemKindPAYMENTUNPAID     AttentionItemKind = "PAYMENT_UNPAID"
 	AttentionItemKindTICKETOPEN        AttentionItemKind = "TICKET_OPEN"
 	AttentionItemKindUNMATCHEDTRANSFER AttentionItemKind = "UNMATCHED_TRANSFER"
 )
@@ -123,6 +127,8 @@ func (e AttentionItemKind) Valid() bool {
 	case AttentionItemKindPAYMENTMISMATCH:
 		return true
 	case AttentionItemKindPAYMENTPARTIAL:
+		return true
+	case AttentionItemKindPAYMENTUNPAID:
 		return true
 	case AttentionItemKindTICKETOPEN:
 		return true
@@ -1886,6 +1892,21 @@ type PayrollLine struct {
 // PayrollLineStatus defines model for PayrollLine.Status.
 type PayrollLineStatus string
 
+// PendingPayment Money state of a checked-out stay's open invoice.
+type PendingPayment struct {
+	// PaymentId The pending transfer payment (its QR shows the remaining amount); null until a transfer payment was created.
+	PaymentId *string `json:"paymentId"`
+
+	// Received Deposit plus bank money received that did not yet settle the invoice.
+	Received Vnd `json:"received"`
+
+	// Remaining What is still to be paid; 0 when only a deposit refund is open.
+	Remaining Vnd `json:"remaining"`
+
+	// Total Whole Vietnamese dong
+	Total Vnd `json:"total"`
+}
+
 // PermissionLevel defines model for PermissionLevel.
 type PermissionLevel string
 
@@ -2241,6 +2262,9 @@ type Stay struct {
 	GuestPhone string             `json:"guestPhone"`
 	Id         string             `json:"id"`
 
+	// PendingPayment Set while the stay is checked out and its invoice is not paid.
+	PendingPayment *PendingPayment `json:"pendingPayment,omitempty"`
+
 	// PricingVersion Rate plan version snapshotted at check-in
 	PricingVersion int        `json:"pricingVersion"`
 	Quote          Quote      `json:"quote"`
@@ -2278,11 +2302,14 @@ type StayStatus string
 
 // StaySummary defines model for StaySummary.
 type StaySummary struct {
-	CheckInAt      time.Time  `json:"checkInAt"`
-	ElapsedMinutes int        `json:"elapsedMinutes"`
-	GuestName      string     `json:"guestName"`
-	Id             string     `json:"id"`
-	RentalType     RentalType `json:"rentalType"`
+	CheckInAt      time.Time `json:"checkInAt"`
+	ElapsedMinutes int       `json:"elapsedMinutes"`
+	GuestName      string    `json:"guestName"`
+	Id             string    `json:"id"`
+
+	// PendingPayment Set once the stay is checked out and its invoice is not paid (the room stays OCCUPIED until it is). runningTotal is then the invoice total and elapsedMinutes stops at check-out.
+	PendingPayment *PendingPayment `json:"pendingPayment,omitempty"`
+	RentalType     RentalType      `json:"rentalType"`
 
 	// RunningTotal Whole Vietnamese dong
 	RunningTotal Vnd `json:"runningTotal"`

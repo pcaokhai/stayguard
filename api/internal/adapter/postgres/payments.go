@@ -280,3 +280,19 @@ func (PaymentRepo) StalePartials(ctx context.Context, tx app.Tx, before time.Tim
 	}
 	return out, nil
 }
+
+func (PaymentRepo) StaleUnpaid(ctx context.Context, tx app.Tx, before time.Time) ([]app.StaleUnpaid, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListStaleUnpaid(ctx, sqlcgen.ListStaleUnpaidParams{TenantID: t.tenant, Before: ts(before)})
+	if err != nil {
+		return nil, wrap("list stale unpaid", err)
+	}
+	out := make([]app.StaleUnpaid, len(rows))
+	for i, r := range rows {
+		out[i] = app.StaleUnpaid{InvoiceID: r.InvoiceID, BillCode: r.BillCode, StayID: r.StayID, RoomCode: r.RoomCode, Balance: r.BalanceDue}
+	}
+	return out, nil
+}

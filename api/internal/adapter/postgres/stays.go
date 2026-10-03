@@ -150,3 +150,18 @@ func toStayRecord(r sqlcgen.GetStayByIDRow, extras []sqlcgen.ListStayExtrasRow) 
 	}
 	return rec, nil
 }
+
+func (StayRepo) PendingPayment(ctx context.Context, tx app.Tx, stayID string) (*app.PendingPayment, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	r, err := sqlcgen.New(t).GetStayPendingPayment(ctx, sqlcgen.GetStayPendingPaymentParams{TenantID: t.tenant, StayID: stayID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, wrap("stay pending payment", err)
+	}
+	return app.NewPendingPayment(r.PaymentID, r.Total, r.Deposit, r.Received), nil
+}

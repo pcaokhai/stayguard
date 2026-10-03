@@ -76,6 +76,10 @@ func toRoomRow(r sqlcgen.ListRoomsRow) (app.RoomRow, error) {
 			ID: r.StayID.String, RentalType: r.StayRentalType.String, GuestName: r.StayGuestName.String,
 			CheckInAt: r.StayCheckInAt.Time, RatePlanSnapshot: r.StayRatePlanSnapshot,
 		}
+		if r.InvID.Valid {
+			row.Stay.CheckOutAt = timePtr(r.StayCheckOutAt)
+			row.Stay.Pending = app.NewPendingPayment(r.InvPaymentID, r.InvTotal, r.InvDeposit, r.InvReceived)
+		}
 	}
 	return row, nil
 }

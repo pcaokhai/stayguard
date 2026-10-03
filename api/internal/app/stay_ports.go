@@ -61,6 +61,8 @@ type StayRepo interface {
 	MarkRoomOccupied(ctx context.Context, tx Tx, roomID string) error
 	StayByID(ctx context.Context, tx Tx, stayID string) (StayRecord, bool, error)
 	Timezone(ctx context.Context, tx Tx) (string, error)
+	// PendingPayment is the open invoice of a checked-out stay with its money so far; nil when there is none.
+	PendingPayment(ctx context.Context, tx Tx, stayID string) (*PendingPayment, error)
 }
 
 // NewExtra is the row inserted when an extra is added; the amount (quantity times unit) is computed by the adapter.

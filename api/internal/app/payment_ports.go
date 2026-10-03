@@ -83,6 +83,9 @@ type PaymentRepo interface {
 	// StalePartials lists open invoices with bank money whose first partial event is at or before the cutoff and that
 	// have no PAYMENT_PARTIAL alert yet.
 	StalePartials(ctx context.Context, tx Tx, before time.Time) ([]StalePartial, error)
+	// StaleUnpaid lists open invoices with a balance, checked out at or before the cutoff, with no bank money and no
+	// PAYMENT_UNPAID alert yet.
+	StaleUnpaid(ctx context.Context, tx Tx, before time.Time) ([]StaleUnpaid, error)
 	// SetTransferReceived records the cumulative bank money on a pending transfer; it stays PENDING.
 	SetTransferReceived(ctx context.Context, tx Tx, paymentID string, received int64) error
 	// SettleTransfer and MarkMismatch return ErrPaymentNotPending when no pending transfer was updated.
@@ -100,4 +103,10 @@ type StalePartial struct {
 	InvoiceID, BillCode, StayID, RoomCode string
 	Received, Remaining                   int64
 	FirstAt                               time.Time
+}
+
+// StaleUnpaid is an invoice nobody has paid anything on since check-out.
+type StaleUnpaid struct {
+	InvoiceID, BillCode, StayID, RoomCode string
+	Balance                               int64
 }

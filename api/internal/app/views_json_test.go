@@ -43,7 +43,7 @@ func TestFrozenQuoteJSONKeys_SG205_AC5(t *testing.T) {
 		"invoice": {"billCode", "createdAt", "id", "quote", "roomCode", "status", "stayId"},
 		"quote":   {"asOf", "balanceDue", "capped", "depositPaid", "extrasAmount", "lines", "refundDue", "stayAmount", "total"},
 		"line":    {"amount", "code", "quantity", "unitAmount"},
-		"stay": {"checkInAt", "checkOutAt", "deposit", "extras", "guestId", "guestName", "guestPhone", "id", "pricingVersion",
+		"stay": {"checkInAt", "checkOutAt", "deposit", "extras", "guestId", "guestName", "guestPhone", "id", "pendingPayment", "pricingVersion",
 			"quote", "rentalType", "roomCode", "roomId", "status"},
 		"extra": {"amount", "name", "quantity", "serviceCode", "unitAmount"},
 		"name":  {"en", "vi"},

@@ -187,7 +187,7 @@ func (o *Owner) watch(ctx context.Context, tx Tx, out *OwnerOverview) error {
 	out.Alerts = alerts
 	for _, a := range alerts {
 		switch a.Kind {
-		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort, AlertOverpaid, AlertPaymentPartial:
+		case AlertPaymentMismatch, AlertUnmatchedTransfer, AlertCashShort, AlertOverpaid, AlertPaymentPartial, AlertPaymentUnpaid:
 			out.Attention = append(out.Attention, AttentionItem{Kind: a.Kind, Ref: a.ID, RoomCode: a.RoomCode, Amount: a.Amount})
 		}
 	}

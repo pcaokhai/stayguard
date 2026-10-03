@@ -63,6 +63,43 @@ func (q *Queries) GetInvoiceByStay(ctx context.Context, arg GetInvoiceByStayPara
 	return i, err
 }
 
+const getStayPendingPayment = `-- name: GetStayPendingPayment :one
+SELECT iv.id AS invoice_id, iv.total,
+       least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,
+       coalesce((SELECT sum(pe.amount) FROM app.payment_events pe WHERE pe.tenant_id = iv.tenant_id AND pe.invoice_id = iv.id AND pe.result = 'PARTIAL'), 0)::bigint AS received,
+       coalesce((SELECT p.id FROM app.payments p WHERE p.tenant_id = iv.tenant_id AND p.invoice_id = iv.id AND p.method = 'TRANSFER' AND p.status = 'PENDING'
+                 ORDER BY p.created_at DESC LIMIT 1), '')::text AS payment_id
+FROM app.invoices iv
+WHERE iv.tenant_id = $1 AND iv.stay_id = $2 AND iv.status = 'OPEN'
+`
+
+type GetStayPendingPaymentParams struct {
+	TenantID string
+	StayID   string
+}
+
+type GetStayPendingPaymentRow struct {
+	InvoiceID string
+	Total     int64
+	Deposit   int64
+	Received  int64
+	PaymentID string
+}
+
+// The open invoice of a stay with the money so far: paid is the deposit plus bank money that did not settle it yet.
+func (q *Queries) GetStayPendingPayment(ctx context.Context, arg GetStayPendingPaymentParams) (GetStayPendingPaymentRow, error) {
+	row := q.db.QueryRow(ctx, getStayPendingPayment, arg.TenantID, arg.StayID)
+	var i GetStayPendingPaymentRow
+	err := row.Scan(
+		&i.InvoiceID,
+		&i.Total,
+		&i.Deposit,
+		&i.Received,
+		&i.PaymentID,
+	)
+	return i, err
+}
+
 const insertInvoice = `-- name: InsertInvoice :exec
 INSERT INTO app.invoices (id, tenant_id, stay_id, bill_code, quote, total, status, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, 'OPEN', $7)

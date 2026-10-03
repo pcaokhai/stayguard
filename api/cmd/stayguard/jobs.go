@@ -79,6 +79,7 @@ func jobRegistry(cfg config.Config, uowDeps jobDeps) ([]tenantJob, error) {
 	}
 	return []tenantJob{
 		{name: "partial-transfer-alerts", run: pay.RaisePartialAlerts},
+		{name: "unpaid-invoice-alerts", run: pay.RaiseUnpaidAlerts},
 		{name: "guest-id-retention", run: g.Purge},
 		{name: "recurring-expenses", run: e.CopyRecurring},
 	}, nil
