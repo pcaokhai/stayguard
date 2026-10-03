@@ -6,7 +6,9 @@ import type { FullResult, Reporter, TestCase, TestResult } from "@playwright/tes
 // Evidence (screenshots, the API log each test attaches, the error) is copied to evidence-<date>/<id>/.
 const out = process.env.RH_OUT ?? "docs/rehearsal";
 const date = process.env.RH_DATE ?? "local";
-const evidence = join(out, `evidence-${date}`);
+const slug = process.env.RH_SLUG ?? "local"; // the clone: two clones never write the same file
+const stem = `${date}-${slug}`;
+const evidence = join(out, `evidence-${stem}`);
 const csv = (v: string) => `"${v.replace(/"/g, '""')}"`;
 
 class CsvReporter implements Reporter {
@@ -51,7 +53,7 @@ class CsvReporter implements Reporter {
         csv(test.title),
         status,
         (result.duration / 1000).toFixed(1),
-        csv(`docs/rehearsal/evidence-${date}/${id}`),
+        csv(`docs/rehearsal/evidence-${stem}/${id}`),
         csv(notes),
       ].join(","),
     );
@@ -66,7 +68,7 @@ class CsvReporter implements Reporter {
         `${n},${c.fail ? "fail" : "pass"},${c.pass},${c.fail},${c.skip},${c.secs.toFixed(1)}`,
     );
     writeFileSync(
-      join(out, `results-${date}.csv`),
+      join(out, `results-${stem}.csv`),
       [
         "id,title,status,duration_s,evidence,notes",
         ...this.rows,

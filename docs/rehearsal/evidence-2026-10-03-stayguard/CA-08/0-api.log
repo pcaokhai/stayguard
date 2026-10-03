@@ -1,0 +1,32 @@
+POST /v1/auth/sign-in {"guesthouseCode":"rh757c95","username":"r18","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T03:48:08.614571Z","mustChangePin":true,"tenantId":"tn_01M4176S0H2288CHB9M0K815XW","user":{"id":"us_01M4176WYHD2T34B63CWR34D3B","locale":"vi","name":"Rehearsal R18","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M4176S0H2288CHB9M0K815XW","name":"Rehearsal Test rh757c95","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M4176WYHD2T34B63CWR34D3B","locale":"vi","name":"Rehearsal R18","role":"RECEPTIONIST"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh757c95","username":"owner","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T03:48:09.193864Z","mustChangePin":true,"tenantId":"tn_01M4176S0H2288CHB9M0K815XW","user":{"id":"us_01M4176S17A1WJNVEK85386N05","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M4176S0H2288CHB9M0K815XW","name":"Rehearsal Test rh757c95","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M4176S17A1WJNVEK85386N05","locale":"vi","name":"Smoke Owner","role":"OWNER"}}
+POST /v1/auth/sign-in {"guesthouseCode":"rh757c95","username":"r20","pin":"***"}
+  -> 200 {"accessToken":"***","expiresAt":"2026-10-04T03:48:09.768348Z","mustChangePin":true,"tenantId":"tn_01M4176S0H2288CHB9M0K815XW","user":{"id":"us_01M4176XAHAAV680XSBX9WZDYV","locale":"vi","name":"Rehearsal R20","role":"RECEPTIONIST"}}
+PUT /v1/me/pin {"currentPin":"***","newPin":"***"}
+  -> 204 ""
+GET /v1/me 
+  -> 200 {"buildingAccess":[{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","level":"EDIT"}],"tenant":{"currency":"VND","id":"tn_01M4176S0H2288CHB9M0K815XW","name":"Rehearsal Test rh757c95","timezone":"Asia/Ho_Chi_Minh"},"user":{"id":"us_01M4176XAHAAV680XSBX9WZDYV","locale":"vi","name":"Rehearsal R20","role":"RECEPTIONIST"}}
+GET /v1/buildings 
+  -> 200 {"items":[{"code":"A","counts":{"maintenance":0,"occupied":0,"overdue":0,"toClean":1,"vacant":199},"floors":[{"id":"fl_01M4176S0HBHVNJ137E5PKVP9P","name":"1","order":1},{"id":"fl_01M4176S0HHFH3DX3MHET0MHY5","name":"2","order":2},{"id":"fl_01M4176S0H7DBNGK3ACGFJ7ZD9","name":"3","order":3},{"id":"fl_01M4176S0HKBSPHWC75T8T3Y07","name":"4","order":4}],"id":"bd_01M4176S0HW5N7GYGRQH1E4ADT","level":"EDIT","name":"Building A"}]}
+GET /v1/buildings/bd_01M4176S0HW5N7GYGRQH1E4ADT/rooms 
+  -> 200 {"items":[{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","code":"A101","floor":1,"floorId":"fl_01M4176S0HBHVNJ137E5PKVP9P","floorName":"1","id":"un_01M4176S0HZ80DFBVYKFRCDJKK","status":"TO_CLEAN","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","code":"A102","floor":1,"floorId":"fl_01M4176S0HBHVNJ137E5PKVP9P","floorName":"1","id":"un_01M4176S0H5NHEE61D4MWR0MHM","status":"VACANT","unitType":{"code":"STANDARD","name":{"en":"Standard","vi":"Phòng thường"}}},{"buildingId":"bd_01M4176S0HW5N7GYGRQH1E4ADT","code":"A103","floor":
+POST /v1/rooms/un_01M4176S0H5NHEE61D4MWR0MHM/stays {"rentalType":"HOURLY","guestName":"Rehearsal Guest","guestPhone":"0912345678","deposit":50000}
+  -> 201 {"checkInAt":"2026-10-03T15:48:10.379946Z","deposit":50000,"extras":[],"guestId":{"hasBackPhoto":false,"hasFrontPhoto":false,"hasIdNumber":false},"guestName":"Rehearsal Guest","guestPhone":"0912345678","id":"st_01M417740B8RQ715EJ88D47B89","pricingVersion":1,"quote":{"asOf":"2026-10-03T15:48:10.379946Z","balanceDue":30000,"capped":false,"depositPaid":50000,"extrasAmount":0,"lines":[{"amount":80000,"code":"FIRST_HOUR","quantity":1,"unitAmount":80000}],"refundDue":0,"stayAmount":80000,"total":80000},"rentalType":"HOURLY","roomCode":"A102","roomId":"un_01M4176S0H5NHEE61D4MWR0MHM","status":"ACTIVE"
+GET /v1/shifts/current 
+  -> 200 {"buildingIds":["bd_01M4176S0HW5N7GYGRQH1E4ADT"],"cashIn":50000,"cashOut":0,"expectedCash":50000,"id":"sh_01M417740EBSBNVFSXET5VZPCC","movements":[{"amount":50000,"at":"2026-10-03T15:48:10.380508Z","byOwner":false,"kind":"DEPOSIT","roomCode":"A102"}],"openedAt":"2026-10-03T15:48:10.380508Z","openingFloat":0,"status":"OPEN","transfersReceived":0,"unpaidInvoices":[],"userId":"us_01M4176WYHD2T34B63CWR34D3B","userName":"Rehearsal R18"}
+POST /v1/shifts/current/close {"counts":[{"denomination":20000,"quantity":2}],"floatLeft":0,"reason":"Rehearsal: change given to a guest","handoverToUserId":"us_01M4176XAHAAV680XSBX9WZDYV"}
+  -> 200 {"cashPayments":[{"amount":50000,"at":"2026-10-03T15:48:10.380508Z","rentalType":"HOURLY","roomCode":"A102"}],"closedByName":"Rehearsal R18","closedByRole":"RECEPTIONIST","countedCash":40000,"difference":-10000,"floatLeft":0,"reason":"Rehearsal: change given to a guest","reasonRecordedAt":"2026-10-03T15:48:10.391735Z","shift":{"buildingIds":["bd_01M4176S0HW5N7GYGRQH1E4ADT"],"cashIn":50000,"cashOut":0,"closedAt":"2026-10-03T15:48:10.391735Z","expectedCash":50000,"id":"sh_01M417740EBSBNVFSXET5VZPCC","movements":[{"amount":50000,"at":"2026-10-03T15:48:10.380508Z","byOwner":false,"kind":"DEPOSIT",
+GET /v1/owner/shifts 
+  -> 200 {"items":[{"closedAt":"2026-10-03T15:48:10.391735Z","difference":-10000,"id":"sh_01M417740EBSBNVFSXET5VZPCC","openedAt":"2026-10-03T15:48:10.380508Z","shift":"NIGHT","userName":"Rehearsal R18"}]}
+GET /v1/owner/shifts/sh_01M417740EBSBNVFSXET5VZPCC 
+  -> 200 {"cashPayments":[{"amount":50000,"at":"2026-10-03T15:48:10.380508Z","rentalType":"HOURLY","roomCode":"A102"}],"closedByName":"Rehearsal R18","closedByRole":"RECEPTIONIST","countedCash":40000,"difference":-10000,"floatLeft":0,"reason":"Rehearsal: change given to a guest","reasonRecordedAt":"2026-10-03T15:48:10.391735Z","shift":{"buildingIds":["bd_01M4176S0HW5N7GYGRQH1E4ADT"],"cashIn":50000,"cashOut":0,"closedAt":"2026-10-03T15:48:10.391735Z","expectedCash":50000,"id":"sh_01M417740EBSBNVFSXET5VZPCC","movements":[{"amount":50000,"at":"2026-10-03T15:48:10.380508Z","byOwner":false,"kind":"DEPOSIT",

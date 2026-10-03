@@ -23,3 +23,6 @@ docs/rehearsal/evidence-*/**/*.zip
 docs/rehearsal/shots-*/
 deploy/.rehearse.lock/
 __pycache__/
+
+# per-clone rehearsal results are local; Khai names the one file to keep (add a "!docs/rehearsal/<name>.csv" line)
+docs/rehearsal/results-*.csv

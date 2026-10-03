@@ -3,7 +3,7 @@
 # project $REHEARSE_PROJECT and port $REHEARSE_PORT, see scripts/rehearse-env.sh: stayguard-rehearse and 18090 in the main clone, their own
 # in every other clone) with a FRESH guesthouse every run. No clicking, no real money, no real keys: payments arrive as signed webhooks,
 # time-based cases backdate the rehearsal database only.
-# Writes docs/rehearsal/results-<date>.csv and docs/rehearsal/evidence-<date>/ (screenshots, API logs).
+# Writes docs/rehearsal/results-<date>-<clone>.csv and docs/rehearsal/evidence-<date>-<clone>/ (screenshots, API logs).
 #   RH_ONLY='TT-0'     only the tests whose title matches this regular expression
 #   RH_SHOTS=1         afterwards, also the visual sweep (scripts/rehearsal-shots.sh)
 #   RH_ENV_OUT=file    only prepare: write `export RH_...` lines to file (and keep the pins file) so a spec can be run by hand
@@ -112,8 +112,8 @@ python3 scripts/smoke/set-secret.py "$secret" "${COMPOSE[@]}" run --rm api sepay
 
 # Handed to the specs; the compose words let a spec restart the api and run `jobs run` through the same project.
 export E2E_BASE_URL="$BASE" RH_PROJECT="$REHEARSE_PROJECT" RH_GUESTHOUSE="$code" RH_HOOK_PATH="$hook" RH_SEPAY_SECRET="$secret" RH_ACCOUNT_NO=1017588888 \
-	RH_PINS_FILE="$pins_file" RH_DATE="$DATE" RH_OUT="$PWD/$OUT" RH_ROOT="$PWD" RH_ENV_FILE="$ENV_FILE"
-rm -rf "$OUT/evidence-$DATE"
+	RH_PINS_FILE="$pins_file" RH_DATE="$DATE" RH_SLUG="$REHEARSE_SLUG" RH_OUT="$PWD/$OUT" RH_ROOT="$PWD" RH_ENV_FILE="$ENV_FILE"
+rm -rf "$OUT/evidence-$DATE-$REHEARSE_SLUG"
 if [ -n "${RH_ENV_OUT:-}" ]; then
 	(umask 077; env | grep '^\(E2E_BASE_URL\|RH_\)' | grep -v '^RH_ENV_OUT' | sed 's/^/export /' >"$RH_ENV_OUT")
 	echo "== prepared; source $RH_ENV_OUT then run: cd web && npx playwright test -c e2e/rehearsal/playwright.config.ts"
@@ -127,9 +127,9 @@ npx playwright test -c e2e/rehearsal/playwright.config.ts ${RH_ONLY:+--grep "$RH
 rc=${PIPESTATUS[0]}
 set -e
 cd ..
-rm -rf "$OUT/evidence-$DATE/_pw"
-echo "== results: $OUT/results-$DATE.csv"
-python3 - "$OUT/results-$DATE.csv" <<'PY'
+rm -rf "$OUT/evidence-$DATE-$REHEARSE_SLUG/_pw"
+echo "== results: $OUT/results-$DATE-$REHEARSE_SLUG.csv"
+python3 - "$OUT/results-$DATE-$REHEARSE_SLUG.csv" <<'PY'
 import collections, csv, sys
 n = collections.Counter(r["status"] for r in csv.DictReader(open(sys.argv[1])) if r["id"] and not r["id"].startswith("#") and r["id"] != "suite")
 print(f"pass {n['pass']}  fail {n['fail']}  skip {n['skip']}")

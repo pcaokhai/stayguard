@@ -126,9 +126,9 @@ test("CA-08 the owner reviews a closed shift: counts, reason and who it went to"
   const review = (await api.get(owner, `/v1/owner/shifts/${shift.id}`)).body;
   expect(review.countedCash).toBe(40_000);
   expect(review.reason).toContain("change given");
-  expect
-    .soft(JSON.stringify(review), "the review says who the shift was handed to")
-    .toContain("Rehearsal R20");
+  expect(review.closedByName, "who handed the shift over (người bàn giao)").toBe("Rehearsal R18");
+  expect(review.closedByRole).toBe("RECEPTIONIST");
+  expect(review.floatLeft, "the float left in the drawer").toBe(0);
   void stay;
 });
 

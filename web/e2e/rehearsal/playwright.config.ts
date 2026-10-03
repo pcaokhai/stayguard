@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 // The rehearsal checklist (docs/rehearsal): run through `make rehearse-test`, which starts the stack, makes a fresh guesthouse and
 // sets the RH_* variables. One worker and serial files: the specs share one guesthouse and its rooms.
 const out = process.env.RH_OUT ?? "../../../docs/rehearsal";
-const date = process.env.RH_DATE ?? "local";
+const date = `${process.env.RH_DATE ?? "local"}-${process.env.RH_SLUG ?? "local"}`;
 export default defineConfig({
   testDir: ".",
   workers: 1,

@@ -13,6 +13,8 @@ else
 	: "${REHEARSE_PROJECT:=stayguard-rehearse-$clone_slug}" "${REHEARSE_PORT:=$((18100 + clone_n))}" "${REHEARSE_S3_PORT:=$((19200 + clone_n))}"
 fi
 export REHEARSE_PROJECT REHEARSE_PORT REHEARSE_S3_PORT
+REHEARSE_SLUG="${clone_slug:-stayguard}" # in result file names: results-<date>-<slug>.csv, so two clones never write the same file
+export REHEARSE_SLUG
 REHEARSE_ENV_FILE="deploy/.env.rehearse"
 REHEARSE_LOCK_DIR="deploy/.rehearse.lock"
 

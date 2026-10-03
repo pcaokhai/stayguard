@@ -18,8 +18,8 @@ SePay secret with `sepay set-secret`, and runs the specs. Files run in name orde
 
 ## Output
 
-- `results-<date>.csv`: `id, title, status (pass/fail/skip), duration_s, evidence, notes`. Notes hold the first lines of the error, or the reason for a skip.
-- `evidence-<date>/<id>/`: screenshots (taken at the end of every UI case), `api.log` (every API call and webhook the case made, secrets and ID numbers masked), `error.txt` on failure. Videos and zips are git-ignored.
+- `results-<date>-<clone>.csv`: `id, title, status (pass/fail/skip), duration_s, evidence, notes`. Notes hold the first lines of the error, or the reason for a skip.
+- `evidence-<date>-<clone>/<id>/`: screenshots (taken at the end of every UI case), `api.log` (every API call and webhook the case made, secrets and ID numbers masked), `error.txt` on failure. Videos and zips are git-ignored.
 - `shots-<date>/index.html`: the visual sweep contact sheet (git-ignored; open it locally).
 
 Scope: portfolio demo, no real customer. Rows the checklist marks Bỏ qua are never written by the sync, and nothing needing a real phone, printer or bank is automated.
@@ -74,7 +74,7 @@ is 300 s by default, so it is refused with 401 and nothing is paid; the same tra
 
 ## Sync to the spreadsheet
 
-`scripts/rehearsal-sync.py` reads the newest `results-*.csv` and, for rows whose Mã matches, keeps one line "QA tự động <date>: <pass|fail> …,
+`scripts/rehearsal-sync.py` reads the newest `results-<date>-<this clone>.csv` and, for rows whose Mã matches, keeps one line "QA tự động <date>: <pass|fail> …,
 chưa thử tay; bằng chứng <path>" in Ghi chú, bằng chứng (the tester's own text stays). A failure also sets Trạng thái to Lỗi and Ngày thử; a pass
 writes Đạt with the note "QA tự động <date>" (Demo scope: Khai decided), except the ids in `needs-eyes.txt` (GD-03 to GD-07, UI-01, TD-05, TD-08), which only get a note
 asking for a person to look; a skip writes nothing, and rows set to Bỏ qua are never written. Rows with a cell reading "manual" or "[thủ công]" in the notes are left alone,
@@ -85,3 +85,6 @@ formulas are never overwritten, and the sheet XML is edited in place so styles a
 `RH_SHOTS=1 make rehearse-test` (or `scripts/rehearsal-shots.sh` after sourcing the `RH_ENV_OUT` file) uses agent-browser to capture the
 main screens of the owner, manager, receptionist, housekeeping and signed-out views at 390, 834 and 1280 px, in vi and en, and writes
 `shots-<date>/index.html`. There are no assertions: it is for looking.
+
+Results files are per clone (`<clone>` is the directory name, as in `scripts/rehearse-env.sh`) and are git-ignored (`results-*.csv`) except the one file Khai names
+in `.gitignore`; `evidence-<date>-<clone>/` has the same suffix. `rehearsal-sync.py` and `rehearsal-coverage.py` read this clone's newest one.

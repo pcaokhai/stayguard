@@ -5,6 +5,12 @@ Totals per group. Reads only; rerun it after every `make rehearse-test`.
 usage: scripts/rehearsal-coverage.py [--xlsx docs/rehearsal/checklist.xlsx] [--csv results.csv] [--out docs/rehearsal/coverage.md]"""
 import argparse, collections, csv, glob, importlib.util, os, re, sys, zipfile
 
+
+def clone_results(pattern_dir="docs/rehearsal"):
+    """The newest results file of THIS clone: results-<date>-<slug>.csv, the slug made from the clone's directory name like scripts/rehearse-env.sh."""
+    slug = os.environ.get("REHEARSE_SLUG") or re.sub(r"^-+|-+$", "", re.sub(r"[^a-z0-9]", "-", os.path.basename(os.getcwd()).lower()))
+    return max(glob.glob(f"{pattern_dir}/results-*-{slug}.csv"), default=None)
+
 here = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("rsync", os.path.join(here, "rehearsal-sync.py"))
 rs = importlib.util.module_from_spec(spec)
@@ -53,7 +59,7 @@ def main():
     ap.add_argument("--out", default="docs/rehearsal/coverage.md")
     ap.add_argument("--needs-eyes", default="docs/rehearsal/needs-eyes.txt")
     a = ap.parse_args()
-    path = a.csv or max(glob.glob("docs/rehearsal/results-*.csv"), default=None)
+    path = a.csv or clone_results()
     if not path or not os.path.exists(a.xlsx):
         sys.exit("need docs/rehearsal/checklist.xlsx and a results CSV")
     results = {r["id"]: r for r in csv.DictReader(open(path, encoding="utf-8")) if re.fullmatch(r"[A-Z]{2,3}-\d+", r.get("id") or "")}

@@ -5,8 +5,14 @@ styles, formulas, validation and everything else in the workbook stay as Khai sa
 
 usage: scripts/rehearsal-sync.py [results.csv] [--xlsx docs/rehearsal/checklist.xlsx] [--date YYYY-MM-DD] [--map pass=Đạt,fail=Lỗi,skip=] [--needs-eyes docs/rehearsal/needs-eyes.txt]
        scripts/rehearsal-sync.py --selftest
-Without a CSV it uses the newest docs/rehearsal/results-*.csv. The sheet needs a header row with ID, Status, Date and Notes cells."""
+Without a CSV it uses the newest docs/rehearsal/results-<date>-<this clone>.csv. The sheet needs a header row with ID, Status, Date and Notes cells."""
 import argparse, csv, datetime, glob, os, re, shutil, sys, tempfile, zipfile
+
+
+def clone_results(pattern_dir="docs/rehearsal"):
+    """The newest results file of THIS clone: results-<date>-<slug>.csv, the slug made from the clone's directory name like scripts/rehearse-env.sh."""
+    slug = os.environ.get("REHEARSE_SLUG") or re.sub(r"^-+|-+$", "", re.sub(r"[^a-z0-9]", "-", os.path.basename(os.getcwd()).lower()))
+    return max(glob.glob(f"{pattern_dir}/results-*-{slug}.csv"), default=None)
 from xml.sax.saxutils import escape, unescape
 
 CELL = re.compile(r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)', re.S)
@@ -253,10 +259,10 @@ if __name__ == "__main__":
     ap.add_argument("--needs-eyes", default="docs/rehearsal/needs-eyes.txt")
     ap.add_argument("--preview", help="write a summary of the changes to this file, working on a copy; the workbook is not touched")
     a = ap.parse_args()
-    path = a.csv or max(glob.glob("docs/rehearsal/results-*.csv"), default=None)
+    path = a.csv or clone_results()
     if not path or not os.path.exists(a.xlsx):
         sys.exit(f"need a results CSV and {a.xlsx} (Khai commits the checklist there first)")
-    day = a.date or (re.search(r"results-(\d{4}-\d{2}-\d{2})", path) or [None, ""])[1]
+    day = a.date or (re.search(r"results-(\d{4}-\d{2}-\d{2})", path or "") or [None, ""])[1]
     smap = dict(p.split("=") for p in a.map.split(","))
     if a.preview:
         preview(a.xlsx, path, a.preview, day, smap, read_needs_eyes(a.needs_eyes))
