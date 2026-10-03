@@ -880,6 +880,33 @@ func (e ShiftCode) Valid() bool {
 	}
 }
 
+// Defines values for ShiftMovementKind.
+const (
+	ShiftMovementKindDEPOSIT      ShiftMovementKind = "DEPOSIT"
+	ShiftMovementKindOPENINGFLOAT ShiftMovementKind = "OPENING_FLOAT"
+	ShiftMovementKindPAYMENT      ShiftMovementKind = "PAYMENT"
+	ShiftMovementKindPAYOUT       ShiftMovementKind = "PAYOUT"
+	ShiftMovementKindREFUND       ShiftMovementKind = "REFUND"
+)
+
+// Valid indicates whether the value is a known member of the ShiftMovementKind enum.
+func (e ShiftMovementKind) Valid() bool {
+	switch e {
+	case ShiftMovementKindDEPOSIT:
+		return true
+	case ShiftMovementKindOPENINGFLOAT:
+		return true
+	case ShiftMovementKindPAYMENT:
+		return true
+	case ShiftMovementKindPAYOUT:
+		return true
+	case ShiftMovementKindREFUND:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StaffStatus.
 const (
 	StaffStatusACTIVE  StaffStatus = "ACTIVE"
@@ -1056,16 +1083,16 @@ func (e TicketStatus) Valid() bool {
 
 // Defines values for TransactionKind.
 const (
-	CASHREFUND TransactionKind = "CASH_REFUND"
-	PAYMENT    TransactionKind = "PAYMENT"
+	TransactionKindCASHREFUND TransactionKind = "CASH_REFUND"
+	TransactionKindPAYMENT    TransactionKind = "PAYMENT"
 )
 
 // Valid indicates whether the value is a known member of the TransactionKind enum.
 func (e TransactionKind) Valid() bool {
 	switch e {
-	case CASHREFUND:
+	case TransactionKindCASHREFUND:
 		return true
-	case PAYMENT:
+	case TransactionKindPAYMENT:
 		return true
 	default:
 		return false
@@ -2235,9 +2262,12 @@ type Shift struct {
 	ClosedAt *time.Time `json:"closedAt,omitempty"`
 
 	// ExpectedCash Whole Vietnamese dong
-	ExpectedCash Vnd       `json:"expectedCash"`
-	Id           string    `json:"id"`
-	OpenedAt     time.Time `json:"openedAt"`
+	ExpectedCash Vnd    `json:"expectedCash"`
+	Id           string `json:"id"`
+
+	// Movements The ledger behind expectedCash, in time order. The opening float and every cash movement of the shift, signed (REFUND and PAYOUT are negative). Their sum is expectedCash. byOwner marks a movement the owner or a manager made on this shift.
+	Movements []ShiftMovement `json:"movements"`
+	OpenedAt  time.Time       `json:"openedAt"`
 
 	// OpeningFloat Whole Vietnamese dong
 	OpeningFloat Vnd         `json:"openingFloat"`
@@ -2257,6 +2287,20 @@ type ShiftStatus string
 
 // ShiftCode defines model for ShiftCode.
 type ShiftCode string
+
+// ShiftMovement defines model for ShiftMovement.
+type ShiftMovement struct {
+	// Amount Signed whole VND; negative for REFUND and PAYOUT.
+	Amount   int64             `json:"amount"`
+	At       time.Time         `json:"at"`
+	BillCode *string           `json:"billCode,omitempty"`
+	ByOwner  bool              `json:"byOwner"`
+	Kind     ShiftMovementKind `json:"kind"`
+	RoomCode *string           `json:"roomCode,omitempty"`
+}
+
+// ShiftMovementKind defines model for ShiftMovement.Kind.
+type ShiftMovementKind string
 
 // ShiftReview defines model for ShiftReview.
 type ShiftReview struct {
@@ -2342,6 +2386,8 @@ type StatusCounts struct {
 
 // Stay defines model for Stay.
 type Stay struct {
+	// BillCode Its bill code (the transfer note); omitted while the stay is active.
+	BillCode   *string    `json:"billCode,omitempty"`
 	CheckInAt  time.Time  `json:"checkInAt"`
 	CheckOutAt *time.Time `json:"checkOutAt,omitempty"`
 
@@ -2355,6 +2401,9 @@ type Stay struct {
 
 	// Invoice The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE.
 	Invoice *Invoice `json:"invoice,omitempty"`
+
+	// InvoiceId The frozen invoice of a checked-out stay (also in `invoice`); omitted while the stay is active.
+	InvoiceId *string `json:"invoiceId,omitempty"`
 
 	// PaidAt When the invoice was settled; null until then.
 	PaidAt *time.Time `json:"paidAt,omitempty"`

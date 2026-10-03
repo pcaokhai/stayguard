@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.8.0
+ * OpenAPI spec version: 1.9.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -406,6 +406,10 @@ export interface Stay {
   pendingPayment?: PendingPayment | null;
   /** The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE. */
   invoice?: Invoice;
+  /** The frozen invoice of a checked-out stay (also in `invoice`); omitted while the stay is active. */
+  invoiceId?: string;
+  /** Its bill code (the transfer note); omitted while the stay is active. */
+  billCode?: string;
   /** Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect). */
   paymentState?: StayPaymentState;
   /**
@@ -642,6 +646,29 @@ export const ShiftStatus = {
   CLOSED: 'CLOSED',
 } as const;
 
+export type ShiftMovementKind = typeof ShiftMovementKind[keyof typeof ShiftMovementKind];
+
+
+export const ShiftMovementKind = {
+  OPENING_FLOAT: 'OPENING_FLOAT',
+  DEPOSIT: 'DEPOSIT',
+  PAYMENT: 'PAYMENT',
+  REFUND: 'REFUND',
+  PAYOUT: 'PAYOUT',
+} as const;
+
+export interface ShiftMovement {
+  at: string;
+  /** @nullable */
+  roomCode?: string | null;
+  /** @nullable */
+  billCode?: string | null;
+  kind: ShiftMovementKind;
+  /** Signed whole VND; negative for REFUND and PAYOUT. */
+  amount: number;
+  byOwner: boolean;
+}
+
 export interface InvoiceCandidate {
   invoiceId: string;
   billCode: string;
@@ -669,6 +696,8 @@ export interface Shift {
   expectedCash: Vnd;
   transfersReceived: Vnd;
   buildingIds: string[];
+  /** The ledger behind expectedCash, in time order. The opening float and every cash movement of the shift, signed (REFUND and PAYOUT are negative). Their sum is expectedCash. byOwner marks a movement the owner or a manager made on this shift. */
+  movements: ShiftMovement[];
   /** The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason. */
   unpaidInvoices: InvoiceCandidate[];
 }

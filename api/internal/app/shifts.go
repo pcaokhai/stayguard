@@ -39,6 +39,8 @@ type ShiftView struct {
 	BuildingIDs                  []string
 	// UnpaidInvoices are the shift's invoices that are not fully paid, with what is left to pay.
 	UnpaidInvoices []InvoiceCandidate
+	// Movements are the ledger behind ExpectedCash: the opening float and every line, signed, in time order.
+	Movements []CashMovement
 }
 
 type CashPaymentRow struct {
@@ -247,6 +249,10 @@ func (s *Shifts) view(ctx context.Context, tx Tx, sh ShiftRecord, now time.Time,
 	if err != nil {
 		return ShiftView{}, fmt.Errorf("transfers: %w", err)
 	}
+	moves, err := s.movements(ctx, tx, sh)
+	if err != nil {
+		return ShiftView{}, err
+	}
 	unpaid, err := s.repo.UnpaidInvoices(ctx, tx, sh.OpenedAt, until)
 	if err != nil {
 		return ShiftView{}, fmt.Errorf("unpaid invoices: %w", err)
@@ -254,7 +260,7 @@ func (s *Shifts) view(ctx context.Context, tx Tx, sh ShiftRecord, now time.Time,
 	if buildings == nil {
 		buildings = []string{}
 	}
-	return ShiftView{UnpaidInvoices: unpaid, ID: sh.ID, UserID: sh.UserID, UserName: sh.UserName, Status: sh.Status, OpenedAt: sh.OpenedAt.UTC(),
+	return ShiftView{Movements: moves, UnpaidInvoices: unpaid, ID: sh.ID, UserID: sh.UserID, UserName: sh.UserName, Status: sh.Status, OpenedAt: sh.OpenedAt.UTC(),
 		ClosedAt: utcPtr(sh.ClosedAt), OpeningFloat: sh.OpeningFloat, CashIn: in, CashOut: out, ExpectedCash: expected,
 		TransfersReceived: transfers, BuildingIDs: buildings}, nil
 }
@@ -592,3 +598,26 @@ func (s *Shifts) ListClosed(ctx context.Context, c Caller, q ClosedShiftsQuery) 
 	})
 	return out, err
 }
+
+// movements lists the opening float and the ledger lines of a shift, signed. They come from the same ledger as ExpectedCash, so
+// their sum is the expected cash.
+func (s *Shifts) movements(ctx context.Context, tx Tx, sh ShiftRecord) ([]CashMovement, error) {
+	rows, err := s.repo.Movements(ctx, tx, sh.ID)
+	if err != nil {
+		return nil, fmt.Errorf("shift movements: %w", err)
+	}
+	out := make([]CashMovement, 0, len(rows)+1)
+	if sh.OpeningFloat > 0 {
+		out = append(out, CashMovement{At: sh.OpenedAt.UTC(), Kind: movementOpeningFloat, Amount: sh.OpeningFloat})
+	}
+	for _, r := range rows {
+		if r.Kind == shift.Refund || r.Kind == shift.Payout {
+			r.Amount = -r.Amount
+		}
+		r.At = r.At.UTC()
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+const movementOpeningFloat = "OPENING_FLOAT"

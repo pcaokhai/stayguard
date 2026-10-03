@@ -119,3 +119,13 @@ SELECT coalesce(sum(amount) FILTER (WHERE kind IN ('DEPOSIT', 'PAYMENT')), 0)::b
        coalesce(sum(amount) FILTER (WHERE kind IN ('REFUND', 'PAYOUT')), 0)::bigint AS cash_out
 FROM app.cash_entries
 WHERE tenant_id = @tenant_id AND shift_id IS NULL AND created_at >= @from_at AND created_at < @to_at;
+
+-- name: ListShiftMovements :many
+-- Every ledger line of a shift with the room and bill it belongs to (a payout has neither); the opening float is added by the use case.
+SELECT e.created_at, coalesce(un.code, '')::text AS room_code, coalesce(iv.bill_code, '')::text AS bill_code, e.kind, e.amount, e.by_owner
+FROM app.cash_entries e
+LEFT JOIN app.stays st ON st.tenant_id = e.tenant_id AND st.id = e.stay_id
+LEFT JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
+LEFT JOIN app.invoices iv ON iv.tenant_id = st.tenant_id AND iv.stay_id = st.id
+WHERE e.tenant_id = @tenant_id AND e.shift_id = @shift_id
+ORDER BY e.created_at, e.id;

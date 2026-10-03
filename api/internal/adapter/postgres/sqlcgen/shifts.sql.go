@@ -301,6 +301,58 @@ func (q *Queries) ListShiftCashIn(ctx context.Context, arg ListShiftCashInParams
 	return items, nil
 }
 
+const listShiftMovements = `-- name: ListShiftMovements :many
+SELECT e.created_at, coalesce(un.code, '')::text AS room_code, coalesce(iv.bill_code, '')::text AS bill_code, e.kind, e.amount, e.by_owner
+FROM app.cash_entries e
+LEFT JOIN app.stays st ON st.tenant_id = e.tenant_id AND st.id = e.stay_id
+LEFT JOIN app.units un ON un.tenant_id = st.tenant_id AND un.id = st.unit_id
+LEFT JOIN app.invoices iv ON iv.tenant_id = st.tenant_id AND iv.stay_id = st.id
+WHERE e.tenant_id = $1 AND e.shift_id = $2
+ORDER BY e.created_at, e.id
+`
+
+type ListShiftMovementsParams struct {
+	TenantID string
+	ShiftID  pgtype.Text
+}
+
+type ListShiftMovementsRow struct {
+	CreatedAt pgtype.Timestamptz
+	RoomCode  string
+	BillCode  string
+	Kind      string
+	Amount    int64
+	ByOwner   bool
+}
+
+// Every ledger line of a shift with the room and bill it belongs to (a payout has neither); the opening float is added by the use case.
+func (q *Queries) ListShiftMovements(ctx context.Context, arg ListShiftMovementsParams) ([]ListShiftMovementsRow, error) {
+	rows, err := q.db.Query(ctx, listShiftMovements, arg.TenantID, arg.ShiftID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListShiftMovementsRow
+	for rows.Next() {
+		var i ListShiftMovementsRow
+		if err := rows.Scan(
+			&i.CreatedAt,
+			&i.RoomCode,
+			&i.BillCode,
+			&i.Kind,
+			&i.Amount,
+			&i.ByOwner,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listShiftUnpaidInvoices = `-- name: ListShiftUnpaidInvoices :many
 SELECT iv.id, iv.bill_code, un.code AS room_code, s.guest_name, s.check_out_at, iv.total,
        least(coalesce((iv.quote->>'depositPaid')::bigint, 0), iv.total)::bigint AS deposit,

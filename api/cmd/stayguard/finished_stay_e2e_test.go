@@ -122,7 +122,7 @@ func TestFinishedStay_IsReadOnly_FU(t *testing.T) {
 		st, raw := e.send("GET", "/v1/stays/"+s.stay, desk, "", nil)
 		got := parse(raw)
 		inv, _ := got["invoice"].(map[string]any)
-		if st != 200 || got["status"] != "CHECKED_OUT" || inv == nil || inv["id"] != s.invoice || inv["billCode"] != s.bill || got["paymentState"] != s.state ||
+		if st != 200 || got["status"] != "CHECKED_OUT" || inv == nil || inv["id"] != s.invoice || inv["billCode"] != s.bill || got["invoiceId"] != s.invoice || got["billCode"] != s.bill || got["paymentState"] != s.state ||
 			(s.paid != (got["paidAt"] != nil)) {
 			t.Errorf("%s: getStay %d %s (want invoice %s, state %s, paidAt set: %v)", s.name, st, raw, s.invoice, s.state, s.paid)
 		}

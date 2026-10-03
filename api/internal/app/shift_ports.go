@@ -89,6 +89,8 @@ type ShiftRepo interface {
 	Close(ctx context.Context, tx Tx, c ShiftClose) error
 	ByID(ctx context.Context, tx Tx, shiftID string) (ShiftRecord, bool, error)
 	CashIn(ctx context.Context, tx Tx, shiftID string) ([]CashInRow, error)
+	// Movements are the shift's ledger lines in time order, amounts unsigned; the use case signs them.
+	Movements(ctx context.Context, tx Tx, shiftID string) ([]CashMovement, error)
 	MonthStats(ctx context.Context, tx Tx, userID string, from, to time.Time) (withDifference, totalShort int64, err error)
 	ListClosed(ctx context.Context, tx Tx, f ClosedFilter) ([]ClosedShiftRow, error)
 }
@@ -103,4 +105,13 @@ type CashRecord struct {
 // for any other role it does nothing. Amounts of zero are skipped.
 type CashLedger interface {
 	Record(ctx context.Context, tx Tx, c Caller, e CashRecord) error
+}
+
+// CashMovement is one ledger line of a shift as the screens list it. Kind is OPENING_FLOAT, DEPOSIT, PAYMENT, REFUND or PAYOUT; Amount
+// is signed (REFUND and PAYOUT are negative), so the movements of a shift add up to its expected cash.
+type CashMovement struct {
+	At                       time.Time
+	RoomCode, BillCode, Kind string
+	Amount                   int64
+	ByOwner                  bool
 }

@@ -1889,6 +1889,10 @@ export interface components {
             pendingPayment?: components["schemas"]["PendingPayment"] | null;
             /** @description The frozen invoice of a checked-out stay (its quote is the bill and is never re-priced). A finished stay is read-only; a second check-out, extras, a check-in time edit and a move answer 409 STAY_NOT_ACTIVE. */
             invoice?: components["schemas"]["Invoice"];
+            /** @description The frozen invoice of a checked-out stay (also in `invoice`); omitted while the stay is active. */
+            invoiceId?: string;
+            /** @description Its bill code (the transfer note); omitted while the stay is active. */
+            billCode?: string;
             /**
              * @description Where a checked-out stay stands. REFUND_PENDING is an open deposit refund (nothing to collect).
              * @enum {string}
@@ -2053,8 +2057,24 @@ export interface components {
             expectedCash: components["schemas"]["Vnd"];
             transfersReceived: components["schemas"]["Vnd"];
             buildingIds: string[];
+            /** @description The ledger behind expectedCash, in time order. The opening float and every cash movement of the shift, signed (REFUND and PAYOUT are negative). Their sum is expectedCash. byOwner marks a movement the owner or a manager made on this shift. */
+            movements: components["schemas"]["ShiftMovement"][];
             /** @description The shift's invoices that are not fully paid (checked out in the shift, or with bank money that arrived in it), with the balance still to pay. Closing the shift while this is not empty needs a reason. */
             unpaidInvoices: components["schemas"]["InvoiceCandidate"][];
+        };
+        ShiftMovement: {
+            /** Format: date-time */
+            at: string;
+            roomCode?: string | null;
+            billCode?: string | null;
+            /** @enum {string} */
+            kind: "OPENING_FLOAT" | "DEPOSIT" | "PAYMENT" | "REFUND" | "PAYOUT";
+            /**
+             * Format: int64
+             * @description Signed whole VND; negative for REFUND and PAYOUT.
+             */
+            amount: number;
+            byOwner: boolean;
         };
         CashCount: {
             /** @enum {integer} */

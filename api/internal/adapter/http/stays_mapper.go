@@ -25,6 +25,7 @@ func toStay(d app.StayDetail) gen.Stay {
 	if d.Invoice != nil {
 		inv := toInvoice(*d.Invoice)
 		out.Invoice = &inv
+		out.InvoiceId, out.BillCode = &inv.Id, inv.BillCode
 		state := gen.StayPaymentState(d.PaymentState)
 		out.PaymentState = &state
 	}

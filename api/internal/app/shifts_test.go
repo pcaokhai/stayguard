@@ -95,6 +95,9 @@ func (r *fakeShiftRepo) ByID(_ context.Context, _ Tx, id string) (ShiftRecord, b
 	}
 	return ShiftRecord{}, false, nil
 }
+func (r *fakeShiftRepo) Movements(context.Context, Tx, string) ([]CashMovement, error) {
+	return nil, nil
+}
 func (r *fakeShiftRepo) CashIn(context.Context, Tx, string) ([]CashInRow, error) { return nil, nil }
 func (r *fakeShiftRepo) MonthStats(context.Context, Tx, string, time.Time, time.Time) (int64, int64, error) {
 	return 0, 0, nil

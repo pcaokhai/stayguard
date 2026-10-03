@@ -260,3 +260,19 @@ func (ShiftRepo) LockOpenForStay(ctx context.Context, tx app.Tx, stayID string) 
 	return app.ShiftRecord{ID: r.ID, UserID: r.UserID, UserName: r.UserName, Status: r.Status, Code: r.ShiftCode, OpenedAt: r.OpenedAt.Time,
 		ClosedAt: timePtr(r.ClosedAt), OpeningFloat: r.OpeningFloat}, true, nil
 }
+
+func (ShiftRepo) Movements(ctx context.Context, tx app.Tx, shiftID string) ([]app.CashMovement, error) {
+	t, err := pgTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := sqlcgen.New(t).ListShiftMovements(ctx, sqlcgen.ListShiftMovementsParams{TenantID: t.tenant, ShiftID: optText(shiftID)})
+	if err != nil {
+		return nil, wrap("list shift movements", err)
+	}
+	out := make([]app.CashMovement, len(rows))
+	for i, r := range rows {
+		out[i] = app.CashMovement{At: r.CreatedAt.Time, RoomCode: r.RoomCode, BillCode: r.BillCode, Kind: r.Kind, Amount: r.Amount, ByOwner: r.ByOwner}
+	}
+	return out, nil
+}
