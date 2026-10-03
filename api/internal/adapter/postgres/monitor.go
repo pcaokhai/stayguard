@@ -75,7 +75,8 @@ func (MonitorRepo) Transactions(ctx context.Context, tx app.Tx, f app.Transactio
 	out := make([]app.TransactionRow, len(rows))
 	for i, r := range rows {
 		out[i] = app.TransactionRow{ID: r.ID, At: r.HappenedAt.Time.UTC(), Amount: r.Amount, Method: r.Method, RoomCode: r.RoomCode,
-			BillCode: r.BillCode, Reconciliation: r.Reconciliation, TransferNote: r.TransferNote, PaymentEventID: r.PaymentEventID, ShiftID: r.ShiftID}
+			BillCode: r.BillCode, Reconciliation: r.Reconciliation, TransferNote: r.TransferNote, PaymentEventID: r.PaymentEventID, ShiftID: r.ShiftID, Kind: r.Kind,
+			ReceivedAt: timePtr(r.ReceivedAt), SettledAt: timePtr(r.SettledAt)}
 	}
 	return out, nil
 }

@@ -1054,6 +1054,24 @@ func (e TicketStatus) Valid() bool {
 	}
 }
 
+// Defines values for TransactionKind.
+const (
+	CASHREFUND TransactionKind = "CASH_REFUND"
+	PAYMENT    TransactionKind = "PAYMENT"
+)
+
+// Valid indicates whether the value is a known member of the TransactionKind enum.
+func (e TransactionKind) Valid() bool {
+	switch e {
+	case CASHREFUND:
+		return true
+	case PAYMENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TransactionReconciliation.
 const (
 	TransactionReconciliationCASH      TransactionReconciliation = "CASH"
@@ -2449,17 +2467,29 @@ type TicketStatus string
 // Transaction defines model for Transaction.
 type Transaction struct {
 	// Amount Whole Vietnamese dong
-	Amount         Vnd                       `json:"amount"`
-	At             time.Time                 `json:"at"`
-	BillCode       *string                   `json:"billCode,omitempty"`
-	Id             string                    `json:"id"`
-	Method         PaymentMethod             `json:"method"`
-	PaymentEventId *string                   `json:"paymentEventId,omitempty"`
+	Amount   Vnd       `json:"amount"`
+	At       time.Time `json:"at"`
+	BillCode *string   `json:"billCode,omitempty"`
+	Id       string    `json:"id"`
+
+	// Kind CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled.
+	Kind           *TransactionKind `json:"kind,omitempty"`
+	Method         PaymentMethod    `json:"method"`
+	PaymentEventId *string          `json:"paymentEventId,omitempty"`
+
+	// ReceivedAt Server time the bank event arrived; null for cash and refunds.
+	ReceivedAt     *time.Time                `json:"receivedAt,omitempty"`
 	Reconciliation TransactionReconciliation `json:"reconciliation"`
 	RoomCode       *string                   `json:"roomCode,omitempty"`
-	ShiftId        *string                   `json:"shiftId,omitempty"`
-	TransferNote   *string                   `json:"transferNote,omitempty"`
+
+	// SettledAt When the payment was settled or the transfer linked to its invoice; null while it is not.
+	SettledAt    *time.Time `json:"settledAt,omitempty"`
+	ShiftId      *string    `json:"shiftId,omitempty"`
+	TransferNote *string    `json:"transferNote,omitempty"`
 }
+
+// TransactionKind CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled.
+type TransactionKind string
 
 // TransactionReconciliation defines model for Transaction.Reconciliation.
 type TransactionReconciliation string

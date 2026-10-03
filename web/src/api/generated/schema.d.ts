@@ -2633,6 +2633,21 @@ export interface components {
             transferNote?: string | null;
             paymentEventId?: string | null;
             shiftId?: string | null;
+            /**
+             * @description CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled.
+             * @enum {string}
+             */
+            kind?: "PAYMENT" | "CASH_REFUND";
+            /**
+             * Format: date-time
+             * @description Server time the bank event arrived; null for cash and refunds.
+             */
+            receivedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When the payment was settled or the transfer linked to its invoice; null while it is not.
+             */
+            settledAt?: string | null;
         };
         LinkTransferRequest: {
             invoiceId: string;

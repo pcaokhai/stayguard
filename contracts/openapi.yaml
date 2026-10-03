@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: StayGuard API
-  version: 1.6.0
+  version: 1.7.0
   summary: 'Anti-loss guesthouse management API: demo scope plus production v1.1 from the design (docs/15).'
   description: "Contract-first source of truth. Prose companion: docs/04-api-contract.md.\nMoney is a whole number of VND.\
     \ Times are RFC 3339 with offset. The API returns codes and\nstructured values, never display text; the web app translates.\n\
@@ -5922,6 +5922,24 @@ components:
           type:
           - string
           - 'null'
+        kind:
+          type: string
+          enum:
+          - PAYMENT
+          - CASH_REFUND
+          description: CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled.
+        receivedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: Server time the bank event arrived; null for cash and refunds.
+        settledAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When the payment was settled or the transfer linked to its invoice; null while it is not.
     LinkTransferRequest:
       type: object
       additionalProperties: false

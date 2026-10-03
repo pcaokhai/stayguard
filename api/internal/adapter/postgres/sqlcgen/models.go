@@ -414,6 +414,9 @@ type AppTransaction struct {
 	TransferNote   string
 	PaymentEventID string
 	ShiftID        string
+	Kind           string
+	ReceivedAt     pgtype.Timestamptz
+	SettledAt      pgtype.Timestamptz
 }
 
 type AppUnit struct {

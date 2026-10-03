@@ -20,7 +20,7 @@ WHERE tenant_id = @tenant_id AND id = @alert_id;
 -- Reads the app.transactions view (migration 0015): paid cash and transfers, transfers with a wrong amount (MISMATCH)
 -- and bank events nobody matched (UNMATCHED). The view runs with the caller's rights, so row-level security applies.
 SELECT t.id, t.happened_at, t.amount, t.method, t.room_code, t.bill_code, t.reconciliation, t.transfer_note,
-       t.payment_event_id, t.shift_id
+       t.payment_event_id, t.shift_id, t.kind, t.received_at, t.settled_at
 FROM app.transactions t
 WHERE t.tenant_id = @tenant_id AND t.happened_at >= @from_at AND t.happened_at < @to_at
   AND (@kind::text = 'ALL' OR (@kind::text = 'NEEDS_ACTION' AND t.reconciliation IN ('MISMATCH', 'UNMATCHED')) OR t.method = @kind::text)

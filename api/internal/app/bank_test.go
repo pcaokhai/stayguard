@@ -312,6 +312,9 @@ func TestInstallerSetSecret_SG703(t *testing.T) {
 	if len(alerts.raised) != 1 || alerts.raised[0].Kind != AlertSepayUpdated || len(audit.entries) != 1 || audit.entries[0].Action != "INSTALLER_SEPAY_UPDATED" {
 		t.Fatalf("owner-visible traces: %+v %+v", alerts.raised, audit.entries)
 	}
+	if d := alerts.raised[0].Details; d["code"] != "SECRET_SET" || d["actor"] != "INSTALLER" || d["at"] == "" {
+		t.Fatalf("the alert says what happened and who did it, not just a timestamp: %v", d)
+	}
 	for _, e := range audit.entries {
 		if strings.Contains(string(e.After), "s3cret") {
 			t.Fatal("secret in audit")

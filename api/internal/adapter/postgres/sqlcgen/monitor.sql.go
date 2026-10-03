@@ -204,7 +204,7 @@ func (q *Queries) ListLongToClean(ctx context.Context, arg ListLongToCleanParams
 
 const listTransactions = `-- name: ListTransactions :many
 SELECT t.id, t.happened_at, t.amount, t.method, t.room_code, t.bill_code, t.reconciliation, t.transfer_note,
-       t.payment_event_id, t.shift_id
+       t.payment_event_id, t.shift_id, t.kind, t.received_at, t.settled_at
 FROM app.transactions t
 WHERE t.tenant_id = $1 AND t.happened_at >= $2 AND t.happened_at < $3
   AND ($4::text = 'ALL' OR ($4::text = 'NEEDS_ACTION' AND t.reconciliation IN ('MISMATCH', 'UNMATCHED')) OR t.method = $4::text)
@@ -237,6 +237,9 @@ type ListTransactionsRow struct {
 	TransferNote   string
 	PaymentEventID string
 	ShiftID        string
+	Kind           string
+	ReceivedAt     pgtype.Timestamptz
+	SettledAt      pgtype.Timestamptz
 }
 
 // Reads the app.transactions view (migration 0015): paid cash and transfers, transfers with a wrong amount (MISMATCH)
@@ -270,6 +273,9 @@ func (q *Queries) ListTransactions(ctx context.Context, arg ListTransactionsPara
 			&i.TransferNote,
 			&i.PaymentEventID,
 			&i.ShiftID,
+			&i.Kind,
+			&i.ReceivedAt,
+			&i.SettledAt,
 		); err != nil {
 			return nil, err
 		}

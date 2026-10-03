@@ -28,7 +28,9 @@ type AlertFilter struct {
 // TransactionRow is one money event: a paid payment, a transfer with a wrong amount, or a bank event nobody matched.
 type TransactionRow struct {
 	ID, Method, RoomCode, BillCode, Reconciliation, TransferNote, PaymentEventID, ShiftID string
+	Kind                                                                                  string // PAYMENT or CASH_REFUND (a negative amount)
 	At                                                                                    time.Time
+	ReceivedAt, SettledAt                                                                 *time.Time // when the bank money arrived, when it was settled or linked
 	Amount                                                                                int64
 }
 

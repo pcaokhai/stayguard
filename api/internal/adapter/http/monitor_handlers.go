@@ -101,7 +101,8 @@ func (s Server) ListTransactions(ctx context.Context, req gen.ListTransactionsRe
 }
 
 func toTransaction(r app.TransactionRow) gen.Transaction {
-	return gen.Transaction{Id: r.ID, At: r.At, Amount: r.Amount, Method: gen.PaymentMethod(r.Method), RoomCode: nilIfEmpty(r.RoomCode),
+	kind := gen.TransactionKind(r.Kind)
+	return gen.Transaction{Kind: &kind, ReceivedAt: r.ReceivedAt, SettledAt: r.SettledAt, Id: r.ID, At: r.At, Amount: r.Amount, Method: gen.PaymentMethod(r.Method), RoomCode: nilIfEmpty(r.RoomCode),
 		BillCode: nilIfEmpty(r.BillCode), Reconciliation: gen.TransactionReconciliation(r.Reconciliation),
 		TransferNote: nilIfEmpty(r.TransferNote), PaymentEventId: nilIfEmpty(r.PaymentEventID), ShiftId: nilIfEmpty(r.ShiftID)}
 }

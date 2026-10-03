@@ -9,7 +9,7 @@
  * building: VIEW or EDIT; OWNER means owner role), `x-release` (demo | full).
  *     x-access values added in 1.1: PUBLIC, ANY, ANY_STAFF, OWNER_OR_MANAGER, EDIT_ANY (EDIT on at least one building).
  *
- * OpenAPI spec version: 1.6.0
+ * OpenAPI spec version: 1.7.0
  */
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -1652,6 +1652,17 @@ export const TransactionReconciliation = {
   CASH: 'CASH',
 } as const;
 
+/**
+ * CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled.
+ */
+export type TransactionKind = typeof TransactionKind[keyof typeof TransactionKind];
+
+
+export const TransactionKind = {
+  PAYMENT: 'PAYMENT',
+  CASH_REFUND: 'CASH_REFUND',
+} as const;
+
 export interface Transaction {
   id: string;
   at: string;
@@ -1668,6 +1679,18 @@ export interface Transaction {
   paymentEventId?: string | null;
   /** @nullable */
   shiftId?: string | null;
+  /** CASH_REFUND is a deposit given back in cash; its amount is negative. `at` is when the money arrived (receivedAt) for a bank transfer, else when it was settled. */
+  kind?: TransactionKind;
+  /**
+     * Server time the bank event arrived; null for cash and refunds.
+     * @nullable
+     */
+  receivedAt?: string | null;
+  /**
+     * When the payment was settled or the transfer linked to its invoice; null while it is not.
+     * @nullable
+     */
+  settledAt?: string | null;
 }
 
 export interface LinkTransferRequest {

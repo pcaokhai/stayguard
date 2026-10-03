@@ -56,6 +56,12 @@ func NewInstaller(uow UnitOfWork, tenants TenantByCode, setup TenantSetupRepo, l
 	return &Installer{uow, tenants, setup, layout, bank, staff, authDB, enc, hasher, pins, tokens, audit, alerts, ids, clock}
 }
 
+// SEPAY_UPDATED alert data: a stable code the web turns into words, and who acted.
+const (
+	sepayCodeSecretSet = "SECRET_SET"
+	installerActor     = "INSTALLER"
+)
+
 func (i *Installer) tenant(ctx context.Context, code string) (string, error) {
 	id, ok, err := i.tenants.TenantByCode(ctx, code)
 	if err != nil {
@@ -122,7 +128,8 @@ func (i *Installer) SetSecret(ctx context.Context, code, secret, accountID strin
 		}
 		now := i.clock.Now()
 		if err = i.alerts.Raise(ctx, tx, AlertDraft{ID: i.ids.New(alertIDPrefix), Kind: AlertSepayUpdated,
-			Details: map[string]string{"at": now.UTC().Format(time.RFC3339)}}); err != nil {
+			// code names what happened and actor who did it (the installer CLI has no user); at stays for the record.
+			Details: map[string]string{"code": sepayCodeSecretSet, "actor": installerActor, "at": now.UTC().Format(time.RFC3339)}}); err != nil {
 			return err
 		}
 		return i.audit.Append(ctx, tx, AuditEntry{ID: i.ids.New(auditPrefix), Action: auditInstaller, EntityType: "bank_account", EntityID: acc.ID})
