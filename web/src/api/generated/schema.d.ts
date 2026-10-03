@@ -15,7 +15,7 @@ export interface paths {
         put?: never;
         /**
          * Start a trial session for a role (demo mode only)
-         * @description Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP.
+         * @description Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP. Browser sessions: the response also sets the HttpOnly cookie `sg_session` (same value as `accessToken`; SameSite=Strict, Path=/, no Domain, no Max-Age, Secure over HTTPS; over plain HTTP only for localhost, otherwise no cookie is set). Every authenticated operation accepts either the cookie or `Authorization: Bearer`; the header wins. A state-changing request (POST, PUT, PATCH, DELETE) authenticated by the cookie must carry `X-Requested-With: stayguard` and an Origin (or Referer) with this host, otherwise 403 `CSRF_REJECTED`. Bearer requests need neither.
          */
         post: operations["createDemoSession"];
         delete?: never;
@@ -513,7 +513,7 @@ export interface paths {
         put?: never;
         /**
          * Sign in with guesthouse code, user name and PIN
-         * @description Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists.
+         * @description Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists. Browser sessions: the response also sets the HttpOnly cookie `sg_session` (same value as `accessToken`; SameSite=Strict, Path=/, no Domain, no Max-Age, Secure over HTTPS; over plain HTTP only for localhost, otherwise no cookie is set). Every authenticated operation accepts either the cookie or `Authorization: Bearer`; the header wins. A state-changing request (POST, PUT, PATCH, DELETE) authenticated by the cookie must carry `X-Requested-With: stayguard` and an Origin (or Referer) with this host, otherwise 403 `CSRF_REJECTED`. Bearer requests need neither.
          */
         post: operations["signIn"];
         delete?: never;
@@ -531,7 +531,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End the current session */
+        /**
+         * End the current session
+         * @description Revokes the session on the server and clears the `sg_session` cookie (Set-Cookie with Max-Age=0).
+         */
         post: operations["signOut"];
         delete?: never;
         options?: never;

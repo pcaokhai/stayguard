@@ -2081,7 +2081,7 @@ export const getCreateDemoSessionUrl = () => {
 }
 
 /**
- * Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP.
+ * Returns 404 unless DEMO_MODE is enabled. Rate-limited per IP. Browser sessions: the response also sets the HttpOnly cookie `sg_session` (same value as `accessToken`; SameSite=Strict, Path=/, no Domain, no Max-Age, Secure over HTTPS; over plain HTTP only for localhost, otherwise no cookie is set). Every authenticated operation accepts either the cookie or `Authorization: Bearer`; the header wins. A state-changing request (POST, PUT, PATCH, DELETE) authenticated by the cookie must carry `X-Requested-With: stayguard` and an Origin (or Referer) with this host, otherwise 403 `CSRF_REJECTED`. Bearer requests need neither.
  * @summary Start a trial session for a role (demo mode only)
  */
 export const createDemoSession = async (createDemoSessionRequest: CreateDemoSessionRequest, options?: RequestInit): Promise<createDemoSessionResponse> => {
@@ -3833,7 +3833,7 @@ export const getSignInUrl = () => {
 }
 
 /**
- * Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists.
+ * Five wrong PINs lock the account for 15 minutes and alert the owner (ACCOUNT_LOCKED). Responses never reveal whether the user exists. Browser sessions: the response also sets the HttpOnly cookie `sg_session` (same value as `accessToken`; SameSite=Strict, Path=/, no Domain, no Max-Age, Secure over HTTPS; over plain HTTP only for localhost, otherwise no cookie is set). Every authenticated operation accepts either the cookie or `Authorization: Bearer`; the header wins. A state-changing request (POST, PUT, PATCH, DELETE) authenticated by the cookie must carry `X-Requested-With: stayguard` and an Origin (or Referer) with this host, otherwise 403 `CSRF_REJECTED`. Bearer requests need neither.
  * @summary Sign in with guesthouse code, user name and PIN
  */
 export const signIn = async (signInRequest: SignInRequest, options?: RequestInit): Promise<signInResponse> => {
@@ -3898,6 +3898,7 @@ export const getSignOutUrl = () => {
 }
 
 /**
+ * Revokes the session on the server and clears the `sg_session` cookie (Set-Cookie with Max-Age=0).
  * @summary End the current session
  */
 export const signOut = async ( options?: RequestInit): Promise<signOutResponse> => {

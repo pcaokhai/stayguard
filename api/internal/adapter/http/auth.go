@@ -33,8 +33,8 @@ type authenticator interface {
 	Authenticate(ctx context.Context, token string) (app.Caller, error)
 }
 
-// authenticate requires a bearer token on /v1 and puts the resolved caller on the context.
-// The token is read from the Authorization header only, and neither it nor the header is logged.
+// authenticate requires a session (Bearer header or session cookie) on /v1 and puts the resolved caller on the context.
+// Neither the token nor the cookie is logged.
 func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Handler {
 	respond := problemResponder(log)
 	return func(next http.Handler) http.Handler {
@@ -43,14 +43,15 @@ func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Han
 				next.ServeHTTP(w, r)
 				return
 			}
-			// More than one Authorization value is ambiguous: fail closed rather than pick one.
-			values := r.Header.Values("Authorization")
-			token, ok := "", len(values) == 1
-			if ok {
-				token, ok = bearerToken(values[0])
-			}
+			token, viaCookie, ok := requestToken(r)
 			if !ok {
 				respond(w, r, app.ErrUnauthenticated)
+				return
+			}
+			// A cookie is sent by the browser by itself, so a state change made with one must prove it came from our page.
+			// A Bearer header is added deliberately by the caller and needs no such proof.
+			if viaCookie && isUnsafe(r.Method) && !csrfOK(r) {
+				writeProblem(w, http.StatusForbidden, "Forbidden", "CSRF_REJECTED")
 				return
 			}
 			caller, err := a.Authenticate(r.Context(), token)
@@ -65,6 +66,24 @@ func authenticate(log *slog.Logger, a authenticator) func(http.Handler) http.Han
 			next.ServeHTTP(w, r.WithContext(app.WithCaller(r.Context(), caller)))
 		})
 	}
+}
+
+// requestToken is the Bearer token when an Authorization header is present (it wins, and is never mixed with the
+// cookie), otherwise the session cookie.
+func requestToken(r *http.Request) (token string, viaCookie, ok bool) {
+	if values := r.Header.Values("Authorization"); len(values) > 0 {
+		// More than one Authorization value is ambiguous: fail closed rather than pick one.
+		if len(values) != 1 {
+			return "", false, false
+		}
+		t, ok := bearerToken(values[0])
+		return t, false, ok
+	}
+	c, err := r.Cookie(sessionCookie)
+	if err != nil || c.Value == "" {
+		return "", false, false
+	}
+	return c.Value, true, true
 }
 
 // bearerToken accepts exactly "Bearer <token>" (scheme case-insensitive, token without spaces).

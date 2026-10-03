@@ -49,9 +49,9 @@ func (s Server) SignIn(ctx context.Context, req gen.SignInRequestObject) (gen.Si
 	if err != nil {
 		return nil, err
 	}
-	return gen.SignIn200JSONResponse(gen.SignInResponse{
+	return signInWithCookie{gen.SignIn200JSONResponse(gen.SignInResponse{
 		AccessToken: r.Token, ExpiresAt: r.ExpiresAt, TenantId: r.TenantID, User: toUser(r.User), MustChangePin: r.MustChangePin,
-	}), nil
+	}), sessionCookieHeader(ctx, r.Token)}, nil
 }
 
 func (s Server) SignOut(ctx context.Context, _ gen.SignOutRequestObject) (gen.SignOutResponseObject, error) {
@@ -62,7 +62,7 @@ func (s Server) SignOut(ctx context.Context, _ gen.SignOutRequestObject) (gen.Si
 	if err := s.auth.SignOut(ctx, c); err != nil {
 		return nil, err
 	}
-	return gen.SignOut204Response{}, nil
+	return signOutClearingCookie{cookie: clearCookieHeader(ctx)}, nil
 }
 
 func (s Server) ChangeMyPin(ctx context.Context, req gen.ChangeMyPinRequestObject) (gen.ChangeMyPinResponseObject, error) {

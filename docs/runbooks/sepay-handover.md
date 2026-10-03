@@ -39,6 +39,10 @@ SePay's signature covers a timestamp and the server accepts it within `SEPAY_TIM
 
 `DATA_ENCRYPTION_KEY` protects PIN hashes (as a pepper), guest ID data, bank accounts and the SePay secret. Keep a copy of it **apart from the database backups** (a password manager, not the backup bucket). If the database is restored or reused with a different key, every PIN looks wrong (PIN_INVALID) and encrypted data cannot be read. The server stores a fingerprint of the key on first start and refuses to boot against a different one with `key fingerprint mismatch`: restore the original key. Never rotate the key without a re-encryption job (none exists yet).
 
+## Browser sessions
+
+The app signs in with a cookie shared by every tab of one browser profile. To try two roles at the same time (for example owner and front desk), use two browser profiles (or one normal and one private window); signing in as a second user in the same profile replaces the first.
+
 ## Rules
 
 - The secret is write-only: no command or screen prints it back.

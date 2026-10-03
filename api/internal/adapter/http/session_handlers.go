@@ -32,9 +32,9 @@ func (s Server) CreateDemoSession(ctx context.Context, req gen.CreateDemoSession
 	if err != nil {
 		return nil, err
 	}
-	return gen.CreateDemoSession201JSONResponse(gen.Session{
+	return demoWithCookie{gen.CreateDemoSession201JSONResponse(gen.Session{
 		AccessToken: d.Token, ExpiresAt: d.ExpiresAt, TenantId: d.TenantID, User: toUser(d.User),
-	}), nil
+	}), sessionCookieHeader(ctx, d.Token)}, nil
 }
 
 func (s Server) GetMe(ctx context.Context, _ gen.GetMeRequestObject) (gen.GetMeResponseObject, error) {

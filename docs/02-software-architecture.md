@@ -135,7 +135,7 @@ sequenceDiagram
 
 ### 7.1 Security and compliance
 
-Opaque session tokens, stored hashed. Authorization on every request (ADR-008). Tenant isolation by row-level security plus explicit tenant filters (ADR-005). National ID numbers are optional, encrypted at rest, masked on read, and never logged. Check current Vietnamese personal-data and stay-declaration rules before any production customer holds real guest data.
+Opaque session tokens, stored hashed. Authorization on every request (ADR-008). Browser sessions use a cookie, so a link opened in a new tab stays signed in: `signIn` and `createDemoSession` set `sg_session` (the same opaque token; HttpOnly, SameSite=Strict, Path=/, no Domain, no Max-Age, Secure over HTTPS, plain HTTP only on localhost) and `signOut` clears it; idle and absolute expiry stay on the server. The auth middleware takes the `Authorization: Bearer` header (tests, API clients; it wins) or the cookie. Because a browser sends the cookie by itself, a cookie-authenticated POST, PUT, PATCH or DELETE must carry `X-Requested-With: stayguard` and an Origin (or Referer) with this host, otherwise 403 `CSRF_REJECTED`; SameSite=Strict is the first defence, this the second. Bearer requests and GETs are unaffected, and the webhook route never reads cookies. The cookie is shared by every tab of one browser profile, so two roles at once need two browser profiles. Tenant isolation by row-level security plus explicit tenant filters (ADR-005). National ID numbers are optional, encrypted at rest, masked on read, and never logged. Check current Vietnamese personal-data and stay-declaration rules before any production customer holds real guest data.
 
 ### 7.2 Idempotency
 
