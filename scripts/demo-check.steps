@@ -3,7 +3,7 @@ lint|make lint
 go-unit|make test-api
 go-integration|make test-api-int
 docker-build|POSTGRES_PASSWORD=x APP_DB_PASSWORD=x DATA_ENCRYPTION_KEY=x DOMAIN=x ACME_EMAIL=x docker compose -f deploy/compose.prod.yaml build
-smoke|SMOKE_PROJECT=stayguard-demo-check SMOKE_PORT=18280 SMOKE_DB_PORT=15632 make smoke
+smoke|SMOKE_PROJECT=$SMOKE_COMPOSE_PROJECT SMOKE_PORT=18280 SMOKE_DB_PORT=15632 make smoke
 rehearse-test|make rehearse-test
 web-build|cd web && npm run build
 layout-spec|cd web && npx playwright test e2e/layout.spec.ts

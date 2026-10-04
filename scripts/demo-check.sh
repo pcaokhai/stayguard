@@ -14,11 +14,19 @@ logs="$(mktemp -d)"
 [ -n "${DEMO_CHECK_STEPS:-}" ] || rehearse_lock "make demo-check"
 trap 'rm -rf "$logs"; rehearse_unlock' EXIT
 
+# The compose project the smoke step runs in; the step and the specs it runs read it (WEB-1's expiry spec looks at its containers).
+export SMOKE_COMPOSE_PROJECT="${SMOKE_COMPOSE_PROJECT:-stayguard-demo-check}"
+web_next="${DEMO_CHECK_WEB_NEXT:-web/.next}"
+
 names=(); results=(); secs=()
 while IFS='|' read -r name cmd; do
 	case "$name" in ''|'#'*) continue ;; esac
 	if [ -n "${DEMO_CHECK_ONLY:-}" ] && ! [[ "$name" =~ ^(${DEMO_CHECK_ONLY})$ ]]; then continue; fi
 	echo ">> $name" >&2
+	if [ "$name" = web-build ]; then # a stale .next (dev types) made next build fail with "Cannot find module .../page.js"
+		echo "   removing web/.next first (a stale one breaks next build)" >&2
+		rm -rf "$web_next"
+	fi
 	start=$SECONDS
 	if bash -c "$cmd" </dev/null >"$logs/$name.log" 2>&1; then r=PASS; else r=FAIL; fi
 	names+=("$name"); results+=("$r"); secs+=("$((SECONDS - start))")
