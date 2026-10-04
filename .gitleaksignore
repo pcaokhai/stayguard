@@ -1,0 +1,20 @@
+# gitleaks false positives, one fingerprint per line (gitleaks git --redact --no-banner -r report.json .). Each says why it is not a secret.
+
+# QA evidence log of a throwaway local rehearsal stack: a JSON field named "key" holding an expense category (COST_OF_GOODS, SUPPLIES ...) in a logged API response, not a credential.
+b05831e57aeadb4c4581fb6939065925b2315301:docs/rehearsal/evidence-2026-10-03/CD-09/0-api.log:generic-api-key:9
+# QA evidence log of a throwaway local rehearsal stack: a JSON field named "key" holding an expense category (COST_OF_GOODS, SUPPLIES ...) in a logged API response, not a credential.
+21e00dc5507c5b1b84cf6ea970a9a75684e0249a:docs/rehearsal/evidence-2026-10-03/CD-09/0-api.log:generic-api-key:2
+# QA evidence log of a throwaway local rehearsal stack: a JSON field named "key" holding an expense category (COST_OF_GOODS, SUPPLIES ...) in a logged API response, not a credential.
+c6c862e1d8e6a17504978aec94b5d76055ffc068:docs/rehearsal/evidence-2026-10-03/CD-09/0-api.log:generic-api-key:2
+# test fixture: a literal UUID used as an Idempotency-Key in a unit test, not a credential.
+8dac777d8f49edb209cb37be3c1b3facd1b6e47e:web/src/features/owner/money/dismiss.test.ts:generic-api-key:41
+# test fixture: a literal UUID used as an Idempotency-Key in a unit test, not a credential.
+8dac777d8f49edb209cb37be3c1b3facd1b6e47e:web/src/features/owner/money/dismiss.test.ts:generic-api-key:46
+# QA evidence log of a throwaway local rehearsal stack: a JSON field named "key" holding an expense category (COST_OF_GOODS, SUPPLIES ...) in a logged API response, not a credential.
+68ad17420d0344c912b596296fbf2ea6c32de4fc:docs/rehearsal/evidence-2026-10-03/CD-09/0-api.log:generic-api-key:2
+# test fixture (commit 0293941): idemKey is a literal UUID for an idempotency test, not a credential.
+0293941a31724ac30dc0aa86ebc09615856d9f1c:api/internal/adapter/http/stays_fakes_test.go:generic-api-key:17
+
+# Commit f4af824: planted-secret.txt holds a FAKE key planted by scripts/test-secret-scan.sh on a throwaway branch that is being deleted.
+f4af824f49be68c9cf673943123b0ad0173b7c39:planted-secret.txt:aws-access-token:1
+f4af824f49be68c9cf673943123b0ad0173b7c39:planted-secret.txt:generic-api-key:2
