@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { expect, type Page, test } from "@playwright/test";
 import en from "../messages/en.json";
 import vi from "../messages/vi.json";
+import { backdateRefusal } from "./support/backdateGuard";
 
 // TT-15: a pending transfer older than qrExpiryMinutes reads as EXPIRED (derived on read, the stored row stays pending).
 // The pay screen flips by itself, a new QR keeps the bill code, and a signed webhook for the old code still reaches Paid.
@@ -44,13 +45,26 @@ async function signIn(page: Page) {
   }
 }
 
-// Moves one bill's payments back in the time, in this smoke stack's own database only (the project and the guesthouse code
-// must be smoke ones; nothing else is touched).
+// Moves one bill's payments back in time, in the database of the stack this run started and nowhere else (backdateRefusal).
 function backdatePayments(billCode: string, minutes: number) {
   const project = env("SMOKE_COMPOSE_PROJECT");
   const code = env("SMOKE_GUESTHOUSE");
-  if (!/^stayguard-(smoke|web1)[a-z0-9-]*$/.test(project) || !/^smoke[0-9a-f]{6}$/.test(code))
-    throw new Error(`refusing to backdate in project "${project}" / guesthouse "${code}"`);
+  const files = ["-f", "deploy/compose.yaml", "-f", "deploy/compose.smoke.override.yaml"];
+  const dbId = execFileSync("docker", ["compose", "-p", project, ...files, "ps", "-q", "db"], {
+    cwd: "..",
+    encoding: "utf8",
+  })
+    .trim()
+    .split("\n")[0];
+  const talked = dbId
+    ? execFileSync(
+        "docker",
+        ["inspect", "-f", '{{ index .Config.Labels "com.docker.compose.project" }}', dbId],
+        { encoding: "utf8" },
+      ).trim()
+    : "";
+  const refusal = backdateRefusal(process.env, talked);
+  if (refusal) throw new Error(`refusing to backdate: ${refusal}`);
   const sql = `SET session_replication_role = replica;
 UPDATE app.payments p SET created_at = p.created_at - make_interval(mins => ${Number(minutes)})
 FROM app.invoices iv JOIN app.tenants t ON t.id = iv.tenant_id
