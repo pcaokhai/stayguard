@@ -433,16 +433,15 @@ func (p *Payments) view(ctx context.Context, tx Tx, r PaymentRecord) (PaymentVie
 	if r.Method != payment.MethodTransfer || r.Status != payment.StatusPending {
 		return v, nil
 	}
-	if p.qrExpired(r) { // derived on read; the stored row stays PENDING, so money to this bill code is still recorded
-		v.Status = payment.StatusExpired
-		v.Remaining = 0
-		return v, nil
-	}
 	got, err := p.repo.ReceivedForInvoice(ctx, tx, r.InvoiceID) // what the bank already sent for this bill
 	if err != nil {
 		return PaymentView{}, fmt.Errorf("received for invoice: %w", err)
 	}
 	v.Remaining = max(r.Amount-got, 0)
+	if p.qrExpired(r) { // derived on read; the stored row stays PENDING, so money to this bill code is still recorded
+		v.Status = payment.StatusExpired // no QR any more, but the screen still shows what is owed
+		return v, nil
+	}
 	r.Amount = v.Remaining // the QR asks for what is still owed, with the same bill code
 	qr, err := p.qr(ctx, tx, r)
 	v.QR = qr

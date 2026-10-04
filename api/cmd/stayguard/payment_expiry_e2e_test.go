@@ -81,3 +81,32 @@ func TestPaymentExpiry_NewPaymentKeepsTheBillCodeAndTheMoneyIn_FU(t *testing.T) 
 		t.Fatalf("rest: %+v %v", res, err)
 	}
 }
+
+// An EXPIRED transfer (derived) still says what is owed, from the bank events: the whole balance when nothing arrived, the rest after a
+// short transfer. At the boundary it is still pending with the same figure.
+func TestPaymentExpiry_RemainingIsWhatIsStillOwed_FU(t *testing.T) {
+	r := deskRig(t)
+	r.setQRExpiry(10)
+	var id string
+	var created time.Time
+	if err := r.e.owner.QueryRow(context.Background(), `SELECT id, created_at FROM app.payments WHERE tenant_id = $1 AND invoice_id = $2`, r.tenant, r.invoice).Scan(&id, &created); err != nil {
+		t.Fatal(err)
+	}
+	at := func(d time.Duration) map[string]any {
+		r.e.clock.set(created.Add(d))
+		return r.payment(id).body
+	}
+	if got := at(10 * time.Minute); got["status"] != "PENDING" || num(got["remaining"]) != r.balance {
+		t.Fatalf("at the boundary, pending, whole balance owed: %v", got)
+	}
+	if got := at(10*time.Minute + time.Second); got["status"] != "EXPIRED" || num(got["remaining"]) != r.balance || got["qr"] != nil {
+		t.Fatalf("expired with nothing received owes the whole balance: %v", got)
+	}
+	first := r.balance * 4 / 10
+	if res, err := r.handler().Settle(context.Background(), r.event("bank-x1", first, r.code)); err != nil || res.Result != "PARTIAL" {
+		t.Fatalf("partial: %+v %v", res, err)
+	}
+	if got := at(time.Hour); got["status"] != "EXPIRED" || num(got["remaining"]) != r.balance-first || num(got["receivedAmount"]) != first {
+		t.Fatalf("expired after a short transfer owes the rest (%d): %v", r.balance-first, got)
+	}
+}
