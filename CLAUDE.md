@@ -58,6 +58,7 @@ docs/       14 plan · 15 product rules and routes · 16 UI kit · assets/design
 - Add dependencies beyond docs/16 and the task.
 - Commit secrets, real guest data, real bank accounts or customer names.
 - Open generated code, lockfiles, node_modules, .next or golden-cases.json in full; grep instead.
+- Add a directory to `.gitignore` (a line ending in `/`) without a matching `Read(./dir/**)` deny rule in `.claude/settings.json`; `scripts/check-claude-deny.sh` fails CI otherwise.
 
 ## 7. Glossary
 

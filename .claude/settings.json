@@ -17,7 +17,13 @@
       "Read(**/package-lock.json)",
       "Read(**/go.sum)",
       "Read(**/.env*)",
-      "Read(./contracts/pricing/golden-cases.json)"
+      "Read(./contracts/pricing/golden-cases.json)",
+      "Read(./.shots/**)",
+      "Read(./deploy/.rehearse-backups/**)",
+      "Read(./docs/rehearsal/shots-*/**)",
+      "Read(./docs/rehearsal/evidence-*/**)",
+      "Read(./deploy/.rehearse.lock/**)",
+      "Read(**/__pycache__/**)"
     ]
   }
 }
