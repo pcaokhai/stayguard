@@ -1,6 +1,6 @@
 # Sync preview
 
-Made by `scripts/rehearsal-sync.py --preview` on a COPY of `docs/rehearsal/checklist.xlsx` with `docs/rehearsal/results-2026-10-03-stayguard.csv`. **The real file is unchanged;** Khai approves before it is.
+Made by `scripts/rehearsal-sync.py --preview` on a COPY of `docs/rehearsal/checklist.xlsx` with `docs/rehearsal/results-2026-10-04-stayguard.csv`. **The real file is unchanged;** Khai approves before it is.
 
 Rows whose status changes: **5**. Rows that only get a note: **7**. Rows left alone (Bỏ qua or manual): **1**.
 
