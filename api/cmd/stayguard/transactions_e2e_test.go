@@ -10,8 +10,8 @@ import (
 )
 
 func (r payRig) transactions(owner string) []map[string]any {
-	day := r.e.clock.Now().In(time.UTC).Format("2006-01-02")
-	next := r.e.clock.Now().In(time.UTC).Add(24 * time.Hour).Format("2006-01-02")
+	day := r.e.clock.Now().In(time.UTC).Add(-24 * time.Hour).Format("2006-01-02")
+	next := r.e.clock.Now().In(time.UTC).Add(48 * time.Hour).Format("2006-01-02")
 	st, raw := r.e.send("GET", fmt.Sprintf("/v1/owner/transactions?from=%s&to=%s&filter=ALL", day, next), owner, "", nil)
 	if st != 200 {
 		r.e.t.Fatalf("transactions: %d %s", st, raw)

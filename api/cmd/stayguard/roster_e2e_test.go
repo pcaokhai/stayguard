@@ -31,10 +31,15 @@ func TestRosterE2E_FA3(t *testing.T) {
 	monday := today.AddDate(0, 0, -((int(today.Weekday()) + 6) % 7)) // this week's Monday
 	nextMonday := monday.AddDate(0, 0, 7)
 
-	// Roster the receptionist on the afternoon of today and the morning of the day after; the rest are gaps.
+	// Roster the receptionist on the afternoon of today and the morning of the day after; the rest are gaps. On a Sunday "the day after" is
+	// next week, which the copy-week step below needs empty, so the other day is the day before then.
+	other, first := today.AddDate(0, 0, 1), today
+	if today.Weekday() == time.Sunday {
+		other, first = today.AddDate(0, 0, -1), today.AddDate(0, 0, -1)
+	}
 	put := map[string]any{"set": []map[string]any{
 		{"userId": lan, "date": ymd(today), "shift": "AFTERNOON"},
-		{"userId": lan, "date": ymd(today.AddDate(0, 0, 1)), "shift": "MORNING"},
+		{"userId": lan, "date": ymd(other), "shift": "MORNING"},
 	}, "remove": []any{}}
 	st, raw := e.send("PUT", "/v1/owner/roster", boss, newKey(), put)
 	roster := parse(raw)
@@ -49,7 +54,7 @@ func TestRosterE2E_FA3(t *testing.T) {
 	if st, _ = e.send("PUT", "/v1/owner/roster", boss, newKey(), bad); st != 422 {
 		t.Fatalf("unknown person: %d", st)
 	}
-	st, raw = e.send("GET", "/v1/me/roster?from="+ymd(today)+"&to="+ymd(today.AddDate(0, 0, 6)), desk, "", nil)
+	st, raw = e.send("GET", "/v1/me/roster?from="+ymd(first)+"&to="+ymd(first.AddDate(0, 0, 6)), desk, "", nil)
 	if mine := parse(raw); st != 200 || len(mine["assignments"].([]any)) != 2 || mine["gaps"] != nil {
 		t.Fatalf("my roster: %d %s", st, raw)
 	}

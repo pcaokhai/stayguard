@@ -372,14 +372,15 @@ func TestServerRunsAsAppRole_SG102_AC4(t *testing.T) {
 	}
 }
 
-// testClockStart is the instant the test clock starts at: the latest 03:00 UTC (10:00 in Ho Chi Minh) that is not in the future, with whole
-// seconds (timestamptz keeps microseconds). Tests move the clock forward by hours; starting mid-morning keeps those hours on the
-// tenant's calendar day and on one UTC day, so the suite gives the same answer at any hour it is run (it used to fail after 21:00 local).
+// testClockStart is the instant the test clock starts at. Tests move the clock forward by hours and read "today" in the tenant's zone
+// (Ho Chi Minh, UTC+7), while a few rows are stamped by the database clock (audit logs), so the clock should stay close to the real time of
+// day yet leave room for the hours tests add. Before 17:00 local it is the real time; later it is 10:00 local the same day (still the
+// same calendar day as the database clock). It used to be the real time always, which failed after 21:00 local when the hours crossed midnight.
 func testClockStart(now time.Time) time.Time {
 	now = now.UTC().Truncate(time.Second)
-	start := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, time.UTC)
-	if start.After(now) {
-		start = start.AddDate(0, 0, -1)
+	local := now.In(time.FixedZone("ICT", 7*3600))
+	if local.Hour() < 17 {
+		return now
 	}
-	return start
+	return time.Date(local.Year(), local.Month(), local.Day(), 10, 0, 0, 0, local.Location()).UTC()
 }
