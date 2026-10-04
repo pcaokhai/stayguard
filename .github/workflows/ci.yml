@@ -64,9 +64,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: api/go.sum
-      - run: make test-api
+      - run: RACE=1 make test-api
 
-  # SG-003: Testcontainers PostgreSQL (the runner has Docker); race detector on for the concurrency tests.
+  # SG-003: Testcontainers PostgreSQL (the runner has Docker). No race detector here (it timed out at 10 minutes); the unit job runs -race.
   test-api-int:
     runs-on: ubuntu-latest
     steps:
@@ -75,7 +75,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: api/go.sum
-      - run: RACE=1 make test-api-int
+      - run: make test-api-int
 
   test-web:
     runs-on: ubuntu-latest

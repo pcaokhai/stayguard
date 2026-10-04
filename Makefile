@@ -16,8 +16,9 @@ down: deploy/.env.local
 
 test: test-api test-web
 
+# RACE=1 adds -race (needs cgo; CI sets it) on the unit packages only.
 test-api:
-	cd api && go test ./...
+	cd api && go test $(if $(RACE),-race) ./...
 
 # A missing web/ toolchain must fail loudly, not pass silently (batch B adds web/package.json).
 define need_web
@@ -84,9 +85,10 @@ migrate:
 	@test -n "$$DATABASE_URL" || { echo "DATABASE_URL is required: the owner database URL, e.g. postgres://stayguard@localhost:5432/stayguard?sslmode=disable for make up" >&2; exit 1; }
 	cd api && go run ./cmd/stayguard migrate
 
-# Testcontainers needs a running Docker daemon. RACE=1 adds -race (needs cgo; CI sets it).
+# Testcontainers needs a running Docker daemon. No -race here: under -race the suite outran go test's default 10 minute package timeout on the CI
+# runner (about 90 s without it), so race runs on the unit packages (make test-api) and this suite has a 30 minute timeout as headroom.
 test-api-int:
-	cd api && go test $(if $(RACE),-race) -tags integration -count=1 ./...
+	cd api && go test -timeout 30m -tags integration -count=1 ./...
 # Wipes and rebuilds the demo guesthouse (installer import plus a populated day, scripts/demo-reset.sh); see docs/runbooks/demo.md.
 demo-reset:
 	scripts/demo-reset.sh
