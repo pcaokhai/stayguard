@@ -129,6 +129,7 @@ jobs:
       - run: scripts/test-contracts.sh
       - run: scripts/check-spike.sh
       - run: scripts/check-gen-headers.sh
+      - run: node scripts/test-spdx-allowed.js
       - run: scripts/check-mock-switch.sh
       # Reported, not blocking: docs/10 §143 limit (400 lines excluding generated files) needs a tech-lead waiver here.
       - name: PR size

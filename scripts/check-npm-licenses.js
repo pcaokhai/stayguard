@@ -13,8 +13,9 @@ const dirs = new Set(execSync("npm ls --omit=dev --all --parseable", { maxBuffer
 // Matched against the full package name (scope included), not the folder basename.
 const EXCEPT = /^(@img\/sharp-(libvips-.+|wasm32)|caniuse-lite)$/;
 
-// An SPDX "OR" expression is fine when any alternative is allowed.
-const ok = (l) => l.replace(/[()]/g, "").split(/\s+OR\s+/).some((x) => ALLOWED.has(x.trim()));
+// SPDX expressions: OR needs one allowed alternative, AND needs every part allowed (victory-vendor is "MIT AND ISC").
+const { isAllowed } = require("./spdx-allowed.js");
+const ok = (l) => isAllowed(l, ALLOWED);
 let bad = 0;
 for (const dir of dirs) {
   const pj = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
