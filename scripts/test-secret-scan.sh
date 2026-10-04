@@ -19,5 +19,12 @@ git add . && git commit -qm planted
 
 if scan "$tmp" >/dev/null 2>&1; then echo "FAIL: planted secret not detected" >&2; exit 1; fi
 echo "ok: planted secret detected (non-zero exit)"
-scan "$repo" >/dev/null 2>&1 || { echo "FAIL: real history flagged" >&2; exit 1; }
+# A shallow checkout (CI's checks job, depth 1) makes HEAD look like a root commit holding every file, so findings carry
+# the HEAD sha and no .gitleaksignore fingerprint (keyed by the real commit sha) matches. The secrets job scans the full history.
+if [ "$(git -C "$repo" rev-parse --is-shallow-repository)" = true ]; then
+	echo "skipped: real-history scan (shallow checkout; the secrets job scans full history)"
+else
+	scan "$repo" >/dev/null 2>&1 || { echo "FAIL: real history flagged" >&2; exit 1; }
+	echo "ok: real history clean"
+fi
 echo "PASS test-secret-scan"
