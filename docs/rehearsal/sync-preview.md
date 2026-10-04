@@ -8,9 +8,8 @@ Rows whose status changes: **5**. Rows that only get a note: **7**. Rows left al
 
 | Old | New | Rows | Ids |
 | --- | --- | ---: | --- |
-| Chờ thử lại | Đạt | 2 | TT-21, TT-22 |
+| Chờ thử lại | Đạt | 3 | TT-21, TT-22, TT-26 |
 | Lỗi | Đạt | 2 | TT-15, CA-08 |
-| Chờ thử lại | Lỗi | 1 | TT-26 |
 
 ## Note only (cases that need eyes, or a pass already Đạt)
 

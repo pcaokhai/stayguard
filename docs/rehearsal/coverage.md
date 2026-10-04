@@ -61,7 +61,7 @@ Checklist `docs/rehearsal/checklist.xlsx` against `docs/rehearsal/results-2026-1
 | TT-23 | Thanh toán | Sau khi tải lại trang, mở phòng đã trả phòng mà chưa thanh toán | Đạt | pass |  |
 | TT-24 | Thanh toán | Mở lượt ở đã trả phòng từ nút Xem trong cảnh báo | Đạt | pass |  |
 | TT-25 | Thanh toán | Giờ ngân hàng và dòng hoàn tiền ở Giao dịch | Đạt | pass |  |
-| TT-26 | Thanh toán | Màn trả phòng mở lại hiện đúng tiền cọc | Chờ thử lại | fail |  |
+| TT-26 | Thanh toán | Màn trả phòng mở lại hiện đúng tiền cọc | Chờ thử lại | pass |  |
 | TT-27 | Thanh toán | Cảnh báo hoàn tiền không ghi là chưa thu | Đạt | pass |  |
 | TT-28 | Thanh toán | QR và webhook cho tài khoản bắt buộc VA | Bỏ qua | - | Bỏ qua |
 | TT-29 | Thanh toán | Ô phòng chờ thanh toán không ghi &quot;Còn thiếu 0đ&quot; | Đạt | pass |  |
